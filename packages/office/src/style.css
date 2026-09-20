@@ -1,0 +1,5 @@
+@import "@filens/core/style.css";
+@import "@filens/docx/style.css";
+@import "@filens/iwork/style.css";
+@import "@filens/pdf/style.css";
+@import "@filens/xlsx/style.css";

@@ -1,0 +1,48 @@
+{
+  "name": "@filens/archive",
+  "version": "0.1.0",
+  "description": "Read-only ZIP, TAR, and GZIP preview and extraction for the @filens runtime.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "./dist/index.css"
+  ],
+  "keywords": [
+    "archive",
+    "zip",
+    "tar",
+    "gzip",
+    "preview",
+    "viewer",
+    "esm",
+    "typescript"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/index.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && node ../../scripts/rename-css.mjs ./dist style.css index.css",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2",
+    "jszip": "^3.10.1"
+  },
+  "peerDependencies": {
+    "@filens/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@filens/core": "file:../core"
+  }
+}

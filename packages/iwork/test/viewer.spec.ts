@@ -1,0 +1,344 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { buildNumbersSheetAt, buildParsedDocument } from '../src/parser/semantic';
+import { createIworkViewer } from '../src/viewer/create-iwork-viewer';
+import type { IworkArchiveIndex, ParsedPagesDocument } from '../src/types';
+
+const parseMock = vi.fn();
+const parseSheetMock = vi.fn();
+
+vi.mock('../src/worker/client', () => ({
+  IworkWorkerClient: class {
+    parse = parseMock;
+    parseSheet = parseSheetMock;
+    destroy(): void {}
+  }
+}));
+
+vi.mock('../src/parser/load-source', () => ({
+  loadSourceBytes: vi.fn(async () => new Uint8Array([1, 2, 3]))
+}));
+
+function createPagesDocument(): ParsedPagesDocument {
+  return {
+    kind: 'pages',
+    archive: {
+      type: 'pages',
+      records: {},
+      references: {
+        outgoing: {},
+        incoming: {}
+      },
+      dataEntries: {},
+      warnings: []
+    },
+    warnings: [],
+    title: 'Doc',
+    media: {},
+    pages: [0, 1, 2].map((index) => ({
+      id: `pages-${index + 1}`,
+      index,
+      width: 800,
+      height: 1000,
+      canvas: {
+        id: `pages-${index + 1}`,
+        title: `Page ${index + 1}`,
+        width: 800,
+        height: 1000,
+        slide: {
+          id: `pages-${index + 1}`,
+          index,
+          title: `Page ${index + 1}`,
+          background: {
+            type: 'solid',
+            color: '#ffffff',
+            alpha: 1
+          },
+          width: 800,
+          height: 1000,
+          items: [],
+          warnings: []
+        }
+      },
+      blocks: []
+    }))
+  };
+}
+
+describe('iWork viewer', () => {
+  afterEach(() => {
+    parseMock.mockReset();
+    parseSheetMock.mockReset();
+    document.body.innerHTML = '';
+  });
+
+  it('supports fit height scaling', async () => {
+    parseMock.mockResolvedValue(createPagesDocument());
+    const container = document.createElement('div');
+    Object.defineProperty(container, 'clientWidth', {
+      configurable: true,
+      value: 900
+    });
+    Object.defineProperty(container, 'clientHeight', {
+      configurable: true,
+      value: 600
+    });
+    document.body.appendChild(container);
+
+    const viewer = createIworkViewer(container, {
+      fit: 'height'
+    });
+    await viewer.preview(new Uint8Array([1, 2, 3]));
+
+    expect(viewer.getState().fit).toBe('height');
+    expect(viewer.getState().scale).toBeGreaterThan(0);
+    viewer.destroy();
+  });
+
+  it('passes source file name to the worker parser', async () => {
+    parseMock.mockResolvedValue(createPagesDocument());
+    const container = document.createElement('div');
+    Object.defineProperty(container, 'clientWidth', {
+      configurable: true,
+      value: 900
+    });
+    Object.defineProperty(container, 'clientHeight', {
+      configurable: true,
+      value: 600
+    });
+    document.body.appendChild(container);
+
+    const viewer = createIworkViewer(container);
+    await viewer.preview('https://example.com/files/Quarterly%20Report.pages?download=1');
+
+    expect(parseMock).toHaveBeenCalledWith(expect.any(Uint8Array), undefined, 'Quarterly Report.pages');
+    viewer.destroy();
+  });
+
+  it('clamps goToSheet to sheet bounds', async () => {
+    parseMock.mockResolvedValue({
+      kind: 'numbers',
+      archive: {
+        type: 'numbers',
+        records: {},
+        references: {
+          outgoing: {},
+          incoming: {}
+        },
+        dataEntries: {},
+        warnings: []
+      },
+      warnings: [],
+      media: {},
+      sheets: [0, 1].map((index) => ({
+        id: `sheet-${index + 1}`,
+        index,
+        name: `Sheet ${index + 1}`,
+        canvas: {
+          id: `sheet-${index + 1}`,
+          title: `Sheet ${index + 1}`,
+          width: 800,
+          height: 600,
+          slide: {
+            id: `sheet-${index + 1}`,
+            index,
+            title: `Sheet ${index + 1}`,
+            background: {
+              type: 'solid',
+              color: '#ffffff',
+              alpha: 1
+            },
+            width: 800,
+            height: 600,
+            items: [],
+            warnings: []
+          }
+        },
+        tables: []
+      }))
+    });
+
+    const container = document.createElement('div');
+    Object.defineProperty(container, 'clientWidth', {
+      configurable: true,
+      value: 900
+    });
+    Object.defineProperty(container, 'clientHeight', {
+      configurable: true,
+      value: 600
+    });
+    document.body.appendChild(container);
+
+    const viewer = createIworkViewer(container);
+    await viewer.preview(new Uint8Array([1, 2, 3]));
+    viewer.goToSheet(99);
+    expect(viewer.getState().currentSheet).toBe(1);
+    viewer.goToSheet(-10);
+    expect(viewer.getState().currentSheet).toBe(0);
+    viewer.destroy();
+  });
+
+  it('renders Numbers sheets with the XLSX workbook grid', async () => {
+    parseMock.mockResolvedValue({
+      kind: 'numbers',
+      archive: {
+        type: 'numbers',
+        records: {},
+        references: { outgoing: {}, incoming: {} },
+        dataEntries: {},
+        warnings: []
+      },
+      warnings: [],
+      media: {
+        photo: {
+          id: 'photo',
+          path: 'Data/photo.png',
+          contentType: 'image/png',
+          data: new Uint8Array([137, 80, 78, 71])
+        }
+      },
+      sheets: [{
+        id: 'sheet-1',
+        index: 0,
+        name: 'Sheet 1',
+        canvas: {
+          id: 'sheet-1',
+          title: 'Sheet 1',
+          width: 800,
+          height: 1200,
+          slide: {
+            id: 'sheet-1',
+            index: 0,
+            title: 'Sheet 1',
+            background: { type: 'solid', color: '#ffffff', alpha: 1 },
+            width: 800,
+            height: 1200,
+            items: [{
+              id: 'floating-photo',
+              kind: 'image',
+              name: 'Floating photo',
+              order: 1,
+              groupPath: [],
+              transform: { x: 20, y: 40, width: 160, height: 90, rotation: 0, flipH: false, flipV: false },
+              fill: { type: 'none' },
+              mediaId: 'photo'
+            }],
+            warnings: []
+          }
+        },
+        tables: [{
+          id: 'table-1',
+          item: {
+            id: 'table-1',
+            columns: [120, 120],
+            rows: [26],
+            cells: [{
+              row: 0,
+              column: 0,
+              rowSpan: 1,
+              colSpan: 1,
+              isMergedContinuation: false,
+              fill: { type: 'picture', mediaId: 'photo' },
+              textFrame: {
+                paragraphs: [{ runs: [{ text: 'Revenue' }] }]
+              }
+            }]
+          }
+        }]
+      }]
+    });
+
+    const container = document.body.appendChild(document.createElement('div'));
+    const viewer = createIworkViewer(container);
+    await viewer.preview(new Uint8Array([1, 2, 3]));
+
+    expect(container.querySelector('.xlsxv-sheet-tab')?.textContent).toBe('Sheet 1');
+    expect(container.querySelector('.xlsxv-table')?.textContent).toContain('Revenue');
+    expect(container.querySelector<HTMLImageElement>('.iworkv-cell-image')?.loading).toBe('lazy');
+    expect(container.querySelector('.iworkv-numbers-objects .pptxv-item--image')).not.toBeNull();
+    viewer.destroy();
+  });
+
+  it('loads placeholder Numbers sheets on demand', async () => {
+    const archive: IworkArchiveIndex = {
+      type: 'numbers',
+      records: {
+        '1': { id: 1, archiveId: 1, messageIndex: 0, typeId: 1, typeName: 'TN.DocumentArchive', value: { sheets: [{ identifier: 2 }, { identifier: 3 }] }, objectReferences: [], dataReferences: [] },
+        '2': { id: 2, archiveId: 1, messageIndex: 1, typeId: 2, typeName: 'TN.SheetArchive', value: { name: 'One', drawableInfos: [] }, objectReferences: [], dataReferences: [] },
+        '3': { id: 3, archiveId: 1, messageIndex: 2, typeId: 2, typeName: 'TN.SheetArchive', value: { name: 'Two', drawableInfos: [] }, objectReferences: [], dataReferences: [] }
+      },
+      references: { outgoing: {}, incoming: {} },
+      dataEntries: {},
+      warnings: []
+    };
+    const context = { archive, media: {} };
+    const numbersDocument = buildParsedDocument(context, { numbersSheetIndexes: new Set([0]) });
+    if (numbersDocument.kind !== 'numbers') {
+      throw new Error('Expected Numbers document.');
+    }
+    const secondSheet = buildNumbersSheetAt(context, 1);
+    expect(numbersDocument.sheets.map((sheet) => sheet.loaded)).toEqual([true, false]);
+    parseMock.mockResolvedValue(numbersDocument);
+    parseSheetMock.mockResolvedValue(secondSheet);
+
+    const container = document.body.appendChild(document.createElement('div'));
+    const viewer = createIworkViewer(container);
+    await viewer.preview(new Uint8Array([1, 2, 3]));
+    expect(parseSheetMock).not.toHaveBeenCalled();
+    container.querySelectorAll<HTMLButtonElement>('.xlsxv-sheet-tab')[1]!.click();
+    await vi.waitFor(() => expect(viewer.getState().document?.kind === 'numbers' && viewer.getState().document.sheets[1]?.loaded).toBe(true));
+
+    expect(parseSheetMock).toHaveBeenCalledWith(1);
+    viewer.destroy();
+  });
+
+  it('scrolls to target pages in pages mode when goToPage is called', async () => {
+    parseMock.mockResolvedValue(createPagesDocument());
+    const container = document.createElement('div');
+    Object.defineProperty(container, 'clientWidth', {
+      configurable: true,
+      value: 1200
+    });
+    Object.defineProperty(container, 'clientHeight', {
+      configurable: true,
+      value: 900
+    });
+    document.body.appendChild(container);
+
+    const viewer = createIworkViewer(container, {
+      fit: 'contain'
+    });
+    await viewer.preview(new Uint8Array([1, 2, 3]));
+
+    const shells = Array.from(container.querySelectorAll<HTMLElement>('.iworkv-page-shell'));
+    expect(shells).toHaveLength(3);
+    expect(shells.map((shell) => shell.childElementCount)).toEqual([1, 0, 0]);
+    const scrollSpy = vi.fn();
+    shells[2].scrollIntoView = scrollSpy;
+
+    viewer.goToPage(2);
+
+    expect(viewer.getState().currentPage).toBe(2);
+    expect(shells.map((shell) => shell.childElementCount)).toEqual([0, 0, 1]);
+    expect(scrollSpy).toHaveBeenCalledTimes(1);
+    viewer.destroy();
+  });
+
+  it('mounts Pages content when its shell enters the virtual scroll window', async () => {
+    parseMock.mockResolvedValue(createPagesDocument());
+    const container = document.body.appendChild(document.createElement('div'));
+    Object.defineProperty(container, 'clientHeight', { configurable: true, value: 900 });
+    container.getBoundingClientRect = () => ({ top: 0, bottom: 900, height: 900 } as DOMRect);
+
+    const viewer = createIworkViewer(container);
+    await viewer.preview(new Uint8Array([1, 2, 3]));
+    const shells = Array.from(container.querySelectorAll<HTMLElement>('.iworkv-page-shell'));
+    shells[0]!.getBoundingClientRect = () => ({ top: -1100, bottom: -100, height: 1000 } as DOMRect);
+    shells[1]!.getBoundingClientRect = () => ({ top: 20, bottom: 1020, height: 1000 } as DOMRect);
+    shells[2]!.getBoundingClientRect = () => ({ top: 2000, bottom: 3000, height: 1000 } as DOMRect);
+
+    container.dispatchEvent(new Event('scroll'));
+    await vi.waitFor(() => expect(shells[1]!.childElementCount).toBe(1));
+
+    viewer.destroy();
+  });
+});

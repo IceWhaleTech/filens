@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FictionBook xmlns="http://www.gribuser.ru/xml/fictionbook/2.0">
+  <description>
+    <title-info>
+      <book-title>Fixture FB2 metadata title</book-title>
+      <author><first-name>Fixture</first-name><last-name>Author</last-name></author>
+    </title-info>
+  </description>
+  <body>
+    <section>
+      <title><p>Fixture FB2 chapter one</p></title>
+      <p>First FB2 body paragraph.</p>
+      <binary id="cover" content-type="image/png">ignored</binary>
+    </section>
+    <section>
+      <title><p>Fixture FB2 chapter two</p></title>
+      <p>Second FB2 body paragraph.</p>
+    </section>
+  </body>
+</FictionBook>

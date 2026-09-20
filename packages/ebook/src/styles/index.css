@@ -1,0 +1,78 @@
+.ebookv-preview {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  overflow: hidden;
+  background: #f5f7fb;
+  color: #1f2937;
+  font-family: system-ui, sans-serif;
+}
+
+.ebookv-chapters {
+  overflow: auto;
+  border-right: 1px solid #d7dee8;
+  background: #ffffff;
+}
+
+.ebookv-chapter-tab {
+  display: block;
+  width: 100%;
+  min-height: 38px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #e5ebf2;
+  background: transparent;
+  color: #39485c;
+  text-align: left;
+  font: 600 12px/1.35 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.ebookv-chapter-tab:hover {
+  background: #f6f9fd;
+}
+
+.ebookv-chapter-tab.is-active {
+  background: #eaf2ff;
+  color: #1f4f94;
+}
+
+.ebookv-stage {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.ebookv-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  border: 0;
+  background: #ffffff;
+}
+
+@media (max-width: 760px) {
+  .ebookv-preview {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .ebookv-chapters {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid #d7dee8;
+  }
+
+  .ebookv-chapter-tab {
+    width: auto;
+    min-width: 160px;
+    border-right: 1px solid #e5ebf2;
+  }
+}

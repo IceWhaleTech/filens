@@ -1,0 +1,112 @@
+.panoramav-preview {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  overflow: hidden;
+  background: #111827;
+  color: #f8fafc;
+  font-family: system-ui, sans-serif;
+}
+
+.panoramav-stage {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  overflow: hidden;
+}
+
+.panoramav-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.panoramav-canvas:active {
+  cursor: grabbing;
+}
+
+.panoramav-hint {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(17, 24, 39, 0.72);
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.panoramav-notice {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  left: 14px;
+  z-index: 2;
+  padding: 9px 12px;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  background: rgba(69, 26, 3, 0.88);
+  color: #fef3c7;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.panoramav-video-controls {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  left: 14px;
+  z-index: 2;
+  width: calc(100% - 28px);
+  height: 42px;
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.86);
+  object-fit: none;
+}
+
+.panoramav-calibrated-controls {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  left: 14px;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto minmax(80px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: rgba(17, 24, 39, 0.86);
+  backdrop-filter: blur(8px);
+}
+
+.panoramav-calibrated-controls button {
+  min-width: 58px;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: #f8fafc;
+  color: #111827;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.panoramav-calibrated-controls input {
+  width: 100%;
+  accent-color: #f59e0b;
+}
+
+.panoramav-calibrated-controls output {
+  min-width: 82px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

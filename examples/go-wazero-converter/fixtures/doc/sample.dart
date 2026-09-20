@@ -1,0 +1,11 @@
+Fixture DART document
+
+This controlled UTF-8 fixture exercises dart -> docx in the WASM text backend.
+
+Content matrix:
+- Unicode: café, 中文, العربية, and emoji 😀.
+- Numbers: -42, 0, 3.14159, 6.02e23, 50%, and 2026-08-03T14:30:00+08:00.
+- Punctuation: <tag attr="A&B"> 'single' "double" \ slash / pipe |.
+- Whitespace: tab	separated, trailing spaces follow  , and a blank line follows.
+
+The final line is intentionally long to exercise wrapping without being pathological: alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon phi chi psi omega.

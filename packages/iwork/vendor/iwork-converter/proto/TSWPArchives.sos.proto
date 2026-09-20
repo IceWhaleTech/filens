@@ -1,0 +1,449 @@
+syntax = "proto2";
+
+package TSWP;
+option go_package = "github.com/IceWhaleTech/iwork-converter/proto/TSWP";
+import "TSDArchives.sos.proto";
+import "TSPMessages.proto";
+import "TSSArchives.sos.proto";
+import "TSWPArchives.proto";
+
+message SpecSetCharacterStyleArchive {
+  optional .TSP.Reference character_style = 1;
+  required bool unset = 2;
+}
+
+message SpecSetColumnsArchive {
+  optional .TSWP.ColumnsArchive columns = 1;
+  required bool unset = 2;
+}
+
+message SpecSetDropCapArchive {
+  optional .TSWP.DropCapArchive drop_cap = 1;
+  required bool unset = 2;
+}
+
+message SpecSetFontFeaturesArchive {
+  repeated .TSWP.FontFeatureArchive font_features = 1;
+  optional bool font_features_undefined = 2;
+  required bool unset = 3;
+}
+
+message SpecSetLineSpacingArchive {
+  optional .TSWP.LineSpacingArchive line_spacing = 1;
+  required bool unset = 2;
+}
+
+message SpecSetListStyleArchive {
+  optional .TSP.Reference list_style = 1;
+  required bool unset = 2;
+}
+
+message SpecSetListStyleBoolArrayArchive {
+  repeated bool list_style_bool_array = 1;
+  optional bool list_style_bool_array_undefined = 2;
+  required bool unset = 3;
+}
+
+message SpecSetListStyleFloatArrayArchive {
+  repeated float list_style_float_array = 1;
+  optional bool list_style_float_array_undefined = 2;
+  required bool unset = 3;
+}
+
+message SpecSetListStyleImageDataArrayArchive {
+  repeated .TSWP.ListStyleArchive.LabelImage list_style_image_data_array = 1;
+  optional bool list_style_image_data_array_undefined = 2;
+  required bool unset = 3;
+}
+
+message SpecSetListStyleListLabelGeometryArrayArchive {
+  repeated .TSWP.ListStyleArchive.LabelGeometry list_style_list_label_geometry_array = 1;
+  optional bool list_style_list_label_geometry_array_undefined = 2;
+  required bool unset = 3;
+}
+
+message SpecSetListStyleListLabelTypeArrayArchive {
+  repeated .TSWP.ListStyleArchive.LabelType list_style_list_label_type_array = 1;
+  optional bool list_style_list_label_type_array_undefined = 2;
+  required bool unset = 3;
+}
+
+message SpecSetListStyleListNumberTypeArrayArchive {
+  repeated .TSWP.ListStyleArchive.NumberType list_style_list_number_type_array = 1;
+  optional bool list_style_list_number_type_array_undefined = 2;
+  required bool unset = 3;
+}
+
+message SpecSetListStyleStringArrayArchive {
+  repeated string list_style_string_array = 1;
+  optional bool list_style_string_array_undefined = 2;
+  required bool unset = 3;
+}
+
+message SpecSetPaddingArchive {
+  optional .TSWP.PaddingArchive padding = 1;
+  required bool unset = 2;
+}
+
+message SpecSetParagraphStyleArchive {
+  optional .TSP.Reference paragraph_style = 1;
+  required bool unset = 2;
+}
+
+message SpecSetRuleOffsetArchive {
+  optional .TSP.Point rule_offset = 1;
+  required bool unset = 2;
+}
+
+message SpecSetTabsArchive {
+  optional .TSWP.TabsArchive tabs = 1;
+  required bool unset = 2;
+}
+
+message SpecCharacterStyleArchive {
+  optional SpecSetCharacterStyleArchive spec_set_character_style = 1;
+}
+
+message SpecColumnsArchive {
+  optional SpecSetColumnsArchive spec_set_columns = 1;
+}
+
+message SpecDropCapArchive {
+  optional SpecSetDropCapArchive spec_set_drop_cap = 1;
+}
+
+message SpecFontFeaturesArchive {
+  optional SpecSetFontFeaturesArchive spec_set_font_features = 1;
+}
+
+message SpecLineSpacingArchive {
+  optional SpecSetLineSpacingArchive spec_set_line_spacing = 1;
+}
+
+message SpecListStyleArchive {
+  optional SpecSetListStyleArchive spec_set_list_style = 1;
+}
+
+message SpecListStyleBoolArrayArchive {
+  optional SpecSetListStyleBoolArrayArchive spec_set_list_style_bool_array = 1;
+}
+
+message SpecListStyleFloatArrayArchive {
+  optional SpecSetListStyleFloatArrayArchive spec_set_list_style_float_array = 1;
+}
+
+message SpecListStyleImageDataArrayArchive {
+  optional SpecSetListStyleImageDataArrayArchive spec_set_list_style_image_data_array = 1;
+}
+
+message SpecListStyleListLabelGeometryArrayArchive {
+  optional SpecSetListStyleListLabelGeometryArrayArchive spec_set_list_style_list_label_geometry_array = 1;
+}
+
+message SpecListStyleListLabelTypeArrayArchive {
+  optional SpecSetListStyleListLabelTypeArrayArchive spec_set_list_style_list_label_type_array = 1;
+}
+
+message SpecListStyleListNumberTypeArrayArchive {
+  optional SpecSetListStyleListNumberTypeArrayArchive spec_set_list_style_list_number_type_array = 1;
+}
+
+message SpecListStyleStringArrayArchive {
+  optional SpecSetListStyleStringArrayArchive spec_set_list_style_string_array = 1;
+}
+
+message SpecPaddingArchive {
+  optional SpecSetPaddingArchive spec_set_padding = 1;
+}
+
+message SpecParagraphStyleArchive {
+  optional SpecSetParagraphStyleArchive spec_set_paragraph_style = 1;
+}
+
+message SpecRuleOffsetArchive {
+  optional SpecSetRuleOffsetArchive spec_set_rule_offset = 1;
+}
+
+message SpecTabsArchive {
+  optional SpecSetTabsArchive spec_set_tabs = 1;
+}
+
+message CharacterStylePropertyChangeSetArchive {
+  optional .TSS.SpecDoubleArchive baseline_shift = 1;
+  optional bool baseline_shift_undefined = 2;
+  optional .TSS.SpecIntegerArchive capitalization = 3;
+  optional bool capitalization_undefined = 4;
+  optional .TSS.SpecStringArchive compatibility_font_name = 5;
+  optional bool compatibility_font_name_undefined = 6;
+  optional .TSS.SpecStringArchive emphasis_marks = 7;
+  optional bool emphasis_marks_undefined = 8;
+  optional .TSS.SpecBoolArchive bold = 9;
+  optional bool bold_undefined = 10;
+  optional .TSS.SpecBoolArchive italic = 11;
+  optional bool italic_undefined = 12;
+  optional SpecFontFeaturesArchive font_features = 13;
+  optional bool font_features_undefined = 14;
+  optional .TSS.SpecStringArchive font_name = 15;
+  optional bool font_name_undefined = 16;
+  optional .TSS.SpecDoubleArchive font_size = 17;
+  optional bool font_size_undefined = 18;
+  optional .TSS.SpecDoubleArchive font_size_delta = 19;
+  optional bool font_size_delta_undefined = 20;
+  optional .TSS.SpecDoubleArchive kerning = 21;
+  optional bool kerning_undefined = 22;
+  optional .TSS.SpecStringArchive language = 23;
+  optional bool language_undefined = 24;
+  optional .TSS.SpecIntegerArchive ligatures = 25;
+  optional bool ligatures_undefined = 26;
+  optional .TSD.SpecShadowArchive text_shadow = 27;
+  optional bool text_shadow_undefined = 28;
+  optional .TSS.SpecColorArchive strikethru_color = 29;
+  optional bool strikethru_color_undefined = 30;
+  optional .TSS.SpecIntegerArchive strikethru = 31;
+  optional bool strikethru_undefined = 32;
+  optional .TSS.SpecDoubleArchive strikethru_width = 33;
+  optional bool strikethru_width_undefined = 34;
+  optional .TSS.SpecIntegerArchive superscript = 35;
+  optional bool superscript_undefined = 36;
+  optional .TSS.SpecColorArchive text_background = 37;
+  optional bool text_background_undefined = 38;
+  optional .TSS.SpecDoubleArchive tracking = 39;
+  optional bool tracking_undefined = 40;
+  optional .TSS.SpecColorArchive underline_color = 41;
+  optional bool underline_color_undefined = 42;
+  optional .TSS.SpecIntegerArchive underline = 43;
+  optional bool underline_undefined = 44;
+  optional .TSS.SpecDoubleArchive underline_width = 45;
+  optional bool underline_width_undefined = 46;
+  optional .TSS.SpecBoolArchive word_strikethru = 47;
+  optional bool word_strikethru_undefined = 48;
+  optional .TSS.SpecBoolArchive word_underline = 49;
+  optional bool word_underline_undefined = 50;
+  optional .TSS.SpecIntegerArchive writing_direction = 51;
+  optional bool writing_direction_undefined = 52;
+  optional .TSS.SpecBoolArchive is_named_point_size = 53;
+  optional bool is_named_point_size_undefined = 54;
+  optional .TSS.SpecBoolArchive capitalization_uses_linguistics = 55;
+  optional bool capitalization_uses_linguistics_undefined = 56;
+  optional .TSD.SpecStrokeArchive character_stroke = 57;
+  optional bool character_stroke_undefined = 58;
+  optional .TSD.SpecFillArchive character_fill = 59;
+  optional bool character_fill_undefined = 60;
+  optional .TSS.SpecBoolArchive character_fill_should_fill_text_container = 61;
+  optional bool character_fill_should_fill_text_container_undefined = 62;
+}
+
+message ColumnStylePropertyChangeSetArchive {
+  optional SpecColumnsArchive columns = 1;
+  optional bool columns_undefined = 2;
+  optional .TSS.SpecBoolArchive continuous = 3;
+  optional bool continuous_undefined = 4;
+  optional SpecPaddingArchive margins = 5;
+  optional bool margins_undefined = 6;
+  optional .TSS.SpecDoubleArchive min_horizontal_inset = 7;
+  optional bool min_horizontal_inset_undefined = 8;
+  optional SpecPaddingArchive padding = 9;
+  optional bool padding_undefined = 10;
+  optional .TSS.SpecBoolArchive shrink_to_fit = 11;
+  optional bool shrink_to_fit_undefined = 12;
+  optional .TSS.SpecIntegerArchive vertical_alignment = 13;
+  optional bool vertical_alignment_undefined = 14;
+  optional .TSS.SpecBoolArchive vertical_text = 15;
+  optional bool vertical_text_undefined = 16;
+  optional .TSS.SpecIntegerArchive writing_direction = 17;
+  optional bool writing_direction_undefined = 18;
+}
+
+message DropCapSpecificStylePropertyChangeSetArchive {
+  optional SpecDropCapArchive drop_cap_model = 1;
+  optional bool drop_cap_model_undefined = 2;
+  optional .TSD.SpecStrokeArchive drop_cap_shape_stroke = 3;
+  optional bool drop_cap_shape_stroke_undefined = 4;
+  optional .TSD.SpecFillArchive drop_cap_shape_fill = 5;
+  optional bool drop_cap_shape_fill_undefined = 6;
+}
+
+message DropCapStylePropertyChangeSetArchive {
+  required CharacterStylePropertyChangeSetArchive super = 1;
+  optional SpecDropCapArchive drop_cap_model = 2;
+  optional bool drop_cap_model_undefined = 3;
+  optional .TSD.SpecStrokeArchive drop_cap_shape_stroke = 4;
+  optional bool drop_cap_shape_stroke_undefined = 5;
+  optional .TSD.SpecFillArchive drop_cap_shape_fill = 6;
+  optional bool drop_cap_shape_fill_undefined = 7;
+}
+
+message ListStylePropertyChangeSetArchive {
+  optional .TSS.SpecColorArchive list_font_color = 1;
+  optional bool list_font_color_undefined = 2;
+  optional .TSS.SpecStringArchive font_name = 3;
+  optional bool font_name_undefined = 4;
+  optional SpecListStyleFloatArrayArchive list_classic_text_indent_array = 5;
+  optional bool list_classic_text_indent_array_undefined = 6;
+  optional SpecListStyleListLabelGeometryArrayArchive list_label_geometry_array = 7;
+  optional bool list_label_geometry_array_undefined = 8;
+  optional SpecListStyleImageDataArrayArchive list_label_image_data_array = 9;
+  optional bool list_label_image_data_array_undefined = 10;
+  optional SpecListStyleFloatArrayArchive list_label_indent_array = 11;
+  optional bool list_label_indent_array_undefined = 12;
+  optional SpecListStyleListNumberTypeArrayArchive list_label_number_array = 13;
+  optional bool list_label_number_array_undefined = 14;
+  optional SpecListStyleBoolArrayArchive list_label_tiered_number_array = 15;
+  optional bool list_label_tiered_number_array_undefined = 16;
+  optional .TSD.SpecShadowArchive text_shadow = 17;
+  optional bool text_shadow_undefined = 18;
+  optional SpecListStyleStringArrayArchive list_label_string_array = 19;
+  optional bool list_label_string_array_undefined = 20;
+  optional SpecListStyleFloatArrayArchive list_text_indent_array = 21;
+  optional bool list_text_indent_array_undefined = 22;
+  optional SpecListStyleListLabelTypeArrayArchive list_label_type_array = 23;
+  optional bool list_label_type_array_undefined = 24;
+  optional .TSS.SpecIntegerArchive writing_direction = 25;
+  optional bool writing_direction_undefined = 26;
+}
+
+message ParagraphSpecificStylePropertyChangeSetArchive {
+  optional .TSS.SpecIntegerArchive alignment = 1;
+  optional bool alignment_undefined = 2;
+  optional .TSS.SpecStringArchive decimal_tab = 3;
+  optional bool decimal_tab_undefined = 4;
+  optional .TSS.SpecDoubleArchive default_tab_stops = 5;
+  optional bool default_tab_stops_undefined = 6;
+  optional .TSS.SpecColorArchive paragraph_fill = 7;
+  optional bool paragraph_fill_undefined = 8;
+  optional .TSS.SpecDoubleArchive first_line_indent = 9;
+  optional bool first_line_indent_undefined = 10;
+  optional SpecParagraphStyleArchive following_paragraph_style = 11;
+  optional bool following_paragraph_style_undefined = 12;
+  optional .TSS.SpecBoolArchive hyphenate = 13;
+  optional bool hyphenate_undefined = 14;
+  optional SpecListStyleArchive initial_list_style = 15;
+  optional bool initial_list_style_undefined = 16;
+  optional .TSS.SpecBoolArchive keep_lines_together = 17;
+  optional bool keep_lines_together_undefined = 18;
+  optional .TSS.SpecBoolArchive keep_with_next = 19;
+  optional bool keep_with_next_undefined = 20;
+  optional .TSS.SpecDoubleArchive left_indent = 21;
+  optional bool left_indent_undefined = 22;
+  optional SpecLineSpacingArchive line_spacing = 23;
+  optional bool line_spacing_undefined = 24;
+  optional .TSS.SpecIntegerArchive outline_level = 25;
+  optional bool outline_level_undefined = 26;
+  optional .TSS.SpecIntegerArchive outline_style_type = 27;
+  optional bool outline_style_type_undefined = 28;
+  optional .TSS.SpecBoolArchive page_break_before = 29;
+  optional bool page_break_before_undefined = 30;
+  optional .TSS.SpecIntegerArchive border_positions = 31;
+  optional bool border_positions_undefined = 32;
+  optional SpecRuleOffsetArchive paragraph_rule_offset = 33;
+  optional bool paragraph_rule_offset_undefined = 34;
+  optional .TSS.SpecBoolArchive rounded_corners = 35;
+  optional bool rounded_corners_undefined = 36;
+  optional .TSS.SpecDoubleArchive paragraph_rule_width = 37;
+  optional bool paragraph_rule_width_undefined = 38;
+  optional .TSS.SpecDoubleArchive right_indent = 39;
+  optional bool right_indent_undefined = 40;
+  optional .TSS.SpecDoubleArchive space_after = 41;
+  optional bool space_after_undefined = 42;
+  optional .TSS.SpecDoubleArchive space_before = 43;
+  optional bool space_before_undefined = 44;
+  optional .TSD.SpecStrokeArchive paragraph_stroke = 45;
+  optional bool paragraph_stroke_undefined = 46;
+  optional SpecTabsArchive tabs = 47;
+  optional bool tabs_undefined = 48;
+  optional .TSS.SpecIntegerArchive widow_control = 49;
+  optional bool widow_control_undefined = 50;
+  optional .TSS.SpecBoolArchive show_in_bookmarks_list = 51;
+  optional bool show_in_bookmarks_list_undefined = 52;
+  optional .TSS.SpecBoolArchive show_in_t_o_c_navigator = 53;
+  optional bool show_in_t_o_c_navigator_undefined = 54;
+}
+
+message ParagraphStylePropertyChangeSetArchive {
+  required CharacterStylePropertyChangeSetArchive super = 1;
+  optional .TSS.SpecIntegerArchive alignment = 2;
+  optional bool alignment_undefined = 3;
+  optional .TSS.SpecStringArchive decimal_tab = 4;
+  optional bool decimal_tab_undefined = 5;
+  optional .TSS.SpecDoubleArchive default_tab_stops = 6;
+  optional bool default_tab_stops_undefined = 7;
+  optional .TSS.SpecColorArchive paragraph_fill = 8;
+  optional bool paragraph_fill_undefined = 9;
+  optional .TSS.SpecDoubleArchive first_line_indent = 10;
+  optional bool first_line_indent_undefined = 11;
+  optional SpecParagraphStyleArchive following_paragraph_style = 12;
+  optional bool following_paragraph_style_undefined = 13;
+  optional .TSS.SpecBoolArchive hyphenate = 14;
+  optional bool hyphenate_undefined = 15;
+  optional SpecListStyleArchive initial_list_style = 16;
+  optional bool initial_list_style_undefined = 17;
+  optional .TSS.SpecBoolArchive keep_lines_together = 18;
+  optional bool keep_lines_together_undefined = 19;
+  optional .TSS.SpecBoolArchive keep_with_next = 20;
+  optional bool keep_with_next_undefined = 21;
+  optional .TSS.SpecDoubleArchive left_indent = 22;
+  optional bool left_indent_undefined = 23;
+  optional SpecLineSpacingArchive line_spacing = 24;
+  optional bool line_spacing_undefined = 25;
+  optional .TSS.SpecIntegerArchive outline_level = 26;
+  optional bool outline_level_undefined = 27;
+  optional .TSS.SpecIntegerArchive outline_style_type = 28;
+  optional bool outline_style_type_undefined = 29;
+  optional .TSS.SpecBoolArchive page_break_before = 30;
+  optional bool page_break_before_undefined = 31;
+  optional .TSS.SpecIntegerArchive border_positions = 32;
+  optional bool border_positions_undefined = 33;
+  optional SpecRuleOffsetArchive paragraph_rule_offset = 34;
+  optional bool paragraph_rule_offset_undefined = 35;
+  optional .TSS.SpecBoolArchive rounded_corners = 36;
+  optional bool rounded_corners_undefined = 37;
+  optional .TSS.SpecDoubleArchive paragraph_rule_width = 38;
+  optional bool paragraph_rule_width_undefined = 39;
+  optional .TSS.SpecDoubleArchive right_indent = 40;
+  optional bool right_indent_undefined = 41;
+  optional .TSS.SpecDoubleArchive space_after = 42;
+  optional bool space_after_undefined = 43;
+  optional .TSS.SpecDoubleArchive space_before = 44;
+  optional bool space_before_undefined = 45;
+  optional .TSD.SpecStrokeArchive paragraph_stroke = 46;
+  optional bool paragraph_stroke_undefined = 47;
+  optional SpecTabsArchive tabs = 48;
+  optional bool tabs_undefined = 49;
+  optional .TSS.SpecIntegerArchive widow_control = 50;
+  optional bool widow_control_undefined = 51;
+  optional .TSS.SpecBoolArchive show_in_bookmarks_list = 52;
+  optional bool show_in_bookmarks_list_undefined = 53;
+  optional .TSS.SpecBoolArchive show_in_t_o_c_navigator = 54;
+  optional bool show_in_t_o_c_navigator_undefined = 55;
+}
+
+message ShapeStylePropertyChangeSetArchive {
+  required .TSD.BaseShapeStylePropertyChangeSetArchive super = 1;
+  optional SpecColumnsArchive columns = 2;
+  optional bool columns_undefined = 3;
+  optional SpecPaddingArchive padding = 4;
+  optional bool padding_undefined = 5;
+  optional .TSS.SpecBoolArchive shrink_text_to_fit = 6;
+  optional bool shrink_text_to_fit_undefined = 7;
+  optional .TSS.SpecIntegerArchive vertical_alignment = 8;
+  optional bool vertical_alignment_undefined = 9;
+  optional .TSS.SpecBoolArchive vertical_text = 10;
+  optional bool vertical_text_undefined = 11;
+  optional SpecParagraphStyleArchive default_paragraph_style = 12;
+  optional bool default_paragraph_style_undefined = 13;
+}
+
+message TOCEntryStylePropertyChangeSetArchive {
+  required ParagraphStylePropertyChangeSetArchive super = 1;
+  optional .TSS.SpecBoolArchive toc_show_page_number = 2;
+  optional bool toc_show_page_number_undefined = 3;
+  optional SpecCharacterStyleArchive toc_page_number_style = 4;
+  optional bool toc_page_number_style_undefined = 5;
+}
+
+message StyleDiffArchive {
+  optional .TSP.Reference style = 1;
+  optional CharacterStylePropertyChangeSetArchive character_change_set = 2;
+  optional ParagraphStylePropertyChangeSetArchive paragraph_change_set = 3;
+  optional ShapeStylePropertyChangeSetArchive shape_change_set = 4;
+}

@@ -1,0 +1,20 @@
+# Rust converter core
+
+Rust WASI implementation of `converter-core`. It covers every pair in `../converter-core/manifest/conversions.json` and now produces the production artifact.
+
+The public conversion policy is read directly from `../converter-core/manifest/conversions.json`; there is no second Rust-only format list.
+
+Build with `npm run build:wasm`; test with `npm run test:wasm` and `npm run test:wasm-smoke`.
+
+## Current milestone
+
+- Covered: all 256 source formats, including the final BIFF spreadsheet and PowerPoint binary families.
+- Production: `../converter-core/dist/converter-core.wasm` is Rust.
+
+Size snapshot from `npm run report:wasm-sizes` (Binaryen 131, Brotli quality 11):
+
+| Artifact | Raw | Gzip | Brotli |
+| --- | ---: | ---: | ---: |
+| Rust full-coverage core | 590,237 | 274,250 | 225,240 |
+
+The retired Go core was 82.8% larger by Brotli size at equivalent fixture coverage.

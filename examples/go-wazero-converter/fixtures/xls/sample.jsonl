@@ -1,0 +1,3 @@
+{"name":"Fixture JSONL row","value":61.5,"active":true}
+{"name":"Second JSONL row","value":62.5,"active":false,"note":"中文"}
+{"name":"Empty JSONL row","value":null,"active":true}

@@ -1,0 +1,49 @@
+{
+  "name": "@filens/iwork",
+  "version": "0.1.0",
+  "description": "Front-end native iWork parsing and preview core for Keynote, Pages, and Numbers.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "./dist/index.css"
+  ],
+  "keywords": [
+    "iwork",
+    "keynote",
+    "pages",
+    "numbers",
+    "preview",
+    "viewer",
+    "esm",
+    "typescript"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/index.css"
+  },
+  "files": [
+    "dist",
+    "vendor"
+  ],
+  "scripts": {
+    "build": "node ../../scripts/generate-iwork-proto.mjs && vite build && node ../../scripts/rename-css.mjs ./dist style.css index.css",
+    "dev": "node ../../scripts/generate-iwork-proto.mjs && vite build --watch",
+    "test": "node ../../scripts/generate-iwork-proto.mjs && vitest run",
+    "test:unit": "node ../../scripts/generate-iwork-proto.mjs && vitest run"
+  },
+  "dependencies": {
+    "@filens/core": "^0.1.0",
+    "@filens/xlsx": "^0.1.0",
+    "jszip": "^3.10.1",
+    "protobufjs": "^7.4.0",
+    "snappyjs": "^0.7.0"
+  },
+  "devDependencies": {
+    "@filens/core": "file:../core"
+  }
+}

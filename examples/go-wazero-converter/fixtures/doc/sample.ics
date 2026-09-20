@@ -1,0 +1,16 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Fixture ICS event
+DTSTART:20260614T100000Z
+DTEND;TZID=America/New_York:20260614T063000
+LOCATION:Preview Lab
+DESCRIPTION:Fixture ICS description\nSecond line
+ORGANIZER;CN=Fixture Organizer:mailto:organizer@example.test
+ATTENDEE;CN=Fixture Attendee:mailto:attendee@example.test
+STATUS:CONFIRMED
+CATEGORIES:Research,Preview
+URL:https://example.test/meeting
+RRULE:FREQ=WEEKLY;COUNT=2
+END:VEVENT
+END:VCALENDAR

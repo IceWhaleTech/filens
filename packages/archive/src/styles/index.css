@@ -1,0 +1,111 @@
+.archivev-preview {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  overflow: auto;
+  background: #f7f9fc;
+  color: #1f2937;
+  font-family: system-ui, sans-serif;
+}
+
+.archivev-summary {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 12px 16px;
+  border-bottom: 1px solid #d7dee8;
+  background: #ffffff;
+  color: #5b6b81;
+  font: 700 12px/1 system-ui, sans-serif;
+}
+
+.archivev-toolbar {
+  position: sticky;
+  top: 41px;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5ebf2;
+  background: #ffffff;
+}
+
+.archivev-button {
+  appearance: none;
+  border: 1px solid #d7dee8;
+  background: #f8fafc;
+  color: #1f2937;
+  font: 600 12px/1 system-ui, sans-serif;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+
+.archivev-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.archivev-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: #ffffff;
+}
+
+.archivev-table th,
+.archivev-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #e5ebf2;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.archivev-table th {
+  background: #f1f5f9;
+  color: #5b6b81;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.archivev-row {
+  cursor: pointer;
+}
+
+.archivev-row:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: -2px;
+}
+
+.archivev-row:hover td {
+  background: #f8fafc;
+}
+
+.archivev-name {
+  width: 52%;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.archivev-name::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 8px;
+  border-radius: 2px;
+  background: #9db3d1;
+}
+
+.archivev-name[data-type="directory"]::before {
+  background: #2d8f6f;
+}
+
+.archivev-type,
+.archivev-size,
+.archivev-modified {
+  width: 16%;
+  color: #5b6b81;
+  white-space: nowrap;
+}

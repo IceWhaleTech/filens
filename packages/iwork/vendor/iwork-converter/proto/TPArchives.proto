@@ -1,0 +1,480 @@
+syntax = "proto2";
+
+package TP;
+option go_package = "github.com/IceWhaleTech/iwork-converter/proto/TP";
+import "TSDArchives.proto";
+import "TSKArchives.proto";
+import "TSCKArchives.proto";
+import "TSPMessages.proto";
+import "TSWPArchives.proto";
+import "TSSArchives.proto";
+import "TSAArchives.proto";
+import "TSCHArchives.proto";
+
+enum ViewScaleMode {
+  ViewScaleMode_UserDefined = 0;
+  ViewScaleMode_FitWidth = 1;
+  ViewScaleMode_FirPage = 2;
+}
+
+enum ViewScaleModeiOS {
+  ViewScaleModeiOS_Undefined = 0;
+  ViewScaleModeiOS_UserDefined = 1;
+  ViewScaleModeiOS_FitWidth = 2;
+  ViewScaleModeiOS_FitMinimum = 3;
+  ViewScaleModeiOS_FitPortraitWidth = 4;
+}
+
+enum PageViewState {
+  PageViewState_OneUp = 0;
+  PageViewState_TwoUp = 1;
+}
+
+message DocumentArchive {
+  optional .TSA.DocumentArchive super = 15;
+  optional .TSP.Reference stylesheet = 2;
+  optional .TSP.Reference floating_drawables = 3;
+  optional .TSP.Reference body_storage = 4;
+  optional .TSP.Reference section = 5;
+  optional .TSP.Reference theme = 6;
+  optional .TSP.Reference settings = 7;
+  optional .TSP.Reference deprecated_layout_state = 11;
+  optional .TSP.Reference deprecated_view_state = 12;
+  repeated .TSP.Reference citation_records = 13;
+  repeated .TSP.Reference toc_styles = 14;
+  repeated .TSP.Reference change_sessions = 16;
+  optional .TSP.Reference most_recent_change_session = 17;
+  optional .TSP.Reference drawables_zorder = 20;
+  optional bool uses_single_header_footer = 21;
+  optional float page_width = 30;
+  optional float page_height = 31;
+  optional float left_margin = 32;
+  optional float right_margin = 33;
+  optional float top_margin = 34;
+  optional float bottom_margin = 35;
+  optional float header_margin = 36;
+  optional float footer_margin = 37;
+  optional float page_scale = 38;
+  optional bool lays_out_body_vertically = 39;
+  optional bool change_tracking_enabled = 40;
+  optional .TSP.Reference tables_custom_format_list = 41;
+  optional uint32 orientation = 42 [default = 0];
+  optional string printer_id = 43;
+  optional string paper_id = 44;
+  optional .TSP.DataReference equation_environment = 45;
+  optional bool show_in_bookmarks_list_paragraph_styles_property_initialized = 46 [default = false];
+  optional .TSP.Reference flow_info_container = 47;
+  repeated .TSP.Reference page_templates = 48;
+  optional bool should_use_anchored_drawable_wrap_slop = 49;
+  optional .TSP.Reference merge_data = 50;
+}
+
+message ThemeArchive {
+  required .TSS.ThemeArchive super = 1;
+}
+
+message SettingsArchive {
+  enum FootnoteKind {
+    kFootnoteKindFootnotes = 0;
+    kFootnoteKindDocumentEndnotes = 1;
+    kFootnoteKindSectionEndnotes = 2;
+  }
+
+  enum FootnoteFormat {
+    kFootnoteFormatNumeric = 0;
+    kFootnoteFormatRoman = 1;
+    kFootnoteFormatSymbolic = 2;
+    kFootnoteFormatJapaneseNumeric = 3;
+    kFootnoteFormatJapaneseIdeographic = 4;
+    kFootnoteFormatArabicNumeric = 5;
+  }
+
+  enum FootnoteNumbering {
+    kFootnoteNumberingContinuous = 0;
+    kFootnoteNumberingRestartEachPage = 1;
+    kFootnoteNumberingRestartEachSection = 2;
+  }
+
+  optional bool body = 1 [default = true];
+  optional bool headers = 2 [default = true];
+  optional bool footers = 3 [default = true];
+  optional bool preview = 4 [default = true];
+  optional bool copy_movies = 5 [default = true];
+  optional bool copy_assets = 6 [default = true];
+  optional bool placeholder_authoring = 7 [default = false];
+  optional bool links_enabled = 8 [default = true];
+  optional bool hyphenation = 9 [default = false];
+  optional bool use_ligatures = 10 [default = false];
+  optional bool toc_links_enabled = 11 [default = false];
+  optional bool show_ct_markup = 12 [default = true];
+  optional bool show_ct_deletions = 13 [default = true];
+  optional int32 ct_bubbles_visibility = 14;
+  optional bool change_bars_visible = 15 [default = true];
+  optional bool format_changes_visible = 16 [default = true];
+  optional bool annotations_visible = 17 [default = true];
+  optional bool document_is_rtl = 18 [default = false];
+  optional string decimal_tab = 20;
+  optional string language = 21;
+  optional string hyphenation_language = 22;
+  optional string creation_locale = 23;
+  optional string last_locale = 24;
+  optional string orig_template = 25;
+  optional string creation_date = 26;
+  optional string bibliography_format = 27;
+  optional SettingsArchive.FootnoteKind footnote_kind = 30;
+  optional SettingsArchive.FootnoteFormat footnote_format = 31;
+  optional SettingsArchive.FootnoteNumbering footnote_numbering = 32;
+  optional int32 footnote_gap = 33;
+  optional bool facing_pages = 34 [default = false];
+  optional bool section_authoring = 40 [default = false];
+}
+
+message PlaceholderArchive {
+  required .TSWP.ShapeInfoArchive super = 1;
+}
+
+message DrawableTagPairsArchive {
+  message DrawableTagPair {
+    required string tag = 1;
+    required .TSP.Reference drawable = 2;
+  }
+
+  repeated DrawableTagPairsArchive.DrawableTagPair drawable_tag_pairs = 1;
+}
+
+message FloatingDrawablesArchive {
+  message DrawableEntry {
+    optional .TSP.Reference drawable = 1;
+  }
+
+  message PageGroup {
+    required uint32 page_index = 1;
+    repeated FloatingDrawablesArchive.DrawableEntry background_drawables = 2;
+    repeated FloatingDrawablesArchive.DrawableEntry foreground_drawables = 3;
+    repeated FloatingDrawablesArchive.DrawableEntry drawables = 4;
+  }
+
+  repeated FloatingDrawablesArchive.PageGroup page_groups = 1;
+  optional DrawableTagPairsArchive drawable_tag_pairs = 2;
+}
+
+message DrawablesZOrderArchive {
+  repeated .TSP.Reference drawables = 1;
+}
+
+message SectionTemplateArchive {
+  repeated .TSP.Reference headers = 1;
+  repeated .TSP.Reference footers = 2;
+  repeated .TSP.Reference section_template_drawables = 3;
+  optional .TSP.UUIDPath page_template_uuidpath = 4;
+}
+
+message PageTemplateArchive {
+  message TagDrawablePair {
+    required string tag = 1;
+    required .TSP.Reference drawable = 2;
+    required uint32 z_index = 3;
+  }
+
+  optional string name = 1;
+  repeated .TSP.Reference section_template_drawables = 2;
+  repeated PageTemplateArchive.TagDrawablePair placeholder_drawables = 3;
+  optional bool headers_footers_match_previous_page = 4;
+  optional bool hide_headers_footers = 5;
+  optional .TSD.FillArchive background_fill = 6;
+  optional .TSP.Reference guide_storage = 7;
+}
+
+message SectionArchive {
+  optional bool OBSOLETE_shows_header = 1;
+  optional bool OBSOLETE_shows_footer = 2;
+  repeated .TSP.Reference OBSOLETE_headers = 3;
+  repeated .TSP.Reference OBSOLETE_footers = 4;
+  optional float OBSOLETE_left_margin = 5;
+  optional float OBSOLETE_right_margin = 6;
+  optional float OBSOLETE_top_margin = 7;
+  optional float OBSOLETE_bottom_margin = 8;
+  optional float OBSOLETE_header_padding = 9;
+  optional float OBSOLETE_footer_padding = 10;
+  optional float OBSOLETE_paper_width = 11;
+  optional float OBSOLETE_paper_height = 12;
+  optional bool OBSOLETE_landscape_mode = 13;
+  repeated .TSP.Reference OBSOLETE_section_template_drawables = 14;
+  optional float OBSOLETE_header_margin = 15;
+  optional float OBSOLETE_footer_margin = 16;
+  optional bool inherit_previous_header_footer = 17;
+  optional bool section_template_first_page_different = 18;
+  optional bool section_template_even_odd_pages_different = 19;
+  optional uint32 section_start_kind = 20;
+  optional uint32 section_page_number_kind = 21;
+  optional uint32 section_page_number_start = 22;
+  optional .TSP.Reference first_section_template_page = 23;
+  optional .TSP.Reference even_section_template_page = 24;
+  optional .TSP.Reference odd_section_template_page = 25;
+  optional string name = 26;
+  optional bool section_template_first_page_hides_header_footer = 28;
+  optional .TSP.Reference user_defined_guide_storage = 29;
+  optional .TSD.FillArchive background_fill = 30;
+  optional .TSP.UUID section_hyperlink_uuid = 31;
+}
+
+message DoublePoint {
+  required double x = 1;
+  required double y = 2;
+}
+
+message DoubleSize {
+  required double width = 1;
+  required double height = 2;
+}
+
+message AnchorPosArchive {
+  optional .TSP.Reference attachment = 1;
+  optional .TSP.Point position = 2;
+  optional .TSP.UUIDPath drawable_uuid_path = 3;
+  optional DoublePoint double_position = 4;
+}
+
+message TargetHintArchive {
+  optional .TSP.Point frame_origin = 1;
+  optional .TSP.Size frame_size = 2;
+  optional .TSP.Range range = 3;
+  optional uint32 next_widow_pulls_down_from_char_index = 4;
+  optional .TSP.Range anchored_range = 5;
+  optional uint32 column_count = 6;
+  optional uint32 line_fragment_count = 7;
+  optional DoublePoint double_origin = 8;
+  optional DoubleSize double_size = 9;
+  optional bool end_of_layout = 10;
+  optional bool last_line_is_empty_and_has_list_label = 11;
+  optional bool text_is_vertical = 12;
+  optional bool terminated_by_break = 13;
+}
+
+message PageHintArchive {
+  enum PageKind {
+    kPageKindNone = 0;
+    kPageKindText = 1;
+    kPageKindFiller = 2;
+    kPageKindOrphan = 3;
+    kPageKindEndnote = 4;
+    kPageKindDirty = 5;
+    kTPPageKindPageLayout = 6;
+  }
+
+  enum PageSide {
+    kTPPageSideUnknown = 0;
+    kTPPageSideLeft = 1;
+    kTPPageSideRight = 2;
+  }
+
+  optional PageHintArchive.PageKind page_kind = 1;
+  repeated TargetHintArchive target_hints = 2;
+  optional .TSP.Range footnote_auto_number_range = 3;
+  optional .TSP.Range footnote_layout_range = 4;
+  optional .TSP.Reference first_child_hint = 6;
+  optional .TSP.Reference last_child_hint = 7;
+  repeated AnchorPosArchive anchored_attachments_map = 8;
+  optional uint32 version_number = 10;
+  optional uint32 platform_id = 11;
+  repeated .TSP.Reference child_hints = 12;
+  repeated .TSP.UUID partitioned_attachment_uuids = 13;
+  repeated .TSP.Reference text_flows = 14;
+  repeated TargetHintArchive flow_hints = 15;
+  optional PageHintArchive.PageSide page_side = 17;
+  optional uint32 page_column = 18;
+  optional uint32 page_row = 19;
+  optional TopicNumberHintsArchive topic_number_hints = 20;
+  repeated TopicNumberHintsArchive flow_topic_number_hints = 21;
+}
+
+message NullChildHintArchive {
+}
+
+message SectionHintArchive {
+  repeated PageHintArchive page_hints = 1;
+  optional uint32 start_page_index = 2;
+}
+
+message TextboxHintArchive {
+  required .TSP.Range range = 1;
+  required .TSP.Size size = 2;
+}
+
+message TopicNumberHintLevelDataArchive {
+  required uint32 number = 1;
+  required uint32 label_type = 2;
+  required uint32 number_type = 3;
+  required bool is_tiered = 4;
+}
+
+message TopicNumberHintEntryArchive {
+  required .TSP.Reference list_style = 1;
+  repeated TopicNumberHintLevelDataArchive topic_numbers = 2;
+}
+
+message TopicNumberHintsArchive {
+  repeated TopicNumberHintEntryArchive topic_numbers_map = 2;
+}
+
+message LayoutStateArchive {
+  optional uint32 section_index = 1;
+  optional uint32 section_page_index = 2;
+  optional uint32 document_page_index = 3;
+  optional uint32 last_page_count = 4;
+  repeated SectionHintArchive section_hints = 5;
+  optional uint32 body_length = 6;
+  repeated string missing_fonts = 7;
+  optional int32 os_version = 8;
+}
+
+message CanvasSelectionArchive {
+  required .TSWP.SelectionType deprecated_type = 1;
+  required .TSP.Range visual_definition_range = 2;
+  required .TSWP.StyleInsertionBehavior style_insertion_behavior = 3;
+  required .TSWP.CaretAffinity caret_affinity = 4;
+  repeated .TSP.Reference infos = 5;
+  repeated .TSP.Reference excluded_infos = 6;
+  repeated .TSP.Reference additional_infos = 7;
+  optional .TSP.Reference deprecated_container = 8;
+  optional bool leading_edge = 9;
+  optional uint32 leading_char_index = 10;
+  optional .TSWP.SelectionType type = 11;
+  repeated .TSP.Range ranges = 12;
+}
+
+message AllFootnoteSelectionArchive {
+}
+
+message UIStateArchive {
+  optional float OBSOLETE_view_scale = 1;
+  optional .TSP.Point visible_rect_origin = 2;
+  optional bool OBSOLETE_landscape = 3;
+  optional .TSP.Reference selection = 4;
+  optional .TSP.Reference selection_model = 5;
+  optional bool section_template_drawables_selectable = 6;
+  optional .TSP.Size visible_rect_size = 7;
+  repeated .TSCH.ChartUIState chart_ui_state = 8;
+  optional bool ruler_visible = 9 [default = true];
+  optional bool layout_borders_visible = 10 [default = false];
+  optional bool word_count_hud_visible = 11 [default = false];
+  optional bool shows_comments = 12 [default = true];
+  optional bool shows_page_navigator = 13 [default = false];
+  optional ViewScaleMode view_scale_mode = 14 [default = ViewScaleMode_UserDefined];
+  optional float view_scale = 15 [default = 1.25];
+  optional .TSP.Point window_frame_origin = 16;
+  optional .TSP.Size window_frame_size = 17;
+  optional string selected_inspector_switch_segment_identifier = 18;
+  optional bool inspector_hidden = 19;
+  optional uint32 word_count_hud_type = 20;
+  optional float word_count_hud_x_position = 21;
+  optional float word_count_hud_y_position = 22;
+  optional bool show_user_defined_guides = 23 [default = true];
+  optional bool should_show_comment_sidebar = 24 [default = false];
+  optional .TSK.SelectionPathArchive compatibility_selection_path = 25;
+  optional bool shows_ctmarkup = 26 [default = true];
+  optional bool shows_ctdeletions = 27 [default = true];
+  optional bool change_tracking_paused = 28 [default = false];
+  optional .TSK.SelectionPathArchive compatibility_2_selection_path = 29;
+  optional string filtered_author_name = 30;
+  optional ViewScaleModeiOS view_scale_mode_ios = 31 [default = ViewScaleModeiOS_UserDefined];
+  optional .TSP.Reference filtered_author = 32;
+  optional PageViewState page_view_state = 33;
+  optional bool pencil_annotations_hidden = 34 [default = false];
+  optional .TSP.Reference freehand_drawing_toolkit_state = 35;
+  optional float presentation_auto_scroll_speed = 36;
+  optional .TSP.Reference selection_path_transformer = 37;
+  optional bool shows_toc_navigator = 38 [default = false];
+  optional bool show_user_defined_page_template_guides = 39 [default = true];
+  optional bool editing_disabled = 40;
+  optional .TSP.Reference pencil_annotation_ui_state = 41;
+  optional bool shows_flow_mode = 42 [default = false];
+  optional MailMergeSettingsArchive mail_merge_settings = 43;
+  optional bool shows_activity_stream = 44 [default = false];
+  optional float toc_or_page_nav_width = 45;
+  optional float activity_or_annotation_width = 46;
+  optional .TSK.SelectionPathArchive selection_path = 47;
+}
+
+message ViewStateRootArchive {
+  optional .TSP.Reference layout_state = 1;
+  optional .TSP.Reference view_state = 2;
+}
+
+message UserDefinedGuideMapArchive {
+  message UserDefinedGuide {
+    required uint32 page_index = 1;
+    required .TSP.Reference guide_storage = 2;
+  }
+
+  repeated UserDefinedGuideMapArchive.UserDefinedGuide user_defined_guide_storages = 1;
+}
+
+message SectionSelectionArchive {
+  repeated .TSP.Reference sections = 1;
+}
+
+message SectionSelectionTransformerArchive {
+  optional .TSP.Reference original_selection = 1;
+  optional .TSP.UUIDPath storage_uuid_path = 2;
+  repeated .TSP.UUIDPath section_uuid_paths = 3;
+}
+
+message SectionPasteboardObjectArchive {
+  message PageDrawables {
+    required uint32 page_index = 1;
+    required DrawableTagPairsArchive drawable_tag_pairs = 2;
+  }
+
+  required .TSP.Reference text_storage = 1;
+  required uint32 page_count = 2;
+  repeated SectionPasteboardObjectArchive.PageDrawables page_drawables = 3;
+  repeated .TSP.Reference ordered_drawables = 4;
+}
+
+message SectionsAppNativeObjectArchive {
+  message PageTemplatesEntry {
+    required .TSP.UUID key = 1;
+    required .TSP.Reference value = 2;
+  }
+
+  repeated .TSP.Reference section_pasteboard_objects = 1;
+  repeated SectionsAppNativeObjectArchive.PageTemplatesEntry page_templates = 2;
+  repeated .TSP.Reference flows = 3;
+}
+
+message MailMergeSettingsArchive {
+  enum CurrentDataSource {
+    kContactsDataSource = 0;
+    kNumbersDataSource = 1;
+  }
+
+  message NumbersDataSourceArchive {
+    optional bytes bookmark_data = 1;
+    optional .TSP.UUID table_uuid = 2;
+    optional .TSP.UUID document_uuid = 4;
+    repeated .TSWP.MergeFieldTypeArchive merge_field_types = 3;
+  }
+
+  message ContactsFieldsMapEntry {
+    optional string key = 1;
+    optional .TSWP.MergeFieldTypeArchive value = 2;
+  }
+
+  message NumbersFieldsMapEntry {
+    optional string key = 1;
+    optional .TSWP.MergeFieldTypeArchive value = 2;
+  }
+
+  optional bool substitute_closest = 1 [default = true];
+  optional bool data_has_header_row = 2 [default = true];
+  optional MailMergeSettingsArchive.CurrentDataSource current_data_source = 3 [default = kContactsDataSource];
+  optional string contacts_group_identifier = 4;
+  optional string numbers_document_url = 5;
+  optional .TSP.UUID numbers_table_uuid = 6;
+  optional bytes numbers_bookmark_data = 7;
+  optional MailMergeSettingsArchive.NumbersDataSourceArchive numbers_data_source = 8;
+  optional MailMergeSettingsArchive.NumbersDataSourceArchive merging_numbers_data_source = 9;
+  repeated MailMergeSettingsArchive.ContactsFieldsMapEntry contacts_fields_map = 10;
+  repeated MailMergeSettingsArchive.NumbersFieldsMapEntry numbers_fields_map = 11;
+}

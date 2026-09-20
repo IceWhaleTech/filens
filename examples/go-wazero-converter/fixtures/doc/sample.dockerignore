@@ -1,0 +1,3 @@
+# Fixture DOCKERIGNORE document
+node_modules/
+tmp/

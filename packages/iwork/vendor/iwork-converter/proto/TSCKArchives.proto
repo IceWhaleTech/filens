@@ -1,0 +1,29 @@
+syntax = "proto2";
+
+package TSCK;
+option go_package = "github.com/IceWhaleTech/iwork-converter/proto/TSCK";
+import "TSPMessages.proto";
+import "TSKArchives.proto";
+
+// Stub file for TSCKArchives
+// This file contains minimal definitions to satisfy import dependencies
+
+message AddIdOperationArgs {
+  optional .TSP.UUID object_id = 1;
+}
+
+message IdPlacementOperationArgs {
+  optional .TSP.UUID object_id = 1;
+}
+
+message RemoveIdOperationArgs {
+  optional .TSP.UUID object_id = 1;
+}
+
+message RearrangeIdOperationArgs {
+  optional .TSP.UUID object_id = 1;
+}
+
+message CommandActivityBehaviorArchive {
+  optional .TSP.Reference super = 1;
+}

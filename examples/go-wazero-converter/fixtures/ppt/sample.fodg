@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content
+  xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+  xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"
+  xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0">
+  <office:body>
+    <office:presentation>
+      <draw:page draw:name="Fixture Slide">
+        <text:p>Fixture Flat OpenDocument drawing</text:p>
+        <text:p>Each drawing page becomes a PPTX slide.</text:p>
+        <text:p>Bullet 1: Unicode 中文 and 50%.</text:p>
+        <text:p>Bullet 2: long wrapping text for presentation conversion coverage.</text:p>
+      </draw:page>
+      <draw:page draw:name="Fixture Slide 2"><text:p>Second slide</text:p><text:p>Closing summary with -42 and 3.14159.</text:p></draw:page>
+    </office:presentation>
+  </office:body>
+</office:document-content>

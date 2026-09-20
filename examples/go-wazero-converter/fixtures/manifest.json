@@ -1,0 +1,1771 @@
+{
+  "defaults": {
+    "locale": "zh-CN"
+  },
+  "jobs": [
+    {
+      "inputPath": "./fixtures/ppt/sample.ppt",
+      "outputPath": "./tmp/sample.ppt.pptx",
+      "sourceFormat": "ppt",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.pps",
+      "outputPath": "./tmp/sample.pps.pptx",
+      "sourceFormat": "pps",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.pot",
+      "outputPath": "./tmp/sample.pot.pptx",
+      "sourceFormat": "pot",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.pptm",
+      "outputPath": "./tmp/sample.pptm.pptx",
+      "sourceFormat": "pptm",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.ppsx",
+      "outputPath": "./tmp/sample.ppsx.pptx",
+      "sourceFormat": "ppsx",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.ppsm",
+      "outputPath": "./tmp/sample.ppsm.pptx",
+      "sourceFormat": "ppsm",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.potx",
+      "outputPath": "./tmp/sample.potx.pptx",
+      "sourceFormat": "potx",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.potm",
+      "outputPath": "./tmp/sample.potm.pptx",
+      "sourceFormat": "potm",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.dps",
+      "outputPath": "./tmp/sample.dps.pptx",
+      "sourceFormat": "dps",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.dpt",
+      "outputPath": "./tmp/sample.dpt.pptx",
+      "sourceFormat": "dpt",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.odp",
+      "outputPath": "./tmp/sample.odp.pptx",
+      "sourceFormat": "odp",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.otp",
+      "outputPath": "./tmp/sample.otp.pptx",
+      "sourceFormat": "otp",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.fodp",
+      "outputPath": "./tmp/sample.fodp.pptx",
+      "sourceFormat": "fodp",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.sxi",
+      "outputPath": "./tmp/sample.sxi.pptx",
+      "sourceFormat": "sxi",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.sti",
+      "outputPath": "./tmp/sample.sti.pptx",
+      "sourceFormat": "sti",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.odg",
+      "outputPath": "./tmp/sample.odg.pptx",
+      "sourceFormat": "odg",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.otg",
+      "outputPath": "./tmp/sample.otg.pptx",
+      "sourceFormat": "otg",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.fodg",
+      "outputPath": "./tmp/sample.fodg.pptx",
+      "sourceFormat": "fodg",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.sxd",
+      "outputPath": "./tmp/sample.sxd.pptx",
+      "sourceFormat": "sxd",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.std",
+      "outputPath": "./tmp/sample.std.pptx",
+      "sourceFormat": "std",
+      "targetFormat": "pptx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.doc",
+      "outputPath": "./tmp/sample.doc.docx",
+      "sourceFormat": "doc",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.docm",
+      "outputPath": "./tmp/sample.docm.docx",
+      "sourceFormat": "docm",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.dot",
+      "outputPath": "./tmp/sample.dot.docx",
+      "sourceFormat": "dot",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.dotx",
+      "outputPath": "./tmp/sample.dotx.docx",
+      "sourceFormat": "dotx",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.dotm",
+      "outputPath": "./tmp/sample.dotm.docx",
+      "sourceFormat": "dotm",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.wps",
+      "outputPath": "./tmp/sample.wps.docx",
+      "sourceFormat": "wps",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.wpt",
+      "outputPath": "./tmp/sample.wpt.docx",
+      "sourceFormat": "wpt",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.rtf",
+      "outputPath": "./tmp/sample.rtf.docx",
+      "sourceFormat": "rtf",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.odt",
+      "outputPath": "./tmp/sample.odt.docx",
+      "sourceFormat": "odt",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ott",
+      "outputPath": "./tmp/sample.ott.docx",
+      "sourceFormat": "ott",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.fodt",
+      "outputPath": "./tmp/sample.fodt.docx",
+      "sourceFormat": "fodt",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.sxw",
+      "outputPath": "./tmp/sample.sxw.docx",
+      "sourceFormat": "sxw",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.stw",
+      "outputPath": "./tmp/sample.stw.docx",
+      "sourceFormat": "stw",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.txt",
+      "outputPath": "./tmp/sample.txt.docx",
+      "sourceFormat": "txt",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.text",
+      "outputPath": "./tmp/sample.text.docx",
+      "sourceFormat": "text",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.md",
+      "outputPath": "./tmp/sample.md.docx",
+      "sourceFormat": "md",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.markdown",
+      "outputPath": "./tmp/sample.markdown.docx",
+      "sourceFormat": "markdown",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mkd",
+      "outputPath": "./tmp/sample.mkd.docx",
+      "sourceFormat": "mkd",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mkdn",
+      "outputPath": "./tmp/sample.mkdn.docx",
+      "sourceFormat": "mkdn",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mdown",
+      "outputPath": "./tmp/sample.mdown.docx",
+      "sourceFormat": "mdown",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.html",
+      "outputPath": "./tmp/sample.html.docx",
+      "sourceFormat": "html",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.htm",
+      "outputPath": "./tmp/sample.htm.docx",
+      "sourceFormat": "htm",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.shtml",
+      "outputPath": "./tmp/sample.shtml.docx",
+      "sourceFormat": "shtml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.xhtml",
+      "outputPath": "./tmp/sample.xhtml.docx",
+      "sourceFormat": "xhtml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.xht",
+      "outputPath": "./tmp/sample.xht.docx",
+      "sourceFormat": "xht",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.xhtm",
+      "outputPath": "./tmp/sample.xhtm.docx",
+      "sourceFormat": "xhtm",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.epub",
+      "outputPath": "./tmp/sample.epub.docx",
+      "sourceFormat": "epub",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.fb2",
+      "outputPath": "./tmp/sample.fb2.docx",
+      "sourceFormat": "fb2",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.xml",
+      "outputPath": "./tmp/sample.xml.docx",
+      "sourceFormat": "xml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.rss",
+      "outputPath": "./tmp/sample.rss.docx",
+      "sourceFormat": "rss",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.atom",
+      "outputPath": "./tmp/sample.atom.docx",
+      "sourceFormat": "atom",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.kml",
+      "outputPath": "./tmp/sample.kml.docx",
+      "sourceFormat": "kml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.gpx",
+      "outputPath": "./tmp/sample.gpx.docx",
+      "sourceFormat": "gpx",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ttml",
+      "outputPath": "./tmp/sample.ttml.docx",
+      "sourceFormat": "ttml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.dfxp",
+      "outputPath": "./tmp/sample.dfxp.docx",
+      "sourceFormat": "dfxp",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.xsd",
+      "outputPath": "./tmp/sample.xsd.docx",
+      "sourceFormat": "xsd",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.xsl",
+      "outputPath": "./tmp/sample.xsl.docx",
+      "sourceFormat": "xsl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.xslt",
+      "outputPath": "./tmp/sample.xslt.docx",
+      "sourceFormat": "xslt",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.wsdl",
+      "outputPath": "./tmp/sample.wsdl.docx",
+      "sourceFormat": "wsdl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.plist",
+      "outputPath": "./tmp/sample.plist.docx",
+      "sourceFormat": "plist",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.pom",
+      "outputPath": "./tmp/sample.pom.docx",
+      "sourceFormat": "pom",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.yaml",
+      "outputPath": "./tmp/sample.yaml.docx",
+      "sourceFormat": "yaml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.yml",
+      "outputPath": "./tmp/sample.yml.docx",
+      "sourceFormat": "yml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.toml",
+      "outputPath": "./tmp/sample.toml.docx",
+      "sourceFormat": "toml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ini",
+      "outputPath": "./tmp/sample.ini.docx",
+      "sourceFormat": "ini",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.log",
+      "outputPath": "./tmp/sample.log.docx",
+      "sourceFormat": "log",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.rst",
+      "outputPath": "./tmp/sample.rst.docx",
+      "sourceFormat": "rst",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.rest",
+      "outputPath": "./tmp/sample.rest.docx",
+      "sourceFormat": "rest",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.adoc",
+      "outputPath": "./tmp/sample.adoc.docx",
+      "sourceFormat": "adoc",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.asciidoc",
+      "outputPath": "./tmp/sample.asciidoc.docx",
+      "sourceFormat": "asciidoc",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.asc",
+      "outputPath": "./tmp/sample.asc.docx",
+      "sourceFormat": "asc",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.tex",
+      "outputPath": "./tmp/sample.tex.docx",
+      "sourceFormat": "tex",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.latex",
+      "outputPath": "./tmp/sample.latex.docx",
+      "sourceFormat": "latex",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ltx",
+      "outputPath": "./tmp/sample.ltx.docx",
+      "sourceFormat": "ltx",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.sty",
+      "outputPath": "./tmp/sample.sty.docx",
+      "sourceFormat": "sty",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cls",
+      "outputPath": "./tmp/sample.cls.docx",
+      "sourceFormat": "cls",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.properties",
+      "outputPath": "./tmp/sample.properties.docx",
+      "sourceFormat": "properties",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.env",
+      "outputPath": "./tmp/sample.env.docx",
+      "sourceFormat": "env",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.conf",
+      "outputPath": "./tmp/sample.conf.docx",
+      "sourceFormat": "conf",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.config",
+      "outputPath": "./tmp/sample.config.docx",
+      "sourceFormat": "config",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cfg",
+      "outputPath": "./tmp/sample.cfg.docx",
+      "sourceFormat": "cfg",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cnf",
+      "outputPath": "./tmp/sample.cnf.docx",
+      "sourceFormat": "cnf",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.sql",
+      "outputPath": "./tmp/sample.sql.docx",
+      "sourceFormat": "sql",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.js",
+      "outputPath": "./tmp/sample.js.docx",
+      "sourceFormat": "js",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.jsx",
+      "outputPath": "./tmp/sample.jsx.docx",
+      "sourceFormat": "jsx",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mjs",
+      "outputPath": "./tmp/sample.mjs.docx",
+      "sourceFormat": "mjs",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cjs",
+      "outputPath": "./tmp/sample.cjs.docx",
+      "sourceFormat": "cjs",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ts",
+      "outputPath": "./tmp/sample.ts.docx",
+      "sourceFormat": "ts",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.tsx",
+      "outputPath": "./tmp/sample.tsx.docx",
+      "sourceFormat": "tsx",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mts",
+      "outputPath": "./tmp/sample.mts.docx",
+      "sourceFormat": "mts",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cts",
+      "outputPath": "./tmp/sample.cts.docx",
+      "sourceFormat": "cts",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.vue",
+      "outputPath": "./tmp/sample.vue.docx",
+      "sourceFormat": "vue",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.css",
+      "outputPath": "./tmp/sample.css.docx",
+      "sourceFormat": "css",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.scss",
+      "outputPath": "./tmp/sample.scss.docx",
+      "sourceFormat": "scss",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.sass",
+      "outputPath": "./tmp/sample.sass.docx",
+      "sourceFormat": "sass",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.less",
+      "outputPath": "./tmp/sample.less.docx",
+      "sourceFormat": "less",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.c",
+      "outputPath": "./tmp/sample.c.docx",
+      "sourceFormat": "c",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cpp",
+      "outputPath": "./tmp/sample.cpp.docx",
+      "sourceFormat": "cpp",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cc",
+      "outputPath": "./tmp/sample.cc.docx",
+      "sourceFormat": "cc",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cxx",
+      "outputPath": "./tmp/sample.cxx.docx",
+      "sourceFormat": "cxx",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.h",
+      "outputPath": "./tmp/sample.h.docx",
+      "sourceFormat": "h",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.hpp",
+      "outputPath": "./tmp/sample.hpp.docx",
+      "sourceFormat": "hpp",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.hh",
+      "outputPath": "./tmp/sample.hh.docx",
+      "sourceFormat": "hh",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.hxx",
+      "outputPath": "./tmp/sample.hxx.docx",
+      "sourceFormat": "hxx",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cs",
+      "outputPath": "./tmp/sample.cs.docx",
+      "sourceFormat": "cs",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.go",
+      "outputPath": "./tmp/sample.go.docx",
+      "sourceFormat": "go",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.java",
+      "outputPath": "./tmp/sample.java.docx",
+      "sourceFormat": "java",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.kt",
+      "outputPath": "./tmp/sample.kt.docx",
+      "sourceFormat": "kt",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.kts",
+      "outputPath": "./tmp/sample.kts.docx",
+      "sourceFormat": "kts",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.lua",
+      "outputPath": "./tmp/sample.lua.docx",
+      "sourceFormat": "lua",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.php",
+      "outputPath": "./tmp/sample.php.docx",
+      "sourceFormat": "php",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.py",
+      "outputPath": "./tmp/sample.py.docx",
+      "sourceFormat": "py",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.rb",
+      "outputPath": "./tmp/sample.rb.docx",
+      "sourceFormat": "rb",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.rs",
+      "outputPath": "./tmp/sample.rs.docx",
+      "sourceFormat": "rs",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.sh",
+      "outputPath": "./tmp/sample.sh.docx",
+      "sourceFormat": "sh",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.bash",
+      "outputPath": "./tmp/sample.bash.docx",
+      "sourceFormat": "bash",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.bat",
+      "outputPath": "./tmp/sample.bat.docx",
+      "sourceFormat": "bat",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cmd",
+      "outputPath": "./tmp/sample.cmd.docx",
+      "sourceFormat": "cmd",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ps1",
+      "outputPath": "./tmp/sample.ps1.docx",
+      "sourceFormat": "ps1",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.swift",
+      "outputPath": "./tmp/sample.swift.docx",
+      "sourceFormat": "swift",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.jsonc",
+      "outputPath": "./tmp/sample.jsonc.docx",
+      "sourceFormat": "jsonc",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.json5",
+      "outputPath": "./tmp/sample.json5.docx",
+      "sourceFormat": "json5",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ipynb",
+      "outputPath": "./tmp/sample.ipynb.docx",
+      "sourceFormat": "ipynb",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.gql",
+      "outputPath": "./tmp/sample.gql.docx",
+      "sourceFormat": "gql",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.graphql",
+      "outputPath": "./tmp/sample.graphql.docx",
+      "sourceFormat": "graphql",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.proto",
+      "outputPath": "./tmp/sample.proto.docx",
+      "sourceFormat": "proto",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.diff",
+      "outputPath": "./tmp/sample.diff.docx",
+      "sourceFormat": "diff",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.patch",
+      "outputPath": "./tmp/sample.patch.docx",
+      "sourceFormat": "patch",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.gitignore",
+      "outputPath": "./tmp/sample.gitignore.docx",
+      "sourceFormat": "gitignore",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.dockerignore",
+      "outputPath": "./tmp/sample.dockerignore.docx",
+      "sourceFormat": "dockerignore",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.editorconfig",
+      "outputPath": "./tmp/sample.editorconfig.docx",
+      "sourceFormat": "editorconfig",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.r",
+      "outputPath": "./tmp/sample.r.docx",
+      "sourceFormat": "r",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.dart",
+      "outputPath": "./tmp/sample.dart.docx",
+      "sourceFormat": "dart",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.scala",
+      "outputPath": "./tmp/sample.scala.docx",
+      "sourceFormat": "scala",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.groovy",
+      "outputPath": "./tmp/sample.groovy.docx",
+      "sourceFormat": "groovy",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.gradle",
+      "outputPath": "./tmp/sample.gradle.docx",
+      "sourceFormat": "gradle",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.pl",
+      "outputPath": "./tmp/sample.pl.docx",
+      "sourceFormat": "pl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ex",
+      "outputPath": "./tmp/sample.ex.docx",
+      "sourceFormat": "ex",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.erl",
+      "outputPath": "./tmp/sample.erl.docx",
+      "sourceFormat": "erl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.fs",
+      "outputPath": "./tmp/sample.fs.docx",
+      "sourceFormat": "fs",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.fsi",
+      "outputPath": "./tmp/sample.fsi.docx",
+      "sourceFormat": "fsi",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.fsx",
+      "outputPath": "./tmp/sample.fsx.docx",
+      "sourceFormat": "fsx",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.vb",
+      "outputPath": "./tmp/sample.vb.docx",
+      "sourceFormat": "vb",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.clj",
+      "outputPath": "./tmp/sample.clj.docx",
+      "sourceFormat": "clj",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.hs",
+      "outputPath": "./tmp/sample.hs.docx",
+      "sourceFormat": "hs",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.jl",
+      "outputPath": "./tmp/sample.jl.docx",
+      "sourceFormat": "jl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.zig",
+      "outputPath": "./tmp/sample.zig.docx",
+      "sourceFormat": "zig",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.m",
+      "outputPath": "./tmp/sample.m.docx",
+      "sourceFormat": "m",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.matlab",
+      "outputPath": "./tmp/sample.matlab.docx",
+      "sourceFormat": "matlab",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.svelte",
+      "outputPath": "./tmp/sample.svelte.docx",
+      "sourceFormat": "svelte",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.astro",
+      "outputPath": "./tmp/sample.astro.docx",
+      "sourceFormat": "astro",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mdx",
+      "outputPath": "./tmp/sample.mdx.docx",
+      "sourceFormat": "mdx",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.tf",
+      "outputPath": "./tmp/sample.tf.docx",
+      "sourceFormat": "tf",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.tfvars",
+      "outputPath": "./tmp/sample.tfvars.docx",
+      "sourceFormat": "tfvars",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.hcl",
+      "outputPath": "./tmp/sample.hcl.docx",
+      "sourceFormat": "hcl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.rego",
+      "outputPath": "./tmp/sample.rego.docx",
+      "sourceFormat": "rego",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.bicep",
+      "outputPath": "./tmp/sample.bicep.docx",
+      "sourceFormat": "bicep",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.prisma",
+      "outputPath": "./tmp/sample.prisma.docx",
+      "sourceFormat": "prisma",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.dockerfile",
+      "outputPath": "./tmp/sample.dockerfile.docx",
+      "sourceFormat": "dockerfile",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cmake",
+      "outputPath": "./tmp/sample.cmake.docx",
+      "sourceFormat": "cmake",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.make",
+      "outputPath": "./tmp/sample.make.docx",
+      "sourceFormat": "make",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mk",
+      "outputPath": "./tmp/sample.mk.docx",
+      "sourceFormat": "mk",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.zsh",
+      "outputPath": "./tmp/sample.zsh.docx",
+      "sourceFormat": "zsh",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.fish",
+      "outputPath": "./tmp/sample.fish.docx",
+      "sourceFormat": "fish",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.csproj",
+      "outputPath": "./tmp/sample.csproj.docx",
+      "sourceFormat": "csproj",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.vbproj",
+      "outputPath": "./tmp/sample.vbproj.docx",
+      "sourceFormat": "vbproj",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.fsproj",
+      "outputPath": "./tmp/sample.fsproj.docx",
+      "sourceFormat": "fsproj",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.props",
+      "outputPath": "./tmp/sample.props.docx",
+      "sourceFormat": "props",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.targets",
+      "outputPath": "./tmp/sample.targets.docx",
+      "sourceFormat": "targets",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.sln",
+      "outputPath": "./tmp/sample.sln.docx",
+      "sourceFormat": "sln",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cshtml",
+      "outputPath": "./tmp/sample.cshtml.docx",
+      "sourceFormat": "cshtml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.razor",
+      "outputPath": "./tmp/sample.razor.docx",
+      "sourceFormat": "razor",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mustache",
+      "outputPath": "./tmp/sample.mustache.docx",
+      "sourceFormat": "mustache",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.hbs",
+      "outputPath": "./tmp/sample.hbs.docx",
+      "sourceFormat": "hbs",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.liquid",
+      "outputPath": "./tmp/sample.liquid.docx",
+      "sourceFormat": "liquid",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.jinja",
+      "outputPath": "./tmp/sample.jinja.docx",
+      "sourceFormat": "jinja",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.twig",
+      "outputPath": "./tmp/sample.twig.docx",
+      "sourceFormat": "twig",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ejs",
+      "outputPath": "./tmp/sample.ejs.docx",
+      "sourceFormat": "ejs",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.erb",
+      "outputPath": "./tmp/sample.erb.docx",
+      "sourceFormat": "erb",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.haml",
+      "outputPath": "./tmp/sample.haml.docx",
+      "sourceFormat": "haml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.slim",
+      "outputPath": "./tmp/sample.slim.docx",
+      "sourceFormat": "slim",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mermaid",
+      "outputPath": "./tmp/sample.mermaid.docx",
+      "sourceFormat": "mermaid",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mmd",
+      "outputPath": "./tmp/sample.mmd.docx",
+      "sourceFormat": "mmd",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.puml",
+      "outputPath": "./tmp/sample.puml.docx",
+      "sourceFormat": "puml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.avsc",
+      "outputPath": "./tmp/sample.avsc.docx",
+      "sourceFormat": "avsc",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.sol",
+      "outputPath": "./tmp/sample.sol.docx",
+      "sourceFormat": "sol",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.move",
+      "outputPath": "./tmp/sample.move.docx",
+      "sourceFormat": "move",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.nim",
+      "outputPath": "./tmp/sample.nim.docx",
+      "sourceFormat": "nim",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cr",
+      "outputPath": "./tmp/sample.cr.docx",
+      "sourceFormat": "cr",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ml",
+      "outputPath": "./tmp/sample.ml.docx",
+      "sourceFormat": "ml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mli",
+      "outputPath": "./tmp/sample.mli.docx",
+      "sourceFormat": "mli",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.elm",
+      "outputPath": "./tmp/sample.elm.docx",
+      "sourceFormat": "elm",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.rkt",
+      "outputPath": "./tmp/sample.rkt.docx",
+      "sourceFormat": "rkt",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.lisp",
+      "outputPath": "./tmp/sample.lisp.docx",
+      "sourceFormat": "lisp",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.scm",
+      "outputPath": "./tmp/sample.scm.docx",
+      "sourceFormat": "scm",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.asm",
+      "outputPath": "./tmp/sample.asm.docx",
+      "sourceFormat": "asm",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.s",
+      "outputPath": "./tmp/sample.s.docx",
+      "sourceFormat": "s",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cu",
+      "outputPath": "./tmp/sample.cu.docx",
+      "sourceFormat": "cu",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cuh",
+      "outputPath": "./tmp/sample.cuh.docx",
+      "sourceFormat": "cuh",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.d",
+      "outputPath": "./tmp/sample.d.docx",
+      "sourceFormat": "d",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.pas",
+      "outputPath": "./tmp/sample.pas.docx",
+      "sourceFormat": "pas",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.adb",
+      "outputPath": "./tmp/sample.adb.docx",
+      "sourceFormat": "adb",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ads",
+      "outputPath": "./tmp/sample.ads.docx",
+      "sourceFormat": "ads",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cob",
+      "outputPath": "./tmp/sample.cob.docx",
+      "sourceFormat": "cob",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cbl",
+      "outputPath": "./tmp/sample.cbl.docx",
+      "sourceFormat": "cbl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.f90",
+      "outputPath": "./tmp/sample.f90.docx",
+      "sourceFormat": "f90",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.f95",
+      "outputPath": "./tmp/sample.f95.docx",
+      "sourceFormat": "f95",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.vhd",
+      "outputPath": "./tmp/sample.vhd.docx",
+      "sourceFormat": "vhd",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.vhdl",
+      "outputPath": "./tmp/sample.vhdl.docx",
+      "sourceFormat": "vhdl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.sv",
+      "outputPath": "./tmp/sample.sv.docx",
+      "sourceFormat": "sv",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.svh",
+      "outputPath": "./tmp/sample.svh.docx",
+      "sourceFormat": "svh",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ino",
+      "outputPath": "./tmp/sample.ino.docx",
+      "sourceFormat": "ino",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.glsl",
+      "outputPath": "./tmp/sample.glsl.docx",
+      "sourceFormat": "glsl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.vert",
+      "outputPath": "./tmp/sample.vert.docx",
+      "sourceFormat": "vert",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.frag",
+      "outputPath": "./tmp/sample.frag.docx",
+      "sourceFormat": "frag",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.wgsl",
+      "outputPath": "./tmp/sample.wgsl.docx",
+      "sourceFormat": "wgsl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.hlsl",
+      "outputPath": "./tmp/sample.hlsl.docx",
+      "sourceFormat": "hlsl",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.rmd",
+      "outputPath": "./tmp/sample.rmd.docx",
+      "sourceFormat": "rmd",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.qmd",
+      "outputPath": "./tmp/sample.qmd.docx",
+      "sourceFormat": "qmd",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.bib",
+      "outputPath": "./tmp/sample.bib.docx",
+      "sourceFormat": "bib",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.nix",
+      "outputPath": "./tmp/sample.nix.docx",
+      "sourceFormat": "nix",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.cue",
+      "outputPath": "./tmp/sample.cue.docx",
+      "sourceFormat": "cue",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.dhall",
+      "outputPath": "./tmp/sample.dhall.docx",
+      "sourceFormat": "dhall",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.org",
+      "outputPath": "./tmp/sample.org.docx",
+      "sourceFormat": "org",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.wiki",
+      "outputPath": "./tmp/sample.wiki.docx",
+      "sourceFormat": "wiki",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mediawiki",
+      "outputPath": "./tmp/sample.mediawiki.docx",
+      "sourceFormat": "mediawiki",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.textile",
+      "outputPath": "./tmp/sample.textile.docx",
+      "sourceFormat": "textile",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.pod",
+      "outputPath": "./tmp/sample.pod.docx",
+      "sourceFormat": "pod",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.man",
+      "outputPath": "./tmp/sample.man.docx",
+      "sourceFormat": "man",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.roff",
+      "outputPath": "./tmp/sample.roff.docx",
+      "sourceFormat": "roff",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.nfo",
+      "outputPath": "./tmp/sample.nfo.docx",
+      "sourceFormat": "nfo",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.srt",
+      "outputPath": "./tmp/sample.srt.docx",
+      "sourceFormat": "srt",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.vtt",
+      "outputPath": "./tmp/sample.vtt.docx",
+      "sourceFormat": "vtt",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.sbv",
+      "outputPath": "./tmp/sample.sbv.docx",
+      "sourceFormat": "sbv",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ass",
+      "outputPath": "./tmp/sample.ass.docx",
+      "sourceFormat": "ass",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ssa",
+      "outputPath": "./tmp/sample.ssa.docx",
+      "sourceFormat": "ssa",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.ics",
+      "outputPath": "./tmp/sample.ics.docx",
+      "sourceFormat": "ics",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.vcf",
+      "outputPath": "./tmp/sample.vcf.docx",
+      "sourceFormat": "vcf",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.eml",
+      "outputPath": "./tmp/sample.eml.docx",
+      "sourceFormat": "eml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mbox",
+      "outputPath": "./tmp/sample.mbox.docx",
+      "sourceFormat": "mbox",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.msg",
+      "outputPath": "./tmp/sample.msg.docx",
+      "sourceFormat": "msg",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.oft",
+      "outputPath": "./tmp/sample.oft.docx",
+      "sourceFormat": "oft",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mht",
+      "outputPath": "./tmp/sample.mht.docx",
+      "sourceFormat": "mht",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.mhtml",
+      "outputPath": "./tmp/sample.mhtml.docx",
+      "sourceFormat": "mhtml",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.npmrc",
+      "outputPath": "./tmp/sample.npmrc.docx",
+      "sourceFormat": "npmrc",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.yarnrc",
+      "outputPath": "./tmp/sample.yarnrc.docx",
+      "sourceFormat": "yarnrc",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.gitattributes",
+      "outputPath": "./tmp/sample.gitattributes.docx",
+      "sourceFormat": "gitattributes",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/doc/sample.gitmodules",
+      "outputPath": "./tmp/sample.gitmodules.docx",
+      "sourceFormat": "gitmodules",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.xls",
+      "outputPath": "./tmp/sample.xls.xlsx",
+      "sourceFormat": "xls",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.xlsm",
+      "outputPath": "./tmp/sample.xlsm.xlsx",
+      "sourceFormat": "xlsm",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.xlt",
+      "outputPath": "./tmp/sample.xlt.xlsx",
+      "sourceFormat": "xlt",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.xltx",
+      "outputPath": "./tmp/sample.xltx.xlsx",
+      "sourceFormat": "xltx",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.xltm",
+      "outputPath": "./tmp/sample.xltm.xlsx",
+      "sourceFormat": "xltm",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.et",
+      "outputPath": "./tmp/sample.et.xlsx",
+      "sourceFormat": "et",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.ett",
+      "outputPath": "./tmp/sample.ett.xlsx",
+      "sourceFormat": "ett",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.ods",
+      "outputPath": "./tmp/sample.ods.xlsx",
+      "sourceFormat": "ods",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.ots",
+      "outputPath": "./tmp/sample.ots.xlsx",
+      "sourceFormat": "ots",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.fods",
+      "outputPath": "./tmp/sample.fods.xlsx",
+      "sourceFormat": "fods",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.sxc",
+      "outputPath": "./tmp/sample.sxc.xlsx",
+      "sourceFormat": "sxc",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.stc",
+      "outputPath": "./tmp/sample.stc.xlsx",
+      "sourceFormat": "stc",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.dbf",
+      "outputPath": "./tmp/sample.dbf.xlsx",
+      "sourceFormat": "dbf",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.slk",
+      "outputPath": "./tmp/sample.slk.xlsx",
+      "sourceFormat": "slk",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.dif",
+      "outputPath": "./tmp/sample.dif.xlsx",
+      "sourceFormat": "dif",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.csv",
+      "outputPath": "./tmp/sample.csv.xlsx",
+      "sourceFormat": "csv",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.tsv",
+      "outputPath": "./tmp/sample.tsv.xlsx",
+      "sourceFormat": "tsv",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.tab",
+      "outputPath": "./tmp/sample.tab.xlsx",
+      "sourceFormat": "tab",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.psv",
+      "outputPath": "./tmp/sample.psv.xlsx",
+      "sourceFormat": "psv",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.json",
+      "outputPath": "./tmp/sample.json.xlsx",
+      "sourceFormat": "json",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.jsonl",
+      "outputPath": "./tmp/sample.jsonl.xlsx",
+      "sourceFormat": "jsonl",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.ndjson",
+      "outputPath": "./tmp/sample.ndjson.xlsx",
+      "sourceFormat": "ndjson",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.jsonlines",
+      "outputPath": "./tmp/sample.jsonlines.xlsx",
+      "sourceFormat": "jsonlines",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.ldjson",
+      "outputPath": "./tmp/sample.ldjson.xlsx",
+      "sourceFormat": "ldjson",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.dng",
+      "outputPath": "./tmp/sample.dng.jpg",
+      "sourceFormat": "dng",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.cr2",
+      "outputPath": "./tmp/sample.cr2.jpg",
+      "sourceFormat": "cr2",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.cr3",
+      "outputPath": "./tmp/sample.cr3.jpg",
+      "sourceFormat": "cr3",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.nef",
+      "outputPath": "./tmp/sample.nef.jpg",
+      "sourceFormat": "nef",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.nrw",
+      "outputPath": "./tmp/sample.nrw.jpg",
+      "sourceFormat": "nrw",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.arw",
+      "outputPath": "./tmp/sample.arw.jpg",
+      "sourceFormat": "arw",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.sr2",
+      "outputPath": "./tmp/sample.sr2.jpg",
+      "sourceFormat": "sr2",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.srf",
+      "outputPath": "./tmp/sample.srf.jpg",
+      "sourceFormat": "srf",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.orf",
+      "outputPath": "./tmp/sample.orf.jpg",
+      "sourceFormat": "orf",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.rw2",
+      "outputPath": "./tmp/sample.rw2.jpg",
+      "sourceFormat": "rw2",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.rwl",
+      "outputPath": "./tmp/sample.rwl.jpg",
+      "sourceFormat": "rwl",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.raf",
+      "outputPath": "./tmp/sample.raf.jpg",
+      "sourceFormat": "raf",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.kdc",
+      "outputPath": "./tmp/sample.kdc.jpg",
+      "sourceFormat": "kdc",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.x3f",
+      "outputPath": "./tmp/sample.x3f.jpg",
+      "sourceFormat": "x3f",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.pef",
+      "outputPath": "./tmp/sample.pef.jpg",
+      "sourceFormat": "pef",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.srw",
+      "outputPath": "./tmp/sample.srw.jpg",
+      "sourceFormat": "srw",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.erf",
+      "outputPath": "./tmp/sample.erf.jpg",
+      "sourceFormat": "erf",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.mef",
+      "outputPath": "./tmp/sample.mef.jpg",
+      "sourceFormat": "mef",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.mos",
+      "outputPath": "./tmp/sample.mos.jpg",
+      "sourceFormat": "mos",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.mrw",
+      "outputPath": "./tmp/sample.mrw.jpg",
+      "sourceFormat": "mrw",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.3fr",
+      "outputPath": "./tmp/sample.3fr.jpg",
+      "sourceFormat": "3fr",
+      "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/raw/sample.iiq",
+      "outputPath": "./tmp/sample.iiq.jpg",
+      "sourceFormat": "iiq",
+      "targetFormat": "jpg"
+    }
+  ]
+}

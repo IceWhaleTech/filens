@@ -1,0 +1,3 @@
+{"name":"Fixture LDJSON row","value":67.5,"active":true}
+{"name":"Second LDJSON row","value":68.5,"active":false,"note":"中文"}
+{"name":"Empty LDJSON row","value":null,"active":true}

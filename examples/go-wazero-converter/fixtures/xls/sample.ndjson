@@ -1,0 +1,3 @@
+{"name":"Fixture NDJSON row","value":63.5,"active":true}
+{"name":"Second NDJSON row","value":64.5,"active":false,"note":"中文"}
+{"name":"Empty NDJSON row","value":null,"active":true}

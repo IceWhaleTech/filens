@@ -1,0 +1,11 @@
+WEBVTT - Fixture transcript
+
+STYLE
+::cue { color: lime }
+
+cue-1
+00:00.000 --> 00:02.000 align:start
+<v Narrator>Fixture VTT subtitle</v>
+
+NOTE ignored note
+This should not be emitted.

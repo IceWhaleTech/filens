@@ -1,0 +1,3 @@
+{"name":"Fixture JSONLINES row","value":65.5,"active":true}
+{"name":"Second JSONLINES row","value":66.5,"active":false,"note":"中文"}
+{"name":"Empty JSONLINES row","value":null,"active":true}

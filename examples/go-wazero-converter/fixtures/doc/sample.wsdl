@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" name="FixtureService">
+  <documentation>Fixture WSDL service documentation.</documentation>
+  <message name="FixtureRequest"/>
+</definitions>

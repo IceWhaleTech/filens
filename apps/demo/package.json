@@ -1,0 +1,33 @@
+{
+  "name": "@filens/demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@filens/archive": "file:../../packages/archive",
+    "@filens/cad": "file:../../packages/cad",
+    "@filens/core": "file:../../packages/core",
+    "@filens/converter-client": "file:../../packages/converter-client",
+    "@filens/diagram": "file:../../packages/diagram",
+    "@filens/design": "file:../../packages/design",
+    "@filens/docx": "file:../../packages/docx",
+    "@filens/ebook": "file:../../packages/ebook",
+    "@filens/iwork": "file:../../packages/iwork",
+    "@filens/model3d": "file:../../packages/model3d",
+    "@filens/media": "file:../../packages/media",
+    "@filens/mindmap": "file:../../packages/mindmap",
+    "@filens/panorama": "file:../../packages/panorama",
+    "@filens/office": "file:../../packages/office",
+    "@filens/pdf": "file:../../packages/pdf",
+    "@filens/vue": "file:../../packages/vue",
+    "@filens/text": "file:../../packages/text",
+    "@filens/xlsx": "file:../../packages/xlsx",
+    "jszip": "^3.10.1",
+    "vue": "^3.5.17"
+  }
+}

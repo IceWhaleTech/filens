@@ -1,0 +1,13 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Fixture HTML metadata title</title>
+    <style>.fixture-hidden { color: red; }</style>
+  </head>
+  <body>
+    <!-- hidden > fixture comment -->
+    <h1>Fixture HTML document</h1>
+    <p>HTML extractor smoke for shtml.</p>
+    <img src="fixture-chart.png" alt="Fixture HTML chart alt text">
+  </body>
+</html>

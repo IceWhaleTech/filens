@@ -1,0 +1,18 @@
+From: <Saved by filens fixtures>
+Subject: Fixture MHTML document
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="----=_FixtureBoundary_MHTML"; type="text/html"
+
+------=_FixtureBoundary_MHTML
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+
+<!doctype html>
+<html>
+  <body>
+    <h1>Fixture MHTML document</h1>
+    <p>MHTML extractor smoke for mhtml.</p>
+    <img src="fixture-mhtml-chart.png" alt="Fixture MHTML chart alt text">
+  </body>
+</html>
+------=_FixtureBoundary_MHTML--

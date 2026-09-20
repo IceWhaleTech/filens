@@ -1,0 +1,11 @@
+ID;P
+C;X1;Y1;K"Name"
+C;X2;Y1;K"Value"
+C;X3;Y1;K"Active"
+C;X1;Y2;K"Fixture SYLK row"
+C;X2;Y2;K68.5
+C;X3;Y2;KTRUE
+C;X1;Y3;K"Unicode café"
+C;X2;Y3;K-7.25
+C;X3;Y3;KFALSE
+E

@@ -1,0 +1,43 @@
+.cadv-preview {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  overflow: auto;
+  background:
+    linear-gradient(#eef3f8 1px, transparent 1px),
+    linear-gradient(90deg, #eef3f8 1px, transparent 1px),
+    #f8fafc;
+  background-size: 24px 24px;
+  color: #223245;
+}
+
+.cadv-stage {
+  box-sizing: border-box;
+  min-width: 100%;
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+
+.cadv-canvas {
+  max-width: min(100%, 1200px);
+  max-height: 100%;
+  overflow: visible;
+  transform-origin: center center;
+  filter: drop-shadow(0 8px 22px rgba(34, 50, 69, 0.12));
+}
+
+.cadv-canvas text {
+  paint-order: stroke;
+  stroke: #f8fafc;
+  stroke-width: 2px;
+}
+
+.cadv-empty {
+  padding: 24px;
+  border: 1px solid #cfd8e3;
+  background: #ffffff;
+  font-weight: 700;
+}

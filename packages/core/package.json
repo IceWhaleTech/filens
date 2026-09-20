@@ -1,0 +1,41 @@
+{
+  "name": "@filens/core",
+  "version": "0.1.0",
+  "description": "Front-end PPTX parsing and preview core for modern ESM applications.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "./dist/index.css"
+  ],
+  "keywords": [
+    "pptx",
+    "powerpoint",
+    "preview",
+    "viewer",
+    "esm",
+    "typescript"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/index.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && node ../../scripts/rename-css.mjs ./dist style.css index.css",
+    "dev": "vite build --watch",
+    "test": "node ../../scripts/generate-fixtures.mjs && vitest run",
+    "test:unit": "node ../../scripts/generate-fixtures.mjs && vitest run"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.5.3",
+    "jszip": "^3.10.1",
+    "utif": "^3.1.0"
+  }
+}

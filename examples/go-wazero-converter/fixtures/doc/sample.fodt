@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content
+  xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+  xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0">
+  <office:body>
+    <office:text>
+      <text:h text:outline-level="1">Fixture Flat OpenDocument text sample for conversion smoke testing.</text:h>
+      <text:p>Route target: docx.</text:p>
+      <text:h text:outline-level="2">Formatting coverage</text:h>
+      <text:p>Unicode: café, 中文, العربية. Values: -42, 3.14159, 50%.</text:p>
+      <text:list><text:list-item><text:p>First list item</text:p></text:list-item><text:list-item><text:p>Second list item</text:p></text:list-item></text:list>
+      <text:p>Final paragraph after structured content.</text:p>
+    </office:text>
+  </office:body>
+</office:document-content>

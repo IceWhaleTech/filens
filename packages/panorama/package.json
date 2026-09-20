@@ -1,0 +1,49 @@
+{
+  "name": "@filens/panorama",
+  "version": "0.1.0",
+  "description": "360 panorama preview driver for the @filens multi-format preview runtime.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "./dist/index.css"
+  ],
+  "keywords": [
+    "panorama",
+    "360",
+    "webgl",
+    "three",
+    "preview",
+    "viewer",
+    "esm",
+    "typescript"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/index.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && node ../../scripts/rename-css.mjs ./dist style.css index.css",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@filens/converter-client": "^0.1.0",
+    "three": "^0.176.0"
+  },
+  "peerDependencies": {
+    "@filens/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@filens/core": "file:../core",
+    "@types/three": "^0.176.0"
+  }
+}

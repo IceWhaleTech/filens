@@ -1,0 +1,38 @@
+{
+  "name": "@filens/converter-client",
+  "version": "0.1.0",
+  "description": "Optional WASM, HTTP, and mock converter client adapters for @filens multi-format preview routes.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "keywords": [
+    "conversion",
+    "preview",
+    "office",
+    "adapter",
+    "esm",
+    "typescript"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run"
+  },
+  "peerDependencies": {
+    "@filens/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@filens/core": "file:../core"
+  }
+}

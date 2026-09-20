@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package TSA;
+option go_package = "github.com/IceWhaleTech/iwork-converter/proto/TSA";
+import "TSPMessages.proto";
+import "TSKArchives.proto";
+
+message InducedVerifyDrawableZOrdersWithServerCommandArchive {
+  required .TSK.CommandArchive super = 1;
+}
+
+message CommandReapplyMasterArchive {
+  required .TSK.CommandArchive super = 1;
+}

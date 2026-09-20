@@ -1,0 +1,21 @@
+syntax = "proto2";
+
+package TP;
+option go_package = "github.com/IceWhaleTech/iwork-converter/proto/TP";
+import "TSACommandArchives.sos.proto";
+import "TSKArchives.proto";
+import "TSPMessages.proto";
+
+message InducedVerifyDocumentWithServerCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  repeated .TSP.UUID drawables_z_order_list = 2;
+  optional bool drawables_z_order_list_undefined = 3;
+}
+
+message InducedVerifyDrawableZOrdersWithServerCommandArchive {
+  required .TSA.InducedVerifyDrawableZOrdersWithServerCommandArchive super = 1;
+}
+
+message ReapplyPageTemplateCommandArchive {
+  required .TSA.CommandReapplyMasterArchive super = 1;
+}

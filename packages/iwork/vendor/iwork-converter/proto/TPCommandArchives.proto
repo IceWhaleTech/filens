@@ -1,0 +1,285 @@
+syntax = "proto2";
+
+package TP;
+option go_package = "github.com/IceWhaleTech/iwork-converter/proto/TP";
+import "TSDArchives.proto";
+import "TSKArchives.proto";
+import "TSCKArchives.proto";
+import "TSPMessages.proto";
+import "TSWPArchives.proto";
+import "TSSArchives.proto";
+import "TSAArchives.proto";
+import "TSTArchives.proto";
+import "TPArchives.proto";
+import "TSDCommandArchives.proto";
+import "TSWPCommandArchives.proto";
+
+message InsertDrawablesCommandArchive {
+  enum InsertionType {
+    InsertingPrototype = 0;
+    Pasting = 1;
+    Cloning = 2;
+  }
+
+  required .TSK.CommandArchive super = 1;
+  optional bool for_paste = 2;
+  optional InsertDrawablesCommandArchive.InsertionType insertion_type = 10;
+  repeated .TSCK.AddIdOperationArgs args_list = 3;
+  repeated uint32 page_index_list = 4;
+  repeated .TSP.Reference drawable_info_list = 5;
+  repeated string placeholder_tags_list = 9;
+  repeated .TSP.UUID custom_format_keys = 6;
+  optional .TSP.Reference drawable_undo_object = 7;
+  optional uint32 saved_next_untitled_resolver_index = 8;
+}
+
+message MoveDrawablesPageIndexCommandArchive {
+  message Drawable {
+    optional .TSP.Reference drawable = 1;
+    optional uint32 z_order = 2;
+  }
+
+  required .TSK.CommandArchive super = 1;
+  optional uint32 page_index = 2;
+  repeated MoveDrawablesPageIndexCommandArchive.Drawable drawables = 3;
+  optional bool maintain_z_order = 4;
+  repeated .TSP.UUIDPath drawable_info_id_path_list = 5;
+  repeated uint32 page_index_list = 6;
+  repeated uint32 original_page_index_list = 7;
+  repeated string tags_list = 8;
+  repeated string original_tags_list = 9;
+  optional bool preserve_tags = 10;
+}
+
+message InsertSectionBreakCommandArchive {
+  required .TSWP.StorageActionCommandArchive super = 1;
+}
+
+message MoveDrawableZOrderCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  repeated .TSCK.RearrangeIdOperationArgs args_list = 2;
+  optional uint32 action_string_index = 3;
+}
+
+message RemoveDrawablesCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  repeated .TSCK.RemoveIdOperationArgs args_list = 2;
+  repeated .TSP.Reference drawable_info_list = 3;
+  repeated uint32 page_index_list = 4;
+  repeated string tags_list = 5;
+}
+
+message ChangeSectionMarginsCommandArchive {
+  enum SectionMargin {
+    kSectionMarginLeft = 0;
+    kSectionMarginRight = 1;
+    kSectionMarginTop = 2;
+    kSectionMarginBottom = 3;
+    kSectionMarginHeader = 4;
+    kSectionMarginFooter = 5;
+  }
+
+  required .TSK.CommandArchive super = 1;
+  optional .TSP.Reference section = 2;
+  optional ChangeSectionMarginsCommandArchive.SectionMargin margin = 3;
+  optional float margin_value = 4;
+}
+
+message InsertSectionTemplateDrawablesCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  optional .TSP.Reference OBSOLETE_section = 2;
+  repeated .TSP.Reference section_template_drawables = 3;
+  optional uint32 drawable_index = 4;
+  optional .TSP.Reference section_template_drawable_provider = 5;
+  repeated .TSP.UUID custom_format_keys = 6;
+}
+
+message MoveSectionTemplateDrawableZOrderCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  optional .TSP.Reference OBSOLETE_section = 2;
+  repeated .TSP.Reference section_template_drawables = 3;
+  repeated uint32 indexes = 4;
+  optional .TSP.Reference section_template_drawable_provider = 5;
+}
+
+message RemoveSectionTemplateDrawablesCommandArchive {
+  message SectionTemplateDrawable {
+    optional .TSP.Reference drawable = 1;
+    optional uint32 drawable_index = 2;
+  }
+
+  required .TSK.CommandArchive super = 1;
+  optional .TSP.Reference OBSOLETE_section = 2;
+  repeated RemoveSectionTemplateDrawablesCommandArchive.SectionTemplateDrawable section_template_drawables = 3;
+  optional .TSP.Reference section_template_drawable_provider = 4;
+}
+
+message PasteSectionTemplateDrawablesCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  optional .TSP.Reference section = 2;
+  repeated .TSP.Reference section_template_drawables = 3;
+  optional uint32 drawable_index = 4;
+}
+
+message MoveDrawablesAttachedCommandArchive {
+  message GSSPCharIndexAndPosition {
+    optional int32 char_index = 1;
+    optional uint32 h_offset_type = 2;
+    optional float h_offset = 3;
+    optional uint32 v_offset_type = 4;
+    optional float v_offset = 5;
+  }
+
+  required .TSWP.StorageActionCommandArchive super = 1;
+  repeated .TSCK.IdPlacementOperationArgs args_list = 2;
+  repeated .TSP.Range range_list = 3;
+  repeated .TSP.UUIDPath drawable_info_id_path_list = 4;
+  repeated MoveDrawablesAttachedCommandArchive.GSSPCharIndexAndPosition position_list = 5;
+  repeated .TSD.ExteriorTextWrapArchive exterior_text_wrap_list = 6;
+  repeated uint32 original_page_index_list = 7;
+  repeated .TSD.ExteriorTextWrapArchive original_exterior_text_wrap_list = 8;
+  repeated .TSP.Reference original_attachment_list = 9;
+}
+
+message MoveDrawablesFloatingCommandArchive {
+  required .TSWP.StorageActionCommandArchive super = 1;
+  repeated .TSCK.IdPlacementOperationArgs args_list = 2;
+  repeated .TSP.Range range_list = 3;
+  repeated .TSP.UUIDPath drawable_info_id_path_list = 4;
+  repeated uint32 page_index_list = 5;
+  repeated .TSD.ExteriorTextWrapArchive exterior_text_wrap_list = 6;
+  repeated .TSP.Reference original_attachment_list = 7;
+  repeated .TSD.ExteriorTextWrapArchive original_exterior_text_wrap_list = 8;
+}
+
+message ChangeFootnoteFormatCommandArchive {
+  enum FootnoteFormat {
+    kFootnoteFormatNumeric = 0;
+    kFootnoteFormatRoman = 1;
+    kFootnoteFormatSymbolic = 2;
+    kFootnoteFormatJapaneseNumeric = 3;
+    kFootnoteFormatJapaneseIdeographic = 4;
+    kFootnoteFormatArabicNumeric = 5;
+  }
+
+  required .TSK.CommandArchive super = 1;
+  optional ChangeFootnoteFormatCommandArchive.FootnoteFormat format = 2;
+}
+
+message ChangeFootnoteKindCommandArchive {
+  enum FootnoteKind {
+    kFootnoteKindFootnotes = 0;
+    kFootnoteKindDocumentEndnotes = 1;
+    kFootnoteKindSectionEndnotes = 2;
+  }
+
+  required .TSK.CommandArchive super = 1;
+  optional ChangeFootnoteKindCommandArchive.FootnoteKind kind = 2;
+  optional .TSWP.UndoTransaction undo_transaction = 3;
+}
+
+message ChangeFootnoteNumberingCommandArchive {
+  enum FootnoteNumbering {
+    kFootnoteNumberingContinuous = 0;
+    kFootnoteNumberingRestartEachPage = 1;
+    kFootnoteNumberingRestartEachSection = 2;
+  }
+
+  required .TSK.CommandArchive super = 1;
+  optional ChangeFootnoteNumberingCommandArchive.FootnoteNumbering numbering = 2;
+}
+
+message ChangeFootnoteSpacingCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  optional int32 footnote_spacing = 2;
+}
+
+message MoveInlineDrawableAnchoredCommandArchive {
+  required .TSWP.StorageActionCommandArchive super = 1;
+  optional .TSCK.IdPlacementOperationArgs id_placement_operation_args = 2;
+  optional uint32 replacement_range_location = 3;
+  optional uint32 replacement_range_length = 4;
+  optional .TSP.UUIDPath drawable_info_id_path = 5;
+  optional .TSD.ExteriorTextWrapArchive exterior_text_wrap = 6;
+  optional .TSD.ExteriorTextWrapArchive original_exterior_text_wrap = 7;
+}
+
+message MoveAnchoredDrawableInlineCommandArchive {
+  required .TSWP.StorageActionCommandArchive super = 1;
+  optional .TSCK.IdPlacementOperationArgs id_placement_operation_args = 2;
+  optional uint32 replacement_range_location = 3;
+  optional uint32 replacement_range_length = 4;
+  optional .TSP.UUIDPath drawable_info_id_path = 5;
+  optional .TSD.ExteriorTextWrapArchive exterior_text_wrap = 6;
+  optional .TSD.ExteriorTextWrapArchive original_exterior_text_wrap = 7;
+}
+
+message InsertFootnoteCommandArchive {
+  required .TSWP.StorageActionCommandArchive super = 1;
+}
+
+message ToggleBodyLayoutDirectionCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  optional bool new_direction_is_vertical = 2;
+}
+
+message TrackChangesCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  optional bool track_changes = 2;
+  repeated .TSP.Reference change_session_history = 3;
+  optional bool paused = 4;
+  optional .TSP.Reference most_recent_change_session = 5;
+  optional bool old_track_changes = 6;
+  repeated .TSP.Reference old_change_session_history = 7;
+  optional .TSP.Reference old_most_recent_change_session = 8;
+}
+
+message PauseChangeTrackingCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  optional bool paused = 2;
+}
+
+message SectionGuideCommandArchive {
+  required .TSD.AbstractGuideCommandArchive super = 1;
+  required .TSP.UUIDPath section_id_path = 2;
+  required uint32 page_index = 3;
+}
+
+message ReplaceHeaderFooterStorageCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  optional .TSP.UUIDPath header_footer_storage_id_path = 2;
+  optional .TSP.Reference replacement_header_footer_storage = 3;
+  optional .TSP.Reference replacement_header_footer_storage_undo_object = 4;
+  optional .TSP.Reference old_header_footer_storage = 5;
+}
+
+message PrototypeForUndoChangePageTemplateForSection {
+  optional .TSP.UUIDPath id_path_for_template_in_document = 1;
+  required .TSP.Reference internal_page_template = 2;
+}
+
+message ChangePageTemplateForSectionCommandArchive {
+  required .TSK.CommandArchive super = 1;
+  required .TSP.UUIDPath section_id_path = 2;
+  required .TSP.Reference page_template = 3;
+  optional .TSP.Reference old_page_template = 4;
+  required bool is_undo_redo = 5;
+  optional .TSP.Reference target_prototype = 6;
+}
+
+message AllFootnoteSelectionTransformerArchive {
+  required .TSP.Reference all_footnote_selection = 1;
+}
+
+message DocumentSelectionTransformerArchive {
+  required .TSP.Reference document_selection = 1;
+  required .TSP.UUIDPath storage_uuid_path = 2;
+}
+
+message CanvasSelectionTransformerArchive {
+  required .TSWP.SelectionTransformerArchive super = 1;
+  required .TSD.InfoCollectionSelectionTransformerHelperArchive infos_collection_helper = 2;
+  required .TSD.InfoCollectionSelectionTransformerHelperArchive excluded_infos_collection_helper = 3;
+  required .TSD.InfoCollectionSelectionTransformerHelperArchive additional_infos_collection_helper = 4;
+  optional .TSP.UUIDPath header_or_footnote_storage_uuid_path = 5;
+}

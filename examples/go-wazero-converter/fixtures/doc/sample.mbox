@@ -1,0 +1,18 @@
+From sender@example.test Sun Jun 14 10:00:00 2026
+From: fixtures@example.test
+To: preview@example.test
+Subject: Fixture MBOX first message
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+
+Fixture MBOX first body for converter smoke.
+
+From sender@example.test Sun Jun 14 10:05:00 2026
+From: second@example.test
+To: preview@example.test
+Subject: Fixture MBOX second message
+MIME-Version: 1.0
+Content-Type: text/html; charset="utf-8"
+
+<!doctype html>
+<html><body><p>Fixture MBOX second body for converter smoke.</p></body></html>

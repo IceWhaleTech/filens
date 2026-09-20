@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="https://example.test/fixture">
+  <xs:element name="fixture" type="xs:string"/>
+  <xs:documentation>Fixture XSD schema documentation.</xs:documentation>
+</xs:schema>

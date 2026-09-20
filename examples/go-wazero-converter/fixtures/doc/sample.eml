@@ -1,0 +1,16 @@
+From: fixtures@example.test
+To: preview@example.test
+Subject: Fixture EML message
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="----=_FixtureEmailBoundary"
+
+------=_FixtureEmailBoundary
+Content-Type: text/plain; charset="utf-8"
+
+Fixture EML plain body for converter smoke.
+------=_FixtureEmailBoundary
+Content-Type: text/html; charset="utf-8"
+
+<!doctype html>
+<html><body><p>Fixture EML message body for converter smoke.</p></body></html>
+------=_FixtureEmailBoundary--

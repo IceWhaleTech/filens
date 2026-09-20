@@ -1,0 +1,291 @@
+syntax = "proto2";
+
+package TSP;
+
+option go_package = "github.com/IceWhaleTech/iwork-converter/proto/TSP";
+
+import "google/protobuf/descriptor.proto";
+
+enum DataUploadStatus {
+  DataUploadStatus_Pending = 0;
+  DataUploadStatus_Reserved = 1;
+  DataUploadStatus_UnableToReserve = 2;
+  DataUploadStatus_Corrupted = 3;
+  DataUploadStatus_DocumentMayExceedDocumentSizeLimit = 4;
+  DataUploadStatus_Expired = 5;
+}
+
+enum SpotlightMetadataType {
+  None = 0;
+  Text = 1;
+  Author = 2;
+  Font = 3;
+  Table = 4;
+  Sheet = 5;
+  Chart = 6;
+  Media = 7;
+}
+
+message Reference {
+  optional uint64 identifier = 1;
+  optional int32 deprecated_type = 2;
+  optional bool deprecated_is_external = 3;
+}
+
+message DataReference {
+  required uint64 identifier = 1;
+}
+
+message SparseReferenceArray {
+  message Entry {
+    required uint32 index = 1;
+    required Reference reference = 2;
+  }
+
+  required uint32 count = 1;
+  repeated SparseReferenceArray.Entry entries = 2;
+}
+
+message Point {
+  optional float x = 1;
+  optional float y = 2;
+}
+
+message Pose3D {
+  required float yaw = 1;
+  required float pitch = 2;
+  required float roll = 3;
+}
+
+message Rect {
+  required Point origin = 1;
+  required Size size = 2;
+}
+
+message Size {
+  required float width = 1;
+  required float height = 2;
+}
+
+message Range {
+  required uint32 location = 1;
+  required uint32 length = 2;
+}
+
+message Date {
+  required double seconds = 1;
+}
+
+message IndexSet {
+  repeated Range ranges = 1;
+}
+
+message Color {
+  enum ColorModel {
+    rgb = 1;
+    cmyk = 2;
+    white = 3;
+  }
+
+  enum RGBColorSpace {
+    srgb = 1;
+    p3 = 2;
+  }
+
+  required Color.ColorModel model = 1;
+  optional float r = 3;
+  optional float g = 4;
+  optional float b = 5;
+  optional Color.RGBColorSpace rgbspace = 12;
+  optional float a = 6 [default = 1];
+  optional float c = 7;
+  optional float m = 8;
+  optional float y = 9;
+  optional float k = 10;
+  optional float w = 11;
+}
+
+message Path {
+  enum ElementType {
+    moveTo = 1;
+    lineTo = 2;
+    quadCurveTo = 3;
+    curveTo = 4;
+    closeSubpath = 5;
+  }
+
+  message Element {
+    required Path.ElementType type = 1;
+    repeated Point points = 2;
+  }
+
+  repeated Path.Element elements = 1;
+}
+
+message ReferenceDictionary {
+  message Entry {
+    required Reference key = 1;
+    required Reference value = 2;
+  }
+
+  repeated ReferenceDictionary.Entry entries = 1;
+}
+
+message UUID {
+  optional uint64 lower = 1;
+  optional uint64 upper = 2;
+}
+
+message CFUUIDArchive {
+  optional bytes uuid_bytes = 1;
+  optional uint32 uuid_w0 = 2;
+  optional uint32 uuid_w1 = 3;
+  optional uint32 uuid_w2 = 4;
+  optional uint32 uuid_w3 = 5;
+}
+
+message UUIDSetArchive {
+  repeated UUID uids = 1;
+}
+
+message UUIDMapArchive {
+  repeated UUID source = 1;
+  repeated UUID target = 2;
+}
+
+message UUIDMultiMapArchive {
+  repeated UUID source = 1;
+  repeated UUID target = 2;
+}
+
+message UUIDCoordArchive {
+  required UUID row_uid = 1;
+  required UUID column_uid = 2;
+}
+
+message UUIDRectArchive {
+  repeated UUID column_uids = 1;
+  repeated UUID row_uids = 2;
+}
+
+message SparseUUIDArray {
+  message Entry {
+    required uint32 index = 1;
+    required UUID uuid = 2;
+  }
+
+  required uint32 count = 1;
+  repeated SparseUUIDArray.Entry entries = 2;
+}
+
+message UUIDPath {
+  repeated UUID uuids = 1;
+}
+
+message SparseUUIDPathArray {
+  message Entry {
+    required uint32 index = 1;
+    required UUIDPath uuid_path = 2;
+  }
+
+  required uint32 count = 1;
+  repeated SparseUUIDPathArray.Entry entries = 2;
+}
+
+message PasteboardObject {
+  optional Reference stylesheet = 1;
+  repeated Reference drawables = 2;
+  repeated Reference styles = 3;
+  optional Reference wp_storage = 5;
+  optional Reference guide_storage = 9;
+  optional Reference app_native_object = 6;
+  optional bool is_text_primary = 7 [default = false];
+  optional bool is_smart = 8 [default = false];
+  repeated Reference presets = 10;
+  repeated Reference top_level_objects = 11;
+  optional Reference native_content_description = 12;
+  repeated Range text_ranges = 13;
+}
+
+message ObjectCollection {
+  repeated Reference objects = 1;
+}
+
+message ObjectContainer {
+  optional uint32 identifier = 1;
+  repeated Reference objects = 2;
+}
+
+message DataAttributes {
+}
+
+message LargeArraySegment {
+  optional bool should_delay_archiving = 1;
+  optional uint32 delayed_archiving_priority = 2;
+  optional string package_locator = 3;
+}
+
+message LargeNumberArraySegment {
+  optional LargeArraySegment large_array_segment = 1;
+  repeated double elements = 2;
+}
+
+message LargeStringArraySegment {
+  message OptionalElement {
+    optional string element = 1;
+  }
+
+  optional LargeArraySegment large_array_segment = 1;
+  repeated LargeStringArraySegment.OptionalElement elements = 2;
+}
+
+message LargeUUIDArraySegment {
+  optional LargeArraySegment large_array_segment = 1;
+  repeated UUID elements = 2;
+}
+
+message LargeLazyObjectArraySegment {
+  optional LargeArraySegment large_array_segment = 1;
+  repeated Reference elements = 2;
+}
+
+message LargeObjectArraySegment {
+  optional LargeArraySegment large_array_segment = 1;
+  repeated Reference elements = 2;
+}
+
+message LargeArray {
+  repeated Range ranges = 1;
+  repeated Reference segments = 2;
+  optional uint64 max_segment_element_count = 3;
+  optional uint64 max_segment_size = 4;
+  optional bool should_delay_archiving = 5;
+  optional uint32 delayed_archiving_priority = 6;
+  optional bool store_outside_object_archive = 7;
+  optional uint64 estimated_byte_size = 8;
+  optional uint64 max_segment_cost = 9;
+}
+
+message LargeNumberArray {
+  optional LargeArray large_array = 1;
+}
+
+message LargeStringArray {
+  optional LargeArray large_array = 1;
+}
+
+message LargeLazyObjectArray {
+  optional LargeArray large_array = 1;
+}
+
+message LargeObjectArray {
+  optional LargeArray large_array = 1;
+}
+
+message LargeUUIDArray {
+  optional LargeArray large_array = 1;
+}
+
+message FieldOptions {
+  optional SpotlightMetadataType metadata_type = 1;
+}

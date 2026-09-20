@@ -1,0 +1,45 @@
+{
+  "name": "@filens/docx",
+  "version": "0.1.0",
+  "description": "DOCX preview driver for the @filens multi-format preview runtime.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "./dist/index.css"
+  ],
+  "keywords": [
+    "docx",
+    "word",
+    "preview",
+    "viewer",
+    "esm",
+    "typescript"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/index.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && node ../../scripts/rename-css.mjs ./dist style.css index.css",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "docx-preview": "^0.3.7"
+  },
+  "peerDependencies": {
+    "@filens/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@filens/core": "file:../core"
+  }
+}

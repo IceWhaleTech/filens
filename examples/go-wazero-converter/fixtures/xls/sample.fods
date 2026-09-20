@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content
+  xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+  xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0"
+  xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0">
+  <office:body>
+    <office:spreadsheet>
+      <table:table table:name="Legacy OOo Sheet">
+        <table:table-row><table:table-cell office:value-type="string"><text:p>Name</text:p></table:table-cell><table:table-cell office:value-type="string"><text:p>Value</text:p></table:table-cell><table:table-cell office:value-type="string"><text:p>Active</text:p></table:table-cell></table:table-row>
+        <table:table-row><table:table-cell office:value-type="string"><text:p>Flat Name</text:p></table:table-cell><table:table-cell office:value-type="float" office:value="72"><text:p>72</text:p></table:table-cell><table:table-cell office:value-type="boolean" office:boolean-value="true"><text:p>TRUE</text:p></table:table-cell></table:table-row>
+        <table:table-row><table:table-cell office:value-type="string"><text:p>Negative 中文</text:p></table:table-cell><table:table-cell office:value-type="float" office:value="-7.25"><text:p>-7.25</text:p></table:table-cell><table:table-cell office:value-type="boolean" office:boolean-value="false"><text:p>FALSE</text:p></table:table-cell></table:table-row>
+        <table:table-row><table:table-cell office:value-type="string"><text:p>Blank value</text:p></table:table-cell><table:table-cell/><table:table-cell office:value-type="string"><text:p>trailing row</text:p></table:table-cell></table:table-row>
+      </table:table>
+    </office:spreadsheet>
+  </office:body>
+</office:document-content>

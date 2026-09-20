@@ -1,0 +1,16 @@
+BEGIN:VCARD
+VERSION:4.0
+FN:Fixture VCF Contact
+ORG:Preview Fixtures
+TITLE;CHARSET=windows-1252;ENCODING=QUOTED-PRINTABLE:A=96B
+NICKNAME:Fix,Preview
+BDAY:19800102
+ROLE:Reviewer
+IMPP:xmpp:fixture@example.test
+CATEGORIES:Team,Preview
+EMAIL;TYPE=work:fixture@example.test
+TEL;CELL;VOICE:+1-555-0100
+ADR;TYPE=work:;;1 Preview Way;Preview City;;10000;Testland
+NOTE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:=E8=BD=BB=E9=87=8F=
+ =E8=A7=A3=E7=A0=81
+END:VCARD
