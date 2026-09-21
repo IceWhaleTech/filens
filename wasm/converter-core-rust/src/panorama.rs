@@ -260,21 +260,64 @@ fn inspect_insp(file: &SparseFile) -> Result<InspectOutcome, InspectError> {
         code: "unsupported_projection",
         message: "INSP is not a readable JPEG panorama".into(),
     })?;
-    let equirectangular = width > 0 && height > 0 && (width as f64 / height as f64 - 2.0).abs() <= 0.2;
+    let insta_info = match inspect_insta_info(file)? {
+        InstaInfoOutcome::Complete(value) => Some(value),
+        InstaInfoOutcome::NeedRange(range) => return Ok(InspectOutcome::NeedRanges(vec![range])),
+        InstaInfoOutcome::Unavailable => None,
+    };
+    let raw_dual_fisheye = insta_info.is_some() && width > 0 && height > 0
+        && (width as f64 / height as f64 - 2.0).abs() <= 0.1;
+    let calibration = insta_info.as_ref().and_then(|info| {
+        let model = info.get("cameraModel").and_then(Value::as_str);
+        let crop = json_size(info.get("windowCropInfo"), "dstWidth", "dstHeight")?;
+        let image_size = (u32::from(width) / 2, u32::from(height));
+        info.get("offsetV3").and_then(Value::as_str).and_then(|offset| {
+            (raw_dual_fisheye && insta_embedded_offset_supported(model))
+                .then(|| decode_insta_offset_v3(offset, model, image_size, crop)).flatten()
+        })
+    });
+    let (camera_model, firmware, texture_origin, mut lenses) = calibration.as_ref().map(|value| (
+        value.get("model").cloned().unwrap_or(Value::Null),
+        insta_info.as_ref().and_then(|info| info.get("firmware")).cloned().unwrap_or(Value::Null),
+        value.get("textureOrigin").cloned().unwrap_or(Value::Null),
+        value.get("lenses").cloned().unwrap_or_else(|| json!([])),
+    )).unwrap_or_else(|| (
+        insta_info.as_ref().and_then(|info| info.get("cameraModel")).cloned().unwrap_or(Value::Null),
+        insta_info.as_ref().and_then(|info| info.get("firmware")).cloned().unwrap_or(Value::Null),
+        Value::Null,
+        json!([]),
+    ));
+    if raw_dual_fisheye { bind_image_lens_sources(&mut lenses); }
+    let calibrated = lenses.as_array().is_some_and(|items| items.len() >= 2);
+    let equirectangular = !raw_dual_fisheye && width > 0 && height > 0
+        && (width as f64 / height as f64 - 2.0).abs() <= 0.2;
     Ok(InspectOutcome::Complete(json!({
         "vendor": "insta360",
-        "cameraModel": null,
+        "cameraModel": camera_model,
+        "firmware": firmware,
         "format": "insp",
-        "textureOrigin": null,
-        "projection": if equirectangular { "equirectangular" } else { "unknown" },
-        "calibrationSource": if equirectangular { "not-required" } else { "unavailable" },
-        "confidence": if equirectangular { "high" } else { "low" },
+        "textureOrigin": texture_origin,
+        "projection": if calibrated { "mei-extended" } else if equirectangular { "equirectangular" } else { "unknown" },
+        "calibrationSource": if calibrated { "embedded" } else if equirectangular { "not-required" } else { "unavailable" },
+        "confidence": if calibrated { "experimental" } else if equirectangular { "high" } else { "low" },
         "width": width,
         "height": height,
         "tracks": [],
-        "lenses": [],
-        "warnings": if equirectangular { Vec::<String>::new() } else { vec!["INSP is not a 2:1 stitched JPEG and no lens calibration was found.".into()] }
+        "lenses": lenses,
+        "warnings": if calibrated || equirectangular { Vec::<String>::new() } else if raw_dual_fisheye {
+            vec!["INSP contains a raw dual-fisheye image, but supported embedded calibration was not found.".into()]
+        } else {
+            vec!["INSP is not a supported stitched panorama and no lens calibration was found.".into()]
+        }
     })))
+}
+
+fn bind_image_lens_sources(lenses: &mut Value) {
+    let Some(items) = lenses.as_array_mut() else { return; };
+    if items.len() != 2 { return; }
+    for (lens, (x, width)) in items.iter_mut().zip([(0.0, 0.5), (0.5, 0.5)]) {
+        lens["sourceRect"] = json!({ "x": x, "y": 0.0, "width": width, "height": 1.0 });
+    }
 }
 
 fn inspect_iso_bmff(source: &str, file: &SparseFile, sidecar_path: Option<&str>) -> Result<InspectOutcome, InspectError> {
@@ -424,17 +467,35 @@ fn bind_lens_sources(lenses: &mut Value, tracks: &[Track]) {
     if dimensions[0] != dimensions[1] { return; }
     let (width, height) = dimensions[0];
     let matches = |actual: u32, expected: f64| expected.is_finite() && expected > 0.0 && (actual as f64 - expected).abs() < 0.5;
-    let rects = if matches(track.width, width * 2.0) && matches(track.height, height) {
-        Some([(0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 0.5, 1.0)])
+    let (rects, scale) = if matches(track.width, width * 2.0) && matches(track.height, height) {
+        ([(0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 0.5, 1.0)], None)
     } else if matches(track.width, width) && matches(track.height, height * 2.0) {
-        Some([(0.0, 0.0, 1.0, 0.5), (0.0, 0.5, 1.0, 0.5)])
+        ([(0.0, 0.0, 1.0, 0.5), (0.0, 0.5, 1.0, 0.5)], None)
     } else {
-        None
+        let scale_x = track.width as f64 / (width * 2.0);
+        let scale_y = track.height as f64 / height;
+        let proportional = scale_x.is_finite() && scale_y.is_finite()
+            && (0.01..=1.0).contains(&scale_x) && (0.01..=1.0).contains(&scale_y)
+            && (scale_x - scale_y).abs() <= 0.02 * scale_x.max(scale_y);
+        if !proportional { return; }
+        ([(0.0, 0.0, 0.5, 1.0), (0.5, 0.0, 0.5, 1.0)], Some((scale_x + scale_y) * 0.5))
     };
-    let Some(rects) = rects else { return; };
+    if let Some(scale) = scale {
+        for lens in items.iter_mut() {
+            scale_lens_calibration(lens, scale);
+        }
+    }
     for (lens, (x, y, width, height)) in items.iter_mut().zip(rects) {
         lens["sourceTrackId"] = json!(track.id);
         lens["sourceRect"] = json!({ "x": x, "y": y, "width": width, "height": height });
+    }
+}
+
+fn scale_lens_calibration(lens: &mut Value, scale: f64) {
+    for key in ["width", "height", "fx", "fy", "cx", "cy"] {
+        if let Some(value) = lens.get(key).and_then(Value::as_f64) {
+            lens[key] = json!(value * scale);
+        }
     }
 }
 
@@ -1032,6 +1093,25 @@ mod tests {
         bind_lens_sources(&mut lenses, &[track]);
         assert_eq!(lenses[0]["sourceRect"], json!({ "x": 0.0, "y": 0.0, "width": 0.5, "height": 1.0 }));
         assert_eq!(lenses[1]["sourceRect"], json!({ "x": 0.5, "y": 0.0, "width": 0.5, "height": 1.0 }));
+    }
+
+    #[test]
+    fn binds_downscaled_packed_dual_fisheye_lenses_and_scales_intrinsics() {
+        let track = Track { id: 11, width: 768, height: 384, ..Track::default() };
+        let mut lenses = json!([
+            { "width": 3072.0, "height": 3072.0, "fx": 2872.0, "fy": 2872.0, "cx": 1512.0, "cy": 1536.0 },
+            { "width": 3072.0, "height": 3072.0, "fx": 2872.0, "fy": 2872.0, "cx": 1512.0, "cy": 1536.0 }
+        ]);
+        bind_lens_sources(&mut lenses, &[track]);
+
+        assert_eq!(lenses[0]["sourceTrackId"], 11);
+        assert_eq!(lenses[0]["sourceRect"], json!({ "x": 0.0, "y": 0.0, "width": 0.5, "height": 1.0 }));
+        assert_eq!(lenses[1]["sourceRect"], json!({ "x": 0.5, "y": 0.0, "width": 0.5, "height": 1.0 }));
+        assert_eq!(lenses[0]["width"], 384.0);
+        assert_eq!(lenses[0]["height"], 384.0);
+        assert_eq!(lenses[0]["fx"], 359.0);
+        assert_eq!(lenses[0]["cx"], 189.0);
+        assert_eq!(lenses[0]["cy"], 192.0);
     }
 
     #[test]

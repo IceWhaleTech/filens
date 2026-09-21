@@ -34,5 +34,5 @@
 
 External proprietary-format validation files are not redistributed with the demo:
 
-- Insta360 One RS 1-inch `.INSP` and `.INSV` samples: https://360rumors.com/download-1-inch-360/ — the source permits personal viewing only. Browser validation uses the 6528x3264 JPEG-based `.INSP` and the 768x384 H.264 `.INSV` proxy.
+- Insta360 One RS 1-inch `.INSP`, `.INSV`, and `.LRV` samples: https://360rumors.com/download-1-inch-360/ — the source permits personal viewing only. Browser validation uses the 6528x3264 JPEG-based `.INSP`, the 768x384 H.264 `.INSV` proxy, and the 768x384 H.264 low-resolution `.LRV` dual-fisheye proxy (`LRV_20220625_140410_11_008.insv`) from the associated Google Drive folder.
 - DJI Osmo 360 `.OSV` and matching `.LRF` samples: https://huggingface.co/datasets/SamuelLDX/osmo360-lidar-preview — the dataset license is marked `other`. Browser validation uses the camera-generated 2048x1024 H.264 `.LRF` proxy rather than attempting to decode the dual-fisheye HEVC streams directly.

@@ -17,6 +17,13 @@ const externalSampleProxy = {
     configure: configureGoogleDrive,
     rewrite: () => '/download?id=1H_7MHubgvRnRbBwT5gn2dCBwghqEqaDZ&export=download&confirm=t'
   },
+  '/external-samples/insta360/lrv': {
+    target: 'https://drive.usercontent.google.com',
+    changeOrigin: true,
+    headers: { 'user-agent': 'filens-demo/0.1' },
+    configure: configureGoogleDrive,
+    rewrite: () => '/download?id=1hEJgzjwJE0UA47V2mT7VXyPcwz9Bit33&export=download&confirm=t'
+  },
   '/external-samples/insta360/insv-00': {
     target: 'https://drive.usercontent.google.com',
     changeOrigin: true,
@@ -35,6 +42,26 @@ const externalSampleProxy = {
     target: 'https://huggingface.co',
     changeOrigin: true,
     rewrite: (path: string) => path.replace('/external-samples/osmo', '/datasets/SamuelLDX/osmo360-lidar-preview/resolve/main')
+  },
+  '/external-samples/filesamples': {
+    target: 'https://filesamples.com',
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace('/external-samples/filesamples', '/samples')
+  },
+  '/external-samples/mdn-audio': {
+    target: 'https://interactive-examples.mdn.mozilla.net',
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace('/external-samples/mdn-audio', '/media/cc0-audio')
+  },
+  '/external-samples/mdn-video': {
+    target: 'https://interactive-examples.mdn.mozilla.net',
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace('/external-samples/mdn-video', '/media/cc0-videos')
+  },
+  '/external-samples/wikimedia': {
+    target: 'https://upload.wikimedia.org',
+    changeOrigin: true,
+    rewrite: (path: string) => path.replace('/external-samples/wikimedia', '/wikipedia/commons')
   }
 };
 

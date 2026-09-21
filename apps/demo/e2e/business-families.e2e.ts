@@ -220,12 +220,13 @@ test('offers samples for browser-native images and panorama aliases', async ({ p
   await expect(externalSamples.getByRole('button')).toHaveText([
     /INSP.*Insta360 One RS 1-inch/,
     /INSV.*Insta360 One RS calibrated raw pair/,
+    /LRV.*Insta360 One RS low-resolution proxy/,
     /OSV \+ LRF.*DJI Osmo 360 experimental LRF proxy/
   ]);
   await panoramaCategory.getByRole('button', { name: 'INSP', exact: true }).click();
   await expect(page.locator('.wb-preview-title strong')).toHaveText('IMG_20220701_170732_00_018.insp');
   await expect(page.locator('canvas.panoramav-canvas')).toBeVisible({ timeout: 15_000 });
-  await expect(externalSamples.getByRole('link', { name: 'Source' })).toHaveCount(3);
+  await expect(externalSamples.getByRole('link', { name: 'Source' })).toHaveCount(4);
 
   await panoramaCategory.getByRole('button', { name: '360V', exact: true }).click();
   await expect(page.locator('.wb-preview-title strong')).toHaveText('nasa-black-hole-360.webm');

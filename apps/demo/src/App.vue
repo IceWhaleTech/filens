@@ -1152,7 +1152,7 @@ const staticSamples: DemoSource[] = [
     kind: 'audio',
     label: 'MP3 URL',
     name: 't-rex-roar.mp3',
-    source: 'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3',
+    source: '/external-samples/mdn-audio/t-rex-roar.mp3',
     contentType: 'audio/mpeg',
     mode: 'url'
   },
@@ -1160,7 +1160,7 @@ const staticSamples: DemoSource[] = [
     kind: 'audio',
     label: 'Ogg URL',
     name: 'example.ogg',
-    source: 'https://upload.wikimedia.org/wikipedia/commons/c/c8/Example.ogg',
+    source: '/external-samples/wikimedia/c/c8/Example.ogg',
     contentType: 'audio/ogg',
     mode: 'url'
   },
@@ -1168,7 +1168,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'Video URL',
     name: 'sample-video.mp4',
-    source: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+    source: '/external-samples/mdn-video/flower.mp4',
     contentType: 'video/mp4',
     mode: 'url'
   },
@@ -1176,7 +1176,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'WebM URL',
     name: 'flower.webm',
-    source: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
+    source: '/external-samples/mdn-video/flower.webm',
     contentType: 'video/webm',
     mode: 'url'
   },
@@ -1184,7 +1184,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'MOV URL',
     name: 'sample.mov',
-    source: 'https://filesamples.com/samples/video/mov/sample_640x360.mov',
+    source: '/external-samples/filesamples/video/mov/sample_640x360.mov',
     contentType: 'video/quicktime',
     mode: 'url'
   },
@@ -1192,7 +1192,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'M4V URL',
     name: 'sample.m4v',
-    source: 'https://filesamples.com/samples/video/m4v/sample_640x360.m4v',
+    source: '/external-samples/filesamples/video/m4v/sample_640x360.m4v',
     contentType: 'video/x-m4v',
     mode: 'url'
   },
@@ -1200,7 +1200,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'Ogg Video URL',
     name: 'sample.ogv',
-    source: 'https://filesamples.com/samples/video/ogv/sample_640x360.ogv',
+    source: '/external-samples/filesamples/video/ogv/sample_640x360.ogv',
     contentType: 'video/ogg',
     mode: 'url'
   },
@@ -1208,7 +1208,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'Matroska URL',
     name: 'sample.mkv',
-    source: 'https://filesamples.com/samples/video/mkv/sample_640x360.mkv',
+    source: '/external-samples/filesamples/video/mkv/sample_640x360.mkv',
     contentType: 'video/x-matroska',
     mode: 'url'
   },
@@ -1216,7 +1216,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'AVI URL',
     name: 'sample.avi',
-    source: 'https://filesamples.com/samples/video/avi/sample_640x360.avi',
+    source: '/external-samples/filesamples/video/avi/sample_640x360.avi',
     contentType: 'video/x-msvideo',
     mode: 'url'
   },
@@ -1224,7 +1224,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'MPEG URL',
     name: 'sample.mpeg',
-    source: 'https://filesamples.com/samples/video/mpeg/sample_640x360.mpeg',
+    source: '/external-samples/filesamples/video/mpeg/sample_640x360.mpeg',
     contentType: 'video/mpeg',
     mode: 'url'
   },
@@ -1232,7 +1232,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'MPG URL',
     name: 'sample.mpg',
-    source: 'https://filesamples.com/samples/video/mpeg/sample_640x360.mpeg',
+    source: '/external-samples/filesamples/video/mpeg/sample_640x360.mpeg',
     contentType: 'video/mpeg',
     mode: 'url'
   },
@@ -1240,7 +1240,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: '3GP URL',
     name: 'sample.3gp',
-    source: 'https://filesamples.com/samples/video/3gp/sample_640x360.3gp',
+    source: '/external-samples/filesamples/video/3gp/sample_640x360.3gp',
     contentType: 'video/3gpp',
     mode: 'url'
   }
@@ -1311,6 +1311,18 @@ const externalPanoramaSamples = [
     size: '356 MB + 360 MB',
     sourcePage: 'https://drive.google.com/drive/folders/1Vwgjf1sy5DLiyZOhjMV8f1kx2iF67AhO',
     note: 'Personal viewing only · experimental calibrated dual-fisheye'
+  },
+  {
+    kind: 'panorama',
+    format: 'LRV',
+    label: 'Insta360 One RS low-resolution proxy',
+    name: 'LRV_20220625_140410_11_008.insv',
+    source: '/external-samples/insta360/lrv',
+    contentType: 'video/mp4',
+    mode: 'url',
+    size: '41 MB',
+    sourcePage: 'https://drive.google.com/drive/folders/1Vwgjf1sy5DLiyZOhjMV8f1kx2iF67AhO',
+    note: 'Personal viewing only · low-res calibrated dual-fisheye proxy'
   },
   {
     kind: 'panorama',
