@@ -40,6 +40,16 @@ describe('XLSX preview driver', () => {
     expect(workbook.sheets[1]?.rows[0]?.cells[0]?.value).toBe('TRUE');
   });
 
+  it('parses worksheets with more than 1000 escaped XML entities', async () => {
+    const cellValue = '&'.repeat(1_658);
+    const workbook = await loadXlsxWorkbook(
+      await createWorkbookFixture(`<c r="C1" t="inlineStr"><is><t>${escapeXml(cellValue)}</t></is></c>`)
+    );
+    const cell = workbook.sheets[0]?.rows[0]?.cells.find((entry) => entry.ref === 'C1');
+
+    expect(cell?.value).toBe(cellValue);
+  });
+
   it('calculates formulas without cached values only when read', async () => {
     const workbook = await loadXlsxWorkbook(await createWorkbookFixture('<c r="C1"><f>SUM(B1:B2)+1</f></c>'));
     const sheet = workbook.sheets[0]!;
@@ -251,4 +261,8 @@ async function createWorkbookFixture(extraCell = ''): Promise<Uint8Array> {
   return zip.generateAsync({
     type: 'uint8array'
   });
+}
+
+function escapeXml(value: string): string {
+  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }

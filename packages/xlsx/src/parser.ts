@@ -3,12 +3,22 @@ import JSZip from 'jszip';
 import type { PreviewLoadContext, PreviewSource } from '@filens/core';
 import type { ParsedCell, ParsedRow, ParsedSheet, ParsedWorkbook } from './types';
 
+const MAX_XML_ENTITY_EXPANSIONS = 100_000;
+
 const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '',
   textNodeName: '#text',
   parseTagValue: false,
-  parseAttributeValue: false
+  parseAttributeValue: false,
+  processEntities: {
+    enabled: true,
+    maxEntitySize: 10_000,
+    maxExpansionDepth: 10,
+    maxTotalExpansions: MAX_XML_ENTITY_EXPANSIONS,
+    maxExpandedLength: 100_000,
+    maxEntityCount: 100
+  }
 });
 
 interface WorkbookSheetRef {

@@ -22,6 +22,26 @@ describe('WASM panorama processor', () => {
     processor.close();
   });
 
+  it('uses embedded INSP calibration instead of treating raw dual fisheye as equirectangular', async () => {
+    const wasmFile = readFileSync(resolve(process.cwd(), '../../wasm/converter-core/dist/converter-core.wasm'));
+    const wasm = wasmFile.buffer.slice(wasmFile.byteOffset, wasmFile.byteOffset + wasmFile.byteLength);
+    const processor = createWasmPanoramaProcessor({ wasm });
+    const manifest = await processor.open(calibratedInsp().buffer, { format: 'insp' });
+
+    expect(manifest).toMatchObject({
+      cameraModel: 'Insta360 OneRS',
+      projection: { kind: 'mei-extended' },
+      calibrationSource: 'embedded',
+      width: 800,
+      height: 400,
+      lenses: [
+        { width: 400, height: 400, sourceRect: { x: 0, y: 0, width: 0.5, height: 1 } },
+        { width: 400, height: 400, sourceRect: { x: 0.5, y: 0, width: 0.5, height: 1 } }
+      ]
+    });
+    processor.close();
+  });
+
   it('computes a temporally stable minimum-cost seam in WASM', async () => {
     const wasmFile = readFileSync(resolve(process.cwd(), '../../wasm/converter-core/dist/converter-core.wasm'));
     const wasm = wasmFile.buffer.slice(wasmFile.byteOffset, wasmFile.byteOffset + wasmFile.byteLength);
@@ -239,16 +259,19 @@ describe('WASM panorama processor', () => {
     expect(meiLensPreference(0, 1)).toBe(1);
   });
 
-  it('keeps dynamic seams narrow enough to avoid wide parallax ghosting', () => {
+  it('feathers dynamic seams across one cell on each side', () => {
     const first = new Float32Array(128 * 64).fill(1);
     const second = new Float32Array(128 * 64);
     const mask = buildSeamMask([first, second], new Array(64).fill(10), new Array(64).fill(70));
 
-    expect(new Set(mask)).toEqual(new Set([0, 255]));
-    expect(mask[9]).toBe(0);
-    expect(mask[10]).toBe(255);
-    expect(mask[69]).toBe(255);
-    expect(mask[70]).toBe(0);
+    expect(new Set(mask)).toEqual(new Set([0, 64, 191, 255]));
+    expect(mask[8]).toBe(0);
+    expect(mask[9]).toBe(64);
+    expect(mask[10]).toBe(191);
+    expect(mask[11]).toBe(255);
+    expect(mask[69]).toBe(191);
+    expect(mask[70]).toBe(64);
+    expect(mask[71]).toBe(0);
   });
 
   it('supports dynamic seams for both calibrated projection families', () => {
@@ -276,10 +299,10 @@ describe('WASM panorama processor', () => {
 
     const middle = 32 * 128;
     expect(mask[middle]).toBe(255);
-    expect(mask[middle + 63]).toBe(255);
-    expect(mask[middle + 64]).toBe(0);
-    expect(mask[middle + 125]).toBe(0);
-    expect(mask[middle + 126]).toBe(255);
+    expect(mask[middle + 63]).toBe(191);
+    expect(mask[middle + 64]).toBe(64);
+    expect(mask[middle + 125]).toBe(64);
+    expect(mask[middle + 126]).toBe(191);
     expect(mask[0]).toBe(128);
   });
 
@@ -340,4 +363,63 @@ function jpeg(width: number, height: number): Uint8Array {
     0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00,
     0xff, 0xd9
   ]);
+}
+
+function calibratedInsp(): Uint8Array {
+  const calibration = new Array(40).fill(0);
+  calibration[0] = 2;
+  for (const [lens, start] of [[0, 1], [1, 20]] as const) {
+    calibration[start] = 0.8;
+    calibration[start + 1] = 300;
+    calibration[start + 2] = 300;
+    calibration[start + 3] = lens === 0 ? 200 : 600;
+    calibration[start + 4] = 200;
+    calibration[start + 16] = 800;
+    calibration[start + 17] = 400;
+    calibration[start + 18] = 62;
+  }
+  const dimensions = protoMessage([[1, 800], [2, 400]]);
+  const crop = protoMessage([[1, 400], [2, 400], [3, 400], [4, 400]]);
+  const info = protoMessage([
+    [2, 'Insta360 OneRS'],
+    [3, 'test-firmware'],
+    [19, dimensions],
+    [27, crop],
+    [54, calibration.join('_')]
+  ]);
+  const footer = new Uint8Array(6);
+  footer[1] = 1;
+  new DataView(footer.buffer).setUint32(2, info.length, true);
+  const trailerHeader = new Uint8Array(72);
+  const metadataSize = info.length + footer.length + trailerHeader.length;
+  new DataView(trailerHeader.buffer).setUint32(32, metadataSize, true);
+  new DataView(trailerHeader.buffer).setUint32(36, 3, true);
+  trailerHeader.set(new TextEncoder().encode('8db42d694ccc418790edff439fe026bf'), 40);
+  return concatBytes(jpeg(800, 400), info, footer, trailerHeader);
+}
+
+function protoMessage(fields: Array<[number, number | string | Uint8Array]>): Uint8Array {
+  return concatBytes(...fields.map(([field, value]) => {
+    if (typeof value === 'number') return concatBytes(varint(field << 3), varint(value));
+    const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value;
+    return concatBytes(varint((field << 3) | 2), varint(bytes.length), bytes);
+  }));
+}
+
+function varint(value: number): Uint8Array {
+  const bytes = [];
+  do {
+    let byte = value & 0x7f;
+    value >>>= 7;
+    if (value) byte |= 0x80;
+    bytes.push(byte);
+  } while (value);
+  return Uint8Array.from(bytes);
+}
+
+function concatBytes(...parts: Uint8Array[]): Uint8Array {
+  const result = new Uint8Array(parts.reduce((total, part) => total + part.length, 0));
+  let offset = 0;
+  for (const part of parts) { result.set(part, offset); offset += part.length; }
+  return result;
 }

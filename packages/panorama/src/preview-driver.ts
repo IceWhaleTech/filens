@@ -24,7 +24,7 @@ import {
   VideoTexture,
   WebGLRenderer
 } from 'three';
-import { createCalibratedPanoramaRenderer, type CalibratedPanoramaRenderer, type PanoramaStabilizationMode } from './calibrated-renderer';
+import { createCalibratedPanoramaImageRenderer, createCalibratedPanoramaRenderer, type CalibratedPanoramaRenderer, type PanoramaStabilizationMode } from './calibrated-renderer';
 import type { PanoramaAssetManifest, PanoramaProcessor } from './wasm-processor';
 
 type PreviewListenerMap = {
@@ -202,6 +202,35 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       const resolvedSource = format === 'osv'
         ? await this.resolveOsmoProxy(context.descriptor.name)
         : await resolvePanoramaSource(source, format, context.signal);
+      if (format === 'insp' && this.processor) {
+        const manifest = await this.processor.open(resolvedSource, { format: 'insp', signal: context.signal });
+        if (manifest.projection.kind === 'mei-extended') {
+          const texture = await new TextureLoader().loadAsync(this.sourceToUrl(resolvedSource, contentType));
+          texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+          const calibrated = await createCalibratedPanoramaImageRenderer(this.processor, manifest, texture);
+          scene.add(calibrated.mesh);
+          this.texture = texture;
+          this.calibratedRenderer = calibrated;
+          this.state.vendor = manifest.vendor;
+          this.state.cameraModel = manifest.cameraModel;
+          this.state.calibrationSource = manifest.calibrationSource;
+          this.state.projection = manifest.projection.kind;
+          this.state.decodeMode = 'browser-media';
+          this.state.stitchMode = 'calibrated-blend';
+          this.state.naturalWidth = manifest.width;
+          this.state.naturalHeight = manifest.height;
+          this.state.warnings = manifest.confidence === 'experimental'
+            ? ['Experimental calibrated INSP preview uses the image\'s embedded lens calibration, exposure matching, and a content-aware feathered seam.']
+            : manifest.warnings;
+          if (this.state.warnings.length) this.emit('warnings', this.state.warnings);
+          this.finishScene(renderer, scene, camera);
+          return;
+        }
+        this.processor.close();
+        if (manifest.projection.kind === 'unknown') {
+          throw new Error(manifest.warnings[0] || 'INSP contains an unsupported raw dual-fisheye image.');
+        }
+      }
       const texture = isVideo
         ? await this.createVideoTexture(resolvedSource, contentType)
         : await new TextureLoader().loadAsync(this.sourceToUrl(resolvedSource, contentType));

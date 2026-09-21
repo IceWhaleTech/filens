@@ -873,11 +873,14 @@ describe('model3d preview driver', () => {
     expect(xyzParseMock).toHaveBeenCalledWith(source);
   });
 
-  it('loads VTK meshes through the Three.js loader', () => {
+  it('pads short VTK meshes for the Three.js loader header probe', () => {
     const buffer = new TextEncoder().encode('# vtk DataFile Version 3.0\n').buffer;
 
     expect(loadVtkObject(buffer)).toBeInstanceOf(Mesh);
-    expect(vtkParseMock).toHaveBeenCalledWith(buffer, '');
+    const loaderBuffer = vtkParseMock.mock.calls[0]?.[0] as ArrayBuffer;
+    expect(loaderBuffer.byteLength).toBe(250);
+    expect(new Uint8Array(loaderBuffer).slice(0, buffer.byteLength)).toEqual(new Uint8Array(buffer));
+    expect(vtkParseMock).toHaveBeenCalledWith(loaderBuffer, '');
   });
 
   it('loads VOX scenes through the Three.js loader', () => {

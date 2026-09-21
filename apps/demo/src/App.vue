@@ -1295,7 +1295,7 @@ const externalPanoramaSamples = [
     mode: 'url',
     size: '5.7 MB',
     sourcePage: 'https://drive.google.com/file/d/1H_7MHubgvRnRbBwT5gn2dCBwghqEqaDZ/view',
-    note: 'Personal viewing only'
+    note: 'Personal viewing only · embedded-calibration dual-fisheye'
   },
   {
     kind: 'panorama',

@@ -6,6 +6,7 @@ import {
   ShaderMaterial,
   SphereGeometry,
   SRGBColorSpace,
+  Texture,
   UnsignedByteType,
   VideoFrameTexture
 } from 'three';
@@ -43,6 +44,205 @@ export interface CalibratedPanoramaRenderer {
 export interface PanoramaLensSource {
   track: PanoramaVideoTrack;
   rect: { x: number; y: number; width: number; height: number };
+}
+
+export async function createCalibratedPanoramaImageRenderer(processor: PanoramaProcessor, manifest: PanoramaAssetManifest, texture: Texture): Promise<CalibratedPanoramaRenderer> {
+  if (manifest.projection.kind !== 'mei-extended' || !hasAccuratePanoramaCalibration(manifest)) {
+    throw new PanoramaProcessorError('calibration_missing', 'This INSP does not contain two supported calibrated panorama lenses.');
+  }
+  const width = manifest.width ?? Number((texture.image as { naturalWidth?: number; width?: number } | undefined)?.naturalWidth ?? (texture.image as { width?: number } | undefined)?.width);
+  const height = manifest.height ?? Number((texture.image as { naturalHeight?: number; height?: number } | undefined)?.naturalHeight ?? (texture.image as { height?: number } | undefined)?.height);
+  if (!(width > 0) || !(height > 0)) throw new PanoramaProcessorError('invalid_manifest', 'The calibrated INSP image dimensions are unavailable.');
+  const pseudoTrack: PanoramaVideoTrack = { id: 0, codec: 'jpeg', decoderConfig: '', width, height, timescale: 1, samples: [] };
+  const lensSources = manifest.lenses.slice(0, 2).map((lens) => ({
+    track: pseudoTrack,
+    rect: lens.sourceRect ?? { x: 0, y: 0, width: 1, height: 1 }
+  })) as [PanoramaLensSource, PanoramaLensSource];
+  if (!lensSources.every((source) => validSourceRect(source.rect))) {
+    throw new PanoramaProcessorError('invalid_manifest', 'The calibrated INSP lenses are not bound to valid image regions.');
+  }
+
+  texture.flipY = panoramaTextureFlipY(manifest.textureOrigin);
+  texture.colorSpace = SRGBColorSpace;
+  texture.minFilter = LinearFilter;
+  texture.needsUpdate = true;
+  const seamTexture = new DataTexture(new Uint8Array(128 * 64).fill(128), 128, 64, RedFormat, UnsignedByteType);
+  seamTexture.needsUpdate = true;
+  seamTexture.minFilter = LinearFilter;
+  const material = createStillCalibratedMaterial(manifest, lensSources, texture, seamTexture);
+  const geometry = new SphereGeometry(500, 96, 64);
+  geometry.scale(-1, 1, 1);
+  const mesh = new Mesh(geometry, material);
+  const analyzer = new PanoramaFrameAnalyzer(processor, manifest, lensSources, material, seamTexture);
+  analyzer.acceptImage(texture.image as CanvasImageSource);
+
+  return {
+    mesh,
+    update: () => undefined,
+    play: () => undefined,
+    pause: () => undefined,
+    seek: () => undefined,
+    close: () => {
+      analyzer.close();
+      seamTexture.dispose();
+      geometry.dispose();
+      material.dispose();
+    },
+    duration: 0,
+    currentTime: 0,
+    paused: true,
+    streamSyncMs: 0,
+    get dynamicSeam() { return analyzer.active; },
+    stabilizationAvailable: false,
+    stabilizationMode: 'off',
+    error: undefined,
+    setStabilization: () => 'off'
+  };
+}
+
+function createStillCalibratedMaterial(manifest: PanoramaAssetManifest, lensSources: [PanoramaLensSource, PanoramaLensSource], texture: Texture, seamTexture: DataTexture): ShaderMaterial {
+  const lenses = manifest.lenses.slice(0, 2);
+  return new ShaderMaterial({
+    uniforms: {
+      lens0: { value: texture },
+      lens1: { value: texture },
+      intrinsics0: { value: lensIntrinsics(lenses[0]) },
+      intrinsics1: { value: lensIntrinsics(lenses[1]) },
+      size0: { value: lensImageSize(lenses[0], lensSources[0]) },
+      size1: { value: lensImageSize(lenses[1], lensSources[1]) },
+      sourceRect0: { value: panoramaLensTextureRect(lensSources[0], manifest.textureOrigin) },
+      sourceRect1: { value: panoramaLensTextureRect(lensSources[1], manifest.textureOrigin) },
+      distortion0: { value: lensDistortion(lenses[0]) },
+      distortion1: { value: lensDistortion(lenses[1]) },
+      quaternion0: { value: lensQuaternion(lenses[0]) },
+      quaternion1: { value: lensQuaternion(lenses[1]) },
+      radialScale0: { value: radialScale(lenses[0]) },
+      radialScale1: { value: radialScale(lenses[1]) },
+      projectionKind: { value: 1 },
+      xi0: { value: lenses[0].xi || 0 },
+      xi1: { value: lenses[1].xi || 0 },
+      tangential0: { value: lensPair(lenses[0].tangential) },
+      tangential1: { value: lensPair(lenses[1].tangential) },
+      thinPrism0: { value: lensFour(lenses[0].thinPrism) },
+      thinPrism1: { value: lensFour(lenses[1].thinPrism) },
+      sensorTilt0: { value: lensPair(lenses[0].sensorTilt) },
+      sensorTilt1: { value: lensPair(lenses[1].sensorTilt) },
+      seamMask: { value: seamTexture },
+      useDynamicSeam: { value: 0 },
+      exposureGain0: { value: [1, 1, 1] },
+      exposureGain1: { value: [1, 1, 1] },
+      stabilizationQuaternion: { value: [1, 0, 0, 0] }
+    },
+    vertexShader: `
+      varying vec2 panoramaUv;
+      void main() {
+        panoramaUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      precision highp float;
+      varying vec2 panoramaUv;
+      uniform sampler2D lens0;
+      uniform sampler2D lens1;
+      uniform vec4 intrinsics0;
+      uniform vec4 intrinsics1;
+      uniform vec2 size0;
+      uniform vec2 size1;
+      uniform vec4 sourceRect0;
+      uniform vec4 sourceRect1;
+      uniform vec4 distortion0;
+      uniform vec4 distortion1;
+      uniform vec4 quaternion0;
+      uniform vec4 quaternion1;
+      uniform float radialScale0;
+      uniform float radialScale1;
+      uniform int projectionKind;
+      uniform float xi0;
+      uniform float xi1;
+      uniform vec2 tangential0;
+      uniform vec2 tangential1;
+      uniform vec4 thinPrism0;
+      uniform vec4 thinPrism1;
+      uniform vec2 sensorTilt0;
+      uniform vec2 sensorTilt1;
+      uniform sampler2D seamMask;
+      uniform int useDynamicSeam;
+      uniform vec3 exposureGain0;
+      uniform vec3 exposureGain1;
+      uniform vec4 stabilizationQuaternion;
+
+      vec3 rotateQuaternion(vec4 q, vec3 v) {
+        vec3 u = q.yzw;
+        return 2.0 * dot(u, v) * u + (q.x * q.x - dot(u, u)) * v + 2.0 * q.x * cross(u, v);
+      }
+
+      vec2 applySensorTilt(vec2 point, vec2 tilt) {
+        float cx = cos(tilt.x), sx = sin(tilt.x);
+        float cy = cos(tilt.y), sy = sin(tilt.y);
+        float rx = cy*point.x + sy*sx*point.y - sy*cx;
+        float ry = cx*point.y + sx;
+        float rz = sy*point.x - cy*sx*point.y + cy*cx;
+        float safeRz = abs(rz) > 0.000001 ? rz : (rz < 0.0 ? -0.000001 : 0.000001);
+        return vec2(cx*(cy*rx + sy*rz), cy*cx*ry - sx*rz) / safeRz;
+      }
+
+      vec4 projectLens(vec3 body, vec4 intrinsics, vec2 imageSize, vec4 sourceRect, vec4 distortion, vec4 quaternion, float xi, vec2 tangential, vec4 thinPrism, vec2 sensorTilt, sampler2D image) {
+        vec3 direction = rotateQuaternion(normalize(vec4(quaternion.x, -quaternion.yzw)), body);
+        float denominator = direction.z + xi;
+        vec2 normalized = direction.xy / max(denominator, 0.000001);
+        float r2 = dot(normalized, normalized);
+        if (denominator <= 0.000001 || r2 > 16.0) return vec4(0.0);
+        float r4 = r2 * r2;
+        float radialFactor = 1.0 + distortion.x*r2 + distortion.y*r4 + distortion.z*r2*r4 + distortion.w*r4*r4;
+        float x = normalized.x;
+        float y = normalized.y;
+        vec2 distorted = vec2(
+          x*radialFactor + 2.0*tangential.x*x*y + tangential.y*(r2 + 2.0*x*x) + thinPrism.x*r2 + thinPrism.y*r4,
+          y*radialFactor + tangential.x*(r2 + 2.0*y*y) + 2.0*tangential.y*x*y + thinPrism.z*r2 + thinPrism.w*r4
+        );
+        vec2 pixel = intrinsics.zw + intrinsics.xy * applySensorTilt(distorted, sensorTilt);
+        vec2 uv = sourceRect.xy + ((pixel + vec2(0.5)) / imageSize) * sourceRect.zw;
+        float edgeRadius = 0.475 * min(imageSize.x, imageSize.y);
+        float coverageDepth = max(edgeRadius - distance(pixel, intrinsics.zw), 0.0);
+        float valid = float(direction.z + xi > 0.000001 && coverageDepth > 0.0)
+          * float(all(greaterThanEqual(pixel, vec2(0.0))) && all(lessThanEqual(pixel, imageSize - vec2(1.0))));
+        return vec4(texture2D(image, uv).rgb, valid * max(coverageDepth, 0.0001));
+      }
+
+      vec2 panoramaUvForDirection(vec3 direction) {
+        float longitude = atan(direction.x, direction.z);
+        float latitude = asin(clamp(-direction.y, -1.0, 1.0));
+        return vec2(fract(longitude / 6.28318530718 + 0.5), latitude / 3.14159265359 + 0.5);
+      }
+
+      void main() {
+        float longitude = panoramaUv.x * 6.28318530718 - 3.14159265359;
+        float latitude = (panoramaUv.y - 0.5) * 3.14159265359;
+        float cosLatitude = cos(latitude);
+        vec3 body = vec3(cosLatitude * sin(longitude), -sin(latitude), cosLatitude * cos(longitude));
+        body = rotateQuaternion(normalize(stabilizationQuaternion), body);
+        vec2 bodyPanoramaUv = panoramaUvForDirection(body);
+        vec4 a = projectLens(body, intrinsics0, size0, sourceRect0, distortion0, quaternion0, xi0, tangential0, thinPrism0, sensorTilt0, lens0);
+        vec4 b = projectLens(body, intrinsics1, size1, sourceRect1, distortion1, quaternion1, xi1, tangential1, thinPrism1, sensorTilt1, lens1);
+        if (a.a <= 0.0 && b.a <= 0.0) {
+          gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+          return;
+        }
+        if (a.a <= 0.0 || b.a <= 0.0) {
+          gl_FragColor = vec4((a.a > 0.0 ? a.rgb * exposureGain0 : b.rgb * exposureGain1), 1.0);
+          return;
+        }
+        float frontPreference = 1.0 - smoothstep(radians(75.0), radians(105.0), abs(bodyPanoramaUv.x * 6.28318530718 - 3.14159265359));
+        float aWeight = a.a * frontPreference;
+        float bWeight = b.a * (1.0 - frontPreference);
+        float lens1Weight = useDynamicSeam == 1
+          ? texture2D(seamMask, bodyPanoramaUv).r
+          : bWeight / max(aWeight + bWeight, 0.0001);
+        gl_FragColor = vec4(mix(a.rgb * exposureGain0, b.rgb * exposureGain1, lens1Weight), 1.0);
+      }
+    `
+  });
 }
 
 export async function createCalibratedPanoramaRenderer(processor: PanoramaProcessor, manifest: PanoramaAssetManifest): Promise<CalibratedPanoramaRenderer> {
@@ -682,6 +882,15 @@ class PanoramaFrameAnalyzer {
     });
   }
 
+  acceptImage(image: CanvasImageSource) {
+    if (this.closed || this.busy) return;
+    this.busy = true;
+    const generation = this.generation;
+    void this.analyze([image, image], generation).catch(() => {
+      // Static INSP rendering can retain calibrated blending if seam analysis is unavailable.
+    }).finally(() => { this.busy = false; });
+  }
+
   close() { this.closed = true; }
 
   reset() {
@@ -695,7 +904,7 @@ class PanoramaFrameAnalyzer {
     this.active = false;
   }
 
-  private async analyze(frames: VideoFrame[], generation: number) {
+  private async analyze(frames: CanvasImageSource[], generation: number) {
     const images = frames.map((frame) => framePixels(frame));
     const colors = [new Uint8Array(ANALYSIS_WIDTH * ANALYSIS_HEIGHT * 3), new Uint8Array(ANALYSIS_WIDTH * ANALYSIS_HEIGHT * 3)];
     const weights = [new Float32Array(ANALYSIS_WIDTH * ANALYSIS_HEIGHT), new Float32Array(ANALYSIS_WIDTH * ANALYSIS_HEIGHT)];
@@ -852,7 +1061,7 @@ function correctedLuminance(colors: Uint8Array, gains: number[], index: number):
 
 export type Vec3 = [number, number, number];
 
-function framePixels(frame: VideoFrame): Uint8ClampedArray {
+function framePixels(frame: CanvasImageSource): Uint8ClampedArray {
   const canvas = typeof OffscreenCanvas !== 'undefined'
     ? new OffscreenCanvas(SOURCE_ANALYSIS_SIZE, SOURCE_ANALYSIS_SIZE)
     : Object.assign(document.createElement('canvas'), { width: SOURCE_ANALYSIS_SIZE, height: SOURCE_ANALYSIS_SIZE });
@@ -1008,8 +1217,7 @@ export function buildSeamMask(weights: Float32Array[], left: number[], right: nu
       hard[y*ANALYSIS_WIDTH + x] = useSecond ? 255 : 0;
     }
   }
-  // ponytail: texture filtering feathers one analysis texel; raise mask resolution before adding a wider blend.
-  return hard;
+  return featherBinarySeams(hard, false);
 }
 
 export function buildCircularSeamMask(weights: Float32Array[], first: number[], second: number[]): Uint8Array {
@@ -1034,7 +1242,24 @@ export function buildCircularSeamMask(weights: Float32Array[], first: number[], 
       hard[y*ANALYSIS_WIDTH + x] = (sameArc ? anchorUsesSecond : !anchorUsesSecond) ? 255 : 0;
     }
   }
-  return hard;
+  return featherBinarySeams(hard, true);
+}
+
+export function featherBinarySeams(mask: Uint8Array, circular: boolean): Uint8Array {
+  const feathered = mask.slice();
+  for (let y = 0; y < ANALYSIS_HEIGHT; y += 1) {
+    for (let x = 0; x < ANALYSIS_WIDTH; x += 1) {
+      const index = y*ANALYSIS_WIDTH + x;
+      const value = mask[index];
+      if (value !== 0 && value !== 255) continue;
+      const leftX = x > 0 ? x - 1 : (circular ? ANALYSIS_WIDTH - 1 : x);
+      const rightX = x + 1 < ANALYSIS_WIDTH ? x + 1 : (circular ? 0 : x);
+      const crossesSeam = mask[y*ANALYSIS_WIDTH + leftX] === 255 - value
+        || mask[y*ANALYSIS_WIDTH + rightX] === 255 - value;
+      if (crossesSeam) feathered[index] = value === 0 ? 64 : 191;
+    }
+  }
+  return feathered;
 }
 
 export function rotatePanoramaRows(values: Uint16Array, width: number, height: number, shift: number): Uint16Array {

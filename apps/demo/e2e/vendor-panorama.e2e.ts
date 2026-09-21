@@ -6,7 +6,7 @@ const insvSample = process.env.INSV_SAMPLE;
 const osvSample = process.env.OSV_SAMPLE;
 const osvProxySample = process.env.OSV_PROXY_SAMPLE;
 
-test('previews a real Insta360 INSP file as an equirectangular image', async ({ page }) => {
+test('previews a real Insta360 INSP through embedded dual-fisheye calibration', async ({ page }) => {
   test.skip(!inspSample || !existsSync(inspSample), 'Set INSP_SAMPLE to a real local .insp file.');
 
   await page.goto('/');

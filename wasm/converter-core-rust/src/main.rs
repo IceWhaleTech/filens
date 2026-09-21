@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::{self, File};
-use std::io::{Read, Write};
+use std::io::{Cursor, Read, Write};
 use std::path::Path;
 use std::process;
 use std::time::Instant;
@@ -32,9 +32,9 @@ const HTML_TEXT_WARNING: &str = "Text backend performed lightweight HTML text ex
 const RTF_WARNING: &str = "RTF backend performed lightweight text extraction; complex layout, embedded objects, and full style fidelity are not preserved.";
 const TABULAR_WARNING: &str = "Tabular backend performed lightweight spreadsheet data extraction; formulas, formatting, indexes, code pages, memo fields, and macros are not preserved.";
 const ODF_WARNING: &str = "ODF backend performed lightweight OpenDocument extraction; layout, styles, media, formulas, and macros are not preserved.";
-const WORD_BINARY_WARNING: &str = "Word binary backend parsed legacy Word/WPS text piece tables where available; layout, styles, fields, media, macros, and embedded objects are not preserved.";
+const WORD_BINARY_WARNING: &str = "Word binary backend preserves supported paragraph, run, table, header, footer, page, and media styling; unsupported legacy drawings, fields, macros, and embedded objects may be simplified or omitted.";
 const BIFF_WARNING: &str = "BIFF conversion core performed lightweight binary spreadsheet extraction; basic formulas and formatting are preserved, but charts, macros, embedded objects, and unsupported formula tokens are not preserved.";
-const PPT_BINARY_WARNING: &str = "PowerPoint binary backend parsed legacy presentation text records where available; layout, animations, media, charts, macros, and embedded objects are not preserved.";
+const PPT_BINARY_WARNING: &str = "PowerPoint binary backend preserves embedded full-slide JPEG/PNG artwork where available and otherwise extracts text; editable layout, animations, charts, macros, and embedded objects are not preserved.";
 const RAW_PREVIEW_WARNING: &str = "RAW preview backend extracted the camera-generated embedded JPEG; full-resolution sensor data, custom picture profiles, and edits are not developed.";
 const CONVERSIONS: &str = include_str!("../../converter-core/manifest/conversions.json");
 const MAX_PACKAGE_ENTRIES: usize = 10_000;
@@ -152,9 +152,9 @@ fn main() {
             .unwrap_or(0)
     } else {
         fs::metadata(&request.input)
-        .ok()
-        .filter(|metadata| metadata.is_file())
-        .map_or(0, |metadata| metadata.len())
+            .ok()
+            .filter(|metadata| metadata.is_file())
+            .map_or(0, |metadata| metadata.len())
     };
 
     let result = if let Some(message) = parse_error {
@@ -169,7 +169,10 @@ fn main() {
                 fidelity: "metadata".into(),
                 content_type: "application/json".into(),
                 payload: Some(payload),
-                metrics: Metrics { elapsed_ms: 0, input_size },
+                metrics: Metrics {
+                    elapsed_ms: 0,
+                    input_size,
+                },
                 ..Default::default()
             },
             Ok(panorama::InspectOutcome::NeedRanges(required_ranges)) => ResultContract {
@@ -179,10 +182,19 @@ fn main() {
                 error_code: "need_ranges".into(),
                 error_message: "additional source ranges are required".into(),
                 required_ranges,
-                metrics: Metrics { elapsed_ms: 0, input_size },
+                metrics: Metrics {
+                    elapsed_ms: 0,
+                    input_size,
+                },
                 ..Default::default()
             },
-            Err(error) => failure(&request, error.code, error.message, input_size, Some("panorama-inspector")),
+            Err(error) => failure(
+                &request,
+                error.code,
+                error.message,
+                input_size,
+                Some("panorama-inspector"),
+            ),
         }
     } else if request.operation == "decode-panorama-metadata" {
         match panorama::decode_metadata(&request.options_json) {
@@ -193,10 +205,19 @@ fn main() {
                 fidelity: "metadata".into(),
                 content_type: "application/json".into(),
                 payload: Some(payload),
-                metrics: Metrics { elapsed_ms: 0, input_size: 0 },
+                metrics: Metrics {
+                    elapsed_ms: 0,
+                    input_size: 0,
+                },
                 ..Default::default()
             },
-            Err(error) => failure(&request, error.code, error.message, 0, Some("panorama-metadata-decoder")),
+            Err(error) => failure(
+                &request,
+                error.code,
+                error.message,
+                0,
+                Some("panorama-metadata-decoder"),
+            ),
         }
     } else if request.operation == "panorama-seam" {
         match panorama::compute_seam(&request.options_json) {
@@ -207,10 +228,19 @@ fn main() {
                 fidelity: "computed".into(),
                 content_type: "application/json".into(),
                 payload: Some(payload),
-                metrics: Metrics { elapsed_ms: 0, input_size: 0 },
+                metrics: Metrics {
+                    elapsed_ms: 0,
+                    input_size: 0,
+                },
                 ..Default::default()
             },
-            Err(error) => failure(&request, error.code, error.message, 0, Some("panorama-seam-dp")),
+            Err(error) => failure(
+                &request,
+                error.code,
+                error.message,
+                0,
+                Some("panorama-seam-dp"),
+            ),
         }
     } else if let Err(error) = validate_input(&request, input_size) {
         failure(&request, error.code, error.message, input_size, None)
@@ -345,9 +375,19 @@ fn parse_request(request: &mut Request) -> Result<(), String> {
         }
     }
     let required: &[(&String, &str)] = if request.operation == "inspect-panorama" {
-        &[(&request.source, "missing --source"), (&request.options, "missing --options"), (&request.result, "missing --result")]
-    } else if matches!(request.operation.as_str(), "panorama-seam" | "decode-panorama-metadata") {
-        &[(&request.options, "missing --options"), (&request.result, "missing --result")]
+        &[
+            (&request.source, "missing --source"),
+            (&request.options, "missing --options"),
+            (&request.result, "missing --result"),
+        ]
+    } else if matches!(
+        request.operation.as_str(),
+        "panorama-seam" | "decode-panorama-metadata"
+    ) {
+        &[
+            (&request.options, "missing --options"),
+            (&request.result, "missing --result"),
+        ]
     } else {
         &[
             (&request.input, "missing --input"),
@@ -417,14 +457,15 @@ fn validate_input(request: &Request, input_size: u64) -> Result<(), ConvertError
         .iter()
         .any(|pair| pair.source_format == request.source);
     if !source_supported {
-            return Err(ConvertError {
-                code: "unsupported_format",
-                message: format!("unsupported source format: {}", request.source),
-            });
+        return Err(ConvertError {
+            code: "unsupported_format",
+            message: format!("unsupported source format: {}", request.source),
+        });
     }
-    if !pairs.iter().any(|pair| {
-        pair.source_format == request.source && pair.target_format == request.target
-    }) {
+    if !pairs
+        .iter()
+        .any(|pair| pair.source_format == request.source && pair.target_format == request.target)
+    {
         return Err(ConvertError {
             code: "unsupported_format",
             message: format!(
@@ -629,7 +670,8 @@ fn best_embedded_jpeg(bytes: &[u8]) -> Option<&[u8]> {
         if let Some((end, width, height)) = jpeg_bounds(bytes, candidate_start) {
             let area = u64::from(width) * u64::from(height);
             if best.is_none_or(|(best_start, best_end, best_area)| {
-                area > best_area || (area == best_area && end - candidate_start > best_end - best_start)
+                area > best_area
+                    || (area == best_area && end - candidate_start > best_end - best_start)
             }) {
                 best = Some((candidate_start, end, area));
             }
@@ -1303,6 +1345,14 @@ struct OdfSlide {
     name: String,
     paragraphs: Vec<String>,
     legacy_binary: bool,
+    image: Option<PptSlideImage>,
+}
+
+#[derive(Clone)]
+struct PptSlideImage {
+    extension: &'static str,
+    content_type: &'static str,
+    data: Vec<u8>,
 }
 
 const CFB_FREE: u32 = 0xffff_ffff;
@@ -1312,7 +1362,18 @@ const CFB_DIFAT: u32 = 0xffff_fffc;
 
 struct CompoundEntry {
     name: String,
+    path: String,
     kind: u8,
+    start: u32,
+    size: u64,
+}
+
+struct CompoundDirectoryRecord {
+    name: String,
+    kind: u8,
+    left: u32,
+    right: u32,
+    child: u32,
     start: u32,
     size: u64,
 }
@@ -1530,10 +1591,11 @@ fn cfb_special(value: u32) -> bool {
 }
 
 fn parse_compound_directory(data: &[u8]) -> Result<Vec<CompoundEntry>, ConvertError> {
-    let mut entries = Vec::new();
+    let mut records = Vec::new();
     for record in data.chunks_exact(128) {
         let name_length = u16::from_le_bytes(record[0x40..0x42].try_into().unwrap()) as usize;
         if !(2..=64).contains(&name_length) || record[0x42] == 0 {
+            records.push(None);
             continue;
         }
         let name = String::from_utf16_lossy(
@@ -1543,17 +1605,89 @@ fn parse_compound_directory(data: &[u8]) -> Result<Vec<CompoundEntry>, ConvertEr
                 .collect::<Vec<_>>(),
         );
         if name.is_empty() {
+            records.push(None);
             continue;
         }
-        let size = u64::from_le_bytes(record[0x78..0x80].try_into().unwrap());
-        entries.push(CompoundEntry {
+        records.push(Some(CompoundDirectoryRecord {
             name,
             kind: record[0x42],
+            left: u32::from_le_bytes(record[0x44..0x48].try_into().unwrap()),
+            right: u32::from_le_bytes(record[0x48..0x4c].try_into().unwrap()),
+            child: u32::from_le_bytes(record[0x4c..0x50].try_into().unwrap()),
             start: u32::from_le_bytes(record[0x74..0x78].try_into().unwrap()),
-            size,
-        });
+            size: u64::from_le_bytes(record[0x78..0x80].try_into().unwrap()),
+        }));
+    }
+    let Some((root_id, root)) = records.iter().enumerate().find_map(|(index, record)| {
+        record
+            .as_ref()
+            .filter(|entry| entry.kind == 5)
+            .map(|entry| (index, entry))
+    }) else {
+        return Err(parse_error(
+            "compound file has no root directory entry".into(),
+        ));
+    };
+    let mut entries = vec![CompoundEntry {
+        name: root.name.clone(),
+        path: String::new(),
+        kind: root.kind,
+        start: root.start,
+        size: root.size,
+    }];
+    let mut visited = HashSet::from([root_id as u32]);
+    append_compound_directory_tree(&records, root.child, "", &mut visited, &mut entries);
+    if entries.len() == 1 {
+        // Synthetic fixtures and some damaged producers leave all streams unlinked from Root Entry.
+        for (id, record) in records.iter().enumerate() {
+            let Some(record) = record.as_ref() else {
+                continue;
+            };
+            if id == root_id || record.kind == 5 {
+                continue;
+            }
+            entries.push(CompoundEntry {
+                name: record.name.clone(),
+                path: record.name.clone(),
+                kind: record.kind,
+                start: record.start,
+                size: record.size,
+            });
+        }
     }
     Ok(entries)
+}
+
+fn append_compound_directory_tree(
+    records: &[Option<CompoundDirectoryRecord>],
+    id: u32,
+    parent: &str,
+    visited: &mut HashSet<u32>,
+    output: &mut Vec<CompoundEntry>,
+) {
+    if cfb_special(id) || !visited.insert(id) {
+        return;
+    }
+    let Some(record) = records.get(id as usize).and_then(Option::as_ref) else {
+        return;
+    };
+    append_compound_directory_tree(records, record.left, parent, visited, output);
+    let path = if parent.is_empty() {
+        record.name.clone()
+    } else {
+        format!("{parent}/{}", record.name)
+    };
+    output.push(CompoundEntry {
+        name: record.name.clone(),
+        path: path.clone(),
+        kind: record.kind,
+        start: record.start,
+        size: record.size,
+    });
+    if matches!(record.kind, 1 | 5) {
+        append_compound_directory_tree(records, record.child, &path, visited, output);
+    }
+    append_compound_directory_tree(records, record.right, parent, visited, output);
 }
 
 fn convert_biff(input: &str, output: &str) -> Result<(), ConvertError> {
@@ -1572,7 +1706,11 @@ fn read_biff_workbook(input: &[u8]) -> Result<Vec<u8>, ConvertError> {
         return Ok(input.to_vec());
     }
     let file = CompoundFile::parse(input)?;
-    for entry in file.entries.iter().filter(|entry| entry.kind == 2) {
+    for entry in file
+        .entries
+        .iter()
+        .filter(|entry| entry.kind == 2 && !entry.path.contains('/'))
+    {
         if matches!(
             entry.name.trim().to_ascii_lowercase().as_str(),
             "workbook" | "book"
@@ -1895,26 +2033,61 @@ fn convert_ppt_binary(input: &str, output: &str) -> Result<(), ConvertError> {
     let bytes = fs::read(input)
         .map_err(|error| io_error(format!("read PowerPoint binary input: {error}")))?;
     let file = CompoundFile::parse(&bytes)?;
-    let mut items = Vec::new();
-    let mut slide_items = Vec::new();
+    let mut document = Vec::new();
+    let mut current_user = Vec::new();
+    let mut picture_stream = Vec::new();
     for entry in file
         .entries
         .iter()
         .filter(|entry| entry.kind == 2 && entry.size > 0)
     {
-        if !matches!(
-            entry.name.trim().to_ascii_lowercase().as_str(),
-            "powerpoint document" | "current user" | "pictures"
-        ) {
-            continue;
-        }
-        if let Ok(stream) = file.read_stream(entry) {
-            let mut count = 0;
-            if walk_ppt_records(&stream, &mut count, &mut items, &mut slide_items).is_err() {
-                continue;
-            }
-        }
+        let target = match entry.path.trim().to_ascii_lowercase().as_str() {
+            "powerpoint document" => &mut document,
+            "current user" => &mut current_user,
+            "pictures" => &mut picture_stream,
+            _ => continue,
+        };
+        *target = file.read_stream(entry)?;
     }
+    if document.is_empty() {
+        return Err(parse_error(
+            "compound file has no root PowerPoint Document stream".into(),
+        ));
+    }
+
+    let pictures = parse_ppt_picture_stream(&picture_stream);
+    let persisted = ppt_persisted_records(&document, &current_user);
+    let mut slides = persisted
+        .iter()
+        .filter_map(|(_, offset)| ppt_record(&document, *offset))
+        .filter(|(_, record_type, _)| *record_type == 1006)
+        .take(256)
+        .enumerate()
+        .map(|(index, (_, _, payload))| {
+            let mut paragraphs = Vec::new();
+            let _ = walk_ppt_records(payload, &mut 0, &mut paragraphs, &mut Vec::new());
+            retain_ppt_text(&mut paragraphs);
+            let image = find_ppt_blip_id(payload)
+                .and_then(|id| id.checked_sub(1))
+                .and_then(|id| pictures.get(id))
+                .and_then(Clone::clone);
+            OdfSlide {
+                name: format!("Extracted Slide {}", index + 1),
+                paragraphs,
+                legacy_binary: true,
+                image,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    if !slides.is_empty() {
+        return write_pptx(output, &slides);
+    }
+
+    // Older producers may store a navigable record tree without Current User/PersistDirectory data.
+    let mut items = Vec::new();
+    let mut slide_items = Vec::new();
+    walk_ppt_records(&document, &mut 0, &mut items, &mut slide_items)?;
     retain_ppt_text(&mut items);
     for slide in &mut slide_items {
         retain_ppt_text(slide);
@@ -1926,7 +2099,7 @@ fn convert_ppt_binary(input: &str, output: &str) -> Result<(), ConvertError> {
             message: "unsupported legacy PowerPoint binary structure: no TextCharsAtom or TextBytesAtom records were found".into(),
         });
     }
-    let slides = if slide_items.is_empty() {
+    slides = if slide_items.is_empty() {
         // ponytail: old producers without Slide containers keep the previous text-chunk fallback.
         items.chunks(6).map(<[String]>::to_vec).collect::<Vec<_>>()
     } else {
@@ -1939,9 +2112,131 @@ fn convert_ppt_binary(input: &str, output: &str) -> Result<(), ConvertError> {
         name: format!("Extracted Slide {}", index + 1),
         paragraphs,
         legacy_binary: true,
+        image: None,
     })
     .collect::<Vec<_>>();
     write_pptx(output, &slides)
+}
+
+fn ppt_record(data: &[u8], offset: usize) -> Option<(u16, u16, &[u8])> {
+    let header = u16::from_le_bytes(data.get(offset..offset + 2)?.try_into().ok()?);
+    let record_type = u16::from_le_bytes(data.get(offset + 2..offset + 4)?.try_into().ok()?);
+    let size = u32::from_le_bytes(data.get(offset + 4..offset + 8)?.try_into().ok()?) as usize;
+    let start = offset.checked_add(8)?;
+    let payload = data.get(start..start.checked_add(size)?)?;
+    Some((header, record_type, payload))
+}
+
+fn ppt_persisted_records(document: &[u8], current_user: &[u8]) -> Vec<(u32, usize)> {
+    let Some(mut edit_offset) = current_user
+        .get(16..20)
+        .map(|value| u32::from_le_bytes(value.try_into().unwrap()) as usize)
+    else {
+        return Vec::new();
+    };
+    let mut records = HashMap::new();
+    let mut visited = HashSet::new();
+    while edit_offset > 0 && visited.insert(edit_offset) {
+        let Some((_, 4085, edit)) = ppt_record(document, edit_offset) else {
+            break;
+        };
+        let Some(persist_offset) = edit
+            .get(12..16)
+            .map(|value| u32::from_le_bytes(value.try_into().unwrap()) as usize)
+        else {
+            break;
+        };
+        if let Some((_, 6002, directory)) = ppt_record(document, persist_offset) {
+            let mut cursor = 0usize;
+            while cursor + 4 <= directory.len() {
+                let descriptor =
+                    u32::from_le_bytes(directory[cursor..cursor + 4].try_into().unwrap());
+                cursor += 4;
+                let first_id = descriptor & 0x000f_ffff;
+                let count = descriptor >> 20;
+                if count == 0 || count > 4095 || cursor + count as usize * 4 > directory.len() {
+                    break;
+                }
+                for index in 0..count {
+                    let offset =
+                        u32::from_le_bytes(directory[cursor..cursor + 4].try_into().unwrap())
+                            as usize;
+                    cursor += 4;
+                    if ppt_record(document, offset).is_some() {
+                        records.entry(first_id + index).or_insert(offset);
+                    }
+                }
+            }
+        }
+        edit_offset = edit
+            .get(8..12)
+            .map(|value| u32::from_le_bytes(value.try_into().unwrap()) as usize)
+            .unwrap_or(0);
+    }
+    let mut records = records.into_iter().collect::<Vec<_>>();
+    records.sort_unstable_by_key(|(id, _)| *id);
+    records
+}
+
+fn parse_ppt_picture_stream(data: &[u8]) -> Vec<Option<PptSlideImage>> {
+    let mut pictures = Vec::new();
+    let mut offset = 0usize;
+    while let Some((_, _, payload)) = ppt_record(data, offset) {
+        let image = if let Some(start) = find_bytes(payload, &[0xff, 0xd8]) {
+            Some(PptSlideImage {
+                extension: "jpeg",
+                content_type: "image/jpeg",
+                data: payload[start..].to_vec(),
+            })
+        } else if let Some(start) = find_bytes(payload, b"\x89PNG\r\n\x1a\n") {
+            Some(PptSlideImage {
+                extension: "png",
+                content_type: "image/png",
+                data: payload[start..].to_vec(),
+            })
+        } else {
+            None
+        };
+        pictures.push(image);
+        offset += 8 + payload.len();
+    }
+    pictures
+}
+
+fn find_bytes(input: &[u8], needle: &[u8]) -> Option<usize> {
+    (!needle.is_empty() && needle.len() <= input.len())
+        .then(|| {
+            input
+                .windows(needle.len())
+                .position(|value| value == needle)
+        })
+        .flatten()
+}
+
+fn find_ppt_blip_id(data: &[u8]) -> Option<usize> {
+    let mut offset = 0usize;
+    while let Some((header, record_type, payload)) = ppt_record(data, offset) {
+        if record_type == 0xf00b {
+            let property_count = (header >> 4) as usize;
+            for property in payload
+                .get(..property_count.checked_mul(6)?)?
+                .chunks_exact(6)
+            {
+                let id = u16::from_le_bytes(property[..2].try_into().unwrap());
+                let value = u32::from_le_bytes(property[2..].try_into().unwrap());
+                if id & 0x3fff == 260 && id & 0x4000 != 0 && value > 0 {
+                    return Some(value as usize);
+                }
+            }
+        }
+        if header & 0x000f == 0x000f {
+            if let Some(value) = find_ppt_blip_id(payload) {
+                return Some(value);
+            }
+        }
+        offset += 8 + payload.len();
+    }
+    None
 }
 
 fn retain_ppt_text(items: &mut Vec<String>) {
@@ -2034,6 +2329,18 @@ struct WordBinaryPiece {
 fn convert_word_binary(input: &str, output: &str) -> Result<(), ConvertError> {
     let bytes =
         fs::read(input).map_err(|error| io_error(format!("read Word binary input: {error}")))?;
+    if let Ok(document) = rwml::Document::open(&bytes) {
+        if let Some(parent) = Path::new(output).parent() {
+            fs::create_dir_all(parent)
+                .map_err(|error| io_error(format!("create output directory: {error}")))?;
+        }
+        let package = sanitize_rwml_docx(&document.to_docx(), &bytes)?;
+        return fs::write(output, package)
+            .map_err(|error| io_error(format!("write converted Word document: {error}")));
+    }
+
+    // Keep accepting the compact synthetic fixtures and uncommon WPS variants
+    // supported by the original piece-table extractor.
     let file = CompoundFile::parse(&bytes)?;
     let mut streams = WordBinaryStreams {
         document: Vec::new(),
@@ -2043,7 +2350,7 @@ fn convert_word_binary(input: &str, output: &str) -> Result<(), ConvertError> {
     for entry in file
         .entries
         .iter()
-        .filter(|entry| entry.kind == 2 && entry.size > 0)
+        .filter(|entry| entry.kind == 2 && entry.size > 0 && !entry.path.contains('/'))
     {
         let target = match entry.name.trim().to_ascii_lowercase().as_str() {
             "worddocument" => &mut streams.document,
@@ -2068,6 +2375,362 @@ fn convert_word_binary(input: &str, output: &str) -> Result<(), ConvertError> {
         output,
         &decode_word_binary_paragraphs(&streams.document, &pieces),
     )
+}
+
+struct WordPackageEntry {
+    name: String,
+    is_dir: bool,
+    content: Vec<u8>,
+}
+
+struct RecoveredJpeg<'a> {
+    bytes: &'a [u8],
+    width: u16,
+    height: u16,
+}
+
+fn sanitize_rwml_docx(package: &[u8], source: &[u8]) -> Result<Vec<u8>, ConvertError> {
+    let mut archive = ZipArchive::new(Cursor::new(package))
+        .map_err(|error| conversion_error(format!("open converted Word package: {error}")))?;
+    if archive.len() > MAX_PACKAGE_ENTRIES {
+        return Err(conversion_error(
+            "converted Word package has too many entries".into(),
+        ));
+    }
+
+    let mut entries = Vec::with_capacity(archive.len() + 4);
+    let mut total_bytes = 0u64;
+    for index in 0..archive.len() {
+        let mut entry = archive
+            .by_index(index)
+            .map_err(|error| conversion_error(format!("open converted Word entry: {error}")))?;
+        let name = safe_part(entry.name())?;
+        if entry.size() > MAX_ENTRY_BYTES
+            || total_bytes > MAX_PACKAGE_BYTES.saturating_sub(entry.size())
+        {
+            return Err(conversion_error(format!(
+                "converted Word entry {name} exceeds package limits"
+            )));
+        }
+        total_bytes += entry.size();
+        let mut content = Vec::with_capacity(entry.size().min(usize::MAX as u64) as usize);
+        if !entry.is_dir() {
+            entry.read_to_end(&mut content).map_err(|error| {
+                conversion_error(format!("read converted Word entry {name}: {error}"))
+            })?;
+        }
+        entries.push(WordPackageEntry {
+            name,
+            is_dir: entry.is_dir(),
+            content,
+        });
+    }
+
+    restore_rwml_header_images(&mut entries, source, &mut total_bytes)?;
+    for entry in &mut entries {
+        if entry.name.starts_with("word/") && entry.name.ends_with(".xml") {
+            entry.content = strip_rwml_placeholder_text(&entry.content)?;
+        }
+    }
+
+    let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+    for entry in entries {
+        if entry.is_dir {
+            writer
+                .add_directory(entry.name, options)
+                .map_err(|error| conversion_error(format!("create Word output entry: {error}")))?;
+            continue;
+        }
+        writer.start_file(&entry.name, options).map_err(|error| {
+            conversion_error(format!("create Word output entry {}: {error}", entry.name))
+        })?;
+        writer.write_all(&entry.content).map_err(|error| {
+            conversion_error(format!("write Word output entry {}: {error}", entry.name))
+        })?;
+    }
+
+    writer
+        .finish()
+        .map(Cursor::into_inner)
+        .map_err(|error| conversion_error(format!("close converted Word package: {error}")))
+}
+
+fn restore_rwml_header_images(
+    entries: &mut Vec<WordPackageEntry>,
+    source: &[u8],
+    total_bytes: &mut u64,
+) -> Result<(), ConvertError> {
+    let existing_media: Vec<Vec<u8>> = entries
+        .iter()
+        .filter(|entry| entry.name.starts_with("word/media/") && !entry.is_dir)
+        .map(|entry| entry.content.clone())
+        .collect();
+    let recovered: Vec<_> = embedded_jpegs(source)
+        .into_iter()
+        .filter(|image| {
+            image.bytes.len() >= 256
+                && image.width >= 32
+                && image.height >= 16
+                && !existing_media
+                    .iter()
+                    .any(|existing| existing.as_slice() == image.bytes)
+        })
+        .collect();
+    if recovered.is_empty() {
+        return Ok(());
+    }
+
+    let mut header_names: Vec<_> = entries
+        .iter()
+        .filter(|entry| entry.name.starts_with("word/header") && entry.name.ends_with(".xml"))
+        .map(|entry| entry.name.clone())
+        .collect();
+    header_names.sort_unstable();
+    let mut recovered_index = 0usize;
+    for header_name in header_names {
+        while let Some(image) = recovered.get(recovered_index) {
+            let relation_name = word_relationship_part(&header_name);
+            let relation_id = next_recovered_relationship_id(entries, &relation_name);
+            let media_name = next_recovered_media_name(entries, recovered_index + 1);
+            let drawing = recovered_image_drawing(
+                &relation_id,
+                recovered_index + 1,
+                image.width,
+                image.height,
+            );
+            let restored = entries
+                .iter_mut()
+                .find(|entry| entry.name == header_name)
+                .ok_or_else(|| {
+                    conversion_error(format!("missing converted Word part {header_name}"))
+                })
+                .and_then(|entry| {
+                    replace_first_rwml_image_placeholder(&mut entry.content, &drawing)
+                })?;
+            if !restored {
+                break;
+            }
+            if *total_bytes > MAX_PACKAGE_BYTES.saturating_sub(image.bytes.len() as u64) {
+                return Err(conversion_error(
+                    "recovered Word media exceeds package limits".into(),
+                ));
+            }
+            *total_bytes += image.bytes.len() as u64;
+            add_word_image_relationship(entries, &relation_name, &relation_id, &media_name)?;
+            entries.push(WordPackageEntry {
+                name: format!("word/media/{media_name}"),
+                is_dir: false,
+                content: image.bytes.to_vec(),
+            });
+            ensure_jpeg_content_type(entries)?;
+            recovered_index += 1;
+        }
+        if recovered_index == recovered.len() {
+            break;
+        }
+    }
+    Ok(())
+}
+
+fn embedded_jpegs(bytes: &[u8]) -> Vec<RecoveredJpeg<'_>> {
+    let mut images = Vec::new();
+    let mut cursor = 0usize;
+    while cursor + 2 < bytes.len() {
+        let Some(offset) = bytes[cursor..]
+            .windows(3)
+            .position(|value| value == [0xff, 0xd8, 0xff])
+        else {
+            break;
+        };
+        let start = cursor + offset;
+        if let Some((end, width, height)) = jpeg_bounds(bytes, start) {
+            images.push(RecoveredJpeg {
+                bytes: &bytes[start..end],
+                width,
+                height,
+            });
+            cursor = end;
+        } else {
+            cursor = start + 3;
+        }
+    }
+    images
+}
+
+fn replace_first_rwml_image_placeholder(
+    content: &mut Vec<u8>,
+    drawing: &str,
+) -> Result<bool, ConvertError> {
+    let mut xml = String::from_utf8(content.clone())
+        .map_err(|error| conversion_error(format!("decode converted Word XML: {error}")))?;
+    let mut search_from = 0usize;
+    while let Some(relative_start) = xml[search_from..].find("<w:t") {
+        let start = search_from + relative_start;
+        if !xml
+            .as_bytes()
+            .get(start + 4)
+            .is_some_and(|value| *value == b'>' || value.is_ascii_whitespace())
+        {
+            search_from = start + 4;
+            continue;
+        }
+        let Some(open_end) = xml[start..].find('>').map(|offset| start + offset) else {
+            return Err(conversion_error(
+                "converted Word text element is truncated".into(),
+            ));
+        };
+        let Some(close_start) = xml[open_end + 1..]
+            .find("</w:t>")
+            .map(|offset| open_end + 1 + offset)
+        else {
+            return Err(conversion_error(
+                "converted Word text element is not closed".into(),
+            ));
+        };
+        if is_rwml_image_placeholder(xml[open_end + 1..close_start].as_bytes()) {
+            xml.replace_range(start..close_start + "</w:t>".len(), drawing);
+            *content = xml.into_bytes();
+            return Ok(true);
+        }
+        search_from = close_start + "</w:t>".len();
+    }
+    Ok(false)
+}
+
+fn is_rwml_image_placeholder(value: &[u8]) -> bool {
+    let value = String::from_utf8_lossy(value);
+    let value = value.trim();
+    value.starts_with("[rwml image placeholder:") && value.ends_with(']')
+}
+
+fn recovered_image_drawing(relation_id: &str, index: usize, width: u16, height: u16) -> String {
+    let width_emu = u64::from(width) * 9_525;
+    let height_emu = u64::from(height) * 9_525;
+    let drawing_id = 900_000usize.saturating_add(index);
+    format!(
+        r#"<w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{width_emu}" cy="{height_emu}"/><wp:docPr id="{drawing_id}" name="Recovered image {index}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Recovered image {index}.jpg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="{relation_id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{width_emu}" cy="{height_emu}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>"#
+    )
+}
+
+fn word_relationship_part(part: &str) -> String {
+    let (directory, name) = part.rsplit_once('/').unwrap_or(("", part));
+    if directory.is_empty() {
+        format!("_rels/{name}.rels")
+    } else {
+        format!("{directory}/_rels/{name}.rels")
+    }
+}
+
+fn next_recovered_relationship_id(entries: &[WordPackageEntry], relation_name: &str) -> String {
+    let relations = entries
+        .iter()
+        .find(|entry| entry.name == relation_name)
+        .map(|entry| String::from_utf8_lossy(&entry.content));
+    for index in 1usize.. {
+        let candidate = format!("rIdFilensRecovered{index}");
+        if relations
+            .as_deref()
+            .is_none_or(|content| !content.contains(&format!("Id=\"{candidate}\"")))
+        {
+            return candidate;
+        }
+    }
+    unreachable!()
+}
+
+fn next_recovered_media_name(entries: &[WordPackageEntry], start: usize) -> String {
+    for index in start.. {
+        let candidate = format!("filens-recovered-{index}.jpg");
+        if !entries
+            .iter()
+            .any(|entry| entry.name == format!("word/media/{candidate}"))
+        {
+            return candidate;
+        }
+    }
+    unreachable!()
+}
+
+fn add_word_image_relationship(
+    entries: &mut Vec<WordPackageEntry>,
+    relation_name: &str,
+    relation_id: &str,
+    media_name: &str,
+) -> Result<(), ConvertError> {
+    let relationship = format!(
+        r#"<Relationship Id="{relation_id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{media_name}"/>"#
+    );
+    if let Some(entry) = entries.iter_mut().find(|entry| entry.name == relation_name) {
+        insert_xml_before_close(&mut entry.content, "</Relationships>", &relationship)?;
+    } else {
+        entries.push(WordPackageEntry {
+            name: relation_name.into(),
+            is_dir: false,
+            content: format!(
+                r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">{relationship}</Relationships>"#
+            )
+            .into_bytes(),
+        });
+    }
+    Ok(())
+}
+
+fn ensure_jpeg_content_type(entries: &mut [WordPackageEntry]) -> Result<(), ConvertError> {
+    let entry = entries
+        .iter_mut()
+        .find(|entry| entry.name.eq_ignore_ascii_case("[Content_Types].xml"))
+        .ok_or_else(|| conversion_error("converted Word package has no content types".into()))?;
+    let content = String::from_utf8_lossy(&entry.content);
+    if content.contains("Extension=\"jpg\"") {
+        return Ok(());
+    }
+    insert_xml_before_close(
+        &mut entry.content,
+        "</Types>",
+        r#"<Default Extension="jpg" ContentType="image/jpeg"/>"#,
+    )
+}
+
+fn insert_xml_before_close(
+    content: &mut Vec<u8>,
+    closing: &str,
+    fragment: &str,
+) -> Result<(), ConvertError> {
+    let mut xml = String::from_utf8(content.clone())
+        .map_err(|error| conversion_error(format!("decode converted Word XML: {error}")))?;
+    let offset = xml
+        .rfind(closing)
+        .ok_or_else(|| conversion_error(format!("converted Word XML has no {closing}")))?;
+    xml.insert_str(offset, fragment);
+    *content = xml.into_bytes();
+    Ok(())
+}
+
+fn strip_rwml_placeholder_text(content: &[u8]) -> Result<Vec<u8>, ConvertError> {
+    let mut reader = Reader::from_reader(content);
+    reader.config_mut().trim_text(false);
+    let mut writer = Writer::new(Vec::new());
+    loop {
+        let event = reader
+            .read_event()
+            .map_err(|error| conversion_error(format!("parse converted Word XML: {error}")))?;
+        match event {
+            Event::Eof => break,
+            Event::Text(text) if is_rwml_placeholder(text.as_ref()) => {}
+            event => writer
+                .write_event(event.into_owned())
+                .map_err(|error| conversion_error(format!("encode converted Word XML: {error}")))?,
+        }
+    }
+    Ok(writer.into_inner())
+}
+
+fn is_rwml_placeholder(value: &[u8]) -> bool {
+    let value = String::from_utf8_lossy(value);
+    let value = value.trim();
+    (value.starts_with("[rwml image placeholder:") || value.starts_with("[rwml chart placeholder:"))
+        && value.ends_with(']')
 }
 
 fn parse_word_binary_piece_table(streams: &WordBinaryStreams) -> Option<Vec<WordBinaryPiece>> {
@@ -2755,6 +3418,7 @@ fn parse_odf_slides(content: &str) -> Result<Vec<OdfSlide>, ConvertError> {
                             .unwrap_or_else(|| format!("Slide {}", slides.len() + 1)),
                         paragraphs: Vec::new(),
                         legacy_binary: false,
+                        image: None,
                     })
                 }
                 b"p" | b"h" if slide.is_some() => in_paragraph = true,
@@ -3263,7 +3927,7 @@ fn write_pptx(output: &str, slides: &[OdfSlide]) -> Result<(), ConvertError> {
     let mut files = vec![
         (
             "[Content_Types].xml".to_string(),
-            pptx_content_types(slides.len()),
+            pptx_content_types(slides),
         ),
         ("_rels/.rels".to_string(), pptx_root_relationships()),
         (
@@ -3280,6 +3944,12 @@ fn write_pptx(output: &str, slides: &[OdfSlide]) -> Result<(), ConvertError> {
             format!("ppt/slides/slide{}.xml", index + 1),
             pptx_slide(slide),
         ));
+        if let Some(image) = &slide.image {
+            files.push((
+                format!("ppt/slides/_rels/slide{}.xml.rels", index + 1),
+                pptx_image_relationship(index + 1, image.extension),
+            ));
+        }
     }
     for (name, content) in files {
         writer
@@ -3289,24 +3959,55 @@ fn write_pptx(output: &str, slides: &[OdfSlide]) -> Result<(), ConvertError> {
             .write_all(content.as_bytes())
             .map_err(|error| io_error(format!("write output entry {name}: {error}")))?;
     }
+    for (index, slide) in slides.iter().enumerate() {
+        let Some(image) = &slide.image else {
+            continue;
+        };
+        let name = format!("ppt/media/image{}.{}", index + 1, image.extension);
+        writer
+            .start_file(&name, options)
+            .map_err(|error| io_error(format!("create output entry {name}: {error}")))?;
+        writer
+            .write_all(&image.data)
+            .map_err(|error| io_error(format!("write output entry {name}: {error}")))?;
+    }
     writer
         .finish()
         .map_err(|error| io_error(format!("close output archive: {error}")))?;
     Ok(())
 }
 
-fn pptx_content_types(slide_count: usize) -> String {
+fn pptx_content_types(slides: &[OdfSlide]) -> String {
     let mut overrides = String::new();
-    for index in 1..=slide_count {
+    for index in 1..=slides.len() {
         overrides.push_str(&format!("  <Override PartName=\"/ppt/slides/slide{index}.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.slide+xml\"/>\n"));
+    }
+    let mut image_defaults = String::new();
+    let mut extensions = HashSet::new();
+    for image in slides.iter().filter_map(|slide| slide.image.as_ref()) {
+        if extensions.insert(image.extension) {
+            image_defaults.push_str(&format!(
+                "  <Default Extension=\"{}\" ContentType=\"{}\"/>\n",
+                image.extension, image.content_type
+            ));
+        }
     }
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
-  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+{image_defaults}  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
 {overrides}</Types>"#
+    )
+}
+
+fn pptx_image_relationship(slide_index: usize, extension: &str) -> String {
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rIdImage" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image{slide_index}.{extension}"/>
+</Relationships>"#
     )
 }
 
@@ -3350,6 +4051,9 @@ fn pptx_presentation_relationships(slide_count: usize) -> String {
 }
 
 fn pptx_slide(slide: &OdfSlide) -> String {
+    if slide.image.is_some() {
+        return pptx_image_slide(slide);
+    }
     if slide.legacy_binary {
         return pptx_binary_slide(slide);
     }
@@ -3399,6 +4103,26 @@ fn pptx_slide(slide: &OdfSlide) -> String {
 </p:sld>"#,
         escape(&slide.name),
         escape(title)
+    )
+}
+
+fn pptx_image_slide(slide: &OdfSlide) -> String {
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld name="{}">
+    <p:spTree>
+      <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+      <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
+      <p:pic>
+        <p:nvPicPr><p:cNvPr id="2" name="Slide image"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>
+        <p:blipFill><a:blip r:embed="rIdImage"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>
+        <p:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="9144000" cy="5143500"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr>
+      </p:pic>
+    </p:spTree>
+  </p:cSld>
+</p:sld>"#,
+        escape(&slide.name)
     )
 }
 
@@ -5935,10 +6659,37 @@ mod tests {
 
     fn test_jpeg(width: u16, height: u16, precision: u8, payload_size: usize) -> Vec<u8> {
         let mut jpeg = vec![
-            0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, precision,
-            (height >> 8) as u8, height as u8, (width >> 8) as u8, width as u8,
-            0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00,
-            0xff, 0xda, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3f, 0x00,
+            0xff,
+            0xd8,
+            0xff,
+            0xc0,
+            0x00,
+            0x11,
+            precision,
+            (height >> 8) as u8,
+            height as u8,
+            (width >> 8) as u8,
+            width as u8,
+            0x03,
+            0x01,
+            0x11,
+            0x00,
+            0x02,
+            0x11,
+            0x00,
+            0x03,
+            0x11,
+            0x00,
+            0xff,
+            0xda,
+            0x00,
+            0x08,
+            0x01,
+            0x01,
+            0x00,
+            0x00,
+            0x3f,
+            0x00,
         ];
         jpeg.extend(std::iter::repeat_n(0x42, payload_size));
         jpeg.extend_from_slice(&[0xff, 0xd9]);
@@ -5987,6 +6738,62 @@ mod tests {
         let output = String::from_utf8(output).unwrap();
         assert!(output.contains("wordprocessingml.document.main+xml"));
         assert!(!output.to_ascii_lowercase().contains("vbaproject"));
+    }
+
+    #[test]
+    fn strips_internal_rwml_placeholders_without_dropping_document_text() {
+        let input = br#"<?xml version="1.0"?><w:p xmlns:w="w"><w:r><w:t>[rwml image placeholder: bytes unavailable]</w:t></w:r><w:r><w:t>Visible text</w:t></w:r><w:r><w:t>[rwml chart placeholder: chart unavailable]</w:t></w:r></w:p>"#;
+        let output = String::from_utf8(strip_rwml_placeholder_text(input).unwrap()).unwrap();
+
+        assert!(!output.contains("rwml image placeholder"));
+        assert!(!output.contains("rwml chart placeholder"));
+        assert!(output.contains("Visible text"));
+    }
+
+    #[test]
+    fn restores_embedded_jpeg_in_rwml_header_placeholder() {
+        let jpeg = test_jpeg(200, 63, 8, 512);
+        let source = [b"compound".as_slice(), jpeg.as_slice(), b"tail"].concat();
+        let mut package = ZipWriter::new(Cursor::new(Vec::new()));
+        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+        package.start_file("[Content_Types].xml", options).unwrap();
+        package
+            .write_all(
+                br#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/></Types>"#,
+            )
+            .unwrap();
+        package.start_file("word/header1.xml", options).unwrap();
+        package
+            .write_all(br#"<?xml version="1.0"?><w:hdr xmlns:w="w" xmlns:r="r"><w:tbl><w:tr><w:tc><w:p><w:r><w:t xml:space="preserve">[rwml image placeholder: image unavailable]</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:hdr>"#)
+            .unwrap();
+        let package = package.finish().unwrap().into_inner();
+
+        let output = sanitize_rwml_docx(&package, &source).unwrap();
+        let mut archive = ZipArchive::new(Cursor::new(output)).unwrap();
+        let mut header = String::new();
+        archive
+            .by_name("word/header1.xml")
+            .unwrap()
+            .read_to_string(&mut header)
+            .unwrap();
+        assert!(header.contains("<w:drawing>"));
+        assert!(!header.contains("rwml image placeholder"));
+
+        let mut media = Vec::new();
+        archive
+            .by_name("word/media/filens-recovered-1.jpg")
+            .unwrap()
+            .read_to_end(&mut media)
+            .unwrap();
+        assert_eq!(media, jpeg);
+
+        let mut relationships = String::new();
+        archive
+            .by_name("word/_rels/header1.xml.rels")
+            .unwrap()
+            .read_to_string(&mut relationships)
+            .unwrap();
+        assert!(relationships.contains("relationships/image"));
     }
 
     #[test]
@@ -6308,6 +7115,71 @@ mod tests {
         walk_ppt_records(&document, &mut 0, &mut loose, &mut slides).unwrap();
         assert!(loose.is_empty());
         assert_eq!(slides, [["First"], ["Second"]]);
+    }
+
+    #[test]
+    fn resolves_compound_root_streams_without_embedded_name_collisions() {
+        fn directory_record(name: &str, kind: u8, left: u32, right: u32, child: u32) -> [u8; 128] {
+            let mut record = [0u8; 128];
+            let encoded = name
+                .encode_utf16()
+                .chain(std::iter::once(0))
+                .collect::<Vec<_>>();
+            for (index, value) in encoded.iter().enumerate() {
+                record[index * 2..index * 2 + 2].copy_from_slice(&value.to_le_bytes());
+            }
+            record[0x40..0x42].copy_from_slice(&((encoded.len() * 2) as u16).to_le_bytes());
+            record[0x42] = kind;
+            record[0x44..0x48].copy_from_slice(&left.to_le_bytes());
+            record[0x48..0x4c].copy_from_slice(&right.to_le_bytes());
+            record[0x4c..0x50].copy_from_slice(&child.to_le_bytes());
+            record
+        }
+
+        let directory = [
+            directory_record("Root Entry", 5, CFB_FREE, CFB_FREE, 1),
+            directory_record("WordDocument", 2, CFB_FREE, 2, CFB_FREE),
+            directory_record("ObjectPool", 1, CFB_FREE, CFB_FREE, 3),
+            directory_record("WordDocument", 2, CFB_FREE, CFB_FREE, CFB_FREE),
+        ]
+        .concat();
+        let entries = parse_compound_directory(&directory).unwrap();
+        assert!(entries.iter().any(|entry| entry.path == "WordDocument"));
+        assert!(
+            entries
+                .iter()
+                .any(|entry| entry.path == "ObjectPool/WordDocument")
+        );
+        assert_eq!(
+            entries
+                .iter()
+                .filter(|entry| entry.path == "WordDocument")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn extracts_powerpoint_blip_ids_and_picture_payloads() {
+        let jpeg = test_jpeg(1280, 720, 8, 4);
+        let mut picture_payload = vec![0u8; 17];
+        picture_payload.extend_from_slice(&jpeg);
+        let mut picture_stream = Vec::new();
+        picture_stream.extend_from_slice(&0x46a0u16.to_le_bytes());
+        picture_stream.extend_from_slice(&0xf01du16.to_le_bytes());
+        picture_stream.extend_from_slice(&(picture_payload.len() as u32).to_le_bytes());
+        picture_stream.extend_from_slice(&picture_payload);
+        let pictures = parse_ppt_picture_stream(&picture_stream);
+        assert_eq!(pictures.len(), 1);
+        assert_eq!(pictures[0].as_ref().unwrap().data, jpeg);
+
+        let mut fopt = Vec::new();
+        fopt.extend_from_slice(&0x0013u16.to_le_bytes());
+        fopt.extend_from_slice(&0xf00bu16.to_le_bytes());
+        fopt.extend_from_slice(&6u32.to_le_bytes());
+        fopt.extend_from_slice(&0x4104u16.to_le_bytes());
+        fopt.extend_from_slice(&1u32.to_le_bytes());
+        assert_eq!(find_ppt_blip_id(&fopt), Some(1));
     }
 
     #[test]

@@ -209,6 +209,7 @@ type Model3dObjectNode = Object3D & {
 };
 
 const MODEL3D_DIRECT_FORMATS = new Set(['step', 'stp', 'stl', 'obj', 'ply', 'gltf', 'glb', '3mf', 'amf', 'dae', 'fbx', '3ds', 'usdz', 'gcode', 'gco', 'nc', 'wrl', 'vrml', 'pcd', 'xyz', 'vtk', 'vox', 'ldr', 'mpd', 'kmz', 'md2', 'lwo', 'bvh', 'pdb', 'nrrd', 'nhdr']);
+const VTK_HEADER_PROBE_BYTES = 250;
 const MAX_SECTION_HELPER_TRIANGLES = 12000;
 const MAX_SECTION_HELPER_CACHE_ENTRIES = 24;
 const SECTION_HELPER_MIN_UPDATE_MS = 33;
@@ -3335,7 +3336,7 @@ export function loadXyzObject(source: string): Object3D {
 }
 
 export function loadVtkObject(source: ArrayBuffer | string): Object3D {
-  const geometry = new VTKLoader().parse(source, '');
+  const geometry = new VTKLoader().parse(prepareVtkLoaderSource(source), '');
   if (!geometry.hasAttribute('normal')) {
     geometry.computeVertexNormals();
   }
@@ -3345,6 +3346,20 @@ export function loadVtkObject(source: ArrayBuffer | string): Object3D {
     metalness: 0.04,
     vertexColors: geometry.hasAttribute('color')
   }));
+}
+
+function prepareVtkLoaderSource(source: ArrayBuffer | string): ArrayBuffer {
+  const bytes = typeof source === 'string' ? new TextEncoder().encode(source) : new Uint8Array(source);
+  if (bytes.byteLength >= VTK_HEADER_PROBE_BYTES) {
+    return typeof source === 'string' ? bytes.buffer : source;
+  }
+
+  // Three.js probes a fixed 250-byte prefix even when the complete VTK file is shorter.
+  const padded = new Uint8Array(VTK_HEADER_PROBE_BYTES);
+  padded.fill(0x20);
+  padded.set(bytes);
+  padded[padded.length - 1] = 0x0a;
+  return padded.buffer;
 }
 
 export function loadVoxObject(source: ArrayBuffer): Object3D {
