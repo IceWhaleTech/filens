@@ -41,6 +41,55 @@ function precompressAssets() {
   };
 }
 
+const converterCoreWasmSource = path.resolve(__dirname, '../../wasm/converter-core/dist/converter-core.wasm');
+const converterCoreWasmOutput = 'externals/converter-core.wasm';
+const converterImageWasmSource = path.resolve(__dirname, '../../wasm/converter-image/dist/converter-image.wasm');
+const converterImageWasmOutput = 'externals/converter-image.wasm';
+const externalConverterAssets = [
+  { source: converterCoreWasmSource, output: converterCoreWasmOutput },
+  { source: converterImageWasmSource, output: converterImageWasmOutput }
+];
+
+function externalConverterWasms() {
+  let basePath = '/';
+  return {
+    name: 'filens-external-converter-core',
+    configResolved(config: { base: string }) {
+      basePath = config.base.endsWith('/') ? config.base : `${config.base}/`;
+    },
+    configureServer(server: { middlewares: { use: (handler: (request: { url?: string }, response: { statusCode: number; setHeader: (name: string, value: string) => void; end: (body: Buffer) => void }, next: (error?: unknown) => void) => void) => void } }) {
+      server.middlewares.use(async (request, response, next) => {
+        const requestPath = (request.url ?? '').split('?', 1)[0];
+        const asset = externalConverterAssets.find(({ output }) =>
+          requestPath === `${basePath}${output}` || requestPath === `/${output}`
+        );
+        if (!asset) {
+          next();
+          return;
+        }
+        try {
+          const bytes = await readFile(asset.source);
+          response.statusCode = 200;
+          response.setHeader('Content-Type', 'application/wasm');
+          response.setHeader('Cache-Control', 'no-cache');
+          response.end(bytes);
+        } catch (error) {
+          next(error);
+        }
+      });
+    },
+    async generateBundle() {
+      for (const asset of externalConverterAssets) {
+        this.emitFile({
+          type: 'asset',
+          fileName: asset.output,
+          source: await readFile(asset.source)
+        });
+      }
+    }
+  };
+}
+
 async function listFiles(root: string): Promise<string[]> {
   const entries = await readdir(root, { withFileTypes: true });
   const files: string[] = [];
@@ -67,8 +116,8 @@ async function writeBuildInfo(outputDir: string): Promise<void> {
   })));
   const rawFiles = files.filter(({ path: filePath }) => !filePath.endsWith('.gz') && !filePath.endsWith('.br'));
   const runtimeFiles = rawFiles.filter(({ path: filePath }) => !filePath.startsWith('samples/'));
-  const runtimeTransferFiles = files.filter(({ path: filePath }) => !filePath.startsWith('samples/') && (filePath.endsWith('.gz') || filePath.endsWith('.br')));
-  const wasm = rawFiles.find(({ path: filePath }) => /^assets\/converter-core-[^/]+\.wasm$/.test(filePath));
+  const wasm = rawFiles.find(({ path: filePath }) => filePath === converterCoreWasmOutput);
+  const imageWasm = rawFiles.find(({ path: filePath }) => filePath === converterImageWasmOutput);
   const entryReference = (await readFile(path.join(outputDir, 'index.html'), 'utf8')).match(/src="([^"]+\.js)"/)?.[1]?.match(/assets\/[^/]+\.js$/)?.[0];
   const entry = entryReference ? rawFiles.find(({ path: filePath }) => filePath === entryReference) : undefined;
   const compressedSize = (filePath: string | undefined, suffix: '.gz' | '.br'): number | undefined => {
@@ -80,12 +129,6 @@ async function writeBuildInfo(outputDir: string): Promise<void> {
     schemaVersion: 1,
     distBytes: sumBytes(rawFiles),
     runtimeBytes: sumBytes(runtimeFiles),
-    runtimeGzipBytes: sumBytes(runtimeTransferFiles.filter(({ path: filePath }) => filePath.endsWith('.gz'))),
-    runtimeBrotliBytes: sumBytes(runtimeTransferFiles.filter(({ path: filePath }) => filePath.endsWith('.br'))),
-    referencedDist: {
-      gzipBytes: sumBytes(runtimeTransferFiles.filter(({ path: filePath }) => filePath.endsWith('.gz'))),
-      brotliBytes: sumBytes(runtimeTransferFiles.filter(({ path: filePath }) => filePath.endsWith('.br')))
-    },
     entry: entry ? {
       file: entry.path,
       bytes: entry.bytes,
@@ -94,9 +137,19 @@ async function writeBuildInfo(outputDir: string): Promise<void> {
     } : undefined,
     converterCoreWasm: wasm ? {
       file: wasm.path,
+      external: true,
+      loading: 'on-demand',
       bytes: wasm.bytes,
       gzipBytes: compressedSize(wasm.path, '.gz'),
       brotliBytes: compressedSize(wasm.path, '.br')
+    } : undefined,
+    converterImageWasm: imageWasm ? {
+      file: imageWasm.path,
+      external: true,
+      loading: 'on-demand',
+      bytes: imageWasm.bytes,
+      gzipBytes: compressedSize(imageWasm.path, '.gz'),
+      brotliBytes: compressedSize(imageWasm.path, '.br')
     } : undefined,
     typicalPerformance: {
       source: 'README.zh-CN.md 本机性能快照（Windows 10 / Xeon E5-2696 v4 / Node.js 20.20 / Go 1.24）',
@@ -194,7 +247,7 @@ const externalSampleProxy = {
 
 export default defineConfig({
   base: '/modules/filens/',
-  plugins: [vue(), precompressAssets()],
+  plugins: [vue(), externalConverterWasms(), precompressAssets()],
   server: { proxy: externalSampleProxy },
   preview: { proxy: externalSampleProxy },
   resolve: {

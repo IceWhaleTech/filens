@@ -77,7 +77,8 @@ const expectedConversions = [
   ['dif', 'xlsx'],
   ...['csv', 'tsv', 'tab', 'psv', 'json', 'jsonl', 'ndjson', 'jsonlines', 'ldjson'].map((sourceFormat) => [sourceFormat, 'xlsx']),
   ...['dng', 'cr2', 'cr3', 'nef', 'nrw', 'arw', 'sr2', 'srf', 'orf', 'rw2', 'rwl', 'raf', 'kdc', 'x3f', 'pef', 'srw', 'erf', 'mef', 'mos', 'mrw', '3fr', 'iiq']
-    .map((sourceFormat) => [sourceFormat, 'jpg'])
+    .map((sourceFormat) => [sourceFormat, 'jpg']),
+  ['icns', 'png']
 ];
 
 const expectedErrorCodes = [
@@ -305,7 +306,7 @@ const forbiddenDefaultSources = [
 const expectedConversionSources = new Set(expectedConversions.map(([sourceFormat]) => sourceFormat));
 const forbiddenManifestSources = forbiddenDefaultSources.filter((sourceFormat) => !expectedConversionSources.has(sourceFormat));
 
-const allowedTargets = new Set(['pptx', 'docx', 'xlsx', 'jpg']);
+const allowedTargets = new Set(['pptx', 'docx', 'xlsx', 'jpg', 'png']);
 const rawSources = new Set(['dng', 'cr2', 'cr3', 'nef', 'nrw', 'arw', 'sr2', 'srf', 'orf', 'rw2', 'rwl', 'raf', 'kdc', 'x3f', 'pef', 'srw', 'erf', 'mef', 'mos', 'mrw', '3fr', 'iiq']);
 const failures = [];
 let checkCount = 0;
@@ -342,10 +343,13 @@ function normalizePairs(pairs) {
 
 async function verifyManifest() {
   const manifest = await readJson('wasm/converter-core/manifest/conversions.json');
+  const imageManifest = await readJson('wasm/converter-image/manifest/conversions.json');
   const fixtureManifest = await readJson('examples/go-wazero-converter/fixtures/manifest.json');
   const normalized = normalizePairs(manifest);
+  const normalizedImage = normalizePairs(imageManifest);
   const fixturePairs = normalizePairs(fixtureManifest.jobs ?? []);
   const expected = expectedConversions.map(([sourceFormat, targetFormat]) => ({ sourceFormat, targetFormat }));
+  const expectedImage = expected.filter(({ targetFormat }) => targetFormat === 'jpg' || targetFormat === 'png');
 
   check(
     JSON.stringify(normalized) === JSON.stringify(expected),
@@ -354,6 +358,10 @@ async function verifyManifest() {
   check(
     JSON.stringify(fixturePairs) === JSON.stringify(expected),
     `converter fixture manifest drifted from the shared conversion matrix: ${fixturePairs.map(pairKey).join(', ')}`
+  );
+  check(
+    JSON.stringify(normalizedImage) === JSON.stringify(expectedImage),
+    `image converter manifest drifted from the image conversion matrix: ${normalizedImage.map(pairKey).join(', ')}`
   );
 
   const sources = new Set();
@@ -439,7 +447,7 @@ async function verifyBrowserWasmClientBoundary() {
     'browser WASM converter client must derive supported source/target pairs from the shared manifest'
   );
   check(
-    source.includes('function validateSupportedConversionPair(sourceFormat: string, targetFormat: string): void'),
+    /function validateSupportedConversionPair\(sourceFormat: string, targetFormat: string\): (?:void|string)/.test(source),
     'browser WASM converter client must keep a manifest-based unsupported_format preflight'
   );
   check(
@@ -448,7 +456,7 @@ async function verifyBrowserWasmClientBoundary() {
   );
   check(Boolean(preflightSource), 'browser WASM converter client convert() preflight block must be present');
   check(
-    preflightSource.indexOf('validateSupportedConversionPair(sourceFormat, targetFormat);') >= 0,
+    preflightSource.includes('validateSupportedConversionPair(sourceFormat, targetFormat)'),
     'browser WASM converter client must validate conversion pairs before WASM module loading'
   );
   for (const duplicatedList of [
@@ -482,7 +490,8 @@ async function verifyDemoEntrypoints() {
     'demo detectKind() must use the manifest-derived conversion map for conversion routes'
   );
   check(
-    appSource.includes('conversionKindBySource.has(extensionFromNormalizedName(normalized))'),
+    appSource.includes('conversionKindBySource.has(extensionFromNormalizedName(normalized))')
+      || appSource.includes('conversionKindBySource.has(extension)'),
     'demo bundle primary scoring must use the manifest-derived conversion map for conversion routes'
   );
   check(
@@ -528,7 +537,8 @@ async function verifyRealSampleScriptEntrypoints() {
     'real-sample preview family map must derive conversion sources from the shared converter manifest'
   );
   check(
-    familyMapSource.includes('const conversionSourceExts = [...conversionPagedExts, ...conversionFlowExts, ...conversionWorkbookExts];')
+    familyMapSource.includes('const conversionSourceExts = [...conversionPagedExts, ...conversionFlowExts, ...conversionWorkbookExts, ...conversionImageExts];')
+      && familyMapSource.includes("const conversionImageExts = conversionExtsByTarget.get('png') ?? [];")
       && familyMapSource.includes('export { conversionSourceExts, expectedFamilyForExt };'),
     'real-sample preview family map must export manifest-derived conversion source extensions'
   );

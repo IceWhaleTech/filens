@@ -102,14 +102,24 @@ interface PagesInlineAttachment {
   anchorParagraphIndex: number;
   fragmentIndex: number;
   placement: 'standalone' | 'prefix' | 'suffix' | 'middle';
+  flowPositioned: boolean;
+  flowOffsetY: number;
   item: SlideItem;
   block: PagesBodyBlock;
 }
 
 interface PagesAttachmentPositionHint {
   pageIndex: number;
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
+}
+
+interface PagesTablePartitionHint {
+  pageIndex: number;
+  rowStart: number;
+  rowCount: number;
+  columnStart: number;
+  columnCount: number;
 }
 
 interface PagesTextHintFragment {
@@ -126,6 +136,8 @@ interface PagesParagraphMetrics {
 
 interface PagesBodyFlowBlock extends PagesBodyBlock {
   fragmentIndex: number;
+  flowPositioned?: boolean;
+  flowOffsetY?: number;
 }
 
 interface PagesFloatingGroup {
@@ -255,6 +267,7 @@ function buildPagesDocument(context: SemanticBuildContext): ParsedPagesDocument 
   const inlineAttachmentsByPage = new Map<number, PagesInlineAttachment[]>();
   const pencilItemsByPage = new Map<number, SlideItem[]>();
   const attachmentPositionHints = buildPagesAttachmentPositionHints(context.archive, documentValue);
+  const tablePartitionHints = buildPagesTablePartitionHints(context.archive, documentValue);
   const layoutStatePageCount = resolvePagesLayoutStatePageCount(context.archive, documentValue);
 
   if (bodyStorage) {
@@ -317,55 +330,76 @@ function buildPagesDocument(context: SemanticBuildContext): ParsedPagesDocument 
 
         const attachmentId = getRefId(readField(attachment.entry, ['object'])) ??
           (attachmentObject ? findRecordIdByValue(context.archive, attachmentObject) : undefined);
+        const drawableId = findRecordIdByValue(context.archive, drawable);
         const anchorParagraphIndex = findParagraphIndexForCharacter(paragraphRanges, attachment.characterIndex);
-        const attachmentHint = attachmentId != null ? attachmentPositionHints.get(attachmentId) : undefined;
+        const attachmentHint =
+          (attachmentId != null ? attachmentPositionHints.get(attachmentId) : undefined) ??
+          (drawableId != null ? attachmentPositionHints.get(drawableId) : undefined);
         const pageIndex = attachmentHint
           ? Math.max(0, attachmentHint.pageIndex)
           : findBodyPageIndexForCharacter(paginatedBodyPages, paragraphRanges, attachment.characterIndex, anchorParagraphIndex);
-        const pageInfo = paginatedBodyPages[pageIndex] ?? paginatedBodyPages[paginatedBodyPages.length - 1];
+        const pageInfo = findPagesBodyPageByIndex(paginatedBodyPages, pageIndex) ?? paginatedBodyPages[paginatedBodyPages.length - 1];
         if (!pageInfo && !attachmentHint) {
           continue;
         }
 
-        positionPagesAttachmentItem({
-          archive: context.archive,
-          item: attachmentItem,
-          attachmentObject,
-          attachmentHint,
-          page: pageInfo,
-          paragraphRanges,
-          characterIndex: attachment.characterIndex,
-          anchorParagraphIndex,
-          paragraphCount: paragraphRanges.length,
-          pageParagraphStart: pageInfo?.startParagraph ?? 0,
-          pageParagraphEnd: pageInfo?.endParagraph ?? paragraphRanges.length,
-          paragraphMetrics,
-          leftMargin: layout.leftMargin,
-          topMargin: layout.topMargin,
-          bottomMargin: layout.bottomMargin,
-          pageHeight: layout.height
-        });
+        const itemParts = attachmentItem.kind === 'table'
+          ? resolvePagesTableItemPartitions(attachmentItem, pageIndex, tablePartitionHints)
+          : [];
+        const renderParts = itemParts.length
+          ? itemParts
+          : [{ pageIndex, item: attachmentItem }];
 
-        const pencilItems = buildPencilAnnotationItems(context, drawable, attachmentOrder, attachmentItem.transform);
+        for (let partIndex = 0; partIndex < renderParts.length; partIndex += 1) {
+          const part = renderParts[partIndex];
+          const partPageInfo = findPagesBodyPageByIndex(paginatedBodyPages, part.pageIndex) ?? pageInfo;
+          const partHint = partIndex === 0 ? attachmentHint : { pageIndex: part.pageIndex };
+          positionPagesAttachmentItem({
+            archive: context.archive,
+            item: part.item,
+            attachmentObject,
+            attachmentHint: partHint,
+            page: partPageInfo,
+            paragraphRanges,
+            characterIndex: attachment.characterIndex,
+            anchorParagraphIndex,
+            paragraphCount: paragraphRanges.length,
+            pageParagraphStart: partPageInfo?.startParagraph ?? 0,
+            pageParagraphEnd: partPageInfo?.endParagraph ?? paragraphRanges.length,
+            paragraphMetrics,
+            leftMargin: layout.leftMargin,
+            topMargin: layout.topMargin,
+            bottomMargin: layout.bottomMargin,
+            pageHeight: layout.height
+          });
+
+          const flowPositioned = !hasAbsolutePagesAttachmentPosition(partHint);
+          const pageBucket = inlineAttachmentsByPage.get(part.pageIndex) ?? [];
+          pageBucket.push({
+            characterIndex: attachment.characterIndex,
+            anchorParagraphIndex,
+            fragmentIndex: resolvePagesAttachmentFragmentIndex(partPageInfo, paragraphRanges, attachment.characterIndex, anchorParagraphIndex),
+            placement: resolvePagesAttachmentPlacement(paragraphRanges, attachment.characterIndex, anchorParagraphIndex),
+            flowPositioned,
+            flowOffsetY: flowPositioned
+              ? Number(readField<number>(attachmentObject, ['vOffset', 'v_offset']) ?? 0)
+              : 0,
+            item: part.item,
+            block: {
+              id: `pages-attachment-${part.pageIndex + 1}-${attachmentOrder}-${partIndex + 1}`,
+              kind: part.item.kind === 'table' ? 'table' : 'drawable',
+              item: part.item,
+              sourceRecordId: attachmentObject ? findRecordIdByValue(context.archive, attachmentObject) : undefined
+            }
+          });
+          inlineAttachmentsByPage.set(part.pageIndex, pageBucket);
+        }
+
+        const firstRenderPart = renderParts[0];
+        const pencilItems = buildPencilAnnotationItems(context, drawable, attachmentOrder, firstRenderPart.item.transform);
         const pagePencilItems = pencilItemsByPage.get(pageIndex) ?? [];
         pagePencilItems.push(...pencilItems);
         pencilItemsByPage.set(pageIndex, pagePencilItems);
-
-        const pageBucket = inlineAttachmentsByPage.get(pageIndex) ?? [];
-        pageBucket.push({
-          characterIndex: attachment.characterIndex,
-          anchorParagraphIndex,
-          fragmentIndex: resolvePagesAttachmentFragmentIndex(pageInfo, paragraphRanges, attachment.characterIndex, anchorParagraphIndex),
-          placement: resolvePagesAttachmentPlacement(paragraphRanges, attachment.characterIndex, anchorParagraphIndex),
-          item: attachmentItem,
-          block: {
-            id: `pages-attachment-${pageIndex + 1}-${attachmentOrder}`,
-            kind: attachmentItem.kind === 'table' ? 'table' : 'drawable',
-            item: attachmentItem,
-            sourceRecordId: attachmentObject ? findRecordIdByValue(context.archive, attachmentObject) : undefined
-          }
-        });
-        inlineAttachmentsByPage.set(pageIndex, pageBucket);
         attachmentOrder += 1;
       }
     }
@@ -743,14 +777,17 @@ function buildKeynoteSlideItems(
     );
   }
 
-  const pushDrawable = (drawableRef: unknown) => {
+  const pushDrawable = (drawableRef: unknown, depth = 0, inheritedOpacity?: number) => {
     const drawableRecord = getRecord(context.archive, drawableRef);
     const drawable = asObject(drawableRecord?.value);
-    if (!drawable || (drawableRecord?.id != null && seenDrawableIds.has(drawableRecord.id))) {
+    if (!drawable || depth > 16 || (drawableRecord?.id != null && seenDrawableIds.has(drawableRecord.id))) {
       return;
     }
 
-    const item = buildDrawableItem(context, drawable, items.length, {
+    const freehand = resolveFreehandDrawingArchive(drawable);
+    const freehandOpacity = normalizeDrawableOpacity(Number(readField<number>(freehand, ['opacity']) ?? NaN));
+    const effectiveOpacity = combineDrawableOpacity(inheritedOpacity, freehandOpacity);
+    let item = buildDrawableItem(context, drawable, items.length, {
       slide,
       attachmentContext: {
         pageNumber: options.pageNumber,
@@ -760,32 +797,59 @@ function buildKeynoteSlideItems(
       }
     });
     if (!item) {
-      if (context.archive.type === 'key') {
-        items.push(...buildPencilAnnotationItems(context, drawable, items.length));
+      // Containers have no placeholder visibility to filter, so mark them
+      // before descending to protect against malformed cyclic child graphs.
+      if (drawableRecord?.id != null) {
+        seenDrawableIds.add(drawableRecord.id);
       }
-      return;
-    }
-    const placeholderKind = drawableRecord?.typeName === 'KN.PlaceholderArchive'
-      ? Number(readField<number>(drawable, ['kind']) ?? -1)
-      : undefined;
-    if (
-      drawableRecord?.typeName === 'KN.PlaceholderArchive' &&
-      (
-        hiddenPlaceholderKinds.has(placeholderKind ?? -1) ||
-        localHiddenPlaceholderKinds.has(placeholderKind ?? -1) ||
-        suppressedPlaceholderKinds.has(placeholderKind ?? -1) ||
-        !shouldIncludeKeynotePlaceholderItem(item)
-      )
-    ) {
-      return;
+      if (context.archive.type === 'key') {
+        items.push(...buildPencilAnnotationItems(context, drawable, items.length, undefined, effectiveOpacity));
+      }
+    } else {
+      const placeholderKind = drawableRecord?.typeName === 'KN.PlaceholderArchive'
+        ? Number(readField<number>(drawable, ['kind']) ?? -1)
+        : undefined;
+      if (
+        drawableRecord?.typeName === 'KN.PlaceholderArchive' &&
+        (
+          hiddenPlaceholderKinds.has(placeholderKind ?? -1) ||
+          localHiddenPlaceholderKinds.has(placeholderKind ?? -1) ||
+          suppressedPlaceholderKinds.has(placeholderKind ?? -1) ||
+          !shouldIncludeKeynotePlaceholderItem(item)
+        )
+      ) {
+        return;
+      }
+
+      if (drawableRecord?.id != null) {
+        seenDrawableIds.add(drawableRecord.id);
+      }
+      if (effectiveOpacity != null) {
+        const itemOpacity = normalizeDrawableOpacity((item as DrawableRenderItem).opacity ?? NaN);
+        item = {
+          ...item,
+          opacity: combineDrawableOpacity(itemOpacity, effectiveOpacity)
+        } as DrawableRenderItem;
+      }
+      items.push(item);
+      if (context.archive.type === 'key') {
+        items.push(...buildPencilAnnotationItems(context, drawable, items.length, undefined, effectiveOpacity));
+      }
     }
 
-    items.push(item);
-    if (context.archive.type === 'key') {
-      items.push(...buildPencilAnnotationItems(context, drawable, items.length));
+    const childRefs = asArray<unknown>(readField(drawable, ['children']));
+    for (const childRef of childRefs) {
+      pushDrawable(childRef, depth + 1, effectiveOpacity);
     }
-    if (drawableRecord?.id != null) {
-      seenDrawableIds.add(drawableRecord.id);
+
+    // Older archives may expose only the spacer shape on a freehand group.
+    // It still carries the drawing geometry and is a useful fallback when the
+    // group child list is absent.
+    if (!childRefs.length) {
+      const spacerShape = freehand && readField(freehand, ['spacerShape', 'spacer_shape']);
+      if (spacerShape != null) {
+        pushDrawable(spacerShape, depth + 1, effectiveOpacity);
+      }
     }
   };
 
@@ -856,7 +920,8 @@ function buildPencilAnnotationItems(
   context: SemanticBuildContext,
   drawable: Record<string, unknown>,
   orderOffset: number,
-  parentTransformOverride?: ItemTransform
+  parentTransformOverride?: ItemTransform,
+  inheritedOpacity?: number
 ): SlideItem[] {
   const annotationRefs = asArray<unknown>(readFieldInDrawableChain(drawable, ['pencilAnnotations', 'pencil_annotations']));
   if (!annotationRefs.length) {
@@ -873,28 +938,55 @@ function buildPencilAnnotationItems(
       return;
     }
 
-    const path = asObject(readField(storage, ['drawingPath', 'drawing_path']));
-    if (!path) {
-      return;
-    }
-
     const origin = asObject(readField(storage, ['strokesBoundingBoxOrigin', 'strokes_bounding_box_origin'])) ??
       asObject(readField(storage, ['strokePointsFrameOrigin', 'stroke_points_frame_origin'])) ??
+      asObject(readField(storage, ['renderedFrameOrigin', 'rendered_frame_origin'])) ??
       { x: 0, y: 0 };
     const size = asObject(readField(storage, ['strokesBoundingBoxSize', 'strokes_bounding_box_size'])) ??
       asObject(readField(storage, ['strokePointsFrameSize', 'stroke_points_frame_size'])) ??
       asObject(readField(storage, ['renderedFrameSize', 'rendered_frame_size'])) ??
       { width: parentTransform.width, height: parentTransform.height };
-    const width = Math.max(Number(readField<number>(size, ['width']) ?? parentTransform.width), 1);
-    const height = Math.max(Number(readField<number>(size, ['height']) ?? parentTransform.height), 1);
-    const geometry = pathSourceToGeometry({ path, naturalSize: { width, height } }, width, height);
+    const rawWidth = Number(readField<number>(size, ['width']) ?? parentTransform.width);
+    const rawHeight = Number(readField<number>(size, ['height']) ?? parentTransform.height);
+    const width = Number.isFinite(rawWidth) && rawWidth > 0 ? rawWidth : Math.max(parentTransform.width, 1);
+    const height = Number.isFinite(rawHeight) && rawHeight > 0 ? rawHeight : Math.max(parentTransform.height, 1);
+    const path = asObject(readField(storage, ['drawingPath', 'drawing_path']));
+    const geometry = path
+      ? pathSourceToGeometry({ path, naturalSize: { width, height } }, width, height)
+      : undefined;
+
+    const rasterizedDataId = getRefId(readField(storage, ['rasterizedImage', 'rasterized_image']));
+    if (!geometry && rasterizedDataId != null && context.media[String(rasterizedDataId)]) {
+      items.push({
+        id: `pencil-image-${orderOffset}-${annotationIndex + 1}`,
+        kind: 'image',
+        name: 'Pencil annotation',
+        order: orderOffset + annotationIndex,
+        groupPath: [],
+        transform: {
+          x: parentTransform.x + Number(readField<number>(origin, ['x']) ?? 0),
+          y: parentTransform.y + Number(readField<number>(origin, ['y']) ?? 0),
+          width,
+          height,
+          rotation: 0,
+          flipH: false,
+          flipV: false
+        },
+        fill: { type: 'none' },
+        mediaId: String(rasterizedDataId),
+        ...(inheritedOpacity != null ? { opacity: inheritedOpacity } : {})
+      });
+      return;
+    }
     if (!geometry) {
       return;
     }
 
     const color = asObject(readField(storage, ['penColor', 'pen_color']));
-    const toolType = Number(readField<number>(storage, ['toolType', 'tool_type']) ?? 0);
-    const drawingScale = Number(readField<number>(storage, ['pencilAnnotationDrawingScale', 'pencil_annotation_drawing_scale']) ?? 1);
+    const rawToolType = Number(readField<number>(storage, ['toolType', 'tool_type']) ?? 0);
+    const toolType = Number.isFinite(rawToolType) ? rawToolType : 0;
+    const rawDrawingScale = Number(readField<number>(storage, ['pencilAnnotationDrawingScale', 'pencil_annotation_drawing_scale']) ?? 1);
+    const drawingScale = Number.isFinite(rawDrawingScale) && rawDrawingScale > 0 ? rawDrawingScale : 1;
     const storedWidth = Number(readField<number>(storage, ['penWidth', 'pen_width', 'strokeWidth', 'stroke_width']) ?? NaN);
     const baseWidth = Number.isFinite(storedWidth) && storedWidth > 0
       ? storedWidth
@@ -921,17 +1013,38 @@ function buildPencilAnnotationItems(
       line: {
         color: colorToHex(color, '#111827'),
         alpha,
-        width: Math.max(1, Math.min(32, baseWidth * Math.max(drawingScale, 0.25))),
+        width: Math.max(1, Math.min(32, baseWidth * drawingScale)),
         lineCap: 'round',
         lineJoin: 'round'
       },
       shapeType: pencilGeometryLooksOpen(geometry) ? 'line' : 'unknown',
       geometry
     } as DrawableRenderItem;
+    if (inheritedOpacity != null) {
+      (item as DrawableRenderItem).opacity = inheritedOpacity;
+    }
     items.push(item);
   });
 
   return items;
+}
+
+function resolveFreehandDrawingArchive(drawable: Record<string, unknown>): Record<string, unknown> | undefined {
+  return asObject(readField(drawable, [
+    'freehandDrawingArchive',
+    'freehand_drawing_archive',
+    '.TSD.freehandDrawingArchive'
+  ]));
+}
+
+function combineDrawableOpacity(parent: number | undefined, local: number | undefined): number | undefined {
+  if (parent == null) {
+    return local;
+  }
+  if (local == null) {
+    return parent;
+  }
+  return Number(Math.max(0, Math.min(1, parent * local)).toFixed(4));
 }
 
 function pencilGeometryLooksOpen(geometry: NonNullable<Extract<SlideItem, { kind: 'shape' }>['geometry']>): boolean {
@@ -1237,8 +1350,10 @@ function buildNumbersHeaderFooterItems(
 }
 
 function buildPagesLayout(documentValue: Record<string, unknown>): PagesLayoutModel {
-  const width = Number(readField<number>(documentValue, ['pageWidth', 'page_width']) ?? 768);
-  const height = Number(readField<number>(documentValue, ['pageHeight', 'page_height']) ?? 1024);
+  // Match Pages' A4 fallback used by the reference iwork-converter when an
+  // older archive omits document paper dimensions.
+  const width = Number(readField<number>(documentValue, ['pageWidth', 'page_width']) ?? 595);
+  const height = Number(readField<number>(documentValue, ['pageHeight', 'page_height']) ?? 842);
   const leftMargin = Number(readField<number>(documentValue, ['leftMargin', 'left_margin']) ?? 72);
   const rightMargin = Number(readField<number>(documentValue, ['rightMargin', 'right_margin']) ?? 72);
   const topMargin = Number(readField<number>(documentValue, ['topMargin', 'top_margin']) ?? 72);
@@ -1330,7 +1445,6 @@ function paginatePagesBodyParagraphsFromLayoutState(
     .sort((left, right) => left.pageIndex - right.pageIndex)
     .filter((page, index, list) =>
       page.endParagraph > page.startParagraph &&
-      pageContainsVisibleParagraphs(paragraphs, page.startParagraph, page.endParagraph) &&
       (index === 0 || list[index - 1].pageIndex !== page.pageIndex)
     );
 }
@@ -1666,17 +1780,18 @@ function createPagesBodyItems(
           paragraphs: block.paragraphs,
           ...(fragment.columnCount != null ? { columns: fragment.columnCount } : {})
         };
-        if (!hasVisibleTextFrame(pageFrame)) {
-          return;
-        }
-
         const isWholeFragmentText =
           fragmentBlocks.length === 1 &&
           blockIndex === 0 &&
           block.kind === 'paragraphs';
-        const height = isWholeFragmentText
+        const hasVisibleText = hasVisibleTextFrame(pageFrame);
+        const height = isWholeFragmentText && hasVisibleText
           ? defaultHeight
           : Math.max(estimateParagraphGroupHeight(block.paragraphs, width), 1);
+        if (!hasVisibleText) {
+          cursorY += height;
+          return;
+        }
         items.push({
           id: `pages-body-${pageIndex + 1}-${fragmentIndex + 1}-${blockIndex + 1}`,
           kind: 'text',
@@ -1702,6 +1817,9 @@ function createPagesBodyItems(
       }
 
       if (block.item) {
+        if (block.flowPositioned) {
+          block.item.transform.y = cursorY + (block.flowOffsetY ?? 0);
+        }
         items.push(block.item);
         cursorY = Math.max(cursorY, block.item.transform.y + Math.max(block.item.transform.height, 0));
       }
@@ -1787,7 +1905,9 @@ function buildPagesBodyFlowBlocksForPage(
 
         blocks.push({
           ...attachment.block,
-          fragmentIndex
+          fragmentIndex,
+          flowPositioned: attachment.flowPositioned,
+          flowOffsetY: attachment.flowOffsetY
         });
         visibleCursor = splitOffset;
       }
@@ -1907,7 +2027,9 @@ function buildPagesBodyFlowBlocksForPartialFragment(
 
       blocks.push({
         ...attachment.block,
-        fragmentIndex
+        fragmentIndex,
+        flowPositioned: attachment.flowPositioned,
+        flowOffsetY: attachment.flowOffsetY
       });
       visibleCursor = attachment.visibleOffset;
     }
@@ -2105,11 +2227,161 @@ function resolvePagesSectionRefIdForCharacter(
   return sectionRefId;
 }
 
+function findPagesBodyPageByIndex(
+  pages: PaginatedPagesBodyPage[],
+  pageIndex: number
+): PaginatedPagesBodyPage | undefined {
+  return pages.find((page) => page.pageIndex === pageIndex);
+}
+
+function hasAbsolutePagesAttachmentPosition(
+  hint: PagesAttachmentPositionHint | undefined
+): hint is PagesAttachmentPositionHint & { x: number; y: number } {
+  return hint != null && Number.isFinite(hint.x) && Number.isFinite(hint.y);
+}
+
+function resolvePagesTableItemPartitions(
+  item: TableItem,
+  startPageIndex: number,
+  hints: PagesTablePartitionHint[]
+): Array<{ pageIndex: number; item: TableItem }> {
+  const firstHint = hints.find((hint) =>
+    hint.pageIndex === startPageIndex &&
+    hint.rowStart === 0 &&
+    hint.columnStart === 0 &&
+    hint.columnCount === item.columns.length &&
+    hint.rowCount > 0 &&
+    hint.rowCount <= item.rows.length
+  );
+  if (!firstHint) {
+    return [];
+  }
+
+  const matchedHints = [firstHint];
+  let coveredRows = firstHint.rowCount;
+  while (coveredRows < item.rows.length) {
+    const nextHint = hints.find((hint) =>
+      hint.pageIndex > matchedHints[matchedHints.length - 1].pageIndex &&
+      hint.rowStart === coveredRows &&
+      hint.columnStart === 0 &&
+      hint.columnCount === item.columns.length &&
+      hint.rowCount > 0 &&
+      coveredRows + hint.rowCount <= item.rows.length
+    );
+    if (!nextHint) {
+      return [];
+    }
+    matchedHints.push(nextHint);
+    coveredRows += nextHint.rowCount;
+  }
+
+  return matchedHints.map((hint, index) => ({
+    pageIndex: hint.pageIndex,
+    item: slicePagesTableItem(item, hint.rowStart, hint.rowCount, index)
+  }));
+}
+
+function slicePagesTableItem(item: TableItem, rowStart: number, rowCount: number, partIndex: number): TableItem {
+  const rowEnd = Math.min(item.rows.length, rowStart + rowCount);
+  const rows = item.rows.slice(rowStart, rowEnd);
+  const cells = item.cells.flatMap((cell) => {
+    if (cell.isMergedContinuation) {
+      return [];
+    }
+    const overlapStart = Math.max(cell.row, rowStart);
+    const overlapEnd = Math.min(cell.row + Math.max(cell.rowSpan, 1), rowEnd);
+    if (overlapEnd <= overlapStart) {
+      return [];
+    }
+    return [{
+      ...cell,
+      row: overlapStart - rowStart,
+      rowSpan: overlapEnd - overlapStart
+    }];
+  });
+  const hiddenRows = item.hiddenRows
+    ?.filter((row) => row >= rowStart && row < rowEnd)
+    .map((row) => row - rowStart);
+
+  return {
+    ...item,
+    id: `${item.id}-part-${partIndex + 1}`,
+    transform: {
+      ...item.transform,
+      height: rows.reduce((total, height) => total + height, 0)
+    },
+    rows,
+    cells,
+    hiddenRows: hiddenRows?.length ? hiddenRows : undefined
+  };
+}
+
+function buildPagesTablePartitionHints(
+  archive: IworkArchiveIndex,
+  documentValue: Record<string, unknown>
+): PagesTablePartitionHint[] {
+  const hints: PagesTablePartitionHint[] = [];
+  const layoutState = resolvePagesLayoutState(archive, documentValue);
+  const sectionHints = asArray<Record<string, unknown>>(readField(layoutState, ['sectionHints', 'section_hints']));
+
+  for (const sectionHint of sectionHints) {
+    const startPageIndex = Math.max(0, Number(readField<number>(sectionHint, ['startPageIndex', 'start_page_index']) ?? 0));
+    const pageHints = asArray<Record<string, unknown>>(readField(sectionHint, ['pageHints', 'page_hints']));
+    for (let localPageIndex = 0; localPageIndex < pageHints.length; localPageIndex += 1) {
+      const childRefs = asArray<unknown>(readField(pageHints[localPageIndex], ['childHints', 'child_hints']));
+      for (const childRef of childRefs) {
+        const childRecord = getRecord(archive, childRef);
+        if (childRecord?.typeName !== 'TST.LayoutHintArchive') {
+          continue;
+        }
+        const childHint = asObject(childRecord.value);
+        if (!childHint || readField<boolean>(childHint, ['isValid', 'is_valid']) === false) {
+          continue;
+        }
+        const range = resolvePagesTablePartitionRange(asObject(readField(childHint, ['cellRange', 'cell_range'])));
+        if (!range || range.rowCount <= 0 || range.columnCount <= 0) {
+          continue;
+        }
+        hints.push({
+          pageIndex: startPageIndex + localPageIndex,
+          ...range
+        });
+      }
+    }
+  }
+
+  return hints.sort((left, right) => left.pageIndex - right.pageIndex || left.rowStart - right.rowStart);
+}
+
+function resolvePagesTablePartitionRange(cellRange: Record<string, unknown> | undefined): Omit<PagesTablePartitionHint, 'pageIndex'> | undefined {
+  if (!cellRange) {
+    return undefined;
+  }
+  const origin = asObject(readField(cellRange, ['origin']));
+  const expandedOrigin = asObject(readField(origin, ['expandedCoord', 'expanded_coord']));
+  const size = asObject(readField(cellRange, ['size']));
+  const rowStart = Number(readField<number>(expandedOrigin, ['row']) ?? 0);
+  const columnStart = Number(readField<number>(expandedOrigin, ['column']) ?? 0);
+  const packedSize = Number(readField<number>(size, ['packedData', 'packed_data']) ?? 0) >>> 0;
+  const rowCount = Number(readField<number>(size, ['numRows', 'num_rows']) ?? (packedSize & 0xffff));
+  const columnCount = Number(readField<number>(size, ['numColumns', 'num_columns']) ?? (packedSize >>> 16));
+  if (![rowStart, columnStart, rowCount, columnCount].every(Number.isFinite)) {
+    return undefined;
+  }
+  return {
+    rowStart: Math.max(0, Math.trunc(rowStart)),
+    rowCount: Math.max(0, Math.trunc(rowCount)),
+    columnStart: Math.max(0, Math.trunc(columnStart)),
+    columnCount: Math.max(0, Math.trunc(columnCount))
+  };
+}
+
 function buildPagesAttachmentPositionHints(
   archive: IworkArchiveIndex,
   documentValue: Record<string, unknown>
 ): Map<number, PagesAttachmentPositionHint> {
   const hints = new Map<number, PagesAttachmentPositionHint>();
+  const objectIdsByUuid = buildPagesObjectIdsByUuid(archive.packageMetadata);
   const layoutState = resolvePagesLayoutState(archive, documentValue);
   const sectionHints = asArray<Record<string, unknown>>(readField(layoutState, ['sectionHints', 'section_hints']));
 
@@ -2119,6 +2391,14 @@ function buildPagesAttachmentPositionHints(
     for (let localPageIndex = 0; localPageIndex < pageHints.length; localPageIndex += 1) {
       const pageHint = pageHints[localPageIndex];
       const pageIndex = startPageIndex + localPageIndex;
+      const partitionedAttachmentUuids = asArray<unknown>(readField(pageHint, ['partitionedAttachmentUuids', 'partitioned_attachment_uuids']));
+      for (const uuid of partitionedAttachmentUuids) {
+        const uuidKey = pagesUuidToKey(uuid);
+        const drawableId = uuidKey ? objectIdsByUuid.get(uuidKey) : undefined;
+        if (drawableId != null && !hints.has(drawableId)) {
+          hints.set(drawableId, { pageIndex });
+        }
+      }
       const anchoredAttachments = asArray<Record<string, unknown>>(readField(pageHint, ['anchoredAttachmentsMap', 'anchored_attachments_map']));
       for (const anchoredAttachment of anchoredAttachments) {
         const attachmentId = getRefId(readField(anchoredAttachment, ['attachment']));
@@ -2139,6 +2419,35 @@ function buildPagesAttachmentPositionHints(
   }
 
   return hints;
+}
+
+function buildPagesObjectIdsByUuid(packageMetadata: unknown): Map<string, number> {
+  const ids = new Map<string, number>();
+  const components = asArray<Record<string, unknown>>(readField(asObject(packageMetadata), ['components']));
+  for (const component of components) {
+    const entries = asArray<Record<string, unknown>>(readField(component, ['objectUuidMapEntries', 'object_uuid_map_entries']));
+    for (const entry of entries) {
+      const key = pagesUuidToKey(readField(entry, ['uuid']));
+      const identifier = Number(readField<number>(entry, ['identifier']) ?? NaN);
+      if (key && Number.isFinite(identifier)) {
+        ids.set(key, identifier);
+      }
+    }
+  }
+  return ids;
+}
+
+function pagesUuidToKey(value: unknown): string | undefined {
+  const uuid = asObject(value);
+  if (!uuid) {
+    return undefined;
+  }
+  const lower = readField<number | string>(uuid, ['lower']);
+  const upper = readField<number | string>(uuid, ['upper']);
+  if (lower == null && upper == null) {
+    return undefined;
+  }
+  return `${String(upper ?? 0)}:${String(lower ?? 0)}`;
 }
 
 function resolvePagesPageHintTextFragments(pageHint: Record<string, unknown> | undefined): PagesTextHintFragment[] {
@@ -2262,20 +2571,13 @@ function mapPagesTextRangeToParagraphFragment(
   const endParagraph = findParagraphEndIndexForCharacter(paragraphRanges, rangeEnd);
   const endParagraphStart = paragraphRanges[endParagraph]?.start ?? textLength;
   const lastParagraphIndex = Math.max(Math.min(endParagraph - 1, paragraphRanges.length - 1), startParagraph);
-  const lastParagraphText = paragraphRanges[lastParagraphIndex]?.text ?? '';
-  const lastParagraphVisibleLength = stripObjectMarker(lastParagraphText).length;
+  const lastParagraphVisibleLength = stripObjectMarker(paragraphRanges[lastParagraphIndex]?.text ?? '').length;
   const endVisibleOffset =
     rangeEnd !== textLength && rangeEnd !== endParagraphStart
       ? resolvePagesCharacterVisibleSplit(paragraphRanges, rangeEnd, lastParagraphIndex)
       : undefined;
   const normalizedEndParagraph = Math.max(endParagraph, startParagraph + 1);
   if (normalizedEndParagraph <= startParagraph) {
-    return undefined;
-  }
-  if (
-    normalizedEndParagraph === startParagraph + 1 &&
-    startVisibleOffset >= (endVisibleOffset ?? lastParagraphVisibleLength)
-  ) {
     return undefined;
   }
 
@@ -3487,7 +3789,7 @@ function findParagraphEndIndexForCharacter(
 }
 
 function stripObjectMarker(text: string): string {
-  return text.replace(/\uFFFC/g, '');
+  return text.replace(/[\u0005\uFFFC]/g, '');
 }
 
 function buildParagraphBlock(
@@ -3499,12 +3801,6 @@ function buildParagraphBlock(
 ): PagesBodyBlock | undefined {
   const slice = paragraphs.slice(start, end);
   if (!slice.length) {
-    return undefined;
-  }
-  const hasVisibleText = slice.some((paragraph) =>
-    paragraph.runs.some((run) => stripObjectMarker(run.text).trim().length > 0)
-  );
-  if (!hasVisibleText) {
     return undefined;
   }
   return {
@@ -3526,7 +3822,7 @@ function buildParagraphSliceBlock(
   if (!slicedParagraph) {
     return undefined;
   }
-  const hasVisibleText = slicedParagraph.runs.some((run) => run.text.trim().length > 0);
+  const hasVisibleText = slicedParagraph.runs.some((run) => stripObjectMarker(run.text).trim().length > 0);
   if (!hasVisibleText) {
     return undefined;
   }
@@ -3631,7 +3927,7 @@ function positionPagesAttachmentItem(params: {
     bottomMargin,
     pageHeight
   } = params;
-  if (attachmentHint) {
+  if (hasAbsolutePagesAttachmentPosition(attachmentHint)) {
     item.transform.x = attachmentHint.x;
     item.transform.y = attachmentHint.y;
     return;
@@ -3801,7 +4097,7 @@ function resolvePagesCharacterVisibleSplit(
 }
 
 function collectParagraphVisibleText(paragraph: TextParagraph | undefined): string {
-  return paragraph?.runs.map((run) => run.text).join('') ?? '';
+  return stripObjectMarker(paragraph?.runs.map((run) => run.text).join('') ?? '');
 }
 
 function resolvePagesAttachmentRelativeRatio(params: {

@@ -22,6 +22,7 @@ const defaultTypes = new Map([
   ['.bmp', 'image/bmp'],
   ['.svg', 'image/svg+xml; charset=utf-8'],
   ['.ico', 'image/x-icon'],
+  ['.icns', 'application/x-icns'],
   ['.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'],
   ['.ppt', 'application/vnd.ms-powerpoint'],
   ['.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],

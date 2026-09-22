@@ -259,6 +259,13 @@ describe('preview format routing', () => {
         driverId: 'image'
       });
     }
+    expect(resolveFormatRoute({ name: 'photo.icns' })).toMatchObject({
+      sourceFormat: 'icns',
+      targetFormat: 'png',
+      family: 'image',
+      driverId: 'image',
+      conversion: { required: true }
+    });
     expect(resolveFormatRoute({ name: 'track.flac' })).toMatchObject({
       sourceFormat: 'flac',
       family: 'audio',
@@ -463,7 +470,8 @@ describe('preview format routing', () => {
       pptx: 'paged',
       docx: 'flow',
       xlsx: 'workbook',
-      jpg: 'image'
+      jpg: 'image',
+      png: 'image'
     } as const;
 
     const defaultPairs = conversionManifest.filter((pair, index) =>
@@ -474,7 +482,7 @@ describe('preview format routing', () => {
         sourceFormat: pair.sourceFormat,
         targetFormat: pair.targetFormat,
         family: expectedFamilies[pair.targetFormat as keyof typeof expectedFamilies],
-        driverId: pair.targetFormat === 'jpg' ? 'image' : pair.targetFormat,
+        driverId: ['jpg', 'png'].includes(pair.targetFormat) ? 'image' : pair.targetFormat,
         conversion: { required: true }
       });
     }
@@ -609,6 +617,13 @@ describe('preview format routing', () => {
     expect(resolveFormatRoute({ contentType: 'image/avif' })).toMatchObject({ sourceFormat: 'avif', family: 'image' });
     expect(resolveFormatRoute({ contentType: 'image/apng' })).toMatchObject({ sourceFormat: 'apng', family: 'image' });
     expect(resolveFormatRoute({ contentType: 'image/x-icon' })).toMatchObject({ sourceFormat: 'ico', family: 'image' });
+    expect(resolveFormatRoute({ contentType: 'application/x-icns' })).toMatchObject({
+      sourceFormat: 'icns',
+      targetFormat: 'png',
+      family: 'image',
+      driverId: 'image',
+      conversion: { required: true }
+    });
     expect(resolveFormatRoute({ contentType: 'application/msword' })).toMatchObject({
       sourceFormat: 'doc',
       targetFormat: 'docx',

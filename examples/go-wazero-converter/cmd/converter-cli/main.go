@@ -11,7 +11,7 @@ import (
 
 func main() {
 	var config converter.CLIConfig
-	flag.StringVar(&config.WasmPath, "wasm", "", "path to converter-core.wasm")
+	flag.StringVar(&config.WasmPath, "wasm", "", "path to a converter WASM module")
 	flag.StringVar(&config.InputPath, "input", "", "input file path")
 	flag.StringVar(&config.OutputPath, "output", "", "output file path")
 	flag.StringVar(&config.SourceFormat, "source", "", "source format")

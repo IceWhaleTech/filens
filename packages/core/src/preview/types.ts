@@ -72,6 +72,8 @@ export type PreviewResourceResolver = (
   request: PreviewResourceResolveRequest
 ) => PreviewSource | PreviewResourceResolveResult | null | undefined | Promise<PreviewSource | PreviewResourceResolveResult | null | undefined>;
 
+export type PreviewerFactory = (host: HTMLElement, options?: PreviewOptions) => PreviewerInstance;
+
 export interface PreviewOptions {
   fit?: PreviewFitMode;
   initialScale?: number;
@@ -80,6 +82,7 @@ export interface PreviewOptions {
   virtual?: boolean;
   fontResolver?: PreviewFontResolver;
   resourceResolver?: PreviewResourceResolver;
+  previewerFactory?: PreviewerFactory;
 }
 
 export interface PreviewCapabilities {

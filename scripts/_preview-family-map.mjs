@@ -19,7 +19,8 @@ const conversionExtsByTarget = conversionManifest.reduce((map, pair) => {
 const conversionPagedExts = conversionExtsByTarget.get('pptx') ?? [];
 const conversionFlowExts = conversionExtsByTarget.get('docx') ?? [];
 const conversionWorkbookExts = conversionExtsByTarget.get('xlsx') ?? [];
-const conversionSourceExts = [...conversionPagedExts, ...conversionFlowExts, ...conversionWorkbookExts];
+const conversionImageExts = conversionExtsByTarget.get('png') ?? [];
+const conversionSourceExts = [...conversionPagedExts, ...conversionFlowExts, ...conversionWorkbookExts, ...conversionImageExts];
 
 const directFamilies = parseDirectFamilies(previewFormatsSource);
 
@@ -32,6 +33,7 @@ function expectedFamilyForExt(ext) {
   if (['pdf'].includes(e)) return 'paged';
   if (conversionFlowExts.includes(e)) return 'flow';
   if (conversionWorkbookExts.includes(e)) return 'workbook';
+  if (conversionImageExts.includes(e)) return 'image';
   if (['dxf'].includes(e)) return 'cad';
   if (['xmind', 'mm', 'opml'].includes(e)) return 'mindmap';
   if (['drawio', 'dio', 'vdx', 'vsdx'].includes(e)) return 'diagram';

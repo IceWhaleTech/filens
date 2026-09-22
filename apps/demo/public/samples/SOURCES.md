@@ -16,6 +16,7 @@
 - `photo-alpine-lake.avif`: AVIF derivative of `photo-alpine-lake.jpg` generated with FFmpeg.
 - `photo-transparency.png`: "PNG transparency demonstration 1" from Wikimedia Commons. Source: https://commons.wikimedia.org/wiki/File:PNG_transparency_demonstration_1.png
 - `photo-transparency.ico`: ICO derivative of `photo-transparency.png` generated with FFmpeg.
+- `photo-transparency.icns`: ICNS derivative of `photo-transparency.png` with an embedded PNG icon chunk, generated locally for ICNS preview coverage.
 - `photo-animated-earth.gif`: "Rotating earth (large)" derived from NASA imagery, public domain. Source: https://commons.wikimedia.org/wiki/File:Rotating_earth_(large).gif
 - `photo-animated-earth.apng`: APNG derivative of `photo-animated-earth.gif` generated with FFmpeg.
 - `photo-sample.bmp`: File Samples test image. Source: https://filesamples.com/categories/image

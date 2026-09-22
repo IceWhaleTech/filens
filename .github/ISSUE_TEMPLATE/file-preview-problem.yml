@@ -1,0 +1,94 @@
+name: 文件预览兼容性问题
+description: 记录打不开、内容缺失、布局错误、性能异常或交互问题
+title: "[Preview] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢帮助测试 filens。请勿上传合同、客户资料、个人信息、密钥或未公开设计；优先提供脱敏后的最小复现文件。
+
+  - type: dropdown
+    id: family
+    attributes:
+      label: 文件类别
+      options:
+        - Office / WPS 文档
+        - PPTX 演示文稿
+        - iWork（Keynote / Pages / Numbers）
+        - PDF / 文本 / 代码
+        - CAD / DXF
+        - 3D / 模型
+        - 图片 / RAW / 图标
+        - 全景 / 音视频 / Live Photo
+        - 压缩包 / 电子书
+        - 思维导图 / 流程图
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    id: format
+    attributes:
+      label: 文件格式
+      description: 例如 pptx、key、dxf、cr3、glb。
+      placeholder: pptx
+    validations:
+      required: true
+
+  - type: input
+    id: producer
+    attributes:
+      label: 生成软件与版本
+      description: 例如 PowerPoint 2024、WPS、Keynote 14、AutoCAD 2023 或相机型号。
+      placeholder: PowerPoint 2024
+
+  - type: input
+    id: environment
+    attributes:
+      label: 测试环境
+      description: 操作系统、浏览器与版本，以及 filens 版本或提交。
+      placeholder: macOS 15 / Chrome 140 / commit abc1234
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从选择文件开始，按顺序说明如何看到问题。
+      placeholder: |
+        1. 打开演示站
+        2. 选择文件
+        3. 切换到第 3 页
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望结果
+      description: 文件在原软件中应该怎样显示或操作。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+      description: 哪些内容缺失、错位、变慢或无法操作；请附警告和报错文本。
+    validations:
+      required: true
+
+  - type: textarea
+    id: attachments
+    attributes:
+      label: 截图、录屏或脱敏样例
+      description: 可将文件直接拖到输入框。无法公开时，请说明是否可以制作最小脱敏样例。
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 隐私确认
+      options:
+        - label: 我确认公开内容不包含敏感、个人或未授权分享的信息。
+          required: true

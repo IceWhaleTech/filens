@@ -15,6 +15,11 @@ Size snapshot from `npm run report:wasm-sizes` (Binaryen 131, Brotli quality 11)
 
 | Artifact | Raw | Gzip | Brotli |
 | --- | ---: | ---: | ---: |
-| Rust full-coverage core | 590,237 | 274,250 | 225,240 |
+| `converter-core.wasm` | 837,335 | 381,175 | 308,888 |
+| `converter-image.wasm` (optional) | 671,128 | 209,529 | 167,021 |
+
+RAW conversion in the core only copies the largest standard 8-bit embedded
+JPEG. Full sensor decoding lives in the optional `converter-image.wasm` module,
+so document and panorama users do not download the RAW decoder and camera data.
 
 The retired Go core was 82.8% larger by Brotli size at equivalent fixture coverage.

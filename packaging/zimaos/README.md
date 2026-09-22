@@ -20,3 +20,7 @@ The RAW test assets are intentionally kept outside the extension image. The
 demo reads the existing ZimaOS `access_token` from `localStorage` and requests
 them through `/v3/file?token=...&files=...`. The deployed test assets live at
 `/media/Main-Storage1/filens-raw-samples` on the test host.
+
+When the extension is opened without a valid token, it shows a login dialog and
+invokes the host's `zimaAuth` login bridge when available. The dialog closes
+automatically after the host writes the new token to `localStorage`.

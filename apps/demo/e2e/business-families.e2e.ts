@@ -166,7 +166,7 @@ test('offers samples for browser-native images and panorama aliases', async ({ p
   const imageCategory = page.locator('.wb-format-category').filter({
     has: page.getByRole('heading', { name: '图片', exact: true })
   });
-  for (const format of ['PNG', 'JPG', 'GIF', 'WEBP', 'AVIF', 'APNG', 'ICO', 'BMP']) {
+  for (const format of ['PNG', 'JPG', 'GIF', 'WEBP', 'AVIF', 'APNG', 'ICO', 'ICNS', 'BMP']) {
     await expect(imageCategory.getByRole('button', { name: format, exact: true })).toBeEnabled();
   }
   await expect(imageCategory.getByRole('button', { name: 'JPEG', exact: true })).toHaveCount(0);
@@ -179,7 +179,8 @@ test('offers samples for browser-native images and panorama aliases', async ({ p
   for (const [format, name] of [
     ['AVIF', 'photo-alpine-lake.avif'],
     ['APNG', 'photo-animated-earth.apng'],
-    ['ICO', 'photo-transparency.ico']
+    ['ICO', 'photo-transparency.ico'],
+    ['ICNS', 'photo-transparency.icns']
   ]) {
     await imageCategory.getByRole('button', { name: format, exact: true }).click();
     await expect(page.locator('.wb-preview-title strong')).toHaveText(name);

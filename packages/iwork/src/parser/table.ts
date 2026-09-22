@@ -141,21 +141,39 @@ export function buildTableItem(
   const headerRowCount = Number(readField<number>(tableModel, ['numberOfHeaderRows', 'number_of_header_rows']) ?? 0);
   const headerColumnCount = Number(readField<number>(tableModel, ['numberOfHeaderColumns', 'number_of_header_columns']) ?? 0);
   const footerRowCount = Number(readField<number>(tableModel, ['numberOfFooterRows', 'number_of_footer_rows']) ?? 0);
-  const rowHeaderStyles = resolveHeaderStyles(archive, readField(baseDataStore, ['rowHeaders', 'row_headers']));
-  const columnHeaderStyles = resolveHeaderStyles(archive, readField(baseDataStore, ['columnHeaders', 'column_headers']));
+  const totalRows = Number(readField<number>(tableModel, ['numberOfRows', 'number_of_rows']) ?? 0);
+  const totalColumns = Number(readField<number>(tableModel, ['numberOfColumns', 'number_of_columns']) ?? 0);
+  const rowHeaderStyles = resolveHeaderStyles(
+    archive,
+    readField(baseDataStore, ['rowHeaders', 'row_headers']),
+    totalColumns
+  );
+  const columnHeaderStyles = resolveHeaderStyles(
+    archive,
+    readField(baseDataStore, ['columnHeaders', 'column_headers']),
+    totalRows
+  );
   const styleDefaults = resolveTableStyleDefaults(archive, tableModel);
   const columnWidths = resolveColumnWidths(archive, tableModel, baseDataStore);
-  const rowHeights = resolveRowHeights(archive, tableModel, baseDataStore);
+  const rowHeights = resolveRowHeights(archive, tableDrawable, tableModel, baseDataStore);
   const uidIndexMap = resolveTableUidIndexMap(archive, tableModel);
   const hiddenColumns = mergeIndexes(
-    resolveHiddenHeaderIndexes(archive, readField(baseDataStore, ['columnHeaders', 'column_headers'])),
+    resolveHiddenHeaderIndexes(
+      archive,
+      readField(baseDataStore, ['columnHeaders', 'column_headers']),
+      totalRows
+    ),
     resolveHiddenStateIndexes(tableModel, uidIndexMap, 'column')
   );
   const hiddenRows = mergeIndexes(
-    resolveHiddenHeaderIndexes(archive, readField(baseDataStore, ['rowHeaders', 'row_headers'])),
+    resolveHiddenHeaderIndexes(
+      archive,
+      readField(baseDataStore, ['rowHeaders', 'row_headers']),
+      totalColumns
+    ),
     resolveHiddenStateIndexes(tableModel, uidIndexMap, 'row')
   );
-  const mergeMap = resolveTableMergeMap(archive, baseDataStore);
+  const mergeMap = resolveTableMergeMap(archive, tableModel, baseDataStore);
   const cells: TableCell[] = [];
   const tableRows: Array<{ row: number; rowInfo: Record<string, unknown> }> = [];
 
@@ -183,12 +201,18 @@ export function buildTableItem(
     const row = tableRow.row;
     const rowInfo = tableRow.rowInfo;
     const cellCount = Number(readField<number>(rowInfo, ['cellCount', 'cell_count']) ?? columnWidths.length);
-    for (let column = 0; column < cellCount; column += 1) {
+    const preserveEmptyGrid = archive.type === 'pages';
+    // Pages is rendered as a DOM table, so omitted empty cells would shift
+    // later columns left. Numbers uses a sparse workbook grid instead.
+    const rowColumnCount = preserveEmptyGrid
+      ? Math.max(cellCount, totalColumns, columnWidths.length)
+      : cellCount;
+    for (let column = 0; column < rowColumnCount; column += 1) {
       const cellInfo = parseTableCell(archive.type, rowInfo, column);
       const cellKey = createCellPositionKey(row, column);
       const mergeSpan = mergeMap.starts.get(cellKey);
       const isMergedContinuation = mergeMap.covered.has(cellKey);
-      if (!hasRenderablePayload(cellInfo) && !mergeSpan && !isMergedContinuation) {
+      if (!preserveEmptyGrid && !hasRenderablePayload(cellInfo) && !mergeSpan && !isMergedContinuation) {
         continue;
       }
 
@@ -244,11 +268,23 @@ export function buildTableItem(
     }
   }
 
+  if (archive.type === 'pages') {
+    normalizePagesTableTextFonts(cells);
+    normalizePagesLayoutTable(cells, columnWidths.length);
+  }
+
+  const resolvedTransform = archive.type === 'pages'
+    ? {
+        ...transform,
+        height: rowHeights.reduce((total, height) => total + height, 0) || transform.height
+      }
+    : transform;
+
   return {
     id: `table-${order}-${transform.x}-${transform.y}`,
     kind: 'table',
     name: String(readField<string>(tableModel, ['tableName', 'table_name']) ?? 'Table'),
-    transform,
+    transform: resolvedTransform,
     fill: {
       type: 'none'
     },
@@ -262,8 +298,102 @@ export function buildTableItem(
   };
 }
 
+function normalizePagesTableTextFonts(cells: TableCell[]): void {
+  const tableFontSize = selectDominantTableFontSize(
+    cells.flatMap((cell) => cell.textFrame.paragraphs.flatMap((paragraph) => paragraph.runs))
+  );
+  if (tableFontSize == null) {
+    return;
+  }
+
+  for (const cell of cells) {
+    const cellRuns = cell.textFrame.paragraphs.flatMap((paragraph) => paragraph.runs);
+    const cellFontSize = selectDominantTableFontSize(cellRuns) ?? tableFontSize;
+    for (const paragraph of cell.textFrame.paragraphs) {
+      const paragraphFontSize = selectDominantTableFontSize(paragraph.runs) ?? cellFontSize;
+      paragraph.runs = paragraph.runs.map((run) => run.fontSize == null
+        ? { ...run, fontSize: paragraphFontSize }
+        : run);
+    }
+  }
+}
+
+function normalizePagesLayoutTable(cells: TableCell[], columnCount: number): void {
+  const visibleCells = cells.filter((cell) => !cell.isMergedContinuation);
+  const isSingleFlowColumn = visibleCells.length > 0 && visibleCells.every((cell) =>
+    cell.column === 0 && cell.colSpan === columnCount
+  );
+  if (!isSingleFlowColumn) {
+    return;
+  }
+
+  for (const cell of cells) {
+    cell.fill = { type: 'none' };
+    cell.borders = normalizePagesLayoutBorders(cell.borders);
+  }
+
+  const titleCell = visibleCells.find((cell) => cell.row === 0);
+  const titleText = titleCell?.textFrame.paragraphs
+    .flatMap((paragraph) => paragraph.runs)
+    .map((run) => run.text)
+    .join('')
+    .trim() ?? '';
+  if (!titleCell || !titleText || titleText.length > 20 || titleText.includes('\t')) {
+    return;
+  }
+
+  titleCell.fill = { type: 'solid', color: '#e7e6e6', alpha: 1 };
+  titleCell.textFrame.verticalAlign = 'middle';
+  titleCell.textFrame.paragraphs = titleCell.textFrame.paragraphs.map((paragraph) => ({
+    ...paragraph,
+    align: 'center',
+    runs: paragraph.runs.map((run) => ({
+      ...run,
+      fontSize: 11
+    }))
+  }));
+}
+
+function normalizePagesLayoutBorders(borders: TableCell['borders']): NonNullable<TableCell['borders']> {
+  const fallback = {
+    color: '#dddddd',
+    alpha: 1,
+    width: 0.5
+  };
+  return {
+    top: normalizePagesLayoutBorderSide(borders?.top, fallback),
+    right: normalizePagesLayoutBorderSide(borders?.right, fallback),
+    bottom: normalizePagesLayoutBorderSide(borders?.bottom, fallback),
+    left: normalizePagesLayoutBorderSide(borders?.left, fallback)
+  };
+}
+
+function normalizePagesLayoutBorderSide(
+  border: TableBorderSide,
+  fallback: NonNullable<TableBorderSide>
+): NonNullable<TableBorderSide> {
+  const color = border?.color?.toLowerCase();
+  if (!border || border.alpha === 0 || color === '#ffffff' || color === '#fff') {
+    return { ...fallback };
+  }
+  return border;
+}
+
+function selectDominantTableFontSize(runs: TextFrame['paragraphs'][number]['runs']): number | undefined {
+  const weights = new Map<number, number>();
+  for (const run of runs) {
+    if (run.fontSize == null || !Number.isFinite(run.fontSize) || run.fontSize <= 0) {
+      continue;
+    }
+    weights.set(run.fontSize, (weights.get(run.fontSize) ?? 0) + Math.max(run.text.length, 1));
+  }
+  return [...weights.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0] - right[0])[0]?.[0];
+}
+
 function resolveTableMergeMap(
   archive: IworkArchiveIndex,
+  tableModel: Record<string, unknown>,
   baseDataStore: Record<string, unknown> | undefined
 ): TableMergeMap {
   const mergeMap: TableMergeMap = {
@@ -271,33 +401,70 @@ function resolveTableMergeMap(
     covered: new Set<string>()
   };
 
-  const mergeRegionMap = getRecordValue<Record<string, unknown>>(archive, readField(baseDataStore, ['mergeRegionMap', 'merge_region_map']));
-  if (!mergeRegionMap) {
-    return mergeMap;
+  const mergeRegionMap = getRecordValue<Record<string, unknown>>(
+    archive,
+    readField(baseDataStore, ['mergeRegionMap', 'merge_region_map'])
+  );
+  for (const cellRange of asArray<Record<string, unknown>>(readField(mergeRegionMap, ['cellRange', 'cell_range']))) {
+    addMergeSpan(mergeMap, resolveMergeCellRange(cellRange));
   }
 
-  const cellRanges = asArray<Record<string, unknown>>(readField(mergeRegionMap, ['cellRange', 'cell_range']));
-  for (const cellRange of cellRanges) {
-    const resolved = resolveMergeCellRange(cellRange);
-    if (!resolved) {
-      continue;
-    }
-
-    const { row, column, rowSpan, colSpan } = resolved;
-    const startKey = createCellPositionKey(row, column);
-    mergeMap.starts.set(startKey, { rowSpan, colSpan });
-
-    for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
-      for (let columnOffset = 0; columnOffset < colSpan; columnOffset += 1) {
-        if (rowOffset === 0 && columnOffset === 0) {
-          continue;
-        }
-        mergeMap.covered.add(createCellPositionKey(row + rowOffset, column + columnOffset));
-      }
-    }
+  // Recent Pages archives store merge ranges as endpoint formulas in the
+  // table's MergeOwner instead of a DataStore mergeRegionMap.
+  const mergeOwner = asObject(readField(tableModel, ['mergeOwner', 'merge_owner']));
+  const formulaStore = asObject(readField(mergeOwner, ['formulaStore', 'formula_store']));
+  for (const entry of asArray<Record<string, unknown>>(readField(formulaStore, ['formulas']))) {
+    addMergeSpan(mergeMap, resolveFormulaMergeRange(entry));
   }
 
   return mergeMap;
+}
+
+function addMergeSpan(mergeMap: TableMergeMap, resolved: { row: number; column: number; rowSpan: number; colSpan: number } | undefined): void {
+  if (!resolved) {
+    return;
+  }
+
+  const { row, column, rowSpan, colSpan } = resolved;
+  const startKey = createCellPositionKey(row, column);
+  mergeMap.starts.set(startKey, { rowSpan, colSpan });
+
+  for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
+    for (let columnOffset = 0; columnOffset < colSpan; columnOffset += 1) {
+      if (rowOffset === 0 && columnOffset === 0) {
+        continue;
+      }
+      mergeMap.covered.add(createCellPositionKey(row + rowOffset, column + columnOffset));
+    }
+  }
+}
+
+function resolveFormulaMergeRange(entry: Record<string, unknown>): { row: number; column: number; rowSpan: number; colSpan: number } | undefined {
+  const formula = asObject(readField(entry, ['formula']));
+  const nodeArray = asObject(readField(formula, ['ASTNodeArray', 'ast_node_array']));
+  const coordinates = asArray<Record<string, unknown>>(readField(nodeArray, ['ASTNode', 'ast_node']))
+    .map((node) => {
+      const row = readField<number>(asObject(readField(node, ['ASTRow', 'ast_row'])), ['row']);
+      const column = readField<number>(asObject(readField(node, ['ASTColumn', 'ast_column'])), ['column']);
+      return typeof row === 'number' && Number.isFinite(row) && typeof column === 'number' && Number.isFinite(column)
+        ? { row, column }
+        : undefined;
+    })
+    .filter((coordinate): coordinate is { row: number; column: number } => Boolean(coordinate));
+  if (coordinates.length < 2) {
+    return undefined;
+  }
+
+  const first = coordinates[0];
+  const last = coordinates[coordinates.length - 1];
+  const row = Math.min(first.row, last.row);
+  const column = Math.min(first.column, last.column);
+  return {
+    row,
+    column,
+    rowSpan: Math.abs(last.row - first.row) + 1,
+    colSpan: Math.abs(last.column - first.column) + 1
+  };
 }
 
 function resolveMergeCellRange(cellRange: Record<string, unknown>): { row: number; column: number; rowSpan: number; colSpan: number } | undefined {
@@ -517,7 +684,13 @@ function resolveColumnWidths(
   const widths = Array.from({ length: total }, () => fallbackWidth);
   for (const header of headers) {
     const index = Number(readField<number>(header, ['index']) ?? -1);
-    const span = resolveHeaderCellSpan(header);
+    // In current iWork files numberOfCells is the perpendicular table size
+    // (rows for column headers), not a column span. Older archives used it as
+    // a span, so only treat it as one when it does not match that size.
+    const span = resolveHeaderCellSpan(
+      header,
+      Number(readField<number>(tableModel, ['numberOfRows', 'number_of_rows']) ?? 0)
+    );
     if (index >= 0 && index < widths.length) {
       const width = positiveTableTrackSize(readField<number>(header, ['size']), fallbackWidth);
       for (let offset = 0; offset < span && index + offset < widths.length; offset += 1) {
@@ -530,11 +703,21 @@ function resolveColumnWidths(
 
 function resolveRowHeights(
   archive: IworkArchiveIndex,
+  tableDrawable: Record<string, unknown>,
   tableModel: Record<string, unknown>,
   baseDataStore: Record<string, unknown> | undefined
 ): number[] {
   const fallbackHeight = positiveTableTrackSize(readField<number>(tableModel, ['defaultRowHeight', 'default_row_height']), 22);
   const total = Number(readField<number>(tableModel, ['numberOfRows', 'number_of_rows']) ?? 0);
+  if (archive.type === 'pages') {
+    const layoutEngine = asObject(readField(tableDrawable, ['layoutEngine', 'layout_engine']));
+    const widthHeightCache = asObject(readField(layoutEngine, ['widthHeightCache', 'width_height_cache']));
+    const fittedRows = asArray<Record<string, unknown>>(readField(widthHeightCache, ['rowsFittingEntries', 'rows_fitting_entries']))
+      .map((entry) => positiveTableTrackSize(readField<number>(entry, ['fittingSize', 'fitting_size']), 0));
+    if (fittedRows.length === total && fittedRows.every((height) => height > 0)) {
+      return fittedRows;
+    }
+  }
   const rowHeadersRef = readField(baseDataStore, ['rowHeaders', 'row_headers']);
   const rowHeaders = resolveHeaderStorage(archive, rowHeadersRef);
   if (!rowHeaders.length) {
@@ -544,7 +727,11 @@ function resolveRowHeights(
   const heights = Array.from({ length: total }, () => fallbackHeight);
   for (const header of rowHeaders) {
     const index = Number(readField<number>(header, ['index']) ?? -1);
-    const span = resolveHeaderCellSpan(header);
+    // See resolveColumnWidths: row headers normally report the column count.
+    const span = resolveHeaderCellSpan(
+      header,
+      Number(readField<number>(tableModel, ['numberOfColumns', 'number_of_columns']) ?? 0)
+    );
     if (index >= 0 && index < heights.length) {
       const height = positiveTableTrackSize(readField<number>(header, ['size']), fallbackHeight);
       for (let offset = 0; offset < span && index + offset < heights.length; offset += 1) {
@@ -576,7 +763,11 @@ function resolveHeaderStorage(archive: IworkArchiveIndex, headersRef: unknown): 
   });
 }
 
-function resolveHeaderStyles(archive: IworkArchiveIndex, headersRef: unknown): TableHeaderStyles {
+function resolveHeaderStyles(
+  archive: IworkArchiveIndex,
+  headersRef: unknown,
+  expectedCellCount?: number
+): TableHeaderStyles {
   const cellStyles = new Map<number, number>();
   const textStyles = new Map<number, number>();
   for (const header of resolveHeaderStorage(archive, headersRef)) {
@@ -584,7 +775,7 @@ function resolveHeaderStyles(archive: IworkArchiveIndex, headersRef: unknown): T
     if (index < 0) {
       continue;
     }
-    const span = resolveHeaderCellSpan(header);
+    const span = resolveHeaderCellSpan(header, expectedCellCount);
     const cellStyleRefId = getRefId(readField(header, ['cellStyle', 'cell_style']));
     if (cellStyleRefId) {
       for (let offset = 0; offset < span; offset += 1) {
@@ -604,12 +795,22 @@ function resolveHeaderStyles(archive: IworkArchiveIndex, headersRef: unknown): T
   };
 }
 
-function resolveHeaderCellSpan(header: Record<string, unknown>): number {
+function resolveHeaderCellSpan(header: Record<string, unknown>, expectedCellCount?: number): number {
   const span = Number(readField<number>(header, ['numberOfCells', 'number_of_cells']) ?? 1);
+  // HeaderStorage records describe one track. In modern archives
+  // numberOfCells is the count across that track, while a few older files
+  // used it as a run length for sparse headers.
+  if (expectedCellCount != null && expectedCellCount > 0 && span === expectedCellCount) {
+    return 1;
+  }
   return Number.isFinite(span) && span > 0 ? Math.trunc(span) : 1;
 }
 
-function resolveHiddenHeaderIndexes(archive: IworkArchiveIndex, headersRef: unknown): number[] | undefined {
+function resolveHiddenHeaderIndexes(
+  archive: IworkArchiveIndex,
+  headersRef: unknown,
+  expectedCellCount?: number
+): number[] | undefined {
   const hiddenIndexes = new Set<number>();
   for (const header of resolveHeaderStorage(archive, headersRef)) {
     const index = Number(readField<number>(header, ['index']) ?? -1);
@@ -617,7 +818,7 @@ function resolveHiddenHeaderIndexes(archive: IworkArchiveIndex, headersRef: unkn
       continue;
     }
 
-    const span = resolveHeaderCellSpan(header);
+    const span = resolveHeaderCellSpan(header, expectedCellCount);
     for (let offset = 0; offset < span; offset += 1) {
       hiddenIndexes.add(index + offset);
     }
@@ -1276,7 +1477,12 @@ function resolveTableCellTextFrame(
   wrap: TextFrame['wrap'],
   headerText: string
 ): TextFrame {
-  const richPayloadRef = lookup.rich.get(cellInfo.contentKey);
+  // Pages uses a separate cell type for rich payloads. Plain text cells can
+  // reuse the same numeric key as a rich-text entry, so consulting the rich
+  // table unconditionally replaces ordinary values with unrelated text.
+  const richPayloadRef = (archive.type === 'numbers' || cellInfo.cellType === 9)
+    ? lookup.rich.get(cellInfo.contentKey)
+    : undefined;
   if (richPayloadRef) {
     const payload = getRecordValue<Record<string, unknown>>(archive, richPayloadRef);
     const storageRef = readField(payload, ['storage']);

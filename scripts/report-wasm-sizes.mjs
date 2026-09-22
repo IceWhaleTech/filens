@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const artifacts = [
-  ['rust-production', 'wasm/converter-core/dist/converter-core.wasm']
+  ['converter-core', 'wasm/converter-core/dist/converter-core.wasm'],
+  ['converter-image', 'wasm/converter-image/dist/converter-image.wasm']
 ];
 const rows = [];
 for (const [name, relativePath] of artifacts) {

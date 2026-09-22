@@ -106,6 +106,23 @@ describe('Archive preview driver', () => {
     expect(host.querySelector('.archivev-summary')?.textContent).toContain('/docs/');
     expect(host.querySelector('.archivev-table')?.textContent).toContain('readme.txt');
 
+    const readmeRow = Array.from(host.querySelectorAll<HTMLTableRowElement>('tr.archivev-row')).find((row) =>
+      row.textContent?.includes('readme.txt')
+    );
+    readmeRow?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    expect(host.querySelector('.archivev-entry-text')?.textContent).toContain('Archive preview');
+    expect(host.querySelector('.archivev-breadcrumbs')?.textContent).toContain('docs');
+    host.querySelector<HTMLButtonElement>('.archivev-button')?.click();
+    expect(host.querySelector('.archivev-table')?.textContent).toContain('readme.txt');
+
+    const rootBreadcrumb = Array.from(host.querySelectorAll<HTMLButtonElement>('.archivev-breadcrumb')).find((button) =>
+      button.textContent === '/'
+    );
+    rootBreadcrumb?.click();
+    expect(session.getState()).toMatchObject({ route: '/' });
+
     session.destroy();
     host.remove();
   });

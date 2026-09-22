@@ -6,6 +6,7 @@ import type {
   PreviewSource
 } from '@filens/core';
 import conversionManifest from '../../../wasm/converter-core/manifest/conversions.json';
+import imageConversionManifest from '../../../wasm/converter-image/manifest/conversions.json';
 
 interface ConversionManifestEntry {
   sourceFormat: string;
@@ -17,6 +18,11 @@ const supportedSources = new Set(
 );
 const supportedConversionPairs = new Set(
   (conversionManifest as ConversionManifestEntry[]).map((entry) =>
+    `${normalizeFormat(entry.sourceFormat)}->${normalizeFormat(entry.targetFormat)}`
+  )
+);
+const imageConversionPairs = new Set(
+  (imageConversionManifest as ConversionManifestEntry[]).map((entry) =>
     `${normalizeFormat(entry.sourceFormat)}->${normalizeFormat(entry.targetFormat)}`
   )
 );
@@ -32,6 +38,7 @@ export type WasmModuleSource =
 
 export interface WasmConverterClientOptions {
   wasm: WasmModuleSource;
+  imageWasm?: WasmModuleSource;
   fetch?: typeof fetch;
 }
 
@@ -111,13 +118,16 @@ export function createWasmCoreRunner(options: WasmCoreRunnerOptions) {
 
 export function createWasmConverterClient(options: WasmConverterClientOptions): ConverterClient {
   const runCore = createWasmCoreRunner(options);
+  const runImage = options.imageWasm
+    ? createWasmCoreRunner({ wasm: options.imageWasm, fetch: options.fetch })
+    : undefined;
 
   return {
     async convert(request, context) {
       throwIfAborted(context.signal);
       const sourceFormat = normalizeFormat(request.sourceFormat);
       const targetFormat = normalizeFormat(request.targetFormat);
-      validateSupportedConversionPair(sourceFormat, targetFormat);
+      const conversionPair = validateSupportedConversionPair(sourceFormat, targetFormat);
       const inputPath = `/work/input.${sourceFormat}`;
       const outputPath = `/work/output.${targetFormat}`;
       const optionsPath = '/work/options.json';
@@ -128,9 +138,11 @@ export function createWasmConverterClient(options: WasmConverterClientOptions): 
         ...(request.locale ? { locale: request.locale } : {})
       });
 
-      const invocation = await runCore({
+      const useImageConverter = Boolean(runImage && imageConversionPairs.has(conversionPair));
+      const runConverter = useImageConverter ? runImage! : runCore;
+      const invocation = await runConverter({
         args: [
-          'converter-core',
+          useImageConverter ? 'converter-image' : 'converter-core',
           '--input',
           inputPath,
           '--output',
@@ -161,7 +173,7 @@ export function createWasmConverterClient(options: WasmConverterClientOptions): 
           ...coreResult,
           ok: false,
           errorCode: coreResult.errorCode || 'conversion_failed',
-          errorMessage: coreResult.errorMessage || `converter-core.wasm exited with code ${invocation.exitCode}`
+          errorMessage: coreResult.errorMessage || `converter WASM exited with code ${invocation.exitCode}`
         });
       }
 
@@ -176,9 +188,10 @@ export function createWasmConverterClient(options: WasmConverterClientOptions): 
   };
 }
 
-function validateSupportedConversionPair(sourceFormat: string, targetFormat: string): void {
-  if (supportedConversionPairs.has(`${sourceFormat}->${targetFormat}`)) {
-    return;
+function validateSupportedConversionPair(sourceFormat: string, targetFormat: string): string {
+  const pair = `${sourceFormat}->${targetFormat}`;
+  if (supportedConversionPairs.has(pair)) {
+    return pair;
   }
   const errorMessage = supportedSources.has(sourceFormat)
     ? `unsupported conversion pair: ${sourceFormat} -> ${targetFormat}`
@@ -201,7 +214,7 @@ async function loadWasmModule(source: WasmModuleSource, fetchImpl = globalThis.f
   }
   if (typeof resolved === 'string' || isUrlSource(resolved)) {
     if (!fetchImpl) {
-      throw new Error('A fetch implementation is required to load converter-core.wasm from a URL.');
+    throw new Error('A fetch implementation is required to load converter WASM from a URL.');
     }
     return compileWasmResponse(await fetchImpl(String(resolved)));
   }
@@ -217,7 +230,7 @@ function isUrlSource(source: unknown): source is URL {
 
 async function compileWasmResponse(response: Response): Promise<WebAssembly.Module> {
   if (!response.ok) {
-    throw new Error(`Failed to fetch converter-core.wasm: ${response.status} ${response.statusText}`.trim());
+    throw new Error(`Failed to fetch converter WASM: ${response.status} ${response.statusText}`.trim());
   }
   return WebAssembly.compile(await response.arrayBuffer());
 }

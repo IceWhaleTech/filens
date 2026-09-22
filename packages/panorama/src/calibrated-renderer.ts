@@ -8,13 +8,15 @@ import {
   SRGBColorSpace,
   Texture,
   UnsignedByteType,
-  VideoFrameTexture
+  VideoFrameTexture,
+  VideoTexture
 } from 'three';
 import {
   PanoramaProcessorError,
   panoramaDecoderConfig,
   panoramaEncodedVideoChunk,
   type PanoramaAssetManifest,
+  type PanoramaInput,
   type PanoramaImuSample,
   type PanoramaLens,
   type PanoramaProcessor,
@@ -491,6 +493,360 @@ export async function createCalibratedPanoramaRenderer(processor: PanoramaProces
     get error() { return playback.error; },
     setStabilization: (mode) => stabilizer.setMode(mode)
   };
+}
+
+/**
+ * Render calibrated tracks through HTML media when WebCodecs is unavailable.
+ * This keeps raw INSV useful on browsers such as Safari while retaining the
+ * calibrated GPU projection. Dynamic seam analysis and IMU stabilization are
+ * intentionally disabled because those require decoded VideoFrame objects.
+ */
+export async function createBrowserCalibratedPanoramaRenderer(
+  manifest: PanoramaAssetManifest,
+  source: PanoramaInput,
+  companion?: PanoramaInput
+): Promise<CalibratedPanoramaRenderer> {
+  if (!['dji-fisheye-lut', 'mei-extended'].includes(manifest.projection.kind) || manifest.lenses.length < 2) {
+    throw new PanoramaProcessorError('calibration_missing', 'This source does not contain two supported calibrated panorama lenses.');
+  }
+  if (!hasAccuratePanoramaCalibration(manifest)) {
+    throw new PanoramaProcessorError('calibration_missing', 'The two panorama lenses do not contain complete, distinct calibration.');
+  }
+  const lensSources = resolvePanoramaLensSources(manifest);
+  if (!lensSources) {
+    throw new PanoramaProcessorError('invalid_manifest', 'The panorama lenses are not bound to valid source tracks and frame regions.');
+  }
+  const tracks = [...new Map(lensSources.map((item) => [item.track.id, item.track])).values()];
+  if (tracks.some((track) => track.timescale <= 0 || !track.samples.length)) {
+    throw new PanoramaProcessorError('invalid_manifest', 'The calibrated panorama tracks do not contain a playable sample timeline.');
+  }
+
+  const inputByTrack = new Map<number, PanoramaInput>();
+  for (const lensSource of lensSources) {
+    if (inputByTrack.has(lensSource.track.id)) continue;
+    // Companion files contain the second physical lens. Packed tracks stay in
+    // the primary source and therefore use the same media element.
+    inputByTrack.set(lensSource.track.id, inputByTrack.size === 0 || !companion ? source : companion);
+  }
+  const media = tracks.map((track) => createBrowserCalibratedPanoramaVideo(inputByTrack.get(track.id) ?? source));
+  try {
+    await Promise.all(media.map((video) => waitForBrowserPanoramaVideo(video)));
+  } catch (error) {
+    media.forEach((video) => video.remove());
+    media.forEach((video) => revokeBrowserPanoramaVideo(video));
+    throw new PanoramaProcessorError('codec_unsupported', error instanceof Error ? error.message : String(error));
+  }
+
+  const textures = media.map((video) => {
+    const texture = new VideoTexture(video);
+    texture.flipY = panoramaTextureFlipY(manifest.textureOrigin);
+    texture.colorSpace = SRGBColorSpace;
+    texture.minFilter = LinearFilter;
+    return texture;
+  });
+  const seamTexture = new DataTexture(new Uint8Array(128 * 64).fill(128), 128, 64, RedFormat, UnsignedByteType);
+  seamTexture.needsUpdate = true;
+  seamTexture.minFilter = LinearFilter;
+  const lenses = manifest.lenses.slice(0, 2);
+  const lensTextures = lensSources.map((item) => textures[tracks.indexOf(item.track)]);
+  const material = createBrowserCalibratedMaterial(manifest, lenses as [PanoramaLens, PanoramaLens], lensSources, lensTextures as unknown as [Texture, Texture], seamTexture);
+  const geometry = new SphereGeometry(500, 96, 64);
+  geometry.scale(-1, 1, 1);
+  const mesh = new Mesh(geometry, material);
+  const playback = new BrowserPanoramaPlayback(media, textures);
+  playback.play();
+  return {
+    mesh,
+    update: () => playback.update(),
+    play: () => playback.play(),
+    pause: () => playback.pause(),
+    seek: (seconds) => playback.seek(seconds),
+    close: () => {
+      playback.close();
+      seamTexture.dispose();
+      textures.forEach((texture) => texture.dispose());
+      geometry.dispose();
+      material.dispose();
+      media.forEach((video) => {
+        video.remove();
+        revokeBrowserPanoramaVideo(video);
+      });
+    },
+    get duration() { return playback.duration; },
+    get currentTime() { return playback.currentTime; },
+    get paused() { return playback.paused; },
+    streamSyncMs: 0,
+    dynamicSeam: false,
+    stabilizationAvailable: false,
+    stabilizationMode: 'off',
+    error: undefined,
+    setStabilization: () => 'off'
+  };
+}
+
+function createBrowserCalibratedPanoramaVideo(source: PanoramaInput): HTMLVideoElement {
+  const video = document.createElement('video');
+  video.preload = 'auto';
+  video.muted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.crossOrigin = 'anonymous';
+  video.setAttribute('aria-hidden', 'true');
+  video.style.display = 'none';
+  if (typeof source === 'string' || source instanceof URL) {
+    video.src = String(source);
+  } else {
+    const bytes = source instanceof Blob ? source : new Blob([browserPanoramaSourceBytes(source)], { type: 'video/mp4' });
+    const url = URL.createObjectURL(bytes);
+    browserPanoramaVideoUrls.set(video, url);
+    video.src = url;
+  }
+  document.body?.append(video);
+  video.load();
+  return video;
+}
+
+function browserPanoramaSourceBytes(source: ArrayBuffer | ArrayBufferView): ArrayBuffer {
+  if (source instanceof ArrayBuffer) return source;
+  const view = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+  const copy = new Uint8Array(view.byteLength);
+  copy.set(view);
+  return copy.buffer;
+}
+
+const browserPanoramaVideoUrls = new WeakMap<HTMLVideoElement, string>();
+
+function waitForBrowserPanoramaVideo(video: HTMLVideoElement): Promise<void> {
+  if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    video.addEventListener('loadeddata', () => resolve(), { once: true });
+    video.addEventListener('error', () => reject(new Error('The browser could not decode the calibrated INSV video track.')), { once: true });
+  });
+}
+
+function revokeBrowserPanoramaVideo(video: HTMLVideoElement): void {
+  const url = browserPanoramaVideoUrls.get(video);
+  if (url) {
+    URL.revokeObjectURL(url);
+    browserPanoramaVideoUrls.delete(video);
+  }
+}
+
+function createBrowserCalibratedMaterial(
+  manifest: PanoramaAssetManifest,
+  lenses: [PanoramaLens, PanoramaLens],
+  lensSources: [PanoramaLensSource, PanoramaLensSource],
+  lensTextures: [Texture, Texture],
+  seamTexture: DataTexture
+): ShaderMaterial {
+  return new ShaderMaterial({
+    uniforms: {
+      lens0: { value: lensTextures[0] },
+      lens1: { value: lensTextures[1] },
+      intrinsics0: { value: lensIntrinsics(lenses[0]) },
+      intrinsics1: { value: lensIntrinsics(lenses[1]) },
+      size0: { value: lensImageSize(lenses[0], lensSources[0]) },
+      size1: { value: lensImageSize(lenses[1], lensSources[1]) },
+      sourceRect0: { value: panoramaLensTextureRect(lensSources[0], manifest.textureOrigin) },
+      sourceRect1: { value: panoramaLensTextureRect(lensSources[1], manifest.textureOrigin) },
+      distortion0: { value: lensDistortion(lenses[0]) },
+      distortion1: { value: lensDistortion(lenses[1]) },
+      quaternion0: { value: lensQuaternion(lenses[0]) },
+      quaternion1: { value: lensQuaternion(lenses[1]) },
+      radialScale0: { value: radialScale(lenses[0]) },
+      radialScale1: { value: radialScale(lenses[1]) },
+      projectionKind: { value: manifest.projection.kind === 'mei-extended' ? 1 : 0 },
+      xi0: { value: lenses[0].xi || 0 },
+      xi1: { value: lenses[1].xi || 0 },
+      tangential0: { value: lensPair(lenses[0].tangential) },
+      tangential1: { value: lensPair(lenses[1].tangential) },
+      thinPrism0: { value: lensFour(lenses[0].thinPrism) },
+      thinPrism1: { value: lensFour(lenses[1].thinPrism) },
+      sensorTilt0: { value: lensPair(lenses[0].sensorTilt) },
+      sensorTilt1: { value: lensPair(lenses[1].sensorTilt) },
+      seamMask: { value: seamTexture },
+      useDynamicSeam: { value: 0 },
+      exposureGain0: { value: [1, 1, 1] },
+      exposureGain1: { value: [1, 1, 1] },
+      stabilizationQuaternion: { value: [1, 0, 0, 0] }
+    },
+    vertexShader: `
+      varying vec2 panoramaUv;
+      void main() {
+        panoramaUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      precision highp float;
+      varying vec2 panoramaUv;
+      uniform sampler2D lens0;
+      uniform sampler2D lens1;
+      uniform vec4 intrinsics0;
+      uniform vec4 intrinsics1;
+      uniform vec2 size0;
+      uniform vec2 size1;
+      uniform vec4 sourceRect0;
+      uniform vec4 sourceRect1;
+      uniform vec4 distortion0;
+      uniform vec4 distortion1;
+      uniform vec4 quaternion0;
+      uniform vec4 quaternion1;
+      uniform float radialScale0;
+      uniform float radialScale1;
+      uniform int projectionKind;
+      uniform float xi0;
+      uniform float xi1;
+      uniform vec2 tangential0;
+      uniform vec2 tangential1;
+      uniform vec4 thinPrism0;
+      uniform vec4 thinPrism1;
+      uniform vec2 sensorTilt0;
+      uniform vec2 sensorTilt1;
+      uniform sampler2D seamMask;
+      uniform int useDynamicSeam;
+      uniform vec3 exposureGain0;
+      uniform vec3 exposureGain1;
+      uniform vec4 stabilizationQuaternion;
+
+      vec3 rotateQuaternion(vec4 q, vec3 v) {
+        vec3 u = q.yzw;
+        return 2.0 * dot(u, v) * u + (q.x * q.x - dot(u, u)) * v + 2.0 * q.x * cross(u, v);
+      }
+
+      float radial(float theta, vec4 k, float scale, float fx) {
+        float limit = radians(85.0);
+        float t = min(theta, limit);
+        float t2 = t * t;
+        float polynomial = t * (1.0 + k.x*t2 + k.y*t2*t2 + k.z*t2*t2*t2 + k.w*t2*t2*t2*t2);
+        if (theta > limit) {
+          float derivative = 1.0 + 3.0*k.x*t2 + 5.0*k.y*t2*t2 + 7.0*k.z*t2*t2*t2 + 9.0*k.w*t2*t2*t2*t2;
+          polynomial += derivative * (theta - limit);
+        }
+        return scale * fx * polynomial;
+      }
+
+      vec2 applySensorTilt(vec2 point, vec2 tilt) {
+        float cx = cos(tilt.x), sx = sin(tilt.x);
+        float cy = cos(tilt.y), sy = sin(tilt.y);
+        float rx = cy*point.x + sy*sx*point.y - sy*cx;
+        float ry = cx*point.y + sx;
+        float rz = sy*point.x - cy*sx*point.y + cy*cx;
+        float safeRz = abs(rz) > 0.000001 ? rz : (rz < 0.0 ? -0.000001 : 0.000001);
+        return vec2(cx*(cy*rx + sy*rz), cy*cx*ry - sx*rz) / safeRz;
+      }
+
+      vec4 projectLens(vec3 body, vec4 intrinsics, vec2 imageSize, vec4 sourceRect, vec4 distortion, vec4 quaternion, float scale, float xi, vec2 tangential, vec4 thinPrism, vec2 sensorTilt, sampler2D image) {
+        vec4 lensQuaternion = projectionKind == 1 ? vec4(quaternion.x, -quaternion.yzw) : quaternion;
+        vec3 direction = rotateQuaternion(normalize(lensQuaternion), body);
+        float theta = acos(clamp(direction.z, -1.0, 1.0));
+        vec2 pixel;
+        if (projectionKind == 1) {
+          float denominator = direction.z + xi;
+          vec2 normalized = direction.xy / max(denominator, 0.000001);
+          float r2 = dot(normalized, normalized);
+          if (denominator <= 0.000001 || r2 > 16.0) return vec4(0.0);
+          float r4 = r2 * r2;
+          float radialFactor = 1.0 + distortion.x*r2 + distortion.y*r4 + distortion.z*r2*r4 + distortion.w*r4*r4;
+          float x = normalized.x;
+          float y = normalized.y;
+          vec2 distorted = vec2(
+            x*radialFactor + 2.0*tangential.x*x*y + tangential.y*(r2 + 2.0*x*x) + thinPrism.x*r2 + thinPrism.y*r4,
+            y*radialFactor + tangential.x*(r2 + 2.0*y*y) + 2.0*tangential.y*x*y + thinPrism.z*r2 + thinPrism.w*r4
+          );
+          pixel = intrinsics.zw + intrinsics.xy * applySensorTilt(distorted, sensorTilt);
+        } else {
+          float rho = max(length(direction.xy), 0.000001);
+          float radius = radial(theta, distortion, scale, intrinsics.x);
+          pixel = intrinsics.zw + radius * direction.xy / rho;
+        }
+        vec2 uv = sourceRect.xy + ((pixel + vec2(0.5)) / imageSize) * sourceRect.zw;
+        float validProjection = projectionKind == 1 ? float(direction.z + xi > 0.000001) : float(theta < radians(96.0));
+        float coverageDepth = 1.0;
+        if (projectionKind == 1) {
+          float edgeRadius = 0.475 * min(imageSize.x, imageSize.y);
+          coverageDepth = max(edgeRadius - distance(pixel, intrinsics.zw), 0.0);
+          validProjection *= float(coverageDepth > 0.0);
+        }
+        float valid = validProjection * float(all(greaterThanEqual(pixel, vec2(0.0))) && all(lessThanEqual(pixel, imageSize - vec2(1.0))));
+        float weight = projectionKind == 1
+          ? valid * max(coverageDepth, 0.0001)
+          : valid * clamp((radians(95.0) - theta) / radians(10.0), 0.0, 1.0);
+        return vec4(texture2D(image, uv).rgb, weight);
+      }
+
+      vec2 panoramaUvForDirection(vec3 direction) {
+        float longitude = projectionKind == 1 ? atan(direction.x, direction.z) : atan(-direction.y, direction.x);
+        float latitude = projectionKind == 1 ? asin(clamp(-direction.y, -1.0, 1.0)) : asin(clamp(direction.z, -1.0, 1.0));
+        return vec2(fract(longitude / 6.28318530718 + 0.5), latitude / 3.14159265359 + 0.5);
+      }
+
+      void main() {
+        float longitude = panoramaUv.x * 6.28318530718 - 3.14159265359;
+        float latitude = (panoramaUv.y - 0.5) * 3.14159265359;
+        float cosLatitude = cos(latitude);
+        vec3 body = projectionKind == 1
+          ? vec3(cosLatitude * sin(longitude), -sin(latitude), cosLatitude * cos(longitude))
+          : vec3(cosLatitude * sin(longitude + 1.57079632679), cosLatitude * cos(longitude + 1.57079632679), sin(latitude));
+        body = rotateQuaternion(normalize(stabilizationQuaternion), body);
+        vec2 bodyPanoramaUv = panoramaUvForDirection(body);
+        vec4 a = projectLens(body, intrinsics0, size0, sourceRect0, distortion0, quaternion0, radialScale0, xi0, tangential0, thinPrism0, sensorTilt0, lens0);
+        vec4 b = projectLens(body, intrinsics1, size1, sourceRect1, distortion1, quaternion1, radialScale1, xi1, tangential1, thinPrism1, sensorTilt1, lens1);
+        if (a.a <= 0.0 && b.a <= 0.0) { gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
+        if (a.a <= 0.0 || b.a <= 0.0) { gl_FragColor = vec4((a.a > 0.0 ? a.rgb * exposureGain0 : b.rgb * exposureGain1), 1.0); return; }
+        float frontPreference = projectionKind == 1
+          ? 1.0 - smoothstep(radians(75.0), radians(105.0), abs(bodyPanoramaUv.x * 6.28318530718 - 3.14159265359))
+          : 1.0;
+        float aWeight = projectionKind == 1 ? a.a * frontPreference : a.a;
+        float bWeight = projectionKind == 1 ? b.a * (1.0 - frontPreference) : b.a;
+        float total = aWeight + bWeight;
+        float lens1Weight = useDynamicSeam == 1 && a.a > 0.0 && b.a > 0.0 ? texture2D(seamMask, bodyPanoramaUv).r : bWeight / max(total, 0.0001);
+        gl_FragColor = vec4(mix(a.rgb * exposureGain0, b.rgb * exposureGain1, lens1Weight), 1.0);
+      }
+    `
+  });
+}
+
+class BrowserPanoramaPlayback {
+  private isClosed = false;
+  constructor(private readonly videos: HTMLVideoElement[], private readonly textures: VideoTexture[]) {}
+
+  get duration(): number {
+    const durations = this.videos.map((video) => video.duration).filter(Number.isFinite);
+    return durations.length ? Math.min(...durations) : 0;
+  }
+
+  get currentTime(): number { return this.videos[0]?.currentTime || 0; }
+  get paused(): boolean { return this.videos[0]?.paused ?? true; }
+
+  update(): void {
+    if (this.isClosed) return;
+    if (this.videos.length >= 2 && !this.paused) {
+      const target = this.currentTime;
+      this.videos.slice(1).forEach((video) => {
+        if (Math.abs(video.currentTime - target) > 0.05) video.currentTime = target;
+      });
+    }
+    this.textures.forEach((texture) => texture.needsUpdate = true);
+  }
+
+  play(): void {
+    if (this.isClosed) return;
+    this.videos.forEach((video) => { void video.play().catch(() => undefined); });
+  }
+
+  pause(): void { this.videos.forEach((video) => video.pause()); }
+
+  seek(seconds: number): void {
+    const target = Math.max(0, Math.min(Number.isFinite(seconds) ? seconds : 0, this.duration));
+    this.videos.forEach((video) => { video.currentTime = target; });
+  }
+
+  close(): void {
+    if (this.isClosed) return;
+    this.isClosed = true;
+    this.pause();
+  }
 }
 
 export function hasAccuratePanoramaCalibration(manifest: PanoramaAssetManifest): boolean {

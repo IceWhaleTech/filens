@@ -49,9 +49,10 @@ describe('createVueDefaultPreviewRoutes', () => {
     expect(resolveFormatRoute({ name: 'photo.avif' }, { routes })).toMatchObject({ driverId: 'image', targetFormat: 'avif' });
     expect(resolveFormatRoute({ name: 'photo.apng' }, { routes })).toMatchObject({ driverId: 'image', targetFormat: 'apng' });
     expect(resolveFormatRoute({ name: 'photo.ico' }, { routes })).toMatchObject({ driverId: 'image', targetFormat: 'ico' });
+    expect(resolveFormatRoute({ name: 'photo.icns' }, { routes })).toMatchObject({ driverId: 'image', targetFormat: 'png', conversion: { required: true } });
     expect(resolveFormatRoute({ name: 'drawing.svg' }, { routes })).toMatchObject({ driverId: 'image', targetFormat: 'svg' });
 
-    for (const supported of ['.png', '.jpg', '.jpeg', '.webp', '.avif', '.apng', '.ico', '.svg', '.bmp', 'image/png', 'image/jpeg', 'image/webp', 'image/avif', 'image/apng', 'image/x-icon', 'image/svg+xml']) {
+    for (const supported of ['.png', '.jpg', '.jpeg', '.webp', '.avif', '.apng', '.ico', '.svg', '.bmp', 'image/png', 'image/jpeg', 'image/webp', 'image/avif', 'image/apng', 'image/x-icon', 'image/svg+xml', 'application/x-icns']) {
       expect(accept).toContain(supported);
     }
   });

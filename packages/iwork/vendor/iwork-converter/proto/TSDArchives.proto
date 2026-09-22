@@ -353,6 +353,7 @@ message GroupArchive {
   required DrawableArchive super = 1;
   repeated .TSP.Reference children = 2;
   optional .TSP.Reference fake_shape_for_empty_group = 3;
+  extensions 100 to 536870911;
 }
 
 message FreehandDrawingAnimationArchive {
@@ -365,6 +366,11 @@ message FreehandDrawingArchive {
   optional double opacity = 2;
   optional FreehandDrawingAnimationArchive animation = 3;
   optional double last_clamped_scale = 4;
+}
+
+// Keynote stores the freehand drawing payload as an extension on a group.
+extend .TSD.GroupArchive {
+  optional .TSD.FreehandDrawingArchive freehand_drawing_archive = 100;
 }
 
 message ShapeArchive {

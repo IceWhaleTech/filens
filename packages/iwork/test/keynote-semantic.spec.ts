@@ -7160,7 +7160,7 @@ describe('keynote semantic builder', () => {
     expect(placeholderTexts).toEqual(['Lower z', 'Higher z']);
   });
 
-  it('positions pages inline attachments using paragraph-height progress instead of equal paragraph slots', () => {
+  it('positions pages inline attachments directly after the preceding body text', () => {
     const archive = createEmptyArchive();
     archive.type = 'pages';
     const media: Record<string, IworkImageAsset> = {};
@@ -7318,12 +7318,13 @@ describe('keynote semantic builder', () => {
     }
     expect(['image', 'shape', 'media']).toContain(attachmentItem.kind);
 
-    const topMargin = 72;
-    const availableBodyHeight = 800 - 72 - 72 - attachmentItem.transform.height;
-    const relative = (attachmentItem.transform.y - topMargin) / availableBodyHeight;
-
-    expect(relative).toBeGreaterThan(0.7);
-    expect(relative).toBeLessThan(0.98);
+    const precedingTextItem = document.pages[0]?.canvas.slide.items
+      .filter((item) => item.kind === 'text' && item.transform.y < attachmentItem.transform.y)
+      .at(-1);
+    expect(precedingTextItem).toBeTruthy();
+    expect(attachmentItem.transform.y).toBeCloseTo(
+      (precedingTextItem?.transform.y ?? 0) + (precedingTextItem?.transform.height ?? 0)
+    );
   });
 
   it('positions same-paragraph pages inline attachments using character progress within the paragraph', () => {
@@ -11110,5 +11111,113 @@ describe('keynote semantic builder', () => {
       [' Alpha '],
       [' Beta']
     ]);
+  });
+
+  it('renders Keynote pencil annotations and grouped drawing children', () => {
+    const archive = createEmptyArchive();
+    archive.records['1'] = {
+      id: 1, archiveId: 1, messageIndex: 0, typeId: 1, typeName: 'KN.DocumentArchive',
+      objectReferences: [2], dataReferences: [], value: { show: { identifier: 2 } }
+    };
+    archive.records['2'] = {
+      id: 2, archiveId: 1, messageIndex: 1, typeId: 2, typeName: 'KN.ShowArchive',
+      objectReferences: [3], dataReferences: [], value: {
+        slideTree: { slides: [{ identifier: 3 }] }, size: { width: 1024, height: 768 }
+      }
+    };
+    archive.records['3'] = {
+      id: 3, archiveId: 1, messageIndex: 2, typeId: 4, typeName: 'KN.SlideNodeArchive',
+      objectReferences: [10], dataReferences: [], value: { slide: { identifier: 10 } }
+    };
+    archive.records['10'] = {
+      id: 10, archiveId: 1, messageIndex: 3, typeId: 5, typeName: 'KN.SlideArchive',
+      objectReferences: [20, 22, 30], dataReferences: [], value: {
+        drawablesZOrder: [{ identifier: 20 }, { identifier: 22 }, { identifier: 30 }],
+        ownedDrawables: [{ identifier: 20 }, { identifier: 22 }, { identifier: 30 }]
+      }
+    };
+    archive.records['20'] = {
+      id: 20, archiveId: 1, messageIndex: 4, typeId: 3008, typeName: 'TSD.GroupArchive',
+      objectReferences: [21], dataReferences: [], value: {
+        super: { geometry: { position: { x: 50, y: 60 }, size: { width: 300, height: 200 } } },
+        children: [{ identifier: 21 }]
+      }
+    };
+    archive.records['21'] = {
+      id: 21, archiveId: 1, messageIndex: 5, typeId: 3004, typeName: 'TSD.ShapeArchive',
+      objectReferences: [], dataReferences: [], value: {
+        super: { geometry: { position: { x: 80, y: 90 }, size: { width: 120, height: 80 } } },
+        pathsource: {
+          path: { elements: [
+            { type: 1, points: [{ x: 0, y: 0 }] },
+            { type: 2, points: [{ x: 120, y: 80 }] }
+          ] },
+          naturalSize: { width: 120, height: 80 }
+        }
+      }
+    };
+    archive.records['22'] = {
+      id: 22, archiveId: 1, messageIndex: 6, typeId: 3008, typeName: 'TSD.GroupArchive',
+      objectReferences: [23], dataReferences: [], value: {
+        super: { geometry: { position: { x: 200, y: 210 }, size: { width: 90, height: 70 } } },
+        '.TSD.freehandDrawingArchive': { spacerShape: { identifier: 23 }, opacity: 0.5 }
+      }
+    };
+    archive.records['23'] = {
+      id: 23, archiveId: 1, messageIndex: 7, typeId: 3004, typeName: 'TSD.ShapeArchive',
+      objectReferences: [], dataReferences: [], value: {
+        super: { geometry: { position: { x: 210, y: 220 }, size: { width: 60, height: 40 } } },
+        pathsource: {
+          path: { elements: [
+            { type: 1, points: [{ x: 0, y: 40 }] },
+            { type: 2, points: [{ x: 60, y: 0 }] }
+          ] },
+          naturalSize: { width: 60, height: 40 }
+        }
+      }
+    };
+    archive.records['30'] = {
+      id: 30, archiveId: 1, messageIndex: 8, typeId: 3002, typeName: 'TSD.DrawableArchive',
+      objectReferences: [31, 32], dataReferences: [], value: {
+        geometry: { position: { x: 100, y: 120 }, size: { width: 400, height: 300 } },
+        pencilAnnotations: [{ identifier: 31 }]
+      }
+    };
+    archive.records['31'] = {
+      id: 31, archiveId: 1, messageIndex: 9, typeId: 3086, typeName: 'TSD.PencilAnnotationArchive',
+      objectReferences: [32], dataReferences: [], value: { pencilAnnotationStorage: { identifier: 32 } }
+    };
+    archive.records['32'] = {
+      id: 32, archiveId: 1, messageIndex: 10, typeId: 242, typeName: 'TSD.PencilAnnotationStorageArchive',
+      objectReferences: [], dataReferences: [], value: {
+        drawingPath: { elements: [
+          { type: 1, points: [{ x: 0, y: 0 }] },
+          { type: 2, points: [{ x: 100, y: 50 }] }
+        ] },
+        strokesBoundingBoxOrigin: { x: 20, y: 30 },
+        strokesBoundingBoxSize: { width: 100, height: 50 },
+        penColor: { r: 1, g: 0, b: 0, a: 0.75 },
+        toolType: 0,
+        pencilAnnotationDrawingScale: 1.5
+      }
+    };
+
+    const document = buildParsedDocument({ archive, media: {} });
+    expect(document.kind).toBe('key');
+    if (document.kind !== 'key') {
+      return;
+    }
+
+    const items = document.slides[0]?.slide.items ?? [];
+    const drawing = items.find((item) => item.name === 'Pencil annotation');
+    expect(drawing).toMatchObject({
+      kind: 'shape',
+      transform: { x: 120, y: 150, width: 100, height: 50 },
+      line: { color: '#ff0000', alpha: 0.75, width: 3 }
+    });
+    expect(items.some((item) => item.kind === 'shape' && item.transform.x === 80 && item.transform.y === 90)).toBe(true);
+    expect(items.find((item) => item.kind === 'shape' && item.transform.x === 210 && item.transform.y === 220)).toMatchObject({
+      opacity: 0.5
+    });
   });
 });

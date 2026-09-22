@@ -751,12 +751,15 @@ function createConversionRoutes(
     const targetFormat = normalizeExtension(pair.targetFormat);
     if (!sourceFormat || !targetFormat || routedSources.has(sourceFormat)) return [];
     routedSources.add(sourceFormat);
-    if (targetFormat === 'jpg' || targetFormat === 'jpeg') {
+    if (targetFormat === 'jpg' || targetFormat === 'jpeg' || targetFormat === 'png') {
       return defineRoute([sourceFormat], 'image', 'image', {
         targetFormat,
+        contentTypes: legacyContentTypesForSource(sourceFormat),
         conversion: {
           required: true,
-          reason: 'camera RAW files use their embedded JPEG preview'
+          reason: targetFormat === 'png'
+            ? 'ICNS files use their embedded PNG icon preview'
+            : 'camera RAW files use their embedded JPEG preview'
         }
       });
     }
@@ -796,6 +799,8 @@ function openXMLConversionReason(targetFormat: string): string {
 
 function legacyContentTypesForSource(sourceFormat: string): string[] {
   switch (sourceFormat) {
+    case 'icns':
+      return ['image/icns', 'image/x-icns', 'application/x-icns'];
     case 'ppt':
     case 'pps':
     case 'pot':

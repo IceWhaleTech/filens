@@ -336,6 +336,8 @@ function inferContentType(name: string | undefined, fallbackFormat?: string): st
     case '3fr':
     case 'iiq':
       return 'application/octet-stream';
+    case 'icns':
+      return 'application/x-icns';
     case 'doc':
     case 'dot':
       return 'application/msword';

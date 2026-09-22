@@ -775,6 +775,175 @@ describe('iWork table parser', () => {
     expect(table?.columns).toEqual([96, 96, 144]);
   });
 
+  it('keeps Pages row and column sizes when numberOfCells is the perpendicular table count', () => {
+    const archive = createNumbersArchive();
+    archive.type = 'pages';
+    archive.records['1'] = {
+      id: 1,
+      archiveId: 1,
+      messageIndex: 0,
+      typeId: 6001,
+      typeName: 'TST.TableModelArchive',
+      objectReferences: [2, 3],
+      dataReferences: [],
+      value: {
+        tableName: 'Pages dimensions',
+        numberOfColumns: 3,
+        numberOfRows: 3,
+        defaultColumnWidth: 72,
+        defaultRowHeight: 22,
+        baseDataStore: {
+          tiles: {
+            tiles: [{ tile: { identifier: 2 } }]
+          },
+          stringTable: { identifier: 3 },
+          rowHeaders: {
+            headers: [{ index: 1, size: 10, numberOfCells: 3 }]
+          },
+          columnHeaders: {
+            headers: [{ index: 1, size: 100, numberOfCells: 3 }]
+          }
+        }
+      }
+    };
+    archive.records['2'] = {
+      id: 2,
+      archiveId: 1,
+      messageIndex: 1,
+      typeId: 6002,
+      typeName: 'TST.Tile',
+      objectReferences: [],
+      dataReferences: [],
+      value: {
+        rowInfos: [{ tileRowIndex: 0, cellCount: 1, cellOffsets: createCellOffsets([0]), cellStorageBuffer: createTextCellBuffer(1) }]
+      }
+    };
+    archive.records['3'] = {
+      id: 3,
+      archiveId: 1,
+      messageIndex: 2,
+      typeId: 6005,
+      typeName: 'TST.TableDataList',
+      objectReferences: [],
+      dataReferences: [],
+      value: { entries: [{ key: 1, string: 'cell' }] }
+    };
+
+    const table = buildTableItem(
+      archive,
+      { tableModel: { identifier: 1 } },
+      {
+        x: 0,
+        y: 0,
+        width: 300,
+        height: 100,
+        rotation: 0,
+        flipH: false,
+        flipV: false
+      },
+      0
+    );
+
+    expect(table?.rows).toEqual([22, 10, 22]);
+    expect(table?.columns).toEqual([72, 100, 72]);
+  });
+
+  it('keeps subtle grid lines for single-column Pages layout tables', () => {
+    const archive = createNumbersArchive();
+    archive.type = 'pages';
+    archive.records['1'] = {
+      id: 1,
+      archiveId: 1,
+      messageIndex: 0,
+      typeId: 6001,
+      typeName: 'TST.TableModelArchive',
+      objectReferences: [2, 3, 4],
+      dataReferences: [],
+      value: {
+        tableName: 'Pages layout table',
+        numberOfColumns: 1,
+        numberOfRows: 1,
+        defaultColumnWidth: 200,
+        defaultRowHeight: 22,
+        bodyCellStyle: { identifier: 4 },
+        baseDataStore: {
+          tiles: {
+            tiles: [{ tile: { identifier: 2 } }]
+          },
+          stringTable: { identifier: 3 }
+        }
+      }
+    };
+    archive.records['2'] = {
+      id: 2,
+      archiveId: 1,
+      messageIndex: 1,
+      typeId: 6002,
+      typeName: 'TST.Tile',
+      objectReferences: [],
+      dataReferences: [],
+      value: {
+        rowInfos: [{
+          tileRowIndex: 0,
+          cellCount: 1,
+          cellOffsets: createCellOffsets([0]),
+          cellStorageBuffer: createTextCellBuffer(1)
+        }]
+      }
+    };
+    archive.records['3'] = {
+      id: 3,
+      archiveId: 1,
+      messageIndex: 2,
+      typeId: 6005,
+      typeName: 'TST.TableDataList',
+      objectReferences: [],
+      dataReferences: [],
+      value: {
+        entries: [{ key: 1, string: 'Body text' }]
+      }
+    };
+    archive.records['4'] = {
+      id: 4,
+      archiveId: 1,
+      messageIndex: 3,
+      typeId: 6004,
+      typeName: 'TST.CellStyleArchive',
+      objectReferences: [],
+      dataReferences: [],
+      value: {
+        cellProperties: {
+          stroke: {
+            width: 1,
+            color: { r: 1, g: 1, b: 1, a: 1 }
+          }
+        }
+      }
+    };
+
+    const table = buildTableItem(
+      archive,
+      { tableModel: { identifier: 1 } },
+      {
+        x: 0,
+        y: 0,
+        width: 200,
+        height: 22,
+        rotation: 0,
+        flipH: false,
+        flipV: false
+      },
+      0
+    );
+
+    expect(table?.cells[0]?.borders).toMatchObject({
+      top: { width: 0.5, color: '#dddddd' },
+      right: { width: 0.5, color: '#dddddd' },
+      bottom: { width: 0.5, color: '#dddddd' },
+      left: { width: 0.5, color: '#dddddd' }
+    });
+  });
+
   it('uses header storage styles while keeping local cell styles highest priority', () => {
     const archive = createNumbersArchive();
 

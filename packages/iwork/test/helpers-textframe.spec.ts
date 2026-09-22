@@ -444,6 +444,89 @@ describe('buildTextFrameFromStorage', () => {
     ]);
   });
 
+  it('keeps the previous paragraph style across empty style entries', () => {
+    const archive = createArchive([
+      createRecord(1, 'TSWP.ParagraphStyleArchive', {
+        charProperties: {
+          fontSize: 12
+        },
+        paraProperties: {
+          alignment: 2
+        }
+      }),
+      createRecord(2, 'TSWP.CharacterStyleArchive', {
+        charProperties: {
+          bold: true
+        }
+      })
+    ]);
+
+    const textFrame = buildTextFrameFromStorage(archive, {
+      text: ['First\nSecond'],
+      tableParaStyle: {
+        entries: [
+          { characterIndex: 0, object: { identifier: 1 } },
+          { characterIndex: 6 }
+        ]
+      },
+      tableCharStyle: {
+        entries: [
+          { characterIndex: 0, object: { identifier: 2 } },
+          { characterIndex: 6 }
+        ]
+      }
+    });
+
+    expect(textFrame?.paragraphs).toMatchObject([
+      {
+        align: 'center',
+        runs: [{ text: 'First', bold: true, fontSize: 12 }]
+      },
+      {
+        align: 'center',
+        runs: [{ text: 'Second', bold: false, fontSize: 12 }]
+      }
+    ]);
+  });
+
+  it('treats Pages list styles without labels as implicit bullets', () => {
+    const archive = createArchive([
+      createRecord(1, 'TSWP.ParagraphStyleArchive', {
+        paraProperties: {
+          listStyle: { identifier: 2 }
+        }
+      }),
+      createRecord(2, 'TSWP.ListStyleArchive', {
+        labelTypes: []
+      })
+    ]);
+
+    const textFrame = buildTextFrameFromStorage(archive, {
+      text: ['First item\nSecond item'],
+      tableParaStyle: {
+        entries: [
+          { characterIndex: 0, object: { identifier: 1 } },
+          { characterIndex: 11, object: { identifier: 1 } }
+        ]
+      }
+    });
+
+    expect(textFrame?.paragraphs).toMatchObject([
+      {
+        bullet: { char: '•' },
+        lineHeight: 1.2,
+        lineHeightUnit: 'multiple',
+        spaceAfter: 6
+      },
+      {
+        bullet: { char: '•' },
+        lineHeight: 1.2,
+        lineHeightUnit: 'multiple',
+        spaceAfter: 6
+      }
+    ]);
+  });
+
   it('supports snake_case smart field, attachment, and package metadata fields', () => {
     const text = 'Number: \uFFFC\nFootnote: \uFFFC\nTOC: \uFFFC\nDateTime: \uFFFC\nFile: \uFFFC';
     const archive = createArchive([

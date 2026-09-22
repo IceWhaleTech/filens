@@ -929,10 +929,60 @@ describe('converter client adapters', () => {
         expect(content).not.toContain('No ');
         expect(content).not.toContain('content found');
         expect(content).not.toContain('cells found');
-        expect(result.warnings?.join('\n')).toContain('not preserved');
+        expect(result.warnings?.join('\n')).toMatch(/not preserved|simplified or omitted/);
       }
     },
     30000
+  );
+
+  it(
+    'loads converter-image.wasm only for image conversion routes',
+    async () => {
+      const imageWasm = await readFile(path.join(repoRoot, 'wasm/converter-image/dist/converter-image.wasm'));
+      const imageWasmUrl = '/assets/converter-image.wasm';
+      let coreLoadCount = 0;
+      const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+        expect(String(url)).toBe(imageWasmUrl);
+        return new Response(new Uint8Array(imageWasm), {
+          headers: {
+            'content-type': 'application/wasm'
+          }
+        });
+      });
+      const client = createWasmConverterClient({
+        wasm: () => {
+          coreLoadCount += 1;
+          throw new Error('converter-core.wasm should not load for ICNS conversion.');
+        },
+        imageWasm: imageWasmUrl,
+        fetch: fetchMock
+      });
+
+      const result = await client.convert(
+        {
+          source: buildIcnsFixture(),
+          sourceFormat: 'icns',
+          targetFormat: 'png',
+          name: 'sample.icns'
+        },
+        {
+          descriptor: {
+            source: buildIcnsFixture(),
+            name: 'sample.icns',
+            extension: 'icns'
+          }
+        }
+      );
+
+      expect(result).toMatchObject({
+        format: 'png',
+        contentType: 'image/png'
+      });
+      expect(Array.from((result.source as Uint8Array).subarray(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+      expect(coreLoadCount).toBe(0);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    },
+    20000
   );
 
   it(
@@ -1099,6 +1149,24 @@ describe('converter client adapters', () => {
 
 function buildEncryptedCompoundFile(): Uint8Array {
   return buildMinimalCompoundFile(['EncryptionInfo', 'EncryptedPackage']);
+}
+
+function buildIcnsFixture(): Uint8Array {
+  const png = new Uint8Array([
+    137, 80, 78, 71, 13, 10, 26, 10,
+    0, 0, 0, 13, 73, 72, 68, 82,
+    0, 0, 0, 64, 0, 0, 0, 64,
+    8, 6, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 73, 69, 78, 68,
+    0, 0, 0, 0
+  ]);
+  const output = new Uint8Array(16 + png.length);
+  output.set([105, 99, 110, 115], 0);
+  new DataView(output.buffer).setUint32(4, output.length);
+  output.set([105, 99, 48, 55], 8);
+  new DataView(output.buffer).setUint32(12, 8 + png.length);
+  output.set(png, 16);
+  return output;
 }
 
 function buildWordBinaryCompoundFile(text: string): Uint8Array {

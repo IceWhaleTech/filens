@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	wasmPath := flag.String("wasm", "", "path to converter-core.wasm")
+	wasmPath := flag.String("wasm", "", "path to a converter WASM module")
 	manifestPath := flag.String("manifest", "", "path to batch manifest json")
 	reportPath := flag.String("report", "-", "path to batch report json, or - for stdout")
 	capabilitiesOnly := flag.Bool("capabilities", false, "print converter backend capabilities as JSON and exit")

@@ -1766,6 +1766,12 @@
       "outputPath": "./tmp/sample.iiq.jpg",
       "sourceFormat": "iiq",
       "targetFormat": "jpg"
+    },
+    {
+      "inputPath": "./fixtures/image/sample.icns",
+      "outputPath": "./tmp/sample.icns.png",
+      "sourceFormat": "icns",
+      "targetFormat": "png"
     }
   ]
 }

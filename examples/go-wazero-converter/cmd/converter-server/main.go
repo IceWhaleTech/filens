@@ -18,7 +18,7 @@ func main() {
 	addr := flag.String("addr", envOr("CONVERTER_ADDR", "127.0.0.1:8080"), "HTTP listen address")
 	path := flag.String("path", envOr("CONVERTER_PATH", "/convert"), "HTTP converter endpoint path")
 	healthPath := flag.String("health-path", envOr("CONVERTER_HEALTH_PATH", "/healthz"), "HTTP health/capabilities endpoint path, or empty to disable")
-	wasmPath := flag.String("wasm", os.Getenv("CONVERTER_CORE_WASM"), "path to converter-core.wasm")
+	wasmPath := flag.String("wasm", os.Getenv("CONVERTER_CORE_WASM"), "path to a converter WASM module")
 	maxUploadMB := flag.Int64("max-upload-mb", envInt64("CONVERTER_MAX_UPLOAD_MB", 512), "maximum multipart upload size in MiB")
 	allowOrigin := flag.String("allow-origin", os.Getenv("CONVERTER_ALLOW_ORIGIN"), "optional CORS Access-Control-Allow-Origin value")
 	flag.Parse()

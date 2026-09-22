@@ -54,6 +54,9 @@ const TABULAR_TEXT_SOURCE_FORMATS = ['csv', 'tsv', 'tab', 'psv', 'json', 'jsonl'
 const TABULAR_TEXT_SOURCE_FORMAT_SET = new Set(TABULAR_TEXT_SOURCE_FORMATS);
 const RAW_SOURCE_FORMATS = ['dng', 'cr2', 'cr3', 'nef', 'nrw', 'arw', 'sr2', 'srf', 'orf', 'rw2', 'rwl', 'raf', 'kdc', 'x3f', 'pef', 'srw', 'erf', 'mef', 'mos', 'mrw', '3fr', 'iiq'];
 const RAW_SOURCE_FORMAT_SET = new Set(RAW_SOURCE_FORMATS);
+const ICNS_FIXTURES = [
+  ['image/sample.icns', icnsFixtureBytes()]
+];
 
 const TEXT_FIXTURES = [
   ['doc/sample.rtf', rtfFixtureBytes()],
@@ -267,6 +270,7 @@ async function buildFixtureEntries() {
     ...TABULAR_TEXT_FIXTURES,
     ...TABULAR_BACKEND_FIXTURES,
     ...RAW_SOURCE_FORMATS.map((sourceFormat) => [`raw/sample.${sourceFormat}`, rawFixtureBytes()]),
+    ...ICNS_FIXTURES,
     ...PPT_FIXTURES.map(([relativePath, title, bullet]) => [relativePath, buildPPTBinaryCompoundFile(title, bullet)])
   ]) {
     entries.set(relativePath, bytes);
@@ -367,6 +371,8 @@ function fixturePathForSource(sourceFormat) {
     case 'sxd':
     case 'std':
       return `ppt/sample.${sourceFormat}`;
+    case 'icns':
+      return 'image/sample.icns';
     default:
       throw new Error(`no controlled converter fixture for ${sourceFormat}`);
   }
@@ -387,6 +393,27 @@ function rawFixtureBytes() {
 
 function jpegFixtureBytes() {
   return Buffer.from('/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAACAAIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD1Dwj4c0O58F6FPPo2nSzS6dbvJJJaozOxjUkkkZJJ70UUVwVfjfqeXW/iS9Wf/9k=', 'base64');
+}
+
+function icnsFixtureBytes() {
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64');
+  const chunkLength = 8 + png.byteLength;
+  return concatBytes([
+    Buffer.from('icns'),
+    uint32BE(8 + chunkLength),
+    Buffer.from('icp5'),
+    uint32BE(chunkLength),
+    png
+  ]);
+}
+
+function uint32BE(value) {
+  return Uint8Array.from([
+    (value >>> 24) & 0xff,
+    (value >>> 16) & 0xff,
+    (value >>> 8) & 0xff,
+    value & 0xff
+  ]);
 }
 
 function textFixtureBytesForFormat(sourceFormat) {

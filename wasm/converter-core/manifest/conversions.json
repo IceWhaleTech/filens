@@ -292,5 +292,6 @@
   { "sourceFormat": "mos", "targetFormat": "jpg" },
   { "sourceFormat": "mrw", "targetFormat": "jpg" },
   { "sourceFormat": "3fr", "targetFormat": "jpg" },
-  { "sourceFormat": "iiq", "targetFormat": "jpg" }
+  { "sourceFormat": "iiq", "targetFormat": "jpg" },
+  { "sourceFormat": "icns", "targetFormat": "png" }
 ]

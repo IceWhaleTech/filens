@@ -8,8 +8,10 @@ import {
   type PreviewEventMap,
   type PreviewEventName,
   type PreviewLoadContext,
+  type PreviewOptions,
   type PreviewResourceResolver,
   type PreviewSession,
+  type PreviewerInstance,
   type PreviewSource
 } from '@filens/core';
 
@@ -93,7 +95,13 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     warnings: new Set()
   };
   private readonly root: HTMLDivElement;
+  private readonly options: PreviewOptions;
   private archiveStack: ArchiveFrame[] = [];
+  private activeEntry: { name: string; source: Uint8Array; contentType?: string } | null = null;
+  private entryPreviewHost: HTMLDivElement | null = null;
+  private entryPreviewer: PreviewerInstance | null = null;
+  private entryPreviewUnsubscribes: Array<() => void> = [];
+  private entryObjectUrl: string | null = null;
   private state: ArchivePreviewState = {
     loading: false,
     error: null,
@@ -108,13 +116,15 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     entries: []
   };
 
-  constructor(private readonly host: HTMLElement) {
+  constructor(private readonly host: HTMLElement, options: PreviewOptions = {}) {
+    this.options = options;
     this.root = document.createElement('div');
     this.root.className = 'archivev-preview';
     this.host.replaceChildren(this.root);
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
+    this.closeEntryPreview(false);
     this.state = {
       ...this.state,
       loading: true,
@@ -154,6 +164,7 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
   }
 
   destroy(): void {
+    this.closeEntryPreview(false);
     this.archiveStack = [];
     this.root.replaceChildren();
     if (this.root.parentElement === this.host) {
@@ -183,6 +194,7 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     const summary = document.createElement('div');
     summary.className = 'archivev-summary';
     summary.textContent = `${summaryLabel} • ${this.state.entries.length} item${this.state.entries.length === 1 ? '' : 's'}`;
+    summary.appendChild(this.createBreadcrumbs());
 
     const toolbar = document.createElement('div');
     toolbar.className = 'archivev-toolbar';
@@ -204,11 +216,16 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     const closeNestedButton = document.createElement('button');
     closeNestedButton.type = 'button';
     closeNestedButton.className = 'archivev-button';
-    closeNestedButton.textContent = 'Back';
-    closeNestedButton.disabled = this.archiveStack.length <= 1;
-    closeNestedButton.addEventListener('click', () => this.popArchive());
+    closeNestedButton.textContent = this.activeEntry ? 'Back to archive' : 'Back';
+    closeNestedButton.disabled = this.activeEntry ? false : this.archiveStack.length <= 1;
+    closeNestedButton.addEventListener('click', () => this.activeEntry ? this.closeEntryPreview() : this.popArchive());
 
     toolbar.append(closeNestedButton, upButton, rootButton);
+
+    if (this.activeEntry && this.entryPreviewHost) {
+      this.root.replaceChildren(summary, toolbar, this.entryPreviewHost);
+      return;
+    }
 
     const table = document.createElement('table');
     table.className = 'archivev-table';
@@ -255,6 +272,56 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     this.root.replaceChildren(summary, toolbar, table);
   }
 
+  private createBreadcrumbs(): HTMLElement {
+    const breadcrumbs = document.createElement('nav');
+    breadcrumbs.className = 'archivev-breadcrumbs';
+    breadcrumbs.setAttribute('aria-label', 'Archive path');
+
+    this.archiveStack.forEach((frame, index) => {
+      if (index > 0) breadcrumbs.appendChild(createBreadcrumbSeparator());
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'archivev-breadcrumb';
+      button.textContent = frame.label;
+      button.disabled = index === this.archiveStack.length - 1;
+      button.addEventListener('click', () => this.popToArchive(index));
+      breadcrumbs.appendChild(button);
+    });
+
+    const route = normalizeArchiveRoute(this.state.route);
+    const parts = route === '/' ? [] : route.slice(1, -1).split('/').filter(Boolean);
+    const rootButton = document.createElement('button');
+    rootButton.type = 'button';
+    rootButton.className = 'archivev-breadcrumb';
+    rootButton.textContent = '/';
+    rootButton.disabled = route === '/';
+    rootButton.addEventListener('click', () => this.setRoute('/'));
+    breadcrumbs.appendChild(createBreadcrumbSeparator());
+    breadcrumbs.appendChild(rootButton);
+
+    let nextRoute = '/';
+    for (const part of parts) {
+      nextRoute = joinArchiveRoute(nextRoute, `${part}/`);
+      breadcrumbs.appendChild(createBreadcrumbSeparator());
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'archivev-breadcrumb';
+      button.textContent = part;
+      button.disabled = nextRoute === route;
+      const targetRoute = nextRoute;
+      button.addEventListener('click', () => this.setRoute(targetRoute));
+      breadcrumbs.appendChild(button);
+    }
+    if (this.activeEntry) {
+      breadcrumbs.appendChild(createBreadcrumbSeparator());
+      const current = document.createElement('span');
+      current.className = 'archivev-breadcrumb-current';
+      current.textContent = this.activeEntry.name.split('/').pop() ?? this.activeEntry.name;
+      breadcrumbs.appendChild(current);
+    }
+    return breadcrumbs;
+  }
+
   private activateEntry(entry: ArchivePreviewState['entries'][number]): void {
     if (entry.type === 'directory') {
       this.setRoute(joinArchiveRoute(this.state.route, entry.name));
@@ -263,7 +330,99 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
 
     if (isSupportedArchiveFile(entry.name)) {
       void this.openNestedArchive(entry.name);
+      return;
     }
+
+    void this.openEntryPreview(entry.name);
+  }
+
+  private async openEntryPreview(name: string): Promise<void> {
+    const entry = this.findCurrentEntry(name);
+    if (!entry) {
+      return;
+    }
+
+    this.state = { ...this.state, loading: true, error: null };
+    this.emit('loading', this.state);
+    this.emit('statechange', this.state);
+
+    try {
+      const source = await entry.read();
+      this.activeEntry = {
+        name,
+        source,
+        contentType: resolveZipContentType(name, undefined)
+      };
+      this.entryPreviewHost = document.createElement('div');
+      this.entryPreviewHost.className = 'archivev-entry-preview';
+      this.render();
+
+      const previewerFactory = this.options.previewerFactory;
+      if (previewerFactory) {
+        this.entryPreviewer = previewerFactory(this.entryPreviewHost, {
+          resourceResolver: this.createEntryResourceResolver()
+        });
+        this.entryPreviewUnsubscribes = [
+          this.entryPreviewer.on('error', (error) => this.setEntryPreviewError(error)),
+          this.entryPreviewer.on('warnings', (warnings) => {
+            this.state = { ...this.state, warnings };
+            this.emit('warnings', warnings);
+            this.emit('statechange', this.state);
+          })
+        ];
+        await this.entryPreviewer.preview(source, {
+          name,
+          extension: extensionFromName(name),
+          contentType: this.activeEntry.contentType
+        });
+      } else {
+        this.renderFallbackEntryPreview(this.entryPreviewHost, source, name, this.activeEntry.contentType);
+      }
+
+      this.state = {
+        ...this.state,
+        loading: false,
+        error: this.entryPreviewer?.getState().error ?? null
+      };
+      this.emit('statechange', this.state);
+    } catch (error) {
+      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      this.state = { ...this.state, loading: false, error: normalizedError.message };
+      this.emit('error', normalizedError);
+      this.emit('statechange', this.state);
+    }
+  }
+
+  private setEntryPreviewError(error: Error): void {
+    this.state = { ...this.state, loading: false, error: error.message };
+    this.emit('error', error);
+    this.emit('statechange', this.state);
+  }
+
+  private closeEntryPreview(shouldRender = true): void {
+    this.entryPreviewUnsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
+    this.entryPreviewer?.destroy();
+    this.entryPreviewer = null;
+    this.entryPreviewHost = null;
+    this.activeEntry = null;
+    if (this.entryObjectUrl) {
+      URL.revokeObjectURL(this.entryObjectUrl);
+      this.entryObjectUrl = null;
+    }
+    if (shouldRender) {
+      this.state = { ...this.state, loading: false, error: null, warnings: [] };
+      this.render();
+      this.emit('statechange', this.state);
+    }
+  }
+
+  private popToArchive(index: number): void {
+    if (index < 0 || index >= this.archiveStack.length - 1) {
+      return;
+    }
+    this.closeEntryPreview(false);
+    this.archiveStack.splice(index + 1);
+    this.setRoute('/');
   }
 
   private navigateUp(): void {
@@ -274,6 +433,9 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
   }
 
   private setRoute(route: string): void {
+    if (this.activeEntry) {
+      this.closeEntryPreview(false);
+    }
     const current = this.archiveStack[this.archiveStack.length - 1];
     if (!current) {
       return;
@@ -288,6 +450,69 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     };
     this.render();
     this.emit('statechange', this.state);
+  }
+
+  private findCurrentEntry(name: string): ArchiveEntryRecord | undefined {
+    const current = this.archiveStack[this.archiveStack.length - 1];
+    if (!current) {
+      return undefined;
+    }
+    const routePrefix = this.state.route === '/' ? '' : this.state.route.slice(1);
+    return current.entries.find((entry) => entry.type === 'file' && entry.name === `${routePrefix}${name}`);
+  }
+
+  private createEntryResourceResolver(): PreviewResourceResolver {
+    const externalResolver = this.options.resourceResolver;
+    return async (request) => {
+      const source = request.source ?? request.name;
+      if (source) {
+        const entry = this.findCurrentEntry(source.replace(/^\/+/, ''));
+        if (entry) {
+          return {
+            source: await entry.read(),
+            warnings: []
+          };
+        }
+      }
+      return externalResolver ? externalResolver(request) : undefined;
+    };
+  }
+
+  private renderFallbackEntryPreview(host: HTMLElement, source: Uint8Array, name: string, contentType?: string): void {
+    const extension = extensionFromName(name);
+    const type = contentType ?? '';
+    if (type.startsWith('image/')) {
+      this.entryObjectUrl = URL.createObjectURL(new Blob([copyBytesToArrayBuffer(source)], { type }));
+      const image = document.createElement('img');
+      image.className = 'archivev-entry-image';
+      image.alt = name;
+      image.src = this.entryObjectUrl;
+      host.replaceChildren(image);
+      return;
+    }
+    if (type === 'application/pdf' || extension === 'pdf') {
+      this.entryObjectUrl = URL.createObjectURL(new Blob([copyBytesToArrayBuffer(source)], { type: 'application/pdf' }));
+      const frame = document.createElement('iframe');
+      frame.className = 'archivev-entry-frame';
+      frame.title = name;
+      frame.src = this.entryObjectUrl;
+      host.replaceChildren(frame);
+      return;
+    }
+    if (type.startsWith('audio/') || type.startsWith('video/')) {
+      this.entryObjectUrl = URL.createObjectURL(new Blob([copyBytesToArrayBuffer(source)], { type }));
+      const media = document.createElement(type.startsWith('audio/') ? 'audio' : 'video');
+      media.className = 'archivev-entry-media';
+      media.controls = true;
+      media.src = this.entryObjectUrl;
+      host.replaceChildren(media);
+      return;
+    }
+
+    const pre = document.createElement('pre');
+    pre.className = 'archivev-entry-text';
+    pre.textContent = new TextDecoder().decode(source);
+    host.replaceChildren(pre);
   }
 
   private async openNestedArchive(name: string): Promise<void> {
@@ -349,7 +574,7 @@ export function createArchivePreviewDriver(): PreviewDriver<ArchivePreviewState>
     id: 'archive',
     family: 'archive',
     supports: (format) => isSupportedArchiveFormat(normalizeFormat(format)),
-    createSession: (host) => new ArchivePreviewSession(host)
+    createSession: (host, options) => new ArchivePreviewSession(host, options)
   };
 }
 
@@ -654,6 +879,21 @@ function createTableHead(): HTMLTableSectionElement {
   }
   head.appendChild(row);
   return head;
+}
+
+function createBreadcrumbSeparator(): HTMLSpanElement {
+  const separator = document.createElement('span');
+  separator.className = 'archivev-breadcrumb-separator';
+  separator.textContent = '›';
+  separator.setAttribute('aria-hidden', 'true');
+  return separator;
+}
+
+function extensionFromName(name: string): string {
+  const normalized = name.toLowerCase().split(/[?#]/, 1)[0] ?? '';
+  const segment = normalized.split(/[\\/]/).pop() ?? '';
+  const dot = segment.lastIndexOf('.');
+  return dot >= 0 ? segment.slice(dot + 1) : '';
 }
 
 function compareArchiveEntries(

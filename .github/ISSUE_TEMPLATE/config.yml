@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: filens 通俗介绍与测试指南
+    url: https://github.com/IceWhaleTech/filens/blob/main/docs/filens-introduction.zh-CN.md
+    about: 提交问题前可先查看建议测试项和问题记录方式。

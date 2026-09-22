@@ -20,6 +20,7 @@ import {
   type PreviewFitMode,
   type PreviewFontResolver,
   type PreviewItemState,
+  type PreviewOptions,
   type PreviewResourceResolver,
   type PreviewSource,
   type PreviewerInstance,
@@ -490,17 +491,21 @@ async function recreatePreviewer(): Promise<void> {
     return;
   }
 
-  previewer.value = createPreviewer(viewerHost.value, {
-    fit: props.fit,
-    initialScale: props.initialScale,
-    minScale: props.minScale,
-    maxScale: props.maxScale,
-    fontResolver: props.fontResolver,
-    resourceResolver: props.resourceResolver,
-    drivers: props.drivers ?? createVueDefaultPreviewDrivers(props.panoramaProcessor),
-    routes: props.routes ?? createVueDefaultPreviewRoutes(),
-    converter: props.converter
+  const drivers = props.drivers ?? createVueDefaultPreviewDrivers(props.panoramaProcessor);
+  const routes = props.routes ?? createVueDefaultPreviewRoutes();
+  const createNestedPreviewer = (host: HTMLElement, childOptions: PreviewOptions = {}) => createPreviewer(host, {
+    fit: childOptions.fit ?? props.fit,
+    initialScale: childOptions.initialScale ?? props.initialScale,
+    minScale: childOptions.minScale ?? props.minScale,
+    maxScale: childOptions.maxScale ?? props.maxScale,
+    fontResolver: childOptions.fontResolver ?? props.fontResolver,
+    resourceResolver: childOptions.resourceResolver ?? props.resourceResolver,
+    drivers,
+    routes,
+    converter: props.converter,
+    previewerFactory: createNestedPreviewer
   });
+  previewer.value = createNestedPreviewer(viewerHost.value);
 
   unsubs.push(
     previewer.value.on('rendered', (state) => {

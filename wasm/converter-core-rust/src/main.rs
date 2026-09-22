@@ -32,10 +32,11 @@ const HTML_TEXT_WARNING: &str = "Text backend performed lightweight HTML text ex
 const RTF_WARNING: &str = "RTF backend performed lightweight text extraction; complex layout, embedded objects, and full style fidelity are not preserved.";
 const TABULAR_WARNING: &str = "Tabular backend performed lightweight spreadsheet data extraction; formulas, formatting, indexes, code pages, memo fields, and macros are not preserved.";
 const ODF_WARNING: &str = "ODF backend performed lightweight OpenDocument extraction; layout, styles, media, formulas, and macros are not preserved.";
-const WORD_BINARY_WARNING: &str = "Word binary backend uses the built-in CFB/piece-table parser; supported paragraph/run styles, simple lists, basic tables and table merges, heading-like lines, and embedded JPEG/PNG images are preserved, while legacy drawings, fields, macros, and embedded objects may be simplified or omitted.";
+const WORD_BINARY_WARNING: &str = "Word binary backend uses the built-in CFB/piece-table parser; paragraph/run styles (including inherited spacing, indentation, alignment, fonts, colors, and rich text), section page setup, columns, page borders, header/footer stories, common fields with cached results, OfficeArt FSPA/Escher picture positions, custom wrapping, rotation, flips, crop, opacity, and z-order, multi-level lists, table grids, merges, cell borders/layout, row pagination, heading-like lines, and embedded raster/WMF/EMF images are preserved, while editable legacy OfficeArt shapes, nested or complex fields, macros, and embedded objects may be simplified or omitted.";
 const BIFF_WARNING: &str = "BIFF conversion core performed lightweight binary spreadsheet extraction; basic formulas and formatting are preserved, but charts, macros, embedded objects, and unsupported formula tokens are not preserved.";
 const PPT_BINARY_WARNING: &str = "PowerPoint binary backend preserves embedded full-slide JPEG/PNG artwork where available and otherwise extracts text; editable layout, animations, charts, macros, and embedded objects are not preserved.";
-const RAW_PREVIEW_WARNING: &str = "RAW preview backend extracted the camera-generated embedded JPEG; full-resolution sensor data, custom picture profiles, and edits are not developed.";
+const RAW_PREVIEW_WARNING: &str = "RAW preview backend extracted the largest embedded 8-bit JPEG; use the optional converter-image WASM module when sensor decoding is required.";
+const ICNS_PREVIEW_WARNING: &str = "ICNS preview backend extracted the largest embedded PNG icon; legacy raw icon planes and JPEG 2000 icon chunks are not decoded.";
 const CONVERSIONS: &str = include_str!("../../converter-core/manifest/conversions.json");
 const MAX_PACKAGE_ENTRIES: usize = 10_000;
 const MAX_ENTRY_BYTES: u64 = 64 << 20;
@@ -62,16 +63,34 @@ struct Request {
     options_json: serde_json::Value,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 struct DocxParagraph {
     text: String,
+    source_cp_start: i32,
+    source_cp_end: i32,
+    source_fc_start: u32,
+    source_fc_end: u32,
     heading_level: usize,
     list_kind: &'static str,
     list_level: usize,
+    list_id: usize,
     alignment: &'static str,
+    spacing_before: u16,
+    spacing_after: u16,
+    line_spacing: u16,
+    line_spacing_rule: &'static str,
+    indent_left: i16,
+    indent_right: i16,
+    first_line_indent: i16,
+    shading: String,
+    keep_next: bool,
+    keep_lines: bool,
+    page_break_before: bool,
+    bidi: bool,
     bold: bool,
     runs: Vec<DocxRun>,
     table_cell: bool,
+    table_cell_end: bool,
     table_row_end: bool,
     table_cell_merged: bool,
     table_grid_span: usize,
@@ -79,6 +98,19 @@ struct DocxParagraph {
     table_grid_left: i16,
     table_grid_right: i16,
     table_grid_bounds: Vec<i16>,
+    table_cell_borders: [Option<DocxPageBorder>; 4],
+    table_cell_borders_explicit: bool,
+    table_cell_margins: [Option<i16>; 4],
+    table_cell_preferred_width: u16,
+    table_cell_vertical_align: &'static str,
+    table_cell_text_direction: &'static str,
+    table_cell_no_wrap: bool,
+    table_cell_fit_text: bool,
+    table_row_height: i16,
+    table_row_cant_split: bool,
+    table_row_header: bool,
+    table_alignment: &'static str,
+    table_borders: Option<[Option<DocxPageBorder>; 6]>,
 }
 
 #[derive(Clone, Default)]
@@ -88,15 +120,176 @@ struct DocxImage {
     content_type: &'static str,
     width_emu: u64,
     height_emu: u64,
+    floating: bool,
+    anchor_x_emu: i64,
+    anchor_y_emu: i64,
+    anchor_align_h: &'static str,
+    anchor_align_v: &'static str,
+    relative_h: &'static str,
+    relative_v: &'static str,
+    wrap: &'static str,
+    wrap_side: &'static str,
+    behind_doc: bool,
+    anchor_lock: bool,
+    relative_height: u32,
+    rotation: i32,
+    flip_h: bool,
+    flip_v: bool,
+    crop_left: u32,
+    crop_top: u32,
+    crop_right: u32,
+    crop_bottom: u32,
+    wrap_polygon: Vec<(i32, i32)>,
+    opacity: Option<u32>,
+    wrap_distance_left: u32,
+    wrap_distance_top: u32,
+    wrap_distance_right: u32,
+    wrap_distance_bottom: u32,
+}
+
+#[derive(Clone, Copy)]
+struct DocxSection {
+    section_type: &'static str,
+    page_width: u32,
+    page_height: u32,
+    margin_top: i32,
+    margin_right: i32,
+    margin_bottom: i32,
+    margin_left: i32,
+    margin_header: i32,
+    margin_footer: i32,
+    gutter: i32,
+    landscape: bool,
+    columns: u16,
+    column_spacing: i32,
+    column_separator: bool,
+    column_rtl: bool,
+    title_page: bool,
+    page_border_top: Option<DocxPageBorder>,
+    page_border_left: Option<DocxPageBorder>,
+    page_border_bottom: Option<DocxPageBorder>,
+    page_border_right: Option<DocxPageBorder>,
+    page_border_display: &'static str,
+    page_border_offset_from: &'static str,
+    page_border_z_order: &'static str,
+}
+
+#[derive(Clone, Copy)]
+struct DocxPageBorder {
+    style: &'static str,
+    size: u16,
+    color: Option<[u8; 3]>,
+    space: u8,
+    shadow: bool,
+    frame: bool,
+}
+
+#[derive(Clone, Copy)]
+struct WordBinarySection {
+    cp_end: i32,
+    properties: DocxSection,
+}
+
+#[derive(Clone)]
+struct WordBinaryHeaderFooter {
+    section_index: usize,
+    kind: &'static str,
+    paragraphs: Vec<DocxParagraph>,
+}
+
+#[derive(Clone, Copy)]
+struct WordBinaryShapeAnchor {
+    spid: u32,
+    cp: i32,
+    x_left: i32,
+    y_top: i32,
+    x_right: i32,
+    y_bottom: i32,
+    relative_h: &'static str,
+    relative_v: &'static str,
+    wrap: &'static str,
+    wrap_side: &'static str,
+    below_text: bool,
+    anchor_lock: bool,
+}
+
+#[derive(Clone, Default)]
+struct WordBinaryShapeArt {
+    spid: u32,
+    blip_index: Option<usize>,
+    rotation: i32,
+    flip_h: bool,
+    flip_v: bool,
+    crop_left: u32,
+    crop_top: u32,
+    crop_right: u32,
+    crop_bottom: u32,
+    wrap_polygon: Vec<(i32, i32)>,
+    opacity: Option<u32>,
+    position_h: &'static str,
+    position_v: &'static str,
+    relative_h: &'static str,
+    relative_v: &'static str,
+    wrap_distance_left: u32,
+    wrap_distance_top: u32,
+    wrap_distance_right: u32,
+    wrap_distance_bottom: u32,
+    z_order: Option<u32>,
+    behind_doc: Option<bool>,
+    image: Option<DocxImage>,
+}
+
+#[derive(Clone, Default)]
+struct WordBinaryOfficeArt {
+    shapes: Vec<WordBinaryShapeArt>,
+    blips: Vec<Option<DocxImage>>,
+    blip_delay_offsets: Vec<Option<usize>>,
+}
+
+impl Default for DocxSection {
+    fn default() -> Self {
+        Self {
+            section_type: "nextPage",
+            page_width: 12_240,
+            page_height: 15_840,
+            margin_top: 1_080,
+            margin_right: 1_080,
+            margin_bottom: 1_080,
+            margin_left: 1_080,
+            margin_header: 720,
+            margin_footer: 720,
+            gutter: 0,
+            landscape: false,
+            columns: 1,
+            column_spacing: 720,
+            column_separator: false,
+            column_rtl: false,
+            title_page: false,
+            page_border_top: None,
+            page_border_left: None,
+            page_border_bottom: None,
+            page_border_right: None,
+            page_border_display: "allPages",
+            page_border_offset_from: "text",
+            page_border_z_order: "front",
+        }
+    }
 }
 
 #[derive(Clone, Default)]
 struct DocxRun {
     text: String,
+    field_instruction: String,
+    font_name: String,
     bold: bool,
     italic: bool,
     underline: bool,
+    underline_style: &'static str,
     strike: bool,
+    small_caps: bool,
+    caps: bool,
+    hidden: bool,
+    rtl: bool,
     vertical_align: &'static str,
     font_size: usize,
     color: String,
@@ -276,6 +469,12 @@ fn main() {
                 RAW_PREVIEW_BACKEND,
                 RAW_PREVIEW_WARNING,
                 convert_raw_preview(&request.input, &request.output, &request.target),
+            )
+        } else if is_icns_source(&request.source) {
+            (
+                "icns-preview",
+                ICNS_PREVIEW_WARNING,
+                convert_icns_preview(&request.input, &request.output, &request.target),
             )
         } else if is_word_binary_source(&request.source) {
             (
@@ -658,19 +857,120 @@ fn is_raw_source(source: &str) -> bool {
     )
 }
 
+fn is_icns_source(source: &str) -> bool {
+    source == "icns"
+}
+
 fn convert_raw_preview(input: &str, output: &str, target: &str) -> Result<(), ConvertError> {
-    let bytes = fs::read(input).map_err(|error| io_error(format!("read RAW input: {error}")))?;
-    let preview = best_embedded_jpeg(&bytes).ok_or_else(|| {
-        parse_error("RAW file does not contain a supported 8-bit embedded JPEG preview".into())
-    })?;
-    match target {
-        "jpg" | "jpeg" => fs::write(output, preview)
-            .map_err(|error| io_error(format!("write RAW JPEG preview: {error}"))),
-        _ => Err(ConvertError {
+    if !matches!(target, "jpg" | "jpeg") {
+        return Err(ConvertError {
             code: "unsupported_format",
             message: format!("unsupported RAW target format: {target}"),
-        }),
+        });
     }
+    let bytes = fs::read(input).map_err(|error| io_error(format!("read RAW input: {error}")))?;
+    if let Some(preview) = best_embedded_jpeg(&bytes) {
+        return fs::write(output, preview)
+            .map_err(|error| io_error(format!("write RAW JPEG preview: {error}")));
+    }
+
+    Err(parse_error(
+        "RAW file does not contain a supported 8-bit embedded JPEG preview; configure converter-image.wasm for sensor decoding".into(),
+    ))
+}
+
+fn convert_icns_preview(input: &str, output: &str, target: &str) -> Result<(), ConvertError> {
+    if target != "png" {
+        return Err(ConvertError {
+            code: "unsupported_format",
+            message: format!("unsupported ICNS target format: {target}"),
+        });
+    }
+    let bytes = fs::read(input).map_err(|error| io_error(format!("read ICNS input: {error}")))?;
+    let preview = best_icns_png(&bytes).ok_or_else(|| {
+        parse_error("ICNS file does not contain a complete embedded PNG icon preview".into())
+    })?;
+    fs::write(output, preview).map_err(|error| io_error(format!("write ICNS PNG preview: {error}")))
+}
+
+fn best_icns_png(bytes: &[u8]) -> Option<&[u8]> {
+    if bytes.get(..4) != Some(b"icns") || bytes.len() < 8 {
+        return None;
+    }
+    let declared_len = usize::try_from(u32::from_be_bytes(bytes[4..8].try_into().ok()?)).ok()?;
+    if declared_len < 8 || declared_len > bytes.len() {
+        return None;
+    }
+
+    let mut cursor = 8usize;
+    let mut best: Option<(usize, usize, u64)> = None;
+    while cursor + 8 <= declared_len {
+        let chunk_len = usize::try_from(u32::from_be_bytes(
+            bytes[cursor + 4..cursor + 8].try_into().ok()?,
+        ))
+        .ok()?;
+        if chunk_len < 8 {
+            return None;
+        }
+        let chunk_end = cursor.checked_add(chunk_len)?;
+        if chunk_end > declared_len {
+            return None;
+        }
+        let data_start = cursor + 8;
+        let data = &bytes[data_start..chunk_end];
+        if let Some(png_end) = png_bounds(data) {
+            let Some((width, height)) = png_dimensions(data) else {
+                cursor = chunk_end;
+                continue;
+            };
+            let area = u64::from(width).saturating_mul(u64::from(height));
+            let candidate_end = data_start + png_end;
+            if best.is_none_or(|(best_start, best_end, best_area)| {
+                area > best_area
+                    || (area == best_area && candidate_end - data_start > best_end - best_start)
+            }) {
+                best = Some((data_start, candidate_end, area));
+            }
+        }
+        cursor = chunk_end;
+    }
+    best.map(|(start, end, _)| &bytes[start..end])
+}
+
+fn png_bounds(bytes: &[u8]) -> Option<usize> {
+    const PNG_SIGNATURE: &[u8; 8] = b"\x89PNG\r\n\x1a\n";
+    if bytes.get(..8) != Some(PNG_SIGNATURE) {
+        return None;
+    }
+    let mut cursor = 8usize;
+    while cursor + 12 <= bytes.len() {
+        let chunk_len = usize::try_from(u32::from_be_bytes(
+            bytes[cursor..cursor + 4].try_into().ok()?,
+        ))
+        .ok()?;
+        let chunk_end = cursor.checked_add(12)?.checked_add(chunk_len)?;
+        if chunk_end > bytes.len() {
+            return None;
+        }
+        if bytes.get(cursor + 4..cursor + 8) == Some(b"IEND") {
+            return Some(chunk_end);
+        }
+        cursor = chunk_end;
+    }
+    None
+}
+
+fn png_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
+    if bytes.get(..24).is_none()
+        || bytes.get(..8) != Some(b"\x89PNG\r\n\x1a\n")
+        || bytes.get(12..16) != Some(b"IHDR")
+    {
+        return None;
+    }
+    Some((
+        u32::from_be_bytes(bytes[16..20].try_into().ok()?),
+        u32::from_be_bytes(bytes[20..24].try_into().ok()?),
+    ))
 }
 
 // ponytail: embedded previews avoid a full RAW developer; add demosaic/color processing when sensor-pixel previews are required.
@@ -1364,6 +1664,7 @@ struct OdfSlide {
     paragraphs: Vec<String>,
     legacy_binary: bool,
     image: Option<PptSlideImage>,
+    overlay_images: Vec<PptSlideImage>,
 }
 
 #[derive(Clone)]
@@ -1371,6 +1672,15 @@ struct PptSlideImage {
     extension: &'static str,
     content_type: &'static str,
     data: Vec<u8>,
+    anchor: Option<PptImageAnchor>,
+}
+
+#[derive(Clone, Copy)]
+struct PptImageAnchor {
+    left: u16,
+    top: u16,
+    right: u16,
+    bottom: u16,
 }
 
 const CFB_FREE: u32 = 0xffff_ffff;
@@ -2085,15 +2395,34 @@ fn convert_ppt_binary(input: &str, output: &str) -> Result<(), ConvertError> {
             let mut paragraphs = Vec::new();
             let _ = walk_ppt_records(payload, &mut 0, &mut paragraphs, &mut Vec::new());
             retain_ppt_text(&mut paragraphs);
-            let image = find_ppt_blip_id(payload)
-                .and_then(|id| id.checked_sub(1))
-                .and_then(|id| pictures.get(id))
-                .and_then(Clone::clone);
+            let mut slide_images = find_ppt_blip_layers(payload)
+                .into_iter()
+                .filter_map(|(id, anchor)| {
+                    pictures
+                        .get(id.checked_sub(1)?)
+                        .and_then(Clone::clone)
+                        .map(|mut image| {
+                            image.anchor = anchor;
+                            image
+                        })
+                })
+                .collect::<Vec<_>>();
+            if slide_images.is_empty() {
+                slide_images = find_ppt_blip_ids(payload)
+                    .into_iter()
+                    .filter_map(|id| id.checked_sub(1))
+                    .filter_map(|id| pictures.get(id).and_then(Clone::clone))
+                    .collect();
+            }
+            let mut slide_images = slide_images.into_iter();
+            let image = slide_images.next();
+            let overlay_images = slide_images.collect();
             OdfSlide {
                 name: format!("Extracted Slide {}", index + 1),
                 paragraphs,
                 legacy_binary: true,
                 image,
+                overlay_images,
             }
         })
         .collect::<Vec<_>>();
@@ -2131,6 +2460,7 @@ fn convert_ppt_binary(input: &str, output: &str) -> Result<(), ConvertError> {
         paragraphs,
         legacy_binary: true,
         image: None,
+        overlay_images: Vec::new(),
     })
     .collect::<Vec<_>>();
     write_pptx(output, &slides)
@@ -2199,18 +2529,22 @@ fn ppt_persisted_records(document: &[u8], current_user: &[u8]) -> Vec<(u32, usiz
 fn parse_ppt_picture_stream(data: &[u8]) -> Vec<Option<PptSlideImage>> {
     let mut pictures = Vec::new();
     let mut offset = 0usize;
-    while let Some((_, _, payload)) = ppt_record(data, offset) {
-        let image = if let Some(start) = find_bytes(payload, &[0xff, 0xd8]) {
-            Some(PptSlideImage {
+    while let Some((_, record_type, payload)) = ppt_record(data, offset) {
+        // OfficeArt stores JPEG and PNG blips in separate record types. Do not
+        // scan PNG payloads for incidental JPEG markers from compressed data.
+        let image = if record_type == 0xf01d {
+            find_bytes(payload, &[0xff, 0xd8]).map(|start| PptSlideImage {
                 extension: "jpeg",
                 content_type: "image/jpeg",
                 data: payload[start..].to_vec(),
+                anchor: None,
             })
-        } else if let Some(start) = find_bytes(payload, b"\x89PNG\r\n\x1a\n") {
-            Some(PptSlideImage {
+        } else if record_type == 0xf01e {
+            find_bytes(payload, b"\x89PNG\r\n\x1a\n").map(|start| PptSlideImage {
                 extension: "png",
                 content_type: "image/png",
                 data: payload[start..].to_vec(),
+                anchor: None,
             })
         } else {
             None
@@ -2221,6 +2555,78 @@ fn parse_ppt_picture_stream(data: &[u8]) -> Vec<Option<PptSlideImage>> {
     pictures
 }
 
+fn find_ppt_blip_ids(data: &[u8]) -> Vec<usize> {
+    let mut ids = Vec::new();
+    let mut offset = 0usize;
+    while let Some((header, record_type, payload)) = ppt_record(data, offset) {
+        if record_type == 0xf00b {
+            let property_count = (header >> 4) as usize;
+            for property in payload
+                .get(..property_count.saturating_mul(6))
+                .unwrap_or_default()
+                .chunks_exact(6)
+            {
+                let id = u16::from_le_bytes(property[..2].try_into().unwrap());
+                let value = u32::from_le_bytes(property[2..].try_into().unwrap());
+                if id & 0x3fff == 260 && id & 0x4000 != 0 && value > 0 {
+                    ids.push(value as usize);
+                }
+            }
+        }
+        if header & 0x000f == 0x000f {
+            ids.extend(find_ppt_blip_ids(payload));
+        }
+        offset += 8 + payload.len();
+    }
+    ids
+}
+
+fn find_ppt_blip_layers(data: &[u8]) -> Vec<(usize, Option<PptImageAnchor>)> {
+    let mut layers = Vec::new();
+    let mut offset = 0usize;
+    while let Some((header, record_type, payload)) = ppt_record(data, offset) {
+        if record_type == 0xf004 {
+            let mut ids = Vec::new();
+            let mut anchor = None;
+            let mut child_offset = 0usize;
+            while let Some((child_header, child_type, child_payload)) =
+                ppt_record(payload, child_offset)
+            {
+                if child_type == 0xf00b {
+                    ids.extend(ppt_fopt_blip_ids(child_header, child_payload));
+                } else if child_type == 0xf010 && child_payload.len() >= 8 {
+                    anchor = Some(PptImageAnchor {
+                        left: u16::from_le_bytes(child_payload[0..2].try_into().unwrap()),
+                        top: u16::from_le_bytes(child_payload[2..4].try_into().unwrap()),
+                        right: u16::from_le_bytes(child_payload[4..6].try_into().unwrap()),
+                        bottom: u16::from_le_bytes(child_payload[6..8].try_into().unwrap()),
+                    });
+                }
+                child_offset += 8 + child_payload.len();
+            }
+            layers.extend(ids.into_iter().map(|id| (id, anchor)));
+        } else if header & 0x000f == 0x000f {
+            layers.extend(find_ppt_blip_layers(payload));
+        }
+        offset += 8 + payload.len();
+    }
+    layers
+}
+
+fn ppt_fopt_blip_ids(header: u16, payload: &[u8]) -> Vec<usize> {
+    let property_count = (header >> 4) as usize;
+    payload
+        .get(..property_count.saturating_mul(6))
+        .unwrap_or_default()
+        .chunks_exact(6)
+        .filter_map(|property| {
+            let id = u16::from_le_bytes(property[..2].try_into().unwrap());
+            let value = u32::from_le_bytes(property[2..].try_into().unwrap());
+            (id & 0x3fff == 260 && id & 0x4000 != 0 && value > 0).then_some(value as usize)
+        })
+        .collect()
+}
+
 fn find_bytes(input: &[u8], needle: &[u8]) -> Option<usize> {
     (!needle.is_empty() && needle.len() <= input.len())
         .then(|| {
@@ -2229,32 +2635,6 @@ fn find_bytes(input: &[u8], needle: &[u8]) -> Option<usize> {
                 .position(|value| value == needle)
         })
         .flatten()
-}
-
-fn find_ppt_blip_id(data: &[u8]) -> Option<usize> {
-    let mut offset = 0usize;
-    while let Some((header, record_type, payload)) = ppt_record(data, offset) {
-        if record_type == 0xf00b {
-            let property_count = (header >> 4) as usize;
-            for property in payload
-                .get(..property_count.checked_mul(6)?)?
-                .chunks_exact(6)
-            {
-                let id = u16::from_le_bytes(property[..2].try_into().unwrap());
-                let value = u32::from_le_bytes(property[2..].try_into().unwrap());
-                if id & 0x3fff == 260 && id & 0x4000 != 0 && value > 0 {
-                    return Some(value as usize);
-                }
-            }
-        }
-        if header & 0x000f == 0x000f {
-            if let Some(value) = find_ppt_blip_id(payload) {
-                return Some(value);
-            }
-        }
-        offset += 8 + payload.len();
-    }
-    None
 }
 
 fn retain_ppt_text(items: &mut Vec<String>) {
@@ -2338,6 +2718,7 @@ struct WordBinaryStreams {
     data: Vec<u8>,
 }
 
+#[derive(Clone)]
 struct WordBinaryPiece {
     cp_start: i32,
     cp_end: i32,
@@ -2349,20 +2730,43 @@ struct WordBinaryPiece {
 #[derive(Clone, Copy, Default)]
 struct WordBinaryFib {
     flags: u16,
+    ccp_text: usize,
+    ccp_ftn: usize,
+    ccp_hdd: usize,
     fc_clx: usize,
     lcb_clx: usize,
     fc_chpx: usize,
     lcb_chpx: usize,
     fc_papx: usize,
     lcb_papx: usize,
+    fc_stshf: usize,
+    lcb_stshf: usize,
+    fc_sttbf_ffn: usize,
+    lcb_sttbf_ffn: usize,
+    fc_plcf_sed: usize,
+    lcb_plcf_sed: usize,
+    fc_plcf_hdd: usize,
+    lcb_plcf_hdd: usize,
+    fc_plcfspa_mom: usize,
+    lcb_plcfspa_mom: usize,
+    fc_plcfspa_hdr: usize,
+    lcb_plcfspa_hdr: usize,
+    fc_dgg_info: usize,
+    lcb_dgg_info: usize,
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
 struct WordBinaryCharProps {
+    font_index: Option<u16>,
     bold: bool,
     italic: bool,
     underline: bool,
+    underline_style: &'static str,
     strike: bool,
+    small_caps: bool,
+    caps: bool,
+    hidden: bool,
+    rtl: bool,
     vertical_align: &'static str,
     font_size: usize,
     color: Option<[u8; 3]>,
@@ -2372,19 +2776,57 @@ struct WordBinaryCharProps {
 
 #[derive(Clone, Default)]
 struct WordBinaryParaProps {
+    style_id: u16,
     heading_level: usize,
     list_kind: &'static str,
     list_level: usize,
+    list_id: usize,
     alignment: &'static str,
+    spacing_before: u16,
+    spacing_after: u16,
+    line_spacing: u16,
+    line_spacing_rule: &'static str,
+    indent_left: i16,
+    indent_right: i16,
+    first_line_indent: i16,
+    shading: String,
+    keep_next: bool,
+    keep_lines: bool,
+    page_break_before: bool,
+    bidi: bool,
+    spacing_before_explicit: bool,
+    spacing_after_explicit: bool,
     table_cell: bool,
     table_row_end: bool,
+    table_row_height: i16,
+    table_row_cant_split: bool,
+    table_row_header: bool,
+    table_alignment: &'static str,
+    table_borders: Option<[Option<DocxPageBorder>; 6]>,
+    table_cell_padding_ops: Vec<WordBinaryCellPadding>,
     table_def: Option<WordBinaryTableDef>,
 }
 
 #[derive(Clone, Default)]
 struct WordBinaryTableDef {
     rgdxa: Vec<i16>,
-    tcgrf: Vec<u16>,
+    cells: Vec<WordBinaryTableCellDef>,
+}
+
+#[derive(Clone, Copy, Default)]
+struct WordBinaryTableCellDef {
+    flags: u16,
+    width: u16,
+    borders: [Option<DocxPageBorder>; 4],
+    margins: [Option<i16>; 4],
+}
+
+#[derive(Clone, Copy, Default)]
+struct WordBinaryCellPadding {
+    first_cell: usize,
+    limit_cell: usize,
+    sides: u8,
+    width: i16,
 }
 
 const WORD_BINARY_F_MERGED: u16 = 0x0002;
@@ -2394,6 +2836,7 @@ const WORD_BINARY_F_VERT_RESTART: u16 = 0x0040;
 #[derive(Clone)]
 struct WordBinaryChar {
     value: char,
+    cp: i32,
     fc: u32,
     props: WordBinaryCharProps,
 }
@@ -2430,22 +2873,1023 @@ fn convert_word_binary(input: &str, output: &str) -> Result<(), ConvertError> {
         ));
     }
     let fib = parse_word_binary_fib(&streams.document).unwrap_or_default();
+    let table = word_binary_table(&streams, fib);
+    let font_names = parse_word_binary_font_names(table, fib);
+    let styles = parse_word_binary_stylesheet(table, fib);
     let pieces = parse_word_binary_piece_table(&streams, fib).ok_or_else(|| ConvertError {
         code: "engine_unavailable",
         message: "unsupported legacy Word binary structure: no decodable WordDocument CLX piece table was found".into(),
     })?;
-    let chpx = parse_word_binary_chpx(&streams.document, word_binary_table(&streams, fib), fib);
-    let papx = parse_word_binary_papx(&streams.document, word_binary_table(&streams, fib), fib);
-    write_docx(
-        output,
-        &decode_word_binary_paragraphs(
-            &streams.document,
-            &streams.data,
-            &pieces,
-            &chpx,
-            &papx,
-        ),
-    )
+    let chpx = parse_word_binary_chpx(&streams.document, table, fib);
+    let papx = parse_word_binary_papx(&streams.document, table, fib, &styles);
+    let paragraphs = decode_word_binary_paragraphs(
+        &streams.document,
+        &streams.data,
+        &pieces,
+        &chpx,
+        &papx,
+        &font_names,
+    );
+    let sections = parse_word_binary_sections(&streams.document, table, fib).unwrap_or_else(|| {
+        vec![WordBinarySection {
+            cp_end: i32::MAX,
+            properties: DocxSection::default(),
+        }]
+    });
+    let header_footers = parse_word_binary_header_footers(
+        &streams.document,
+        &streams.data,
+        table,
+        fib,
+        &pieces,
+        &chpx,
+        &papx,
+        &font_names,
+    );
+    let main_shape_anchors =
+        parse_word_binary_shape_anchors(table, fib.fc_plcfspa_mom, fib.lcb_plcfspa_mom, 0);
+    let header_shape_anchors = parse_word_binary_shape_anchors(
+        table,
+        fib.fc_plcfspa_hdr,
+        fib.lcb_plcfspa_hdr,
+        fib.ccp_text.saturating_add(fib.ccp_ftn) as i32,
+    );
+    let office_art = parse_word_binary_officeart(table, &streams.document, fib);
+    let mut header_footers = header_footers;
+    for record in &mut header_footers {
+        attach_word_binary_shape_anchors_with_art(
+            &mut record.paragraphs,
+            &header_shape_anchors,
+            &office_art,
+        );
+    }
+    let mut paragraphs = paragraphs;
+    append_unreferenced_word_binary_images(&mut paragraphs, &streams.data, false);
+    append_unreferenced_word_binary_images(&mut paragraphs, &streams.document, true);
+    attach_word_binary_shape_anchors_with_art(&mut paragraphs, &main_shape_anchors, &office_art);
+    write_docx_with_sections_and_headers(output, &paragraphs, &sections, &header_footers)
+}
+
+fn parse_word_binary_header_footers(
+    document: &[u8],
+    data: &[u8],
+    table: &[u8],
+    fib: WordBinaryFib,
+    pieces: &[WordBinaryPiece],
+    chpx: &[WordBinaryChpxEntry],
+    papx: &[WordBinaryPapxEntry],
+    font_names: &[String],
+) -> Vec<WordBinaryHeaderFooter> {
+    if fib.ccp_hdd == 0 || fib.lcb_plcf_hdd < 12 {
+        return Vec::new();
+    }
+    let Some(plc) = table.get(fib.fc_plcf_hdd..fib.fc_plcf_hdd.saturating_add(fib.lcb_plcf_hdd))
+    else {
+        return Vec::new();
+    };
+    let cp_count = plc.len() / 4;
+    if cp_count < 3 {
+        return Vec::new();
+    }
+    let story_count = cp_count.saturating_sub(1);
+    let hdd_len = fib.ccp_hdd;
+    let hdd_base = fib.ccp_text.saturating_add(fib.ccp_ftn);
+    let kinds = [
+        "evenHeader",
+        "defaultHeader",
+        "evenFooter",
+        "defaultFooter",
+        "firstHeader",
+        "firstFooter",
+    ];
+    let mut records = Vec::new();
+    for story_index in 6..story_count {
+        let start = word_binary_u32(plc, story_index * 4).unwrap_or(0) as usize;
+        let end = word_binary_u32(plc, (story_index + 1) * 4).unwrap_or(0) as usize;
+        let start = start.min(hdd_len);
+        let end = end.min(hdd_len);
+        if start >= end {
+            continue;
+        }
+        let local = story_index.saturating_sub(6);
+        let section_index = local / 6;
+        let kind = kinds[local % kinds.len()];
+        let story_start = hdd_base.saturating_add(start) as i32;
+        let story_end = hdd_base.saturating_add(end) as i32;
+        let paragraphs = decode_word_binary_paragraphs_range(
+            document,
+            data,
+            pieces,
+            chpx,
+            papx,
+            font_names,
+            story_start,
+            story_end,
+        );
+        // A non-empty PLC range containing only a paragraph mark is an explicit
+        // blank story and must stop inheritance from the previous section.
+        records.push(WordBinaryHeaderFooter {
+            section_index,
+            kind,
+            paragraphs,
+        });
+    }
+    records
+}
+
+fn parse_word_binary_sections(
+    document: &[u8],
+    table: &[u8],
+    fib: WordBinaryFib,
+) -> Option<Vec<WordBinarySection>> {
+    let plc = table.get(fib.fc_plcf_sed..fib.fc_plcf_sed.saturating_add(fib.lcb_plcf_sed))?;
+    if plc.len() < 16 || (plc.len() - 4) % 16 != 0 {
+        return None;
+    }
+    let section_count = (plc.len() - 4) / 16;
+    let descriptor_offset = (section_count + 1) * 4;
+    let mut sections = Vec::with_capacity(section_count);
+    for index in 0..section_count {
+        let cp_end =
+            i32::from_le_bytes(plc.get((index + 1) * 4..(index + 2) * 4)?.try_into().ok()?);
+        let descriptor_start = descriptor_offset + index * 12;
+        let descriptor = plc.get(descriptor_start..descriptor_start + 12)?;
+        let properties = parse_word_binary_section_descriptor(document, descriptor);
+        sections.push(WordBinarySection { cp_end, properties });
+    }
+    (!sections.is_empty()).then_some(sections)
+}
+
+fn parse_word_binary_section_descriptor(document: &[u8], descriptor: &[u8]) -> DocxSection {
+    let Some(fc_sepx) = descriptor
+        .get(2..6)
+        .and_then(|bytes| bytes.try_into().ok())
+        .map(u32::from_le_bytes)
+        .map(|value| value as usize)
+    else {
+        return DocxSection::default();
+    };
+    if fc_sepx == u32::MAX as usize || fc_sepx + 2 > document.len() {
+        return DocxSection::default();
+    }
+    let Some(size) = document
+        .get(fc_sepx..fc_sepx + 2)
+        .and_then(|bytes| bytes.try_into().ok())
+        .map(u16::from_le_bytes)
+        .map(usize::from)
+    else {
+        return DocxSection::default();
+    };
+    let Some(grpprl) = document.get(fc_sepx + 2..fc_sepx + 2 + size) else {
+        return DocxSection::default();
+    };
+    parse_word_binary_section_properties(grpprl)
+}
+
+fn parse_word_binary_shape_anchors(
+    table: &[u8],
+    fc: usize,
+    lcb: usize,
+    cp_base: i32,
+) -> Vec<WordBinaryShapeAnchor> {
+    let Some(plc) = table.get(fc..fc.saturating_add(lcb)) else {
+        return Vec::new();
+    };
+    if plc.len() < 30 || (plc.len() - 4) % 30 != 0 {
+        return Vec::new();
+    }
+    let count = (plc.len() - 4) / 30;
+    let records_offset = (count + 1) * 4;
+    let mut anchors = Vec::with_capacity(count);
+    for index in 0..count {
+        let cp = word_binary_u32(plc, index * 4)
+            .and_then(|value| i32::try_from(value).ok())
+            .map(|value| cp_base.saturating_add(value));
+        let Some(cp) = cp else {
+            continue;
+        };
+        let Some(record) = plc.get(records_offset + index * 26..records_offset + (index + 1) * 26)
+        else {
+            continue;
+        };
+        let spid = u32::from_le_bytes(record[0..4].try_into().unwrap());
+        let x_left = i32::from_le_bytes(record[4..8].try_into().unwrap());
+        let y_top = i32::from_le_bytes(record[8..12].try_into().unwrap());
+        let x_right = i32::from_le_bytes(record[12..16].try_into().unwrap());
+        let y_bottom = i32::from_le_bytes(record[16..20].try_into().unwrap());
+        let flags = u16::from_le_bytes(record[20..22].try_into().unwrap());
+        let simple_position = flags & 0x2000 != 0;
+        let (h_position, v_position) = if simple_position {
+            ("page", "page")
+        } else {
+            (
+                match (flags >> 1) & 0x3 {
+                    0 => "margin",
+                    1 => "page",
+                    2 => "column",
+                    _ => "page",
+                },
+                match (flags >> 3) & 0x3 {
+                    0 => "margin",
+                    1 => "page",
+                    2 => "paragraph",
+                    _ => "page",
+                },
+            )
+        };
+        let wrap = match (flags >> 5) & 0xf {
+            1 => "none",
+            3 => "topAndBottom",
+            4 | 5 => "tight",
+            6..=15 => "through",
+            _ => "square",
+        };
+        let wrap_side = match (flags >> 9) & 0xf {
+            1 => "left",
+            2 => "right",
+            3 => "largest",
+            _ => "bothSides",
+        };
+        anchors.push(WordBinaryShapeAnchor {
+            spid,
+            cp,
+            x_left,
+            y_top,
+            x_right,
+            y_bottom,
+            relative_h: h_position,
+            relative_v: v_position,
+            wrap,
+            wrap_side,
+            below_text: flags & 0x4000 != 0,
+            anchor_lock: flags & 0x8000 != 0,
+        });
+    }
+    anchors
+}
+
+fn parse_word_binary_officeart(
+    table: &[u8],
+    delay_stream: &[u8],
+    fib: WordBinaryFib,
+) -> WordBinaryOfficeArt {
+    let Some(data) = table.get(fib.fc_dgg_info..fib.fc_dgg_info.saturating_add(fib.lcb_dgg_info))
+    else {
+        return WordBinaryOfficeArt::default();
+    };
+    if data.len() < 8 {
+        return WordBinaryOfficeArt::default();
+    }
+    let mut office_art = WordBinaryOfficeArt::default();
+    let mut offset = 0usize;
+    if let Some(next) = parse_word_binary_escher_record(data, offset, data.len(), &mut office_art) {
+        offset = next;
+    }
+    // OfficeArtWordDrawing prefixes each document drawing container with a one-byte
+    // main/header label. The label is not an Escher record, so skip it explicitly.
+    while offset < data.len() {
+        if data[offset] <= 1 {
+            offset += 1;
+        }
+        let Some(next) = parse_word_binary_escher_record(data, offset, data.len(), &mut office_art)
+        else {
+            break;
+        };
+        if next <= offset {
+            break;
+        }
+        offset = next;
+    }
+    for (image, delay_offset) in office_art
+        .blips
+        .iter_mut()
+        .zip(&office_art.blip_delay_offsets)
+    {
+        if image.is_none() {
+            *image = delay_offset.and_then(|offset| {
+                parse_word_binary_escher_blip(delay_stream, offset, delay_stream.len())
+            });
+        }
+    }
+    let blips = office_art.blips.clone();
+    for shape in &mut office_art.shapes {
+        if let Some(index) = shape.blip_index {
+            shape.image = blips.get(index.saturating_sub(1)).and_then(Clone::clone);
+        }
+    }
+    office_art
+}
+
+fn word_binary_escher_header(data: &[u8], offset: usize, end: usize) -> Option<(u16, u16, usize)> {
+    let header = data.get(offset..offset.saturating_add(8))?;
+    let options = u16::from_le_bytes(header[..2].try_into().ok()?);
+    let record_id = u16::from_le_bytes(header[2..4].try_into().ok()?);
+    let length = u32::from_le_bytes(header[4..8].try_into().ok()?) as usize;
+    let total = 8usize.checked_add(length)?;
+    (offset.checked_add(total)? <= end).then_some((options, record_id, total))
+}
+
+fn parse_word_binary_escher_record(
+    data: &[u8],
+    offset: usize,
+    end: usize,
+    office_art: &mut WordBinaryOfficeArt,
+) -> Option<usize> {
+    let (options, record_id, total) = word_binary_escher_header(data, offset, end)?;
+    let payload_start = offset + 8;
+    let payload_end = offset + total;
+    match record_id {
+        0xf001 => parse_word_binary_escher_children(data, payload_start, payload_end, office_art),
+        0xf004 => {
+            parse_word_binary_escher_shape_container(data, payload_start, payload_end, office_art)
+        }
+        0xf007 => parse_word_binary_escher_bse(data, payload_start, payload_end, office_art),
+        _ if options & 0x000f == 0x000f => {
+            parse_word_binary_escher_children(data, payload_start, payload_end, office_art)
+        }
+        _ => {}
+    }
+    Some(payload_end)
+}
+
+fn parse_word_binary_escher_children(
+    data: &[u8],
+    start: usize,
+    end: usize,
+    office_art: &mut WordBinaryOfficeArt,
+) {
+    let mut offset = start;
+    while offset.saturating_add(8) <= end {
+        let Some(next) = parse_word_binary_escher_record(data, offset, end, office_art) else {
+            break;
+        };
+        if next <= offset {
+            break;
+        }
+        offset = next;
+    }
+}
+
+fn parse_word_binary_escher_shape_container(
+    data: &[u8],
+    start: usize,
+    end: usize,
+    office_art: &mut WordBinaryOfficeArt,
+) {
+    let mut offset = start;
+    let mut shape: Option<WordBinaryShapeArt> = None;
+    while offset.saturating_add(8) <= end {
+        let Some((options, record_id, total)) = word_binary_escher_header(data, offset, end) else {
+            break;
+        };
+        let payload_start = offset + 8;
+        let payload_end = offset + total;
+        match record_id {
+            0xf00a if payload_end.saturating_sub(payload_start) >= 8 => {
+                let spid =
+                    u32::from_le_bytes(data[payload_start..payload_start + 4].try_into().unwrap());
+                let flags = u32::from_le_bytes(
+                    data[payload_start + 4..payload_start + 8]
+                        .try_into()
+                        .unwrap(),
+                );
+                shape = Some(WordBinaryShapeArt {
+                    spid,
+                    flip_h: flags & 0x0040 != 0,
+                    flip_v: flags & 0x0080 != 0,
+                    ..Default::default()
+                });
+            }
+            0xf00b | 0xf122 => {
+                if let Some(current) = shape.as_mut() {
+                    parse_word_binary_escher_opt(
+                        data,
+                        payload_start,
+                        payload_end,
+                        options,
+                        current,
+                    );
+                }
+            }
+            0xf004 => parse_word_binary_escher_shape_container(
+                data,
+                payload_start,
+                payload_end,
+                office_art,
+            ),
+            _ if options & 0x000f == 0x000f => {
+                parse_word_binary_escher_children(data, payload_start, payload_end, office_art)
+            }
+            _ => {}
+        }
+        offset = payload_end;
+    }
+    if let Some(shape) = shape {
+        if shape.spid != 0 {
+            office_art.shapes.push(shape);
+        }
+    }
+}
+
+fn parse_word_binary_escher_opt(
+    data: &[u8],
+    start: usize,
+    end: usize,
+    options: u16,
+    shape: &mut WordBinaryShapeArt,
+) {
+    let property_count = usize::from(options >> 4);
+    let property_start = start;
+    let Some(property_bytes) = property_count.checked_mul(6) else {
+        return;
+    };
+    let Some(properties) =
+        data.get(property_start..property_start.saturating_add(property_bytes).min(end))
+    else {
+        return;
+    };
+    for property in properties.chunks_exact(6).take(property_count) {
+        let property_id = u16::from_le_bytes([property[0], property[1]]) & 0x3fff;
+        let flags = u16::from_le_bytes([property[0], property[1]]);
+        let value = u32::from_le_bytes(property[2..6].try_into().unwrap());
+        if flags & 0x8000 != 0 {
+            continue;
+        }
+        match property_id {
+            0x0004 => shape.rotation = word_binary_officeart_rotation(value),
+            0x0100 => shape.crop_top = word_binary_officeart_fixed_percentage(value),
+            0x0101 => shape.crop_bottom = word_binary_officeart_fixed_percentage(value),
+            0x0102 => shape.crop_left = word_binary_officeart_fixed_percentage(value),
+            0x0103 => shape.crop_right = word_binary_officeart_fixed_percentage(value),
+            0x0104 if value > 0 => shape.blip_index = usize::try_from(value).ok(),
+            0x0182 => shape.opacity = Some(word_binary_officeart_fixed_percentage(value)),
+            0x0384 => shape.wrap_distance_left = value,
+            0x0385 => shape.wrap_distance_top = value,
+            0x0386 => shape.wrap_distance_right = value,
+            0x0387 => shape.wrap_distance_bottom = value,
+            0x038f => shape.position_h = word_binary_officeart_horizontal_position(value),
+            0x0390 => shape.relative_h = word_binary_officeart_horizontal_relative(value),
+            0x0391 => shape.position_v = word_binary_officeart_vertical_position(value),
+            0x0392 => shape.relative_v = word_binary_officeart_vertical_relative(value),
+            0x03aa => shape.z_order = Some(value),
+            0x03ba => shape.behind_doc = Some(value != 0),
+            _ => {}
+        }
+    }
+    let mut complex_offset = property_start.saturating_add(property_bytes);
+    for property in properties.chunks_exact(6).take(property_count) {
+        let property_id = u16::from_le_bytes([property[0], property[1]]) & 0x3fff;
+        let flags = u16::from_le_bytes([property[0], property[1]]);
+        if flags & 0x8000 == 0 {
+            continue;
+        }
+        let size = u32::from_le_bytes(property[2..6].try_into().unwrap()) as usize;
+        let Some(complex) = data.get(complex_offset..complex_offset.saturating_add(size).min(end))
+        else {
+            return;
+        };
+        if property_id == 0x0383 {
+            shape.wrap_polygon = word_binary_officeart_wrap_polygon(complex);
+        }
+        complex_offset = complex_offset.saturating_add(size);
+    }
+}
+
+fn word_binary_officeart_horizontal_position(value: u32) -> &'static str {
+    match value {
+        1 => "left",
+        2 => "center",
+        3 => "right",
+        4 => "inside",
+        5 => "outside",
+        _ => "",
+    }
+}
+
+fn word_binary_officeart_horizontal_relative(value: u32) -> &'static str {
+    match value {
+        1 => "margin",
+        2 => "page",
+        3 => "column",
+        4 => "character",
+        _ => "",
+    }
+}
+
+fn word_binary_officeart_vertical_position(value: u32) -> &'static str {
+    match value {
+        1 => "top",
+        2 => "center",
+        3 => "bottom",
+        4 => "inside",
+        5 => "outside",
+        _ => "",
+    }
+}
+
+fn word_binary_officeart_vertical_relative(value: u32) -> &'static str {
+    match value {
+        1 => "margin",
+        2 => "page",
+        3 => "paragraph",
+        4 => "line",
+        _ => "",
+    }
+}
+
+fn word_binary_officeart_wrap_polygon(data: &[u8]) -> Vec<(i32, i32)> {
+    if data.len() < 6 {
+        return Vec::new();
+    }
+    let count = usize::from(u16::from_le_bytes([data[0], data[1]]));
+    let raw_size = i16::from_le_bytes([data[4], data[5]]);
+    let element_size = if raw_size < 0 {
+        usize::try_from((-i32::from(raw_size)) >> 2).unwrap_or(0)
+    } else {
+        usize::try_from(raw_size).unwrap_or(0)
+    };
+    if count == 0 || element_size < 8 {
+        return Vec::new();
+    }
+    let mut points = Vec::with_capacity(count.min(256));
+    for index in 0..count.min(256) {
+        let start = 6usize.saturating_add(index.saturating_mul(element_size));
+        let Some(point) = data.get(start..start.saturating_add(8)) else {
+            break;
+        };
+        points.push((
+            i32::from_le_bytes(point[..4].try_into().unwrap()),
+            i32::from_le_bytes(point[4..8].try_into().unwrap()),
+        ));
+    }
+    points
+}
+
+fn parse_word_binary_escher_bse(
+    data: &[u8],
+    start: usize,
+    end: usize,
+    office_art: &mut WordBinaryOfficeArt,
+) {
+    let (image, delay_offset) = if end.saturating_sub(start) >= 36 {
+        let raw_delay_offset = u32::from_le_bytes(data[start + 28..start + 32].try_into().unwrap());
+        let delay_offset = (raw_delay_offset != 0 && raw_delay_offset != u32::MAX)
+            .then(|| usize::try_from(raw_delay_offset).ok())
+            .flatten();
+        let blip_start = start
+            .saturating_add(36)
+            .saturating_add(usize::from(data[start + 33]));
+        (
+            parse_word_binary_escher_blip(data, blip_start, end),
+            delay_offset,
+        )
+    } else {
+        (None, None)
+    };
+    office_art.blips.push(image);
+    office_art.blip_delay_offsets.push(delay_offset);
+}
+
+fn parse_word_binary_escher_blip(data: &[u8], offset: usize, end: usize) -> Option<DocxImage> {
+    let (_, record_id, total) = word_binary_escher_header(data, offset, end)?;
+    if !(0xf018..=0xf117).contains(&record_id) {
+        return None;
+    }
+    let payload_start = offset.saturating_add(8);
+    let payload_end = offset.saturating_add(total);
+    extract_word_binary_image(data.get(payload_start..payload_end)?, 0)
+}
+
+fn word_binary_officeart_fixed_percentage(value: u32) -> u32 {
+    u32::try_from((u64::from(value).saturating_mul(100_000) + 32_768) / 65_536)
+        .unwrap_or(100_000)
+        .min(100_000)
+}
+
+fn word_binary_officeart_rotation(value: u32) -> i32 {
+    let value = i32::from_le_bytes(value.to_le_bytes());
+    (i64::from(value).saturating_mul(60_000) / 65_536) as i32
+}
+
+fn word_binary_twips_to_emu(value: i32) -> i64 {
+    i64::from(value).saturating_mul(635)
+}
+
+fn apply_word_binary_shape_anchor(image: &mut DocxImage, shape: WordBinaryShapeAnchor) {
+    image.floating = true;
+    image.anchor_x_emu = word_binary_twips_to_emu(shape.x_left);
+    image.anchor_y_emu = word_binary_twips_to_emu(shape.y_top);
+    image.relative_h = shape.relative_h;
+    image.relative_v = shape.relative_v;
+    image.wrap = shape.wrap;
+    image.wrap_side = shape.wrap_side;
+    image.behind_doc = shape.below_text;
+    image.anchor_lock = shape.anchor_lock;
+    let width = shape.x_right.saturating_sub(shape.x_left).unsigned_abs();
+    let height = shape.y_bottom.saturating_sub(shape.y_top).unsigned_abs();
+    if width > 0 {
+        image.width_emu = word_binary_twips_to_emu(i32::try_from(width).unwrap_or(i32::MAX)) as u64;
+    }
+    if height > 0 {
+        image.height_emu =
+            word_binary_twips_to_emu(i32::try_from(height).unwrap_or(i32::MAX)) as u64;
+    }
+}
+
+#[cfg(test)]
+fn attach_word_binary_shape_anchors(
+    paragraphs: &mut [DocxParagraph],
+    shapes: &[WordBinaryShapeAnchor],
+) {
+    attach_word_binary_shape_anchors_with_art(paragraphs, shapes, &WordBinaryOfficeArt::default());
+}
+
+fn apply_word_binary_shape_art(image: &mut DocxImage, art: &WordBinaryShapeArt) {
+    image.relative_height = art.z_order.unwrap_or(image.relative_height);
+    image.rotation = art.rotation;
+    image.flip_h = art.flip_h;
+    image.flip_v = art.flip_v;
+    image.crop_left = art.crop_left;
+    image.crop_top = art.crop_top;
+    image.crop_right = art.crop_right;
+    image.crop_bottom = art.crop_bottom;
+    image.wrap_polygon = art.wrap_polygon.clone();
+    image.opacity = art.opacity;
+    image.anchor_align_h = art.position_h;
+    image.anchor_align_v = art.position_v;
+    if !art.relative_h.is_empty() {
+        image.relative_h = art.relative_h;
+    }
+    if !art.relative_v.is_empty() {
+        image.relative_v = art.relative_v;
+    }
+    image.wrap_distance_left = art.wrap_distance_left;
+    image.wrap_distance_top = art.wrap_distance_top;
+    image.wrap_distance_right = art.wrap_distance_right;
+    image.wrap_distance_bottom = art.wrap_distance_bottom;
+    if let Some(behind_doc) = art.behind_doc {
+        image.behind_doc = behind_doc;
+    }
+}
+
+fn attach_word_binary_shape_anchors_with_art(
+    paragraphs: &mut [DocxParagraph],
+    shapes: &[WordBinaryShapeAnchor],
+    office_art: &WordBinaryOfficeArt,
+) {
+    for shape in shapes {
+        let Some((_, paragraph)) = paragraphs
+            .iter_mut()
+            .enumerate()
+            .filter(|(_, paragraph)| {
+                paragraph.source_cp_start <= shape.cp && shape.cp <= paragraph.source_cp_end
+            })
+            .min_by_key(|(_, paragraph)| {
+                paragraph
+                    .source_cp_end
+                    .saturating_sub(paragraph.source_cp_start)
+            })
+        else {
+            continue;
+        };
+        let art = office_art
+            .shapes
+            .iter()
+            .find(|candidate| candidate.spid == shape.spid);
+        let preferred_data = art
+            .and_then(|candidate| candidate.image.as_ref())
+            .map(|candidate| candidate.data.as_slice());
+        let image_index = preferred_data
+            .and_then(|data| {
+                paragraph.runs.iter().position(|run| {
+                    run.image
+                        .as_ref()
+                        .is_some_and(|image| !image.floating && image.data.as_slice() == data)
+                })
+            })
+            .or_else(|| {
+                paragraph
+                    .runs
+                    .iter()
+                    .position(|run| run.image.as_ref().is_some_and(|image| !image.floating))
+            });
+        let image_index = if let Some(image_index) = image_index {
+            image_index
+        } else if let Some(candidate) = art.and_then(|candidate| candidate.image.clone()) {
+            if paragraph.runs.is_empty() && !paragraph.text.is_empty() {
+                paragraph.runs.push(DocxRun {
+                    text: paragraph.text.clone(),
+                    bold: paragraph.bold,
+                    ..Default::default()
+                });
+            }
+            paragraph.runs.push(DocxRun {
+                image: Some(candidate),
+                ..Default::default()
+            });
+            paragraph.runs.len().saturating_sub(1)
+        } else {
+            continue;
+        };
+        let image = paragraph.runs[image_index]
+            .image
+            .as_mut()
+            .expect("selected run has no image");
+        apply_word_binary_shape_anchor(image, *shape);
+        if let Some(art) = art {
+            apply_word_binary_shape_art(image, art);
+        }
+    }
+}
+
+fn word_binary_border_style(kind: u8) -> &'static str {
+    match kind {
+        1 => "single",
+        2 => "thick",
+        3 => "double",
+        // Word's hairline style has no direct WordprocessingML equivalent.
+        5 => "single",
+        6 => "dotted",
+        7 => "dashed",
+        8 => "dotDash",
+        9 => "dotDotDash",
+        10 => "triple",
+        11 => "thinThickSmallGap",
+        12 => "thickThinSmallGap",
+        13 => "thinThickThinSmallGap",
+        14 => "thinThickMediumGap",
+        15 => "thickThinMediumGap",
+        16 => "thinThickThinMediumGap",
+        17 => "thinThickLargeGap",
+        18 => "thickThinLargeGap",
+        19 => "thinThickThinLargeGap",
+        20 => "wave",
+        21 => "doubleWave",
+        22 => "dashSmallGap",
+        23 => "dashDotStroked",
+        24 => "threeDEmboss",
+        25 => "threeDEngrave",
+        26 => "outset",
+        27 => "inset",
+        _ => "single",
+    }
+}
+
+fn word_binary_border_color(index: u8) -> Option<[u8; 3]> {
+    word_binary_palette_color(index)
+}
+
+fn parse_word_binary_page_border(value: &[u8], version: u8) -> Option<DocxPageBorder> {
+    let (line_width, border_type, color, flags) = if version == 9 {
+        let bytes = value.get(1..9)?;
+        let cv = &bytes[..4];
+        let bits = &bytes[4..];
+        let color = (cv != [0, 0, 0, 0xff]).then_some([cv[0], cv[1], cv[2]]);
+        (bits[0], bits[1], color, bits[2])
+    } else {
+        let bytes = value.get(..4)?;
+        (
+            bytes[0],
+            bytes[1],
+            word_binary_border_color(bytes[2]),
+            bytes[3],
+        )
+    };
+    if border_type == 0 || line_width == 0 || line_width == 0xff {
+        return None;
+    }
+    Some(DocxPageBorder {
+        style: word_binary_border_style(border_type),
+        size: u16::from(line_width),
+        color,
+        space: flags & 0x1f,
+        shadow: flags & 0x20 != 0,
+        frame: flags & 0x40 != 0,
+    })
+}
+
+fn parse_word_binary_table_borders(value: &[u8]) -> Option<[Option<DocxPageBorder>; 6]> {
+    let payload = value.get(1..)?;
+    if payload.len() < 24 {
+        return None;
+    }
+    let mut borders = [None; 6];
+    for (index, border) in borders.iter_mut().enumerate() {
+        *border = parse_word_binary_page_border(payload.get(index * 4..index * 4 + 4)?, 8);
+    }
+    Some(borders)
+}
+
+fn parse_word_binary_cell_padding(value: &[u8]) -> Option<WordBinaryCellPadding> {
+    let payload = value.get(1..)?;
+    if payload.len() < 6 || payload[3] != 3 {
+        return None;
+    }
+    Some(WordBinaryCellPadding {
+        first_cell: usize::from(payload[0]),
+        limit_cell: usize::from(payload[1]),
+        sides: payload[2] & 0x0f,
+        width: i16::from_le_bytes([payload[4], payload[5]]),
+    })
+}
+
+fn apply_word_binary_cell_padding(
+    definition: &mut WordBinaryTableDef,
+    padding: WordBinaryCellPadding,
+) {
+    let limit = padding.limit_cell.min(definition.cells.len());
+    for cell in definition
+        .cells
+        .iter_mut()
+        .take(limit)
+        .skip(padding.first_cell)
+    {
+        for side in 0..4 {
+            if padding.sides & (1 << side) != 0 {
+                cell.margins[side] = Some(padding.width.max(0));
+            }
+        }
+    }
+}
+
+fn parse_word_binary_section_properties(grpprl: &[u8]) -> DocxSection {
+    let mut section = DocxSection::default();
+    let mut offset = 0usize;
+    while offset + 2 <= grpprl.len() {
+        let sprm = u16::from_le_bytes([grpprl[offset], grpprl[offset + 1]]);
+        let operand_offset = offset + 2;
+        let Some(length) = word_binary_sprm_operand_len(sprm, grpprl, operand_offset) else {
+            break;
+        };
+        let Some(value) = grpprl.get(operand_offset..operand_offset.saturating_add(length)) else {
+            break;
+        };
+        let operation = sprm & 0x01ff;
+        let signed = || {
+            value
+                .get(..2)
+                .map(|bytes| i16::from_le_bytes([bytes[0], bytes[1]]) as i32)
+        };
+        let unsigned = || {
+            value
+                .get(..2)
+                .map(|bytes| u16::from_le_bytes([bytes[0], bytes[1]]) as i32)
+        };
+        match sprm {
+            // Section column properties use full SPRM ids because their low
+            // operation bits overlap the legacy page-size operations below.
+            0x500b => {
+                if let Some(count_minus_one) = unsigned() {
+                    section.columns = count_minus_one.clamp(0, 43) as u16 + 1;
+                }
+            }
+            0x900c => {
+                if let Some(gap) = unsigned() {
+                    section.column_spacing = gap.clamp(0, 31_680);
+                }
+            }
+            0x3019 => section.column_separator = value.first().copied().unwrap_or(0) != 0,
+            0x3228 => section.column_rtl = value.first().copied().unwrap_or(0) != 0,
+            0x300a => section.title_page = value.first().copied().unwrap_or(0) != 0,
+            0x702b => section.page_border_top = parse_word_binary_page_border(value, 8),
+            0x702c => section.page_border_left = parse_word_binary_page_border(value, 8),
+            0x702d => section.page_border_bottom = parse_word_binary_page_border(value, 8),
+            0x702e => section.page_border_right = parse_word_binary_page_border(value, 8),
+            0xd234 => section.page_border_top = parse_word_binary_page_border(value, 9),
+            0xd235 => section.page_border_left = parse_word_binary_page_border(value, 9),
+            0xd236 => section.page_border_bottom = parse_word_binary_page_border(value, 9),
+            0xd237 => section.page_border_right = parse_word_binary_page_border(value, 9),
+            0x522f => {
+                let options = value.first().copied().unwrap_or(0);
+                section.page_border_display = match options & 0x07 {
+                    1 => "firstPage",
+                    2 => "notFirstPage",
+                    _ => "allPages",
+                };
+                section.page_border_z_order = if (options >> 3) & 0x03 == 1 {
+                    "back"
+                } else {
+                    "front"
+                };
+                section.page_border_offset_from = if (options >> 5) & 0x07 == 1 {
+                    "page"
+                } else {
+                    "text"
+                };
+            }
+            _ => match operation {
+                0x09 => {
+                    section.section_type = match value.first().copied().unwrap_or(2) {
+                        0 => "continuous",
+                        1 => "nextColumn",
+                        3 => "evenPage",
+                        4 => "oddPage",
+                        _ => "nextPage",
+                    }
+                }
+                0x1d => section.landscape = value.first().copied().unwrap_or(0) != 0,
+                0x1f => {
+                    section.page_width =
+                        unsigned().unwrap_or(section.page_width as i32).max(1) as u32
+                }
+                0x20 => {
+                    section.page_height =
+                        unsigned().unwrap_or(section.page_height as i32).max(1) as u32
+                }
+                0x21 => section.margin_left = signed().unwrap_or(section.margin_left),
+                0x22 => section.margin_right = signed().unwrap_or(section.margin_right),
+                0x23 => section.margin_top = signed().unwrap_or(section.margin_top),
+                0x24 => section.margin_bottom = signed().unwrap_or(section.margin_bottom),
+                0x25 => section.gutter = signed().unwrap_or(section.gutter),
+                0x17 => section.margin_header = signed().unwrap_or(section.margin_header),
+                0x18 => section.margin_footer = signed().unwrap_or(section.margin_footer),
+                _ => {}
+            },
+        }
+        offset = operand_offset.saturating_add(length);
+    }
+    if section.landscape && section.page_width < section.page_height {
+        std::mem::swap(&mut section.page_width, &mut section.page_height);
+    }
+    section
+}
+
+fn append_unreferenced_word_binary_images(
+    paragraphs: &mut Vec<DocxParagraph>,
+    data: &[u8],
+    associate_by_offset: bool,
+) {
+    let mut offset = 0usize;
+    let mut images: Vec<(DocxImage, Option<usize>)> = Vec::new();
+    while offset < data.len() {
+        let Some((relative, _, _)) = find_word_binary_raster(&data[offset..]) else {
+            break;
+        };
+        let start = offset.saturating_add(relative);
+        let Some(image) = extract_word_binary_image(data, start) else {
+            offset = start.saturating_add(4);
+            continue;
+        };
+        let image_len = image.data.len();
+        let target = if associate_by_offset {
+            let source_offset = u32::try_from(start).unwrap_or(u32::MAX);
+            paragraphs.iter().position(|paragraph| {
+                paragraph.source_fc_start > 0
+                    && paragraph.source_fc_start <= source_offset
+                    && source_offset <= paragraph.source_fc_end
+            })
+        } else {
+            None
+        };
+        if let Some((_, existing_target)) = images
+            .iter_mut()
+            .find(|(existing, _)| existing.data == image.data)
+        {
+            if existing_target.is_none() {
+                *existing_target = target;
+            }
+        } else {
+            images.push((image, target));
+        }
+        offset = start.saturating_add(image_len.max(4));
+    }
+    for (image, target) in images {
+        let already_referenced = paragraphs.iter().any(|paragraph| {
+            paragraph.runs.iter().any(|run| {
+                run.image
+                    .as_ref()
+                    .is_some_and(|candidate| candidate.data == image.data)
+            })
+        });
+        if already_referenced {
+            continue;
+        }
+        if let Some(index) = target {
+            if let Some(paragraph) = paragraphs.get_mut(index) {
+                if paragraph.runs.is_empty() && !paragraph.text.is_empty() {
+                    paragraph.runs.push(DocxRun {
+                        text: paragraph.text.clone(),
+                        bold: paragraph.bold,
+                        ..Default::default()
+                    });
+                }
+                paragraph.runs.push(DocxRun {
+                    image: Some(image),
+                    ..Default::default()
+                });
+                continue;
+            }
+        }
+        {
+            paragraphs.push(DocxParagraph {
+                runs: vec![DocxRun {
+                    image: Some(image),
+                    ..Default::default()
+                }],
+                ..Default::default()
+            });
+        }
+    }
 }
 
 fn parse_word_binary_fib(document: &[u8]) -> Option<WordBinaryFib> {
@@ -2455,8 +3899,21 @@ fn parse_word_binary_fib(document: &[u8]) -> Option<WordBinaryFib> {
     let flags = u16::from_le_bytes(document.get(0x0a..0x0c)?.try_into().ok()?);
     let csw = u16::from_le_bytes(document.get(32..34)?.try_into().ok()?) as usize;
     let cslw_offset = 34usize.checked_add(csw.checked_mul(2)?)?;
-    let cslw = u16::from_le_bytes(document.get(cslw_offset..cslw_offset + 2)?.try_into().ok()?) as usize;
+    let cslw = u16::from_le_bytes(
+        document
+            .get(cslw_offset..cslw_offset + 2)?
+            .try_into()
+            .ok()?,
+    ) as usize;
     let rglw_offset = cslw_offset.checked_add(2)?;
+    let lw = |index: usize| -> Option<usize> {
+        Some(u32::from_le_bytes(
+            document
+                .get(rglw_offset + index.checked_mul(4)?..rglw_offset + index.checked_mul(4)? + 4)?
+                .try_into()
+                .ok()?,
+        ) as usize)
+    };
     let fclcb_count_offset = rglw_offset.checked_add(cslw.checked_mul(4)?)?;
     let fclcb_offset = fclcb_count_offset.checked_add(2)?;
     let pair = |index: usize| {
@@ -2467,16 +3924,40 @@ fn parse_word_binary_fib(document: &[u8]) -> Option<WordBinaryFib> {
         ))
     };
     let (fc_clx, lcb_clx) = pair(33)?;
+    let (fc_plcf_sed, lcb_plcf_sed) = pair(6).unwrap_or((0, 0));
+    let (fc_plcf_hdd, lcb_plcf_hdd) = pair(11).unwrap_or((0, 0));
+    let (fc_plcfspa_mom, lcb_plcfspa_mom) = pair(40).unwrap_or((0, 0));
+    let (fc_plcfspa_hdr, lcb_plcfspa_hdr) = pair(41).unwrap_or((0, 0));
+    let (fc_dgg_info, lcb_dgg_info) = pair(50).unwrap_or((0, 0));
     let (fc_chpx, lcb_chpx) = pair(12).unwrap_or((0, 0));
     let (fc_papx, lcb_papx) = pair(13).unwrap_or((0, 0));
+    let (fc_stshf, lcb_stshf) = pair(1).unwrap_or((0, 0));
+    let (fc_sttbf_ffn, lcb_sttbf_ffn) = pair(15).unwrap_or((0, 0));
     Some(WordBinaryFib {
         flags,
+        ccp_text: lw(3).unwrap_or(0),
+        ccp_ftn: lw(4).unwrap_or(0),
+        ccp_hdd: lw(5).unwrap_or(0),
         fc_clx,
         lcb_clx,
         fc_chpx,
         lcb_chpx,
         fc_papx,
         lcb_papx,
+        fc_stshf,
+        lcb_stshf,
+        fc_sttbf_ffn,
+        lcb_sttbf_ffn,
+        fc_plcf_sed,
+        lcb_plcf_sed,
+        fc_plcf_hdd,
+        lcb_plcf_hdd,
+        fc_plcfspa_mom,
+        lcb_plcfspa_mom,
+        fc_plcfspa_hdr,
+        lcb_plcfspa_hdr,
+        fc_dgg_info,
+        lcb_dgg_info,
     })
 }
 
@@ -2493,6 +3974,94 @@ fn word_binary_table<'a>(streams: &'a WordBinaryStreams, fib: WordBinaryFib) -> 
     } else {
         &streams.table1
     }
+}
+
+fn parse_word_binary_font_names(table: &[u8], fib: WordBinaryFib) -> Vec<String> {
+    let Some(data) =
+        table.get(fib.fc_sttbf_ffn..fib.fc_sttbf_ffn.saturating_add(fib.lcb_sttbf_ffn))
+    else {
+        return Vec::new();
+    };
+    if data.len() < 4 {
+        return Vec::new();
+    }
+    let extended = data.get(..2) == Some(&[0xff, 0xff]);
+    let (mut pos, count, char_width) = if extended {
+        (
+            6usize,
+            usize::from(u16::from_le_bytes([data[2], data[3]])),
+            2usize,
+        )
+    } else {
+        (
+            4usize,
+            usize::from(u16::from_le_bytes([data[0], data[1]])),
+            1usize,
+        )
+    };
+    let mut names = Vec::with_capacity(count.min(8192));
+    for _ in 0..count.min(8192) {
+        let cch = if extended {
+            let Some(bytes) = data.get(pos..pos.saturating_add(2)) else {
+                break;
+            };
+            let value = u16::from_le_bytes(bytes.try_into().ok().unwrap_or([0, 0]));
+            pos = pos.saturating_add(2);
+            usize::from(value)
+        } else {
+            let Some(&value) = data.get(pos) else { break };
+            pos = pos.saturating_add(1);
+            usize::from(value)
+        };
+        let Some(elem_len) = cch.checked_mul(char_width) else {
+            break;
+        };
+        let Some(elem) = data.get(pos..pos.saturating_add(elem_len)) else {
+            break;
+        };
+        names.push(parse_word_binary_font_name(elem));
+        pos = pos.saturating_add(elem_len);
+    }
+    names
+}
+
+fn parse_word_binary_font_name(element: &[u8]) -> String {
+    let units: Vec<u16> = element
+        .chunks_exact(2)
+        .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
+        .collect();
+    let mut best = String::new();
+    let mut best_len = 0usize;
+    let mut index = 0usize;
+    while index < units.len() {
+        let unit = units[index];
+        let name_like = matches!(unit,
+            0x20 | 0x21..=0x7e | 0x3040..=0x30ff | 0x3130..=0x318f |
+            0x4e00..=0x9fff | 0xac00..=0xd7a3 | 0xf900..=0xfaff
+        );
+        if !name_like {
+            index += 1;
+            continue;
+        }
+        let start = index;
+        while index < units.len() && units[index] != 0 {
+            let value = units[index];
+            let valid = matches!(value,
+                0x20 | 0x21..=0x7e | 0x3040..=0x30ff | 0x3130..=0x318f |
+                0x4e00..=0x9fff | 0xac00..=0xd7a3 | 0xf900..=0xfaff
+            );
+            if !valid {
+                break;
+            }
+            index += 1;
+        }
+        if index < units.len() && units[index] == 0 && index.saturating_sub(start) > best_len {
+            best = String::from_utf16_lossy(&units[start..index]);
+            best_len = index.saturating_sub(start);
+        }
+        index = index.saturating_add(1);
+    }
+    best.trim().to_string()
 }
 
 fn parse_word_binary_piece_table(
@@ -2530,11 +4099,7 @@ fn parse_word_binary_piece_table(
     None
 }
 
-fn word_binary_clx<'a>(
-    _document: &[u8],
-    table: &'a [u8],
-    fib: WordBinaryFib,
-) -> Option<&'a [u8]> {
+fn word_binary_clx<'a>(_document: &[u8], table: &'a [u8], fib: WordBinaryFib) -> Option<&'a [u8]> {
     let offset = fib.fc_clx;
     let size = fib.lcb_clx;
     (size > 0 && offset <= table.len().saturating_sub(size)).then(|| &table[offset..offset + size])
@@ -2618,6 +4183,39 @@ fn decode_word_binary_offset(bytes: &[u8], document_size: usize) -> u32 {
     raw
 }
 
+fn decode_word_binary_paragraphs_range(
+    document: &[u8],
+    data: &[u8],
+    pieces: &[WordBinaryPiece],
+    chpx: &[WordBinaryChpxEntry],
+    papx: &[WordBinaryPapxEntry],
+    font_names: &[String],
+    cp_start: i32,
+    cp_end: i32,
+) -> Vec<DocxParagraph> {
+    if cp_end <= cp_start {
+        return Vec::new();
+    }
+    let clipped = pieces
+        .iter()
+        .filter_map(|piece| {
+            let start = piece.cp_start.max(cp_start);
+            let end = piece.cp_end.min(cp_end);
+            (start < end).then(|| WordBinaryPiece {
+                cp_start: start,
+                cp_end: end,
+                file_offset: piece.file_offset.saturating_add(
+                    usize::try_from(start.saturating_sub(piece.cp_start)).unwrap_or(0)
+                        * if piece.compressed { 1 } else { 2 },
+                ),
+                compressed: piece.compressed,
+                prm: piece.prm,
+            })
+        })
+        .collect::<Vec<_>>();
+    decode_word_binary_paragraphs(document, data, &clipped, chpx, papx, font_names)
+}
+
 fn word_binary_offset_in_range(value: u32, document_size: usize) -> bool {
     let mut offset = value & 0x3fff_ffff;
     if value & 0x4000_0000 != 0 {
@@ -2626,138 +4224,372 @@ fn word_binary_offset_in_range(value: u32, document_size: usize) -> bool {
     (offset as usize) < document_size
 }
 
+fn word_binary_run_from_props(
+    text: String,
+    props: WordBinaryCharProps,
+    font_names: &[String],
+) -> DocxRun {
+    DocxRun {
+        text,
+        font_name: props
+            .font_index
+            .and_then(|index| font_names.get(index as usize))
+            .cloned()
+            .unwrap_or_default(),
+        bold: props.bold,
+        italic: props.italic,
+        underline: props.underline,
+        underline_style: props.underline_style,
+        strike: props.strike,
+        small_caps: props.small_caps,
+        caps: props.caps,
+        hidden: props.hidden,
+        rtl: props.rtl,
+        vertical_align: props.vertical_align,
+        font_size: props.font_size,
+        color: props.color.map(word_binary_rgb_hex).unwrap_or_default(),
+        highlight: props.highlight.map(word_binary_rgb_hex).unwrap_or_default(),
+        ..Default::default()
+    }
+}
+
+fn word_binary_run_matches_props(
+    run: &DocxRun,
+    props: WordBinaryCharProps,
+    font_names: &[String],
+) -> bool {
+    run.image.is_none()
+        && run.field_instruction.is_empty()
+        && run.bold == props.bold
+        && run.italic == props.italic
+        && run.underline == props.underline
+        && run.underline_style == props.underline_style
+        && run.strike == props.strike
+        && run.small_caps == props.small_caps
+        && run.caps == props.caps
+        && run.hidden == props.hidden
+        && run.rtl == props.rtl
+        && run.font_name
+            == props
+                .font_index
+                .and_then(|index| font_names.get(index as usize))
+                .cloned()
+                .unwrap_or_default()
+        && run.vertical_align == props.vertical_align
+        && run.font_size == props.font_size
+        && run.color == props.color.map(word_binary_rgb_hex).unwrap_or_default()
+        && run.highlight == props.highlight.map(word_binary_rgb_hex).unwrap_or_default()
+}
+
+fn word_binary_field_bounds(
+    items: &[WordBinaryChar],
+    start: usize,
+) -> Option<(Option<usize>, usize)> {
+    let mut depth = 0usize;
+    let mut separator = None;
+    for (index, item) in items.iter().enumerate().skip(start + 1) {
+        match item.value {
+            '\u{0013}' => depth = depth.saturating_add(1),
+            '\u{0014}' if depth == 0 && separator.is_none() => separator = Some(index),
+            '\u{0015}' if depth == 0 => return Some((separator, index)),
+            '\u{0015}' => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+    }
+    None
+}
+
+fn word_binary_field_visible_text(items: &[WordBinaryChar]) -> String {
+    let mut text = String::new();
+    let mut index = 0usize;
+    while index < items.len() {
+        let item = &items[index];
+        if item.value == '\u{0013}'
+            && let Some((separator, end)) = word_binary_field_bounds(items, index)
+        {
+            if let Some(separator) = separator {
+                text.push_str(&word_binary_field_visible_text(&items[separator + 1..end]));
+            }
+            index = end + 1;
+            continue;
+        }
+        if item.props.picture_offset.is_none()
+            && !matches!(item.value, '\u{0013}' | '\u{0014}' | '\u{0015}')
+        {
+            text.push(item.value);
+        }
+        index += 1;
+    }
+    text
+}
+
+fn apply_word_binary_table_row_properties(
+    paragraph: &mut DocxParagraph,
+    properties: &WordBinaryParaProps,
+) {
+    paragraph.table_row_height = properties.table_row_height;
+    paragraph.table_row_cant_split = properties.table_row_cant_split;
+    paragraph.table_row_header = properties.table_row_header;
+    paragraph.table_alignment = properties.table_alignment;
+    paragraph.table_borders = properties.table_borders;
+}
+
 fn decode_word_binary_paragraphs(
     document: &[u8],
     data: &[u8],
     pieces: &[WordBinaryPiece],
     chpx: &[WordBinaryChpxEntry],
     papx: &[WordBinaryPapxEntry],
+    font_names: &[String],
 ) -> Vec<DocxParagraph> {
     let mut current = Vec::new();
     let mut paragraphs: Vec<DocxParagraph> = Vec::new();
-    let flush = |current: &mut Vec<WordBinaryChar>,
-                 paragraphs: &mut Vec<DocxParagraph>,
-                 terminator_fc: Option<u32>| {
-        if current.is_empty() {
-            if let Some(fc) = terminator_fc {
-                let properties = word_binary_papx_at(papx, fc);
-                let row_marker_already_attached = properties.table_row_end
-                    && paragraphs
-                        .last()
-                        .is_some_and(|paragraph| paragraph.table_cell && paragraph.table_row_end);
-                if properties.table_cell
-                    && !row_marker_already_attached
-                    && paragraphs.len() < MAX_WORD_PARAGRAPHS
-                {
-                    paragraphs.push(DocxParagraph {
-                        table_cell: true,
-                        table_row_end: properties.table_row_end,
-                        ..Default::default()
-                    });
-                    if let Some(definition) = properties.table_def.as_ref()
-                        && properties.table_row_end
+    let flush =
+        |current: &mut Vec<WordBinaryChar>,
+         paragraphs: &mut Vec<DocxParagraph>,
+         terminator_fc: Option<u32>,
+         terminator_cp: Option<i32>,
+         table_cell_end: bool| {
+            if current.is_empty() {
+                if let Some(fc) = terminator_fc {
+                    let properties = word_binary_papx_at(papx, fc);
+                    if table_cell_end
+                        && properties.table_cell
+                        && let Some(previous) = paragraphs
+                            .last_mut()
+                            .filter(|paragraph| paragraph.table_cell && !paragraph.table_cell_end)
                     {
-                        apply_word_binary_table_definition(paragraphs, definition);
+                        previous.table_cell_end = true;
+                        previous.table_row_end |= properties.table_row_end;
+                        apply_word_binary_table_row_properties(previous, &properties);
+                        if let Some(definition) = properties.table_def.as_ref()
+                            && properties.table_row_end
+                        {
+                            apply_word_binary_table_definition(paragraphs, definition);
+                        }
+                        current.clear();
+                        return;
+                    }
+                    let row_marker_already_attached = properties.table_row_end
+                        && paragraphs.last().is_some_and(|paragraph| {
+                            paragraph.table_cell && paragraph.table_row_end
+                        });
+                    if properties.table_cell
+                        && !row_marker_already_attached
+                        && paragraphs.len() < MAX_WORD_PARAGRAPHS
+                    {
+                        paragraphs.push(DocxParagraph {
+                            table_cell: true,
+                            table_cell_end,
+                            table_row_end: properties.table_row_end,
+                            table_row_height: properties.table_row_height,
+                            table_row_cant_split: properties.table_row_cant_split,
+                            table_row_header: properties.table_row_header,
+                            table_alignment: properties.table_alignment,
+                            table_borders: properties.table_borders,
+                            source_cp_start: terminator_cp.unwrap_or_default(),
+                            source_cp_end: terminator_cp.unwrap_or_default(),
+                            source_fc_start: terminator_fc.unwrap_or_default(),
+                            source_fc_end: terminator_fc.unwrap_or_default(),
+                            ..Default::default()
+                        });
+                        if let Some(definition) = properties.table_def.as_ref()
+                            && properties.table_row_end
+                        {
+                            apply_word_binary_table_definition(paragraphs, definition);
+                        }
                     }
                 }
+                current.clear();
+                return;
             }
-            current.clear();
-            return;
-        }
-        if paragraphs.len() >= MAX_WORD_PARAGRAPHS {
-            current.clear();
-            return;
-        }
-        while current.first().is_some_and(|item| item.value.is_whitespace()) {
-            current.remove(0);
-        }
-        while current.last().is_some_and(|item| item.value.is_whitespace()) {
-            current.pop();
-        }
-        if current.is_empty() {
-            return;
-        }
-        let fc = terminator_fc
-            .or_else(|| current.first().map(|item| item.fc))
-            .unwrap_or(0);
-        let properties = word_binary_papx_at(papx, fc);
-        let mut runs = Vec::new();
-        let mut text = String::new();
-        for item in current.drain(..) {
-            if let Some(offset) = item.props.picture_offset {
-                if let Some(image) = extract_word_binary_image(data, offset as usize) {
-                    runs.push(DocxRun {
-                        image: Some(image),
-                        ..Default::default()
-                    });
-                }
-                continue;
+            if paragraphs.len() >= MAX_WORD_PARAGRAPHS {
+                current.clear();
+                return;
             }
-            text.push(item.value);
-            let props = item.props;
-            if let Some(last) = runs.last_mut().filter(|run: &&mut DocxRun| {
-                run.image.is_none()
-                    && run.bold == props.bold
-                    && run.italic == props.italic
-                    && run.underline == props.underline
-                    && run.strike == props.strike
-                    && run.vertical_align == props.vertical_align
-                    && run.font_size == props.font_size
-                    && run.color == props.color.map(word_binary_rgb_hex).unwrap_or_default()
-                    && run.highlight == props.highlight.map(word_binary_rgb_hex).unwrap_or_default()
+            while current.first().is_some_and(|item| {
+                item.props.picture_offset.is_none() && item.value.is_whitespace()
             }) {
-                last.text.push(item.value);
+                current.remove(0);
+            }
+            while current.last().is_some_and(|item| {
+                item.props.picture_offset.is_none() && item.value.is_whitespace()
+            }) {
+                current.pop();
+            }
+            if current.is_empty() {
+                return;
+            }
+            let fc = terminator_fc
+                .or_else(|| current.first().map(|item| item.fc))
+                .unwrap_or(0);
+            let source_cp_start = current
+                .first()
+                .map(|item| item.cp)
+                .or(terminator_cp)
+                .unwrap_or_default();
+            let source_cp_end = terminator_cp
+                .or_else(|| current.last().map(|item| item.cp.saturating_add(1)))
+                .unwrap_or(source_cp_start);
+            let source_fc_start = current
+                .first()
+                .map(|item| item.fc)
+                .or(terminator_fc)
+                .unwrap_or_default();
+            let source_fc_end = terminator_fc
+                .or_else(|| current.last().map(|item| item.fc))
+                .unwrap_or(source_fc_start);
+            let properties = word_binary_papx_at(papx, fc);
+            let mut runs = Vec::new();
+            let mut text = String::new();
+            let items = current.drain(..).collect::<Vec<_>>();
+            let mut index = 0usize;
+            while index < items.len() {
+                let item = &items[index];
+                if let Some(offset) = item.props.picture_offset {
+                    if let Some(image) = extract_word_binary_image(data, offset as usize) {
+                        runs.push(DocxRun {
+                            image: Some(image),
+                            ..Default::default()
+                        });
+                    }
+                    index += 1;
+                    continue;
+                }
+                if item.value == '\u{0013}'
+                    && let Some((separator, end)) = word_binary_field_bounds(&items, index)
+                {
+                    let instruction_end = separator.unwrap_or(end);
+                    let instruction =
+                        word_binary_field_visible_text(&items[index + 1..instruction_end])
+                            .trim()
+                            .to_string();
+                    if !instruction.is_empty() {
+                        let result_start = separator.map_or(end, |position| position + 1);
+                        let result_items = &items[result_start..end];
+                        let result = word_binary_field_visible_text(result_items);
+                        let props = result_items
+                            .iter()
+                            .find(|item| {
+                                item.props.picture_offset.is_none()
+                                    && !matches!(item.value, '\u{0013}' | '\u{0014}' | '\u{0015}')
+                            })
+                            .map(|item| item.props)
+                            .unwrap_or(item.props);
+                        text.push_str(&result);
+                        let mut run = word_binary_run_from_props(result, props, font_names);
+                        run.field_instruction = instruction;
+                        runs.push(run);
+                        index = end + 1;
+                        continue;
+                    }
+                }
+                if matches!(item.value, '\u{0013}' | '\u{0014}' | '\u{0015}') {
+                    index += 1;
+                    continue;
+                }
+                text.push(item.value);
+                let props = item.props;
+                if let Some(last) = runs
+                    .last_mut()
+                    .filter(|run| word_binary_run_matches_props(run, props, font_names))
+                {
+                    last.text.push(item.value);
+                } else {
+                    runs.push(word_binary_run_from_props(
+                        item.value.to_string(),
+                        props,
+                        font_names,
+                    ));
+                }
+                index += 1;
+            }
+            let mut paragraph = DocxParagraph {
+                text: text.clone(),
+                source_cp_start,
+                source_cp_end,
+                source_fc_start,
+                source_fc_end,
+                heading_level: properties.heading_level,
+                list_kind: properties.list_kind,
+                list_level: properties.list_level,
+                list_id: properties.list_id,
+                alignment: properties.alignment,
+                spacing_before: properties.spacing_before,
+                spacing_after: properties.spacing_after,
+                // Word's default single-line paragraph spacing is 240 twentieths of a point.
+                line_spacing: properties.line_spacing.max(240),
+                line_spacing_rule: if properties.line_spacing_rule.is_empty() {
+                    "auto"
+                } else {
+                    properties.line_spacing_rule
+                },
+                indent_left: properties.indent_left,
+                indent_right: properties.indent_right,
+                first_line_indent: properties.first_line_indent,
+                shading: properties.shading.clone(),
+                keep_next: properties.keep_next,
+                keep_lines: properties.keep_lines,
+                page_break_before: properties.page_break_before,
+                bidi: properties.bidi,
+                table_cell: properties.table_cell,
+                table_cell_end,
+                table_row_end: properties.table_row_end,
+                table_row_height: properties.table_row_height,
+                table_row_cant_split: properties.table_row_cant_split,
+                table_row_header: properties.table_row_header,
+                table_alignment: properties.table_alignment,
+                table_borders: properties.table_borders,
+                runs,
+                ..Default::default()
+            };
+            if paragraph.heading_level == 0 && paragraph.list_kind.is_empty() {
+                if let Some((kind, item)) = visible_list_marker(&paragraph.text) {
+                    let removed = paragraph
+                        .text
+                        .chars()
+                        .count()
+                        .saturating_sub(item.chars().count());
+                    trim_word_binary_run_prefix(&mut paragraph.runs, removed);
+                    paragraph.list_kind = kind;
+                    paragraph.text = item.to_string();
+                }
+                if paragraph.heading_level == 0 {
+                    paragraph.heading_level = usize::from(word_binary_heading(&paragraph.text));
+                    paragraph.bold = paragraph.heading_level > 0;
+                }
+            }
+            if !paragraph.list_kind.is_empty() {
+                if !properties.spacing_before_explicit {
+                    paragraph.spacing_before = 0;
+                }
+                if !properties.spacing_after_explicit {
+                    paragraph.spacing_after = 0;
+                }
+            }
+            let table_def = properties.table_def.clone();
+            if paragraph.table_cell
+                && let Some(previous) = paragraphs
+                    .last_mut()
+                    .filter(|previous| previous.table_cell && !previous.table_cell_end)
+            {
+                append_word_binary_cell_paragraph(previous, &mut paragraph);
             } else {
-                runs.push(DocxRun {
-                    text: item.value.to_string(),
-                    bold: props.bold,
-                    italic: props.italic,
-                    underline: props.underline,
-                    strike: props.strike,
-                    vertical_align: props.vertical_align,
-                    font_size: props.font_size,
-                    color: props.color.map(word_binary_rgb_hex).unwrap_or_default(),
-                    highlight: props.highlight.map(word_binary_rgb_hex).unwrap_or_default(),
-                    ..Default::default()
-                });
+                paragraphs.push(paragraph);
             }
-        }
-        let mut paragraph = DocxParagraph {
-            text: text.clone(),
-            heading_level: properties.heading_level,
-            list_kind: properties.list_kind,
-            list_level: properties.list_level,
-            alignment: properties.alignment,
-            table_cell: properties.table_cell,
-            table_row_end: properties.table_row_end,
-            runs,
-            ..Default::default()
+            if let Some(definition) = table_def.as_ref().filter(|_| properties.table_row_end) {
+                apply_word_binary_table_definition(paragraphs, definition);
+            }
         };
-        if paragraph.heading_level == 0 && paragraph.list_kind.is_empty() {
-            if let Some((kind, item)) = visible_list_marker(&paragraph.text) {
-                let removed = paragraph.text.chars().count().saturating_sub(item.chars().count());
-                trim_word_binary_run_prefix(&mut paragraph.runs, removed);
-                paragraph.list_kind = kind;
-                paragraph.text = item.to_string();
-            }
-            if paragraph.heading_level == 0 {
-                paragraph.heading_level = usize::from(word_binary_heading(&paragraph.text));
-                paragraph.bold = paragraph.heading_level > 0;
-            }
-        }
-        let table_def = properties.table_def.clone();
-        paragraphs.push(paragraph);
-        if let Some(definition) = table_def.as_ref().filter(|_| properties.table_row_end) {
-            apply_word_binary_table_definition(paragraphs, definition);
-        }
-    };
     for piece in pieces {
         let count = (piece.cp_end - piece.cp_start) as usize;
         if count == 0 || piece.file_offset >= document.len() {
             continue;
         }
         for index in 0..count {
-            let offset = piece.file_offset.saturating_add(index * if piece.compressed { 1 } else { 2 });
+            let offset = piece
+                .file_offset
+                .saturating_add(index * if piece.compressed { 1 } else { 2 });
             let fc = offset.min(u32::MAX as usize) as u32;
             let mut props = word_binary_chpx_at(chpx, fc);
             apply_word_binary_prm0(&mut props, piece.prm);
@@ -2772,28 +4604,73 @@ fn decode_word_binary_paragraphs(
             };
             let Some(value) = value else { break };
             match value {
-                '\r' | '\n' | '\u{000c}' | '\u{0007}' => {
+                '\r' | '\n' | '\u{000c}' => {
                     let terminator_props = word_binary_papx_at(papx, fc);
                     if current.is_empty() && terminator_props.table_row_end {
                         if let Some(previous) = paragraphs.last_mut() {
                             previous.table_row_end = true;
+                            apply_word_binary_table_row_properties(previous, &terminator_props);
                         }
                         if let Some(definition) = terminator_props.table_def.as_ref() {
                             apply_word_binary_table_definition(&mut paragraphs, definition);
                         }
                     }
-                    flush(&mut current, &mut paragraphs, Some(fc))
+                    flush(
+                        &mut current,
+                        &mut paragraphs,
+                        Some(fc),
+                        Some(piece.cp_start.saturating_add(index as i32)),
+                        false,
+                    )
                 }
-                '\u{000b}' => current.push(WordBinaryChar { value: '\n', fc, props }),
-                '\u{0013}' | '\u{0014}' | '\u{0015}' => {}
-                value if value < '\u{0020}' && value != '\t' => {
-                    current.push(WordBinaryChar { value: ' ', fc, props })
+                '\u{0007}' => {
+                    let terminator_props = word_binary_papx_at(papx, fc);
+                    if current.is_empty() && terminator_props.table_row_end {
+                        if let Some(previous) = paragraphs.last_mut() {
+                            previous.table_row_end = true;
+                            previous.table_cell_end = true;
+                            apply_word_binary_table_row_properties(previous, &terminator_props);
+                        }
+                        if let Some(definition) = terminator_props.table_def.as_ref() {
+                            apply_word_binary_table_definition(&mut paragraphs, definition);
+                        }
+                    }
+                    flush(
+                        &mut current,
+                        &mut paragraphs,
+                        Some(fc),
+                        Some(piece.cp_start.saturating_add(index as i32)),
+                        true,
+                    )
                 }
-                value => current.push(WordBinaryChar { value, fc, props }),
+                '\u{000b}' => current.push(WordBinaryChar {
+                    value: '\n',
+                    cp: piece.cp_start.saturating_add(index as i32),
+                    fc,
+                    props,
+                }),
+                '\u{0013}' | '\u{0014}' | '\u{0015}' => current.push(WordBinaryChar {
+                    value,
+                    cp: piece.cp_start.saturating_add(index as i32),
+                    fc,
+                    props,
+                }),
+                value if value < '\u{0020}' && value != '\t' => current.push(WordBinaryChar {
+                    value: ' ',
+                    cp: piece.cp_start.saturating_add(index as i32),
+                    fc,
+                    props,
+                }),
+                value => current.push(WordBinaryChar {
+                    value,
+                    cp: piece.cp_start.saturating_add(index as i32),
+                    fc,
+                    props,
+                }),
             }
         }
     }
-    flush(&mut current, &mut paragraphs, None);
+    flush(&mut current, &mut paragraphs, None, None, false);
     normalize_word_binary_table_grid_spans(&mut paragraphs);
     paragraphs
 }
@@ -2819,10 +4696,13 @@ fn apply_word_binary_table_definition(
     paragraphs: &mut [DocxParagraph],
     definition: &WordBinaryTableDef,
 ) {
-    if definition.tcgrf.is_empty() {
+    if definition.cells.is_empty() {
         return;
     }
-    let Some(row_end) = paragraphs.iter().rposition(|paragraph| paragraph.table_cell) else {
+    let Some(row_end) = paragraphs
+        .iter()
+        .rposition(|paragraph| paragraph.table_cell)
+    else {
         return;
     };
     let row_start = paragraphs[..row_end]
@@ -2842,10 +4722,11 @@ fn apply_word_binary_table_definition(
     // cell into the preceding logical cell, so carry its text into that cell
     // and suppress the duplicate <w:tc>.
     let mut logical_cells: Vec<usize> = Vec::new();
-    for (physical, flags) in definition.tcgrf.iter().copied().enumerate() {
+    for (physical, cell) in definition.cells.iter().copied().enumerate() {
         let Some(&paragraph_index) = cells.get(physical) else {
             break;
         };
+        let flags = cell.flags;
         if let (Some(&left), Some(&right)) = (
             definition.rgdxa.get(physical),
             definition.rgdxa.get(physical + 1),
@@ -2854,6 +4735,26 @@ fn apply_word_binary_table_definition(
             paragraphs[paragraph_index].table_grid_right = right;
             paragraphs[paragraph_index].table_grid_bounds = definition.rgdxa.clone();
         }
+        paragraphs[paragraph_index].table_cell_borders = cell.borders;
+        paragraphs[paragraph_index].table_cell_borders_explicit = true;
+        paragraphs[paragraph_index].table_cell_margins = cell.margins;
+        paragraphs[paragraph_index].table_cell_preferred_width = if (flags >> 9) & 0x07 == 3 {
+            cell.width
+        } else {
+            0
+        };
+        paragraphs[paragraph_index].table_cell_vertical_align = match (flags >> 7) & 0x03 {
+            1 => "center",
+            2 => "bottom",
+            _ => "",
+        };
+        paragraphs[paragraph_index].table_cell_text_direction = if flags & 0x0004 != 0 {
+            if flags & 0x0008 != 0 { "btLr" } else { "tbRl" }
+        } else {
+            ""
+        };
+        paragraphs[paragraph_index].table_cell_fit_text = flags & 0x1000 != 0;
+        paragraphs[paragraph_index].table_cell_no_wrap = flags & 0x2000 != 0;
         if flags & WORD_BINARY_F_MERGED != 0 {
             if let Some(&previous_index) = logical_cells.last() {
                 let (before, after) = paragraphs.split_at_mut(paragraph_index);
@@ -2930,9 +4831,63 @@ fn append_word_binary_merged_cell(target: &mut DocxParagraph, source: &mut DocxP
         target.text.push_str(&source.text);
     }
     target.runs.append(&mut source.runs);
+    extend_word_binary_source_range(target, source);
     target.table_grid_span = target.table_grid_span.saturating_add(1);
+    if source.table_cell_borders_explicit {
+        target.table_cell_borders[2] = source.table_cell_borders[2];
+        target.table_cell_borders[3] = source.table_cell_borders[3];
+        target.table_cell_borders_explicit = true;
+    }
+    target.table_cell_margins[2] = source.table_cell_margins[2];
+    target.table_cell_margins[3] = source.table_cell_margins[3];
     if source.table_row_end {
         target.table_row_end = true;
+        target.table_row_height = source.table_row_height;
+        target.table_row_cant_split = source.table_row_cant_split;
+        target.table_row_header = source.table_row_header;
+        target.table_alignment = source.table_alignment;
+        target.table_borders = source.table_borders;
+    }
+}
+
+fn append_word_binary_cell_paragraph(target: &mut DocxParagraph, source: &mut DocxParagraph) {
+    if !target.text.is_empty() && !source.text.is_empty() {
+        target.text.push('\n');
+        target.runs.push(DocxRun {
+            text: "\n".into(),
+            ..Default::default()
+        });
+    }
+    target.text.push_str(&source.text);
+    target.runs.append(&mut source.runs);
+    extend_word_binary_source_range(target, source);
+    target.table_cell_end = source.table_cell_end;
+    target.table_row_end |= source.table_row_end;
+    if source.table_row_end {
+        target.table_row_height = source.table_row_height;
+        target.table_row_cant_split = source.table_row_cant_split;
+        target.table_row_header = source.table_row_header;
+        target.table_alignment = source.table_alignment;
+        target.table_borders = source.table_borders;
+    }
+}
+
+fn extend_word_binary_source_range(target: &mut DocxParagraph, source: &DocxParagraph) {
+    if source.source_cp_end > 0 {
+        if target.source_cp_start == 0 {
+            target.source_cp_start = source.source_cp_start;
+        } else {
+            target.source_cp_start = target.source_cp_start.min(source.source_cp_start);
+        }
+        target.source_cp_end = target.source_cp_end.max(source.source_cp_end);
+    }
+    if source.source_fc_end > 0 {
+        if target.source_fc_start == 0 {
+            target.source_fc_start = source.source_fc_start;
+        } else {
+            target.source_fc_start = target.source_fc_start.min(source.source_fc_start);
+        }
+        target.source_fc_end = target.source_fc_end.max(source.source_fc_end);
     }
 }
 
@@ -2950,6 +4905,9 @@ fn apply_word_binary_prm0(props: &mut WordBinaryCharProps, prm: u16) {
         0x55 => props.bold = enabled,
         0x56 => props.italic = enabled,
         0x57 => props.strike = enabled,
+        0x5a => props.small_caps = enabled,
+        0x5b => props.caps = enabled,
+        0x5c => props.hidden = enabled,
         _ => {}
     }
 }
@@ -2983,21 +4941,35 @@ fn parse_word_binary_chpx(
     let pn_base = (count + 1) * 4;
     let mut entries = Vec::new();
     for index in 0..count {
-        let Some(fc_start) = word_binary_u32(plc, index * 4) else { continue };
-        let Some(fc_lim) = word_binary_u32(plc, (index + 1) * 4) else { continue };
-        let Some(pn) = word_binary_u32(plc, pn_base + index * 4) else { continue };
+        let Some(fc_start) = word_binary_u32(plc, index * 4) else {
+            continue;
+        };
+        let Some(fc_lim) = word_binary_u32(plc, (index + 1) * 4) else {
+            continue;
+        };
+        let Some(pn) = word_binary_u32(plc, pn_base + index * 4) else {
+            continue;
+        };
         let page_offset = (pn & 0x003f_ffff) as usize * 512;
-        let Some(page) = document.get(page_offset..page_offset.saturating_add(512)) else { continue };
+        let Some(page) = document.get(page_offset..page_offset.saturating_add(512)) else {
+            continue;
+        };
         let run_count = *page.last().unwrap_or(&0) as usize;
         if run_count == 0 || run_count > 0x65 || 4 * (run_count + 1) + run_count > 511 {
             continue;
         }
         for run in 0..run_count {
-            let Some(run_start) = word_binary_u32(page, run * 4) else { continue };
-            let Some(run_lim) = word_binary_u32(page, (run + 1) * 4) else { continue };
+            let Some(run_start) = word_binary_u32(page, run * 4) else {
+                continue;
+            };
+            let Some(run_lim) = word_binary_u32(page, (run + 1) * 4) else {
+                continue;
+            };
             let start = run_start.max(fc_start);
             let lim = run_lim.min(fc_lim);
-            if start >= lim { continue; }
+            if start >= lim {
+                continue;
+            }
             let rgb = 4 * (run_count + 1);
             let offset = page[rgb + run] as usize * 2;
             let props = if offset == 0 {
@@ -3005,7 +4977,11 @@ fn parse_word_binary_chpx(
             } else {
                 parse_word_binary_chpx_props(page, offset).unwrap_or_default()
             };
-            entries.push(WordBinaryChpxEntry { fc_start: start, fc_lim: lim, props });
+            entries.push(WordBinaryChpxEntry {
+                fc_start: start,
+                fc_lim: lim,
+                props,
+            });
         }
     }
     entries.sort_by_key(|entry| entry.fc_start);
@@ -3028,13 +5004,30 @@ fn parse_word_binary_chpx_props(page: &[u8], offset: usize) -> Option<WordBinary
             0x0835 => props.bold = value.first().copied().is_some_and(|v| v == 1 || v == 0x81),
             0x0836 => props.italic = value.first().copied().is_some_and(|v| v == 1 || v == 0x81),
             0x0837 => props.strike = value.first().copied().is_some_and(|v| v == 1 || v == 0x81),
-            0x2a3e => props.underline = value.first().copied().is_some_and(|v| v != 0),
-            0x4a43 => props.font_size = u16::from_le_bytes(value.get(..2)?.try_into().ok()?) as usize,
-            0x2a48 => props.vertical_align = match value.first().copied()? {
-                1 => "superscript",
-                2 => "subscript",
-                _ => "",
-            },
+            0x083A => {
+                props.small_caps = value.first().copied().is_some_and(|v| v == 1 || v == 0x81)
+            }
+            0x083B => props.caps = value.first().copied().is_some_and(|v| v == 1 || v == 0x81),
+            0x083C => props.hidden = value.first().copied().is_some_and(|v| v == 1 || v == 0x81),
+            0x085A => props.rtl = value.first().copied().is_some_and(|v| v == 1 || v == 0x81),
+            0x2a3e => {
+                let kind = value.first().copied().unwrap_or(0);
+                props.underline = kind != 0;
+                props.underline_style = word_binary_underline_style(kind);
+            }
+            0x4a43 => {
+                props.font_size = u16::from_le_bytes(value.get(..2)?.try_into().ok()?) as usize
+            }
+            0x4a4f => {
+                props.font_index = Some(u16::from_le_bytes(value.get(..2)?.try_into().ok()?));
+            }
+            0x2a48 => {
+                props.vertical_align = match value.first().copied()? {
+                    1 => "superscript",
+                    2 => "subscript",
+                    _ => "",
+                }
+            }
             0x6870 => {
                 props.color = Some([value[0], value[1], value[2]]);
             }
@@ -3062,31 +5055,48 @@ fn parse_word_binary_papx(
     document: &[u8],
     table: &[u8],
     fib: WordBinaryFib,
+    styles: &[WordBinaryParaProps],
 ) -> Vec<WordBinaryPapxEntry> {
     let Some(plc) = table.get(fib.fc_papx..fib.fc_papx.saturating_add(fib.lcb_papx)) else {
         return Vec::new();
     };
-    if plc.len() < 12 || (plc.len() - 4) % 8 != 0 { return Vec::new(); }
+    if plc.len() < 12 || (plc.len() - 4) % 8 != 0 {
+        return Vec::new();
+    }
     let count = (plc.len() - 4) / 8;
     let pn_base = (count + 1) * 4;
     let mut entries = Vec::new();
     for index in 0..count {
-        let Some(fc_start) = word_binary_u32(plc, index * 4) else { continue };
-        let Some(fc_lim) = word_binary_u32(plc, (index + 1) * 4) else { continue };
-        let Some(pn) = word_binary_u32(plc, pn_base + index * 4) else { continue };
+        let Some(fc_start) = word_binary_u32(plc, index * 4) else {
+            continue;
+        };
+        let Some(fc_lim) = word_binary_u32(plc, (index + 1) * 4) else {
+            continue;
+        };
+        let Some(pn) = word_binary_u32(plc, pn_base + index * 4) else {
+            continue;
+        };
         let page_offset = (pn & 0x003f_ffff) as usize * 512;
-        let Some(page) = document.get(page_offset..page_offset.saturating_add(512)) else { continue };
+        let Some(page) = document.get(page_offset..page_offset.saturating_add(512)) else {
+            continue;
+        };
         let run_count = *page.last().unwrap_or(&0) as usize;
-        if run_count == 0 || run_count > 0x3f || 4 * (run_count + 1) + 13 * run_count > 511 { continue; }
+        if run_count == 0 || run_count > 0x3f || 4 * (run_count + 1) + 13 * run_count > 511 {
+            continue;
+        }
         for run in 0..run_count {
-            let Some(run_start) = word_binary_u32(page, run * 4) else { continue };
-            let Some(run_lim) = word_binary_u32(page, (run + 1) * 4) else { continue };
+            let Some(run_start) = word_binary_u32(page, run * 4) else {
+                continue;
+            };
+            let Some(run_lim) = word_binary_u32(page, (run + 1) * 4) else {
+                continue;
+            };
             let bx = 4 * (run_count + 1) + run * 13;
             let offset = page[bx] as usize * 2;
             let props = if offset == 0 {
                 WordBinaryParaProps::default()
             } else {
-                parse_word_binary_papx_props(page, offset).unwrap_or_default()
+                parse_word_binary_papx_props(page, offset, styles).unwrap_or_default()
             };
             entries.push(WordBinaryPapxEntry {
                 fc_start: run_start.max(fc_start),
@@ -3099,7 +5109,11 @@ fn parse_word_binary_papx(
     entries
 }
 
-fn parse_word_binary_papx_props(page: &[u8], offset: usize) -> Option<WordBinaryParaProps> {
+fn parse_word_binary_papx_props(
+    page: &[u8],
+    offset: usize,
+    styles: &[WordBinaryParaProps],
+) -> Option<WordBinaryParaProps> {
     let first = *page.get(offset)? as usize;
     let (data_offset, data_len) = if first != 0 {
         (offset + 1, first * 2 - 1)
@@ -3108,8 +5122,10 @@ fn parse_word_binary_papx_props(page: &[u8], offset: usize) -> Option<WordBinary
         (offset + 2, second * 2)
     };
     let data = page.get(data_offset..data_offset.checked_add(data_len)?)?;
+    let style_id = u16::from_le_bytes(data.get(..2)?.try_into().ok()?);
     let group = data.get(2..).unwrap_or_default();
-    let mut props = WordBinaryParaProps::default();
+    let mut props = styles.get(style_id as usize).cloned().unwrap_or_default();
+    props.style_id = style_id;
     let mut pos = 0;
     while pos + 2 <= group.len() {
         let sprm = u16::from_le_bytes(group[pos..pos + 2].try_into().ok()?);
@@ -3119,17 +5135,79 @@ fn parse_word_binary_papx_props(page: &[u8], offset: usize) -> Option<WordBinary
         match sprm {
             0x2416 => props.table_cell = value.first().copied().unwrap_or(0) != 0,
             0x2417 => props.table_row_end = value.first().copied().unwrap_or(0) != 0,
+            0x3403 => props.table_row_cant_split = value.first().copied().unwrap_or(0) != 0,
+            0x3404 => props.table_row_header = value.first().copied().unwrap_or(0) != 0,
+            0x5400 => {
+                props.table_alignment = match u16::from_le_bytes(value.get(..2)?.try_into().ok()?) {
+                    1 => "center",
+                    2 => "right",
+                    _ => "left",
+                };
+            }
+            0xd605 => props.table_borders = parse_word_binary_table_borders(value),
+            0xd634 => {
+                if let Some(padding) = parse_word_binary_cell_padding(value) {
+                    props.table_cell_padding_ops.push(padding);
+                }
+            }
+            0x9407 => {
+                props.table_row_height = i16::from_le_bytes(value.get(..2)?.try_into().ok()?);
+            }
+            0x2405 => props.keep_lines = value.first().copied().unwrap_or(0) != 0,
+            0x2406 => props.keep_next = value.first().copied().unwrap_or(0) != 0,
+            0x2407 => props.page_break_before = value.first().copied().unwrap_or(0) != 0,
+            0x2441 => props.bidi = value.first().copied().unwrap_or(0) != 0,
             0xD608 => props.table_def = parse_word_binary_table_def(value),
-            0x2403 | 0x2461 => props.alignment = match value.first().copied()? {
-                1 => "left", 2 => "right", 3 => "both", 0 => "center", _ => "",
-            },
+            0x2403 => props.alignment = word_binary_physical_alignment(value.first().copied()?),
+            0x2461 => props.alignment = word_binary_logical_alignment(value.first().copied()?),
+            0xA413 => {
+                props.spacing_before = u16::from_le_bytes(value.get(..2)?.try_into().ok()?);
+                props.spacing_before_explicit = true;
+            }
+            0xA414 => {
+                props.spacing_after = u16::from_le_bytes(value.get(..2)?.try_into().ok()?);
+                props.spacing_after_explicit = true;
+            }
+            0x6412 => {
+                if let Some((line, rule)) = parse_word_binary_line_spacing(value) {
+                    props.line_spacing = line;
+                    props.line_spacing_rule = rule;
+                }
+            }
+            0x845D => {
+                props.indent_right = i16::from_le_bytes(value.get(..2)?.try_into().ok()?);
+            }
+            0x845E => {
+                props.indent_left = i16::from_le_bytes(value.get(..2)?.try_into().ok()?);
+            }
+            0x465F => {
+                let nest = i16::from_le_bytes(value.get(..2)?.try_into().ok()?);
+                props.indent_left = props.indent_left.saturating_add(nest);
+            }
+            0x8460 => {
+                props.first_line_indent = i16::from_le_bytes(value.get(..2)?.try_into().ok()?);
+            }
+            0x442D => {
+                if let Some(color) = parse_word_binary_shading80(value) {
+                    props.shading = color;
+                }
+            }
+            0xC64D => {
+                if let Some(color) = parse_word_binary_shading_operand(value) {
+                    props.shading = color;
+                }
+            }
             0x2640 => {
                 let level = value.first().copied().unwrap_or(9);
-                if level < 9 { props.heading_level = usize::from(level) + 1; }
+                if level < 9 {
+                    props.heading_level = usize::from(level) + 1;
+                }
             }
             0x260a => props.list_level = value.first().copied().unwrap_or(0) as usize,
             0x460b => {
-                if u16::from_le_bytes(value.get(..2)?.try_into().ok()?) != 0 {
+                let list_id = u16::from_le_bytes(value.get(..2)?.try_into().ok()?);
+                props.list_id = usize::from(list_id);
+                if list_id != 0 {
                     props.list_kind = "decimal";
                 }
             }
@@ -3137,14 +5215,318 @@ fn parse_word_binary_papx_props(page: &[u8], offset: usize) -> Option<WordBinary
         }
         pos += 2 + len;
     }
+    if let Some(definition) = props.table_def.as_mut() {
+        for padding in props.table_cell_padding_ops.iter().copied() {
+            apply_word_binary_cell_padding(definition, padding);
+        }
+    }
     Some(props)
 }
 
+fn parse_word_binary_stylesheet(table: &[u8], fib: WordBinaryFib) -> Vec<WordBinaryParaProps> {
+    let Some(stsh) = table.get(fib.fc_stshf..fib.fc_stshf.saturating_add(fib.lcb_stshf)) else {
+        return Vec::new();
+    };
+    let (Some(cb_stshi), Some(style_count), Some(base_len)) = (
+        word_binary_u16(stsh, 0).map(usize::from),
+        word_binary_u16(stsh, 2).map(usize::from),
+        word_binary_u16(stsh, 4).map(usize::from),
+    ) else {
+        return Vec::new();
+    };
+    let base_len = match base_len {
+        10 | 18 => base_len,
+        _ => return Vec::new(),
+    };
+    let mut pos = 2usize.saturating_add(cb_stshi);
+    let mut styles = Vec::with_capacity(style_count.min(8192));
+    let mut bases = Vec::with_capacity(style_count.min(8192));
+    for style_index in 0..style_count.min(8192) {
+        let Some(cb_bytes) = stsh.get(pos..pos.saturating_add(2)) else {
+            break;
+        };
+        let cb = usize::from(u16::from_le_bytes(
+            cb_bytes.try_into().ok().unwrap_or([0, 0]),
+        ));
+        pos = pos.saturating_add(2);
+        if cb == 0 {
+            styles.push(WordBinaryParaProps::default());
+            bases.push(0x0fff);
+            continue;
+        }
+        let Some(std) = stsh.get(pos..pos.saturating_add(cb)) else {
+            break;
+        };
+        pos = pos.saturating_add(cb);
+        let sti = word_binary_u16(std, 0).unwrap_or(0) & 0x0fff;
+        let grf = word_binary_u16(std, 2).unwrap_or(0);
+        let style_base = (grf >> 4) & 0x0fff;
+        let style_kind = grf & 0x000f;
+        let mut props = WordBinaryParaProps {
+            style_id: style_index as u16,
+            heading_level: (1..=9)
+                .contains(&sti)
+                .then_some(usize::from(sti))
+                .unwrap_or(0),
+            ..WordBinaryParaProps::default()
+        };
+        bases.push(style_base);
+        if style_kind != 1 || std.len() <= base_len as usize {
+            styles.push(props);
+            continue;
+        }
+        let Some(name_len_bytes) = std.get(base_len as usize..base_len as usize + 2) else {
+            styles.push(props);
+            continue;
+        };
+        let name_len = usize::from(u16::from_le_bytes(
+            name_len_bytes.try_into().ok().unwrap_or([0, 0]),
+        ));
+        let name_start = base_len as usize + 2;
+        let name_end = name_start.saturating_add(name_len.saturating_mul(2));
+        let Some(name_bytes) = std.get(name_start..name_end) else {
+            styles.push(props);
+            continue;
+        };
+        if props.heading_level == 0 {
+            props.heading_level = word_binary_heading_level_from_name(&String::from_utf16_lossy(
+                &name_bytes
+                    .chunks_exact(2)
+                    .map(|bytes| u16::from_le_bytes([bytes[0], bytes[1]]))
+                    .collect::<Vec<_>>(),
+            ));
+        }
+        let mut upx_pos = name_end.saturating_add(2);
+        let Some(upx_len_bytes) = std.get(upx_pos..upx_pos.saturating_add(2)) else {
+            styles.push(props);
+            continue;
+        };
+        let upx_len = usize::from(u16::from_le_bytes(
+            upx_len_bytes.try_into().ok().unwrap_or([0, 0]),
+        ));
+        upx_pos = upx_pos.saturating_add(2);
+        let Some(upx) = std.get(upx_pos..upx_pos.saturating_add(upx_len)) else {
+            styles.push(props);
+            continue;
+        };
+        if upx.len() >= 2 {
+            props = parse_word_binary_style_group(&upx[2..], props);
+        }
+        styles.push(props);
+    }
+    for index in 0..styles.len() {
+        let mut base = bases.get(index).copied().unwrap_or(0x0fff);
+        let mut depth = 0;
+        while base != 0x0fff && depth < 64 {
+            let Some(parent) = styles.get(base as usize).cloned() else {
+                break;
+            };
+            let style = &mut styles[index];
+            if style.heading_level == 0 {
+                style.heading_level = parent.heading_level;
+            }
+            if style.alignment.is_empty() {
+                style.alignment = parent.alignment;
+            }
+            if style.spacing_before == 0 {
+                style.spacing_before = parent.spacing_before;
+            }
+            if style.spacing_after == 0 {
+                style.spacing_after = parent.spacing_after;
+            }
+            if style.line_spacing == 0 {
+                style.line_spacing = parent.line_spacing;
+                style.line_spacing_rule = parent.line_spacing_rule;
+            }
+            if style.indent_left == 0 {
+                style.indent_left = parent.indent_left;
+            }
+            if style.indent_right == 0 {
+                style.indent_right = parent.indent_right;
+            }
+            if style.first_line_indent == 0 {
+                style.first_line_indent = parent.first_line_indent;
+            }
+            if style.shading.is_empty() {
+                style.shading = parent.shading;
+            }
+            base = bases.get(base as usize).copied().unwrap_or(0x0fff);
+            depth += 1;
+        }
+    }
+    styles
+}
+
+fn parse_word_binary_style_group(
+    group: &[u8],
+    mut props: WordBinaryParaProps,
+) -> WordBinaryParaProps {
+    let mut pos = 0usize;
+    while pos + 2 <= group.len() {
+        let sprm = u16::from_le_bytes([group[pos], group[pos + 1]]);
+        let operand = pos + 2;
+        let Some(len) = word_binary_sprm_operand_len(sprm, group, operand) else {
+            break;
+        };
+        let Some(value) = group.get(operand..operand.saturating_add(len)) else {
+            break;
+        };
+        match sprm {
+            0x2405 => props.keep_lines = value[0] != 0,
+            0x2406 => props.keep_next = value[0] != 0,
+            0x2407 => props.page_break_before = value[0] != 0,
+            0x2441 => props.bidi = value[0] != 0,
+            0x2403 => {
+                props.alignment = if value[0] == 0 {
+                    ""
+                } else {
+                    word_binary_physical_alignment(value[0])
+                }
+            }
+            0x2461 => {
+                props.alignment = if value[0] == 0 {
+                    ""
+                } else {
+                    word_binary_logical_alignment(value[0])
+                }
+            }
+            0xA413 => {
+                props.spacing_before = u16::from_le_bytes(value[..2].try_into().unwrap_or([0, 0]))
+            }
+            0xA414 => {
+                props.spacing_after = u16::from_le_bytes(value[..2].try_into().unwrap_or([0, 0]))
+            }
+            0x6412 => {
+                if let Some((line, rule)) = parse_word_binary_line_spacing(value) {
+                    props.line_spacing = line;
+                    props.line_spacing_rule = rule;
+                }
+            }
+            0x845D => {
+                props.indent_right = i16::from_le_bytes(value[..2].try_into().unwrap_or([0, 0]))
+            }
+            0x845E => {
+                props.indent_left = i16::from_le_bytes(value[..2].try_into().unwrap_or([0, 0]))
+            }
+            0x465F => {
+                props.indent_left = props
+                    .indent_left
+                    .saturating_add(i16::from_le_bytes(value[..2].try_into().unwrap_or([0, 0])))
+            }
+            0x8460 => {
+                props.first_line_indent =
+                    i16::from_le_bytes(value[..2].try_into().unwrap_or([0, 0]))
+            }
+            0x442D => {
+                if let Some(color) = parse_word_binary_shading80(value) {
+                    props.shading = color;
+                }
+            }
+            0xC64D => {
+                if let Some(color) = parse_word_binary_shading_operand(value) {
+                    props.shading = color;
+                }
+            }
+            0x2640 => {
+                let level = value[0];
+                if level < 9 {
+                    props.heading_level = usize::from(level) + 1;
+                }
+            }
+            _ => {}
+        }
+        pos = operand.saturating_add(len);
+    }
+    props
+}
+
+fn word_binary_heading_level_from_name(name: &str) -> usize {
+    let lower = name.trim().to_ascii_lowercase();
+    let digits = lower
+        .strip_prefix("heading ")
+        .or_else(|| lower.strip_prefix("title "))
+        .and_then(|value| value.parse::<usize>().ok());
+    digits.filter(|level| (1..=9).contains(level)).unwrap_or(0)
+}
+
+fn word_binary_physical_alignment(value: u8) -> &'static str {
+    match value {
+        0 => "left",
+        1 => "center",
+        2 => "right",
+        3..=5 => "both",
+        _ => "",
+    }
+}
+
+fn word_binary_logical_alignment(value: u8) -> &'static str {
+    match value {
+        0 => "left",
+        1 => "center",
+        2 => "right",
+        3..=5 | 7..=9 => "both",
+        _ => "",
+    }
+}
+
+fn parse_word_binary_line_spacing(value: &[u8]) -> Option<(u16, &'static str)> {
+    let line = u16::from_le_bytes(value.get(..2)?.try_into().ok()?);
+    let multiple = u16::from_le_bytes(value.get(2..4)?.try_into().ok()?);
+    if multiple > 1 {
+        return None;
+    }
+    if line >= 0x8440 {
+        return Some((u16::MAX - line + 1, "exact"));
+    }
+    if line == 0 || line > 0x7BC0 {
+        return None;
+    }
+    Some((line, if multiple == 0 { "atLeast" } else { "auto" }))
+}
+
+fn parse_word_binary_shading80(value: &[u8]) -> Option<String> {
+    let raw = u16::from_le_bytes(value.get(..2)?.try_into().ok()?);
+    if raw == u16::MAX {
+        return None;
+    }
+    let foreground = word_binary_palette_color((raw & 0x1F) as u8);
+    let background = word_binary_palette_color(((raw >> 5) & 0x1F) as u8);
+    let pattern = (raw >> 10) & 0x3F;
+    let color = match pattern {
+        0 => background,
+        1 => foreground,
+        _ if foreground.is_some() && foreground == background => foreground,
+        _ => None,
+    }?;
+    Some(word_binary_rgb_hex(color))
+}
+
+fn parse_word_binary_shading_operand(value: &[u8]) -> Option<String> {
+    if value.len() != 11 || value.first().copied() != Some(10) {
+        return None;
+    }
+    let foreground = if value[4] == 0 {
+        Some([value[1], value[2], value[3]])
+    } else {
+        None
+    };
+    let background = if value[8] == 0 {
+        Some([value[5], value[6], value[7]])
+    } else {
+        None
+    };
+    let pattern = u16::from_le_bytes([value[9], value[10]]);
+    let color = match pattern {
+        0 => background,
+        1 => foreground,
+        _ if foreground.is_some() && foreground == background => foreground,
+        _ => None,
+    }?;
+    Some(word_binary_rgb_hex(color))
+}
+
 fn parse_word_binary_table_def(operand: &[u8]) -> Option<WordBinaryTableDef> {
-    let declared = usize::from(u16::from_le_bytes([
-        *operand.first()?,
-        *operand.get(1)?,
-    ]));
+    let declared = usize::from(u16::from_le_bytes([*operand.first()?, *operand.get(1)?]));
     if declared == 0 || operand.len() != declared.saturating_add(1) {
         return None;
     }
@@ -3170,19 +5552,37 @@ fn parse_word_binary_table_def(operand: &[u8]) -> Option<WordBinaryTableDef> {
     if rgdxa.windows(2).any(|pair| pair[0] > pair[1]) {
         return None;
     }
-    let mut tcgrf = Vec::with_capacity(cell_count);
+    let mut cells = Vec::with_capacity(cell_count);
     for index in 0..cell_count {
         let offset = cells_start + index * 20;
-        tcgrf.push(u16::from_le_bytes([
-            *operand.get(offset)?,
-            *operand.get(offset + 1)?,
-        ]));
+        let flags = u16::from_le_bytes([*operand.get(offset)?, *operand.get(offset + 1)?]);
+        let width = u16::from_le_bytes([*operand.get(offset + 2)?, *operand.get(offset + 3)?]);
+        let mut borders = [None; 4];
+        for (border_index, border) in borders.iter_mut().enumerate() {
+            let border_offset = offset + 4 + border_index * 4;
+            *border =
+                parse_word_binary_page_border(operand.get(border_offset..border_offset + 4)?, 8);
+        }
+        cells.push(WordBinaryTableCellDef {
+            flags,
+            width,
+            borders,
+            margins: [None; 4],
+        });
     }
-    Some(WordBinaryTableDef { rgdxa, tcgrf })
+    Some(WordBinaryTableDef { rgdxa, cells })
 }
 
 fn word_binary_u32(data: &[u8], offset: usize) -> Option<u32> {
-    Some(u32::from_le_bytes(data.get(offset..offset + 4)?.try_into().ok()?))
+    Some(u32::from_le_bytes(
+        data.get(offset..offset + 4)?.try_into().ok()?,
+    ))
+}
+
+fn word_binary_u16(data: &[u8], offset: usize) -> Option<u16> {
+    Some(u16::from_le_bytes(
+        data.get(offset..offset + 2)?.try_into().ok()?,
+    ))
 }
 
 fn word_binary_sprm_operand_len(sprm: u16, data: &[u8], offset: usize) -> Option<usize> {
@@ -3203,7 +5603,11 @@ fn word_binary_sprm_operand_len(sprm: u16, data: &[u8], offset: usize) -> Option
 }
 
 fn word_binary_chpx_at(entries: &[WordBinaryChpxEntry], fc: u32) -> WordBinaryCharProps {
-    entries.iter().rev().find(|entry| entry.fc_start <= fc && fc < entry.fc_lim).map_or_else(WordBinaryCharProps::default, |entry| entry.props)
+    entries
+        .iter()
+        .rev()
+        .find(|entry| entry.fc_start <= fc && fc < entry.fc_lim)
+        .map_or_else(WordBinaryCharProps::default, |entry| entry.props)
 }
 
 fn word_binary_papx_at(entries: &[WordBinaryPapxEntry], fc: u32) -> WordBinaryParaProps {
@@ -3219,31 +5623,124 @@ fn word_binary_rgb_hex(rgb: [u8; 3]) -> String {
 
 fn word_binary_palette_color(index: u8) -> Option<[u8; 3]> {
     match index {
-        2 => Some([0, 0, 255]), 3 => Some([0, 255, 255]), 4 => Some([0, 255, 0]), 5 => Some([255, 0, 255]), 6 => Some([255, 0, 0]),
-        7 => Some([255, 255, 0]), 8 => Some([255, 255, 255]), 9 => Some([0, 0, 128]), 10 => Some([0, 128, 128]), 11 => Some([0, 128, 0]),
-        12 => Some([128, 0, 128]), 13 => Some([128, 0, 0]), 14 => Some([128, 128, 0]), 15 => Some([128, 128, 128]), 16 => Some([192, 192, 192]),
+        1 => Some([0, 0, 0]),
+        2 => Some([0, 0, 255]),
+        3 => Some([0, 255, 255]),
+        4 => Some([0, 255, 0]),
+        5 => Some([255, 0, 255]),
+        6 => Some([255, 0, 0]),
+        7 => Some([255, 255, 0]),
+        8 => Some([255, 255, 255]),
+        9 => Some([0, 0, 128]),
+        10 => Some([0, 128, 128]),
+        11 => Some([0, 128, 0]),
+        12 => Some([128, 0, 128]),
+        13 => Some([128, 0, 0]),
+        14 => Some([128, 128, 0]),
+        15 => Some([128, 128, 128]),
+        16 => Some([192, 192, 192]),
         _ => None,
     }
 }
 
+fn word_binary_underline_style(kind: u8) -> &'static str {
+    match kind {
+        1 => "single",
+        2 => "words",
+        3 => "double",
+        4 => "dotted",
+        5 => "thick",
+        6 => "dash",
+        7 => "dotDash",
+        8 => "dotDotDash",
+        9 => "wave",
+        10 => "dottedHeavy",
+        11 => "dashHeavy",
+        12 => "dashLongHeavy",
+        13 => "dotDashHeavy",
+        14 => "dotDotDashHeavy",
+        15 => "waveHeavy",
+        16 => "wavyDouble",
+        _ => "",
+    }
+}
+
 fn extract_word_binary_image(data: &[u8], start: usize) -> Option<DocxImage> {
-    let end = data.len().min(start.saturating_add(16 << 20));
-    let bytes = data.get(start..end)?;
-    let jpeg = bytes.windows(3).position(|window| window == [0xff, 0xd8, 0xff]).map(|offset| {
-        let from = &bytes[offset..];
-        let end = from.windows(2).position(|window| window == [0xff, 0xd9]).map(|value| value + 2).unwrap_or(from.len());
-        ("jpeg", "image/jpeg", from[..end].to_vec())
-    });
-    let png = bytes.windows(8).position(|window| window == [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a]).and_then(|offset| {
-        let from = &bytes[offset..];
-        let end = from.windows(8).position(|window| window == [0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]).map(|value| value + 8)?;
-        Some(("png", "image/png", from[..end].to_vec()))
-    });
-    let (extension, content_type, image) = jpeg.or(png)?;
+    let limit = data.len().min(start.saturating_add(16 << 20));
+    let (region_start, region_end) = match (
+        data.get(start..start.saturating_add(8)),
+        data.get(start..start.saturating_add(8))
+            .and_then(|header| header[..4].try_into().ok())
+            .map(u32::from_le_bytes),
+    ) {
+        (Some(header), Some(lcb)) => {
+            let cb_header = usize::from(u16::from_le_bytes([header[4], header[5]]));
+            let payload_start = start.saturating_add(cb_header);
+            let payload_end = start.saturating_add(usize::try_from(lcb).ok()?).min(limit);
+            if cb_header >= 8 && payload_start <= payload_end {
+                (payload_start, payload_end)
+            } else {
+                (start, limit)
+            }
+        }
+        _ => (start, limit),
+    };
+    let bytes = data.get(region_start..region_end)?;
+    let (offset, extension, content_type) = find_word_binary_raster(bytes)?;
+    let from = &bytes[offset..];
+    let image_end = match extension {
+        "png" => from
+            .windows(8)
+            .position(|window| window == [0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82])
+            .map(|value| value + 8)
+            .unwrap_or(from.len()),
+        "jpeg" => from
+            .windows(2)
+            .position(|window| window == [0xff, 0xd9])
+            .map(|value| value + 2)
+            .unwrap_or(from.len()),
+        "gif" => from
+            .iter()
+            .position(|byte| *byte == 0x3b)
+            .map(|value| value + 1)
+            .unwrap_or(from.len()),
+        "webp" => from
+            .get(4..8)
+            .and_then(|bytes| bytes.try_into().ok())
+            .map(u32::from_le_bytes)
+            .and_then(|size| usize::try_from(size).ok())
+            .map(|size| size.saturating_add(8).min(from.len()))
+            .unwrap_or(from.len()),
+        "emf" => from
+            .get(48..52)
+            .and_then(|bytes| bytes.try_into().ok())
+            .map(u32::from_le_bytes)
+            .and_then(|size| usize::try_from(size).ok())
+            .filter(|size| *size >= 88)
+            .map(|size| size.min(from.len()))
+            .unwrap_or(from.len()),
+        "wmf" => word_binary_wmf_size(from)
+            .unwrap_or(from.len())
+            .min(from.len()),
+        _ => from.len(),
+    };
+    let image = from[..image_end].to_vec();
     let (width, height) = if extension == "png" && image.len() >= 24 {
-        (u32::from_be_bytes(image[16..20].try_into().ok()?), u32::from_be_bytes(image[20..24].try_into().ok()?))
+        (
+            u32::from_be_bytes(image[16..20].try_into().ok()?),
+            u32::from_be_bytes(image[20..24].try_into().ok()?),
+        )
     } else if extension == "jpeg" {
         word_binary_jpeg_dimensions(&image).unwrap_or((800, 600))
+    } else if extension == "gif" && image.len() >= 10 {
+        (
+            u32::from(u16::from_le_bytes([image[6], image[7]])),
+            u32::from(u16::from_le_bytes([image[8], image[9]])),
+        )
+    } else if extension == "emf" {
+        word_binary_emf_dimensions(&image).unwrap_or((800, 600))
+    } else if extension == "wmf" {
+        word_binary_wmf_dimensions(&image).unwrap_or((800, 600))
     } else {
         (800, 600)
     };
@@ -3253,13 +5750,119 @@ fn extract_word_binary_image(data: &[u8], start: usize) -> Option<DocxImage> {
         content_type,
         width_emu: u64::from(width).saturating_mul(9525),
         height_emu: u64::from(height).saturating_mul(9525),
+        ..Default::default()
     })
+}
+
+fn find_word_binary_raster(bytes: &[u8]) -> Option<(usize, &'static str, &'static str)> {
+    if let Some(offset) = bytes
+        .windows(4)
+        .enumerate()
+        .find_map(|(signature, window)| {
+            if window != [0x20, b'E', b'M', b'F'] || signature < 40 {
+                return None;
+            }
+            let start = signature - 40;
+            let header = bytes.get(start..start.saturating_add(52))?;
+            if header.get(..4) != Some(&[1, 0, 0, 0]) {
+                return None;
+            }
+            let size = u32::from_le_bytes(header[48..52].try_into().ok()?) as usize;
+            (size >= 88 && start.saturating_add(size) <= bytes.len()).then_some(start)
+        })
+    {
+        return Some((offset, "emf", "image/x-emf"));
+    }
+    if let Some(offset) = bytes
+        .windows(4)
+        .position(|window| window == [0xd7, 0xcd, 0xc6, 0x9a])
+    {
+        if word_binary_wmf_size(&bytes[offset..]).is_some() {
+            return Some((offset, "wmf", "image/x-wmf"));
+        }
+    }
+    if let Some(offset) = bytes.windows(10).enumerate().find_map(|(offset, header)| {
+        if !matches!(header.get(..2), Some([1, 0] | [2, 0]))
+            || u16::from_le_bytes(header[2..4].try_into().ok()?) != 9
+        {
+            return None;
+        }
+        word_binary_wmf_size(&bytes[offset..]).map(|_| offset)
+    }) {
+        return Some((offset, "wmf", "image/x-wmf"));
+    }
+    let png = [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a];
+    if let Some(offset) = bytes.windows(png.len()).position(|window| window == png) {
+        return Some((offset, "png", "image/png"));
+    }
+    if let Some(offset) = bytes.windows(4).position(|window| window == b"GIF8") {
+        return Some((offset, "gif", "image/gif"));
+    }
+    if let Some(offset) = bytes
+        .windows(4)
+        .position(|window| window == b"RIFF")
+        .filter(|offset| bytes.get(offset + 8..offset + 12) == Some(b"WEBP"))
+    {
+        return Some((offset, "webp", "image/webp"));
+    }
+    let offset = bytes.windows(4).position(|window| {
+        window[0] == 0xff && window[1] == 0xd8 && window[2] == 0xff && window[3] >= 0xc0
+    })?;
+    Some((offset, "jpeg", "image/jpeg"))
+}
+
+fn word_binary_wmf_size(data: &[u8]) -> Option<usize> {
+    let file_size_words = if data.get(..4) == Some(&[0xd7, 0xcd, 0xc6, 0x9a]) {
+        u32::from_le_bytes(data.get(28..32)?.try_into().ok()?)
+    } else {
+        if !matches!(data.get(..2), Some([1, 0] | [2, 0]))
+            || u16::from_le_bytes(data.get(2..4)?.try_into().ok()?) != 9
+        {
+            return None;
+        }
+        u32::from_le_bytes(data.get(6..10)?.try_into().ok()?)
+    };
+    let size = usize::try_from(file_size_words).ok()?.checked_mul(2)?;
+    (size >= 18 && size <= data.len()).then_some(size)
+}
+
+fn word_binary_emf_dimensions(data: &[u8]) -> Option<(u32, u32)> {
+    let left = i32::from_le_bytes(data.get(24..28)?.try_into().ok()?);
+    let top = i32::from_le_bytes(data.get(28..32)?.try_into().ok()?);
+    let right = i32::from_le_bytes(data.get(32..36)?.try_into().ok()?);
+    let bottom = i32::from_le_bytes(data.get(36..40)?.try_into().ok()?);
+    let width = u32::try_from(right.saturating_sub(left)).ok()?.max(1);
+    let height = u32::try_from(bottom.saturating_sub(top)).ok()?.max(1);
+    Some((width.saturating_mul(360), height.saturating_mul(360)))
+}
+
+fn word_binary_wmf_dimensions(data: &[u8]) -> Option<(u32, u32)> {
+    if data.get(..4) != Some(&[0xd7, 0xcd, 0xc6, 0x9a]) {
+        return None;
+    }
+    let left = i16::from_le_bytes(data.get(6..8)?.try_into().ok()?);
+    let top = i16::from_le_bytes(data.get(8..10)?.try_into().ok()?);
+    let right = i16::from_le_bytes(data.get(10..12)?.try_into().ok()?);
+    let bottom = i16::from_le_bytes(data.get(12..14)?.try_into().ok()?);
+    let inch = u16::from_le_bytes(data.get(14..16)?.try_into().ok()?);
+    if inch == 0 {
+        return None;
+    }
+    let width = u32::try_from(i32::from(right).saturating_sub(i32::from(left))).ok()?;
+    let height = u32::try_from(i32::from(bottom).saturating_sub(i32::from(top))).ok()?;
+    Some((
+        width.saturating_mul(914_400) / u32::from(inch),
+        height.saturating_mul(914_400) / u32::from(inch),
+    ))
 }
 
 fn word_binary_jpeg_dimensions(data: &[u8]) -> Option<(u32, u32)> {
     let mut offset = 2;
     while offset + 9 < data.len() {
-        if data[offset] != 0xff { offset += 1; continue; }
+        if data[offset] != 0xff {
+            offset += 1;
+            continue;
+        }
         let marker = data[offset + 1];
         let length = u16::from_be_bytes(data[offset + 2..offset + 4].try_into().ok()?) as usize;
         if (0xc0..=0xc3).contains(&marker) && length >= 7 {
@@ -3725,6 +6328,7 @@ fn parse_odf_slides(content: &str) -> Result<Vec<OdfSlide>, ConvertError> {
                         paragraphs: Vec::new(),
                         legacy_binary: false,
                         image: None,
+                        overlay_images: Vec::new(),
                     })
                 }
                 b"p" | b"h" if slide.is_some() => in_paragraph = true,
@@ -4250,7 +6854,13 @@ fn write_pptx(output: &str, slides: &[OdfSlide]) -> Result<(), ConvertError> {
             format!("ppt/slides/slide{}.xml", index + 1),
             pptx_slide(slide),
         ));
-        if let Some(image) = &slide.image {
+        let images = pptx_image_layers(slide);
+        if pptx_uses_layered_images(slide, &images) {
+            files.push((
+                format!("ppt/slides/_rels/slide{}.xml.rels", index + 1),
+                pptx_image_relationships(index + 1, &images),
+            ));
+        } else if let Some(image) = images.first() {
             files.push((
                 format!("ppt/slides/_rels/slide{}.xml.rels", index + 1),
                 pptx_image_relationship(index + 1, image.extension),
@@ -4266,16 +6876,26 @@ fn write_pptx(output: &str, slides: &[OdfSlide]) -> Result<(), ConvertError> {
             .map_err(|error| io_error(format!("write output entry {name}: {error}")))?;
     }
     for (index, slide) in slides.iter().enumerate() {
-        let Some(image) = &slide.image else {
-            continue;
-        };
-        let name = format!("ppt/media/image{}.{}", index + 1, image.extension);
-        writer
-            .start_file(&name, options)
-            .map_err(|error| io_error(format!("create output entry {name}: {error}")))?;
-        writer
-            .write_all(&image.data)
-            .map_err(|error| io_error(format!("write output entry {name}: {error}")))?;
+        let images = pptx_image_layers(slide);
+        let layered = pptx_uses_layered_images(slide, &images);
+        for (layer, image) in images.iter().enumerate() {
+            let name = if layered {
+                format!(
+                    "ppt/media/image{}-{}.{}",
+                    index + 1,
+                    layer + 1,
+                    image.extension
+                )
+            } else {
+                format!("ppt/media/image{}.{}", index + 1, image.extension)
+            };
+            writer
+                .start_file(&name, options)
+                .map_err(|error| io_error(format!("create output entry {name}: {error}")))?;
+            writer
+                .write_all(&image.data)
+                .map_err(|error| io_error(format!("write output entry {name}: {error}")))?;
+        }
     }
     writer
         .finish()
@@ -4290,7 +6910,7 @@ fn pptx_content_types(slides: &[OdfSlide]) -> String {
     }
     let mut image_defaults = String::new();
     let mut extensions = HashSet::new();
-    for image in slides.iter().filter_map(|slide| slide.image.as_ref()) {
+    for image in slides.iter().flat_map(pptx_image_layers) {
         if extensions.insert(image.extension) {
             image_defaults.push_str(&format!(
                 "  <Default Extension=\"{}\" ContentType=\"{}\"/>\n",
@@ -4314,6 +6934,187 @@ fn pptx_image_relationship(slide_index: usize, extension: &str) -> String {
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rIdImage" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image{slide_index}.{extension}"/>
 </Relationships>"#
+    )
+}
+
+fn pptx_image_relationships(slide_index: usize, images: &[&PptSlideImage]) -> String {
+    let relationships = images
+        .iter()
+        .enumerate()
+        .map(|(index, image)| {
+            format!(
+                "  <Relationship Id=\"rIdImage{}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"../media/image{}-{}.{}\"/>\n",
+                index + 1,
+                slide_index,
+                index + 1,
+                image.extension
+            )
+        })
+        .collect::<String>();
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+{relationships}</Relationships>"#
+    )
+}
+
+fn pptx_image_layers(slide: &OdfSlide) -> Vec<&PptSlideImage> {
+    let mut images = Vec::new();
+    if let Some(image) = slide.image.as_ref() {
+        images.push(image);
+    }
+    images.extend(slide.overlay_images.iter());
+    images
+}
+
+fn pptx_uses_layered_images(slide: &OdfSlide, images: &[&PptSlideImage]) -> bool {
+    images.len() > 1
+        || (images.len() == 1
+            && slide.image.as_ref().is_some_and(|image| {
+                image_dimensions(image)
+                    .is_some_and(|(width, height)| width > height.saturating_mul(4))
+            }))
+}
+
+fn image_dimensions(image: &PptSlideImage) -> Option<(u32, u32)> {
+    if image.extension == "png" {
+        return image.data.get(16..24).map(|value| {
+            (
+                u32::from_be_bytes(value[..4].try_into().unwrap()),
+                u32::from_be_bytes(value[4..].try_into().unwrap()),
+            )
+        });
+    }
+    if image.extension != "jpeg" {
+        return None;
+    }
+    let data = &image.data;
+    let mut offset = 2usize;
+    while offset + 9 <= data.len() {
+        if data[offset] != 0xff {
+            offset += 1;
+            continue;
+        }
+        while offset < data.len() && data[offset] == 0xff {
+            offset += 1;
+        }
+        let marker = *data.get(offset)?;
+        offset += 1;
+        if matches!(marker, 0xd8 | 0xd9) {
+            continue;
+        }
+        let length = u16::from_be_bytes(data.get(offset..offset + 2)?.try_into().ok()?) as usize;
+        if length < 2 || offset + length > data.len() {
+            return None;
+        }
+        if matches!(marker, 0xc0..=0xc3 | 0xc5..=0xc7 | 0xc9..=0xcb | 0xcd..=0xcf) {
+            let height = u16::from_be_bytes(data.get(offset + 3..offset + 5)?.try_into().ok()?);
+            let width = u16::from_be_bytes(data.get(offset + 5..offset + 7)?.try_into().ok()?);
+            return Some((u32::from(width), u32::from(height)));
+        }
+        offset += length;
+    }
+    None
+}
+
+fn pptx_layered_image_slide(slide: &OdfSlide, images: &[&PptSlideImage]) -> String {
+    const SLIDE_WIDTH: u64 = 9_144_000;
+    const SLIDE_HEIGHT: u64 = 5_143_500;
+    let has_background = slide.image.as_ref().is_some_and(|image| {
+        image.anchor.is_some_and(|anchor| {
+            anchor.left == 0 && anchor.top == 0 && anchor.right >= 7_600 && anchor.bottom >= 4_275
+        }) || image_dimensions(image)
+            .is_some_and(|(width, height)| width <= height.saturating_mul(4))
+    });
+    let mut pictures = String::new();
+    for (index, image) in images.iter().enumerate() {
+        let (x, mut y, width, height) = if let Some(anchor) = image.anchor {
+            let box_x = u64::from(anchor.left) * SLIDE_WIDTH / 7_680;
+            let box_y = u64::from(anchor.top) * SLIDE_HEIGHT / 4_320;
+            let box_width =
+                (u64::from(anchor.right.saturating_sub(anchor.left)) * SLIDE_WIDTH / 7_680).max(1);
+            let box_height =
+                (u64::from(anchor.bottom.saturating_sub(anchor.top)) * SLIDE_HEIGHT / 4_320).max(1);
+            if has_background && index == 0 {
+                (box_x, box_y, box_width, box_height)
+            } else {
+                let (source_width, source_height) = image_dimensions(image).unwrap_or((16, 9));
+                let width_for_height =
+                    box_height * u64::from(source_width) / u64::from(source_height);
+                if width_for_height <= box_width {
+                    (
+                        box_x + (box_width - width_for_height) / 2,
+                        box_y,
+                        width_for_height.max(1),
+                        box_height,
+                    )
+                } else {
+                    let height_for_width =
+                        box_width * u64::from(source_height) / u64::from(source_width);
+                    (
+                        box_x,
+                        box_y + (box_height - height_for_width) / 2,
+                        box_width,
+                        height_for_width.max(1),
+                    )
+                }
+            }
+        } else if has_background && index == 0 {
+            (0, 0, SLIDE_WIDTH, SLIDE_HEIGHT)
+        } else {
+            let overlay_index = if has_background { index - 1 } else { index };
+            let (source_width, source_height) = image_dimensions(image).unwrap_or((16, 9));
+            let width = 7_315_200u64;
+            let height = (width * u64::from(source_height) / u64::from(source_width)).max(1);
+            let y = if overlay_index == 0 {
+                if source_width > source_height.saturating_mul(5) {
+                    685_800
+                } else {
+                    1_600_200
+                }
+            } else if source_width > source_height.saturating_mul(5) {
+                2_743_200
+            } else {
+                1_714_500
+            };
+            ((SLIDE_WIDTH - width) / 2, y, width, height)
+        };
+        if has_background && index > 1 {
+            if let Some((source_width, source_height)) = image_dimensions(image) {
+                if source_width > source_height.saturating_mul(5) {
+                    y = y.max(2_743_200);
+                }
+            }
+        }
+        pictures.push_str(&format!(
+            r#"      <p:pic>
+        <p:nvPicPr><p:cNvPr id="{}" name="Image {}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>
+        <p:blipFill><a:blip r:embed="rIdImage{}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>
+        <p:spPr><a:xfrm><a:off x="{}" y="{}"/><a:ext cx="{}" cy="{}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr>
+      </p:pic>
+"#,
+            index + 2,
+            index + 1,
+            index + 1,
+            x,
+            y,
+            width,
+            height
+        ));
+    }
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld name="{}">
+    <p:bg><p:bgPr><a:solidFill><a:srgbClr val="000000"/></a:solidFill></p:bgPr></p:bg>
+    <p:spTree>
+      <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+      <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
+{pictures}    </p:spTree>
+  </p:cSld>
+</p:sld>"#,
+        escape(&slide.name),
+        pictures = pictures
     )
 }
 
@@ -4358,6 +7159,10 @@ fn pptx_presentation_relationships(slide_count: usize) -> String {
 
 fn pptx_slide(slide: &OdfSlide) -> String {
     if slide.image.is_some() {
+        let layers = pptx_image_layers(slide);
+        if pptx_uses_layered_images(slide, &layers) {
+            return pptx_layered_image_slide(slide, &layers);
+        }
         return pptx_image_slide(slide);
     }
     if slide.legacy_binary {
@@ -6265,6 +9070,38 @@ fn html_attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
 }
 
 fn write_docx(output: &str, paragraphs: &[DocxParagraph]) -> Result<(), ConvertError> {
+    write_docx_with_section(output, paragraphs, DocxSection::default())
+}
+
+fn write_docx_with_section(
+    output: &str,
+    paragraphs: &[DocxParagraph],
+    section: DocxSection,
+) -> Result<(), ConvertError> {
+    write_docx_with_sections(
+        output,
+        paragraphs,
+        &[WordBinarySection {
+            cp_end: i32::MAX,
+            properties: section,
+        }],
+    )
+}
+
+fn write_docx_with_sections(
+    output: &str,
+    paragraphs: &[DocxParagraph],
+    sections: &[WordBinarySection],
+) -> Result<(), ConvertError> {
+    write_docx_with_sections_and_headers(output, paragraphs, sections, &[])
+}
+
+fn write_docx_with_sections_and_headers(
+    output: &str,
+    paragraphs: &[DocxParagraph],
+    sections: &[WordBinarySection],
+    headers: &[WordBinaryHeaderFooter],
+) -> Result<(), ConvertError> {
     if let Some(parent) = Path::new(output).parent() {
         fs::create_dir_all(parent)
             .map_err(|error| io_error(format!("create output directory: {error}")))?;
@@ -6282,18 +9119,39 @@ fn write_docx(output: &str, paragraphs: &[DocxParagraph]) -> Result<(), ConvertE
         .filter_map(|run| run.image.as_ref())
         .cloned()
         .collect::<Vec<_>>();
+    let body_image_count = images.len();
+    let mut images = images;
+    for record in headers {
+        images.extend(
+            record
+                .paragraphs
+                .iter()
+                .flat_map(|paragraph| paragraph.runs.iter())
+                .filter_map(|run| run.image.as_ref())
+                .cloned(),
+        );
+    }
     let mut files = vec![
-        ("[Content_Types].xml", docx_content_types(has_numbering, &images)),
+        (
+            "[Content_Types].xml",
+            docx_content_types(has_numbering, &images, headers),
+        ),
         ("_rels/.rels", docx_root_relationships()),
         (
             "word/_rels/document.xml.rels",
-            docx_document_relationships(has_numbering, &images),
+            docx_document_relationships(has_numbering, &images, headers),
         ),
         ("word/styles.xml", docx_styles()),
-        ("word/document.xml", docx_document(paragraphs)),
+        (
+            "word/document.xml",
+            docx_document_with_sections_and_headers(paragraphs, sections, headers),
+        ),
     ];
     if has_numbering {
-        files.push(("word/numbering.xml", docx_numbering()));
+        files.push(("word/numbering.xml", docx_numbering(paragraphs)));
+    }
+    if docx_uses_even_headers(headers) {
+        files.push(("word/settings.xml", docx_settings()));
     }
     for (name, content) in files {
         writer
@@ -6312,13 +9170,54 @@ fn write_docx(output: &str, paragraphs: &[DocxParagraph]) -> Result<(), ConvertE
             .write_all(&image.data)
             .map_err(|error| io_error(format!("write output entry {name}: {error}")))?;
     }
+    let mut header_image_start = body_image_count;
+    for (index, record) in headers.iter().enumerate() {
+        let part = format!(
+            "word/{}{}.xml",
+            if record.kind.ends_with("Header") {
+                "header"
+            } else {
+                "footer"
+            },
+            index + 1
+        );
+        writer
+            .start_file(&part, options)
+            .map_err(|error| io_error(format!("create output entry {part}: {error}")))?;
+        writer
+            .write_all(docx_header_footer_xml(record).as_bytes())
+            .map_err(|error| io_error(format!("write output entry {part}: {error}")))?;
+        let image_count = docx_header_footer_image_count(record);
+        if image_count > 0 {
+            let rels_part = format!(
+                "word/_rels/{}{}.xml.rels",
+                if record.kind.ends_with("Header") {
+                    "header"
+                } else {
+                    "footer"
+                },
+                index + 1
+            );
+            writer
+                .start_file(&rels_part, options)
+                .map_err(|error| io_error(format!("create output entry {rels_part}: {error}")))?;
+            writer
+                .write_all(docx_header_footer_relationships(record, header_image_start).as_bytes())
+                .map_err(|error| io_error(format!("write output entry {rels_part}: {error}")))?;
+            header_image_start = header_image_start.saturating_add(image_count);
+        }
+    }
     writer
         .finish()
         .map_err(|error| io_error(format!("close output archive: {error}")))?;
     Ok(())
 }
 
-fn docx_content_types(has_numbering: bool, images: &[DocxImage]) -> String {
+fn docx_content_types(
+    has_numbering: bool,
+    images: &[DocxImage],
+    headers: &[WordBinaryHeaderFooter],
+) -> String {
     let mut image_defaults = String::new();
     let mut seen = HashSet::new();
     for image in images {
@@ -6329,6 +9228,26 @@ fn docx_content_types(has_numbering: bool, images: &[DocxImage]) -> String {
             ));
         }
     }
+    let mut parts = String::new();
+    for (index, record) in headers.iter().enumerate() {
+        let (name, content_type) = if record.kind.ends_with("Header") {
+            (
+                "header",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml",
+            )
+        } else {
+            (
+                "footer",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml",
+            )
+        };
+        parts.push_str(&format!(
+            "  <Override PartName=\"/word/{}{}.xml\" ContentType=\"{}\"/>\n",
+            name,
+            index + 1,
+            content_type
+        ));
+    }
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -6337,9 +9256,14 @@ fn docx_content_types(has_numbering: bool, images: &[DocxImage]) -> String {
 {image_defaults}
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
-{}</Types>"#,
+{}{}{parts}</Types>"#,
         if has_numbering {
             "  <Override PartName=\"/word/numbering.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml\"/>\n"
+        } else {
+            ""
+        },
+        if docx_uses_even_headers(headers) {
+            "  <Override PartName=\"/word/settings.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml\"/>\n"
         } else {
             ""
         }
@@ -6353,7 +9277,11 @@ fn docx_root_relationships() -> String {
 </Relationships>"#.into()
 }
 
-fn docx_document_relationships(has_numbering: bool, images: &[DocxImage]) -> String {
+fn docx_document_relationships(
+    has_numbering: bool,
+    images: &[DocxImage],
+    headers: &[WordBinaryHeaderFooter],
+) -> String {
     let mut relationships = String::from(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -6365,6 +9293,11 @@ fn docx_document_relationships(has_numbering: bool, images: &[DocxImage]) -> Str
             "  <Relationship Id=\"rIdNumbering\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering\" Target=\"numbering.xml\"/>\n",
         );
     }
+    if docx_uses_even_headers(headers) {
+        relationships.push_str(
+            "  <Relationship Id=\"rIdSettings\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings\" Target=\"settings.xml\"/>\n",
+        );
+    }
     for (index, image) in images.iter().enumerate() {
         relationships.push_str(&format!(
             "  <Relationship Id=\"rIdImage{}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/image{}.{}\"/>\n",
@@ -6373,37 +9306,82 @@ fn docx_document_relationships(has_numbering: bool, images: &[DocxImage]) -> Str
             image.extension
         ));
     }
+    for (index, record) in headers.iter().enumerate() {
+        let (id_prefix, target_prefix) = if record.kind.ends_with("Header") {
+            ("Header", "header")
+        } else {
+            ("Footer", "footer")
+        };
+        relationships.push_str(&format!(
+            "  <Relationship Id=\"rId{}{}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/{}\" Target=\"{}{}.xml\"/>\n",
+            id_prefix,
+            index + 1,
+            target_prefix,
+            target_prefix,
+            index + 1
+        ));
+    }
     relationships.push_str("</Relationships>");
     relationships
 }
 
-fn docx_numbering() -> String {
+fn docx_uses_even_headers(headers: &[WordBinaryHeaderFooter]) -> bool {
+    headers
+        .iter()
+        .any(|record| matches!(record.kind, "evenHeader" | "evenFooter"))
+}
+
+fn docx_settings() -> String {
     r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:evenAndOddHeaders/>
+</w:settings>"#
+        .into()
+}
+
+fn docx_numbering(paragraphs: &[DocxParagraph]) -> String {
+    let mut body = String::from(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:abstractNum w:abstractNumId="1">
     <w:multiLevelType w:val="hybridMultilevel"/>
-    <w:lvl w:ilvl="0">
-      <w:start w:val="1"/>
-      <w:numFmt w:val="bullet"/>
-      <w:lvlText w:val="•"/>
-      <w:lvlJc w:val="left"/>
-      <w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr>
-    </w:lvl>
-  </w:abstractNum>
+"#,
+    );
+    for level in 0..=8 {
+        let left = 720 + level * 360;
+        body.push_str(&format!(
+            "    <w:lvl w:ilvl=\"{level}\"><w:start w:val=\"1\"/><w:numFmt w:val=\"bullet\"/><w:lvlText w:val=\"•\"/><w:lvlJc w:val=\"left\"/><w:pPr><w:ind w:left=\"{left}\" w:hanging=\"360\"/></w:pPr></w:lvl>\n"
+        ));
+    }
+    body.push_str(
+        r#"  </w:abstractNum>
   <w:abstractNum w:abstractNumId="2">
     <w:multiLevelType w:val="hybridMultilevel"/>
-    <w:lvl w:ilvl="0">
-      <w:start w:val="1"/>
-      <w:numFmt w:val="decimal"/>
-      <w:lvlText w:val="%1."/>
-      <w:lvlJc w:val="left"/>
-      <w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr>
-    </w:lvl>
-  </w:abstractNum>
-  <w:num w:numId="1"><w:abstractNumId w:val="1"/></w:num>
-  <w:num w:numId="2"><w:abstractNumId w:val="2"/></w:num>
-</w:numbering>"#
-        .into()
+"#,
+    );
+    for level in 0..=8 {
+        let left = 720 + level * 360;
+        let marker = format!("%{}.", level + 1);
+        body.push_str(&format!(
+            "    <w:lvl w:ilvl=\"{level}\"><w:start w:val=\"1\"/><w:numFmt w:val=\"decimal\"/><w:lvlText w:val=\"{marker}\"/><w:lvlJc w:val=\"left\"/><w:pPr><w:ind w:left=\"{left}\" w:hanging=\"360\"/></w:pPr></w:lvl>\n"
+        ));
+    }
+    body.push_str("  </w:abstractNum>\n  <w:num w:numId=\"1\"><w:abstractNumId w:val=\"1\"/></w:num>\n  <w:num w:numId=\"2\"><w:abstractNumId w:val=\"2\"/></w:num>\n");
+    let mut list_ids = paragraphs
+        .iter()
+        .filter(|paragraph| !paragraph.list_kind.is_empty() && paragraph.list_id > 0)
+        .map(|paragraph| paragraph.list_id)
+        .collect::<Vec<_>>();
+    list_ids.sort_unstable();
+    list_ids.dedup();
+    for list_id in list_ids {
+        body.push_str(&format!(
+            "  <w:num w:numId=\"{}\"><w:abstractNumId w:val=\"2\"/></w:num>\n",
+            list_id.saturating_add(10)
+        ));
+    }
+    body.push_str("</w:numbering>");
+    body
 }
 
 fn docx_styles() -> String {
@@ -6435,40 +9413,484 @@ fn docx_styles() -> String {
     styles
 }
 
-fn docx_document(paragraphs: &[DocxParagraph]) -> String {
+fn docx_border_xml(side: &str, border: DocxPageBorder) -> String {
+    let color = border
+        .color
+        .map(word_binary_rgb_hex)
+        .unwrap_or_else(|| "auto".into());
+    format!(
+        "<w:{side} w:val=\"{}\" w:sz=\"{}\" w:space=\"{}\" w:color=\"{}\"{}{}/>",
+        border.style,
+        border.size,
+        border.space,
+        color,
+        if border.shadow { " w:shadow=\"1\"" } else { "" },
+        if border.frame { " w:frame=\"1\"" } else { "" },
+    )
+}
+
+fn docx_table_borders_xml(
+    source_borders: Option<[Option<DocxPageBorder>; 6]>,
+    explicit_cell_borders: bool,
+) -> String {
+    if let Some(source_borders) = source_borders {
+        let mut xml = String::from("<w:tblBorders>");
+        for (side, border) in ["top", "left", "bottom", "right", "insideH", "insideV"]
+            .into_iter()
+            .zip(source_borders)
+        {
+            if let Some(border) = border {
+                xml.push_str(&docx_border_xml(side, border));
+            } else {
+                xml.push_str(&format!("<w:{side} w:val=\"nil\"/>"));
+            }
+        }
+        xml.push_str("</w:tblBorders>");
+        return xml;
+    }
+    let value = if explicit_cell_borders {
+        "nil"
+    } else {
+        "single"
+    };
+    let size = if explicit_cell_borders {
+        ""
+    } else {
+        " w:sz=\"4\""
+    };
+    format!(
+        "<w:tblBorders><w:top w:val=\"{value}\"{size}/><w:left w:val=\"{value}\"{size}/><w:bottom w:val=\"{value}\"{size}/><w:right w:val=\"{value}\"{size}/><w:insideH w:val=\"{value}\"{size}/><w:insideV w:val=\"{value}\"{size}/></w:tblBorders>"
+    )
+}
+
+fn docx_cell_borders_xml(paragraph: &DocxParagraph) -> String {
+    if !paragraph.table_cell_borders_explicit {
+        return String::new();
+    }
+    let mut xml = String::from("<w:tcBorders>");
+    for (side, border) in ["top", "left", "bottom", "right"]
+        .into_iter()
+        .zip(paragraph.table_cell_borders)
+    {
+        if let Some(border) = border {
+            xml.push_str(&docx_border_xml(side, border));
+        } else {
+            xml.push_str(&format!("<w:{side} w:val=\"nil\"/>"));
+        }
+    }
+    xml.push_str("</w:tcBorders>");
+    xml
+}
+
+fn docx_cell_margins_xml(paragraph: &DocxParagraph) -> String {
+    if paragraph.table_cell_margins.iter().all(Option::is_none) {
+        return String::new();
+    }
+    let mut xml = String::from("<w:tcMar>");
+    for (side, width) in ["top", "left", "bottom", "right"]
+        .into_iter()
+        .zip(paragraph.table_cell_margins)
+    {
+        if let Some(width) = width {
+            xml.push_str(&format!(
+                "<w:{side} w:w=\"{}\" w:type=\"dxa\"/>",
+                width.max(0)
+            ));
+        }
+    }
+    xml.push_str("</w:tcMar>");
+    xml
+}
+
+fn docx_table_row_properties_xml(paragraphs: &[DocxParagraph], start: usize) -> String {
+    let row = paragraphs
+        .iter()
+        .skip(start)
+        .take_while(|paragraph| paragraph.table_cell)
+        .take_while(|paragraph| !paragraph.table_row_end)
+        .chain(
+            paragraphs
+                .iter()
+                .skip(start)
+                .take_while(|paragraph| paragraph.table_cell)
+                .find(|paragraph| paragraph.table_row_end)
+                .into_iter(),
+        )
+        .find(|paragraph| {
+            paragraph.table_row_height != 0
+                || paragraph.table_row_cant_split
+                || paragraph.table_row_header
+        });
+    let Some(row) = row else {
+        return String::new();
+    };
+    let mut xml = String::from("<w:trPr>");
+    if row.table_row_cant_split {
+        xml.push_str("<w:cantSplit/>");
+    }
+    if row.table_row_height != 0 {
+        xml.push_str(&format!(
+            "<w:trHeight w:val=\"{}\" w:hRule=\"{}\"/>",
+            row.table_row_height.unsigned_abs(),
+            if row.table_row_height < 0 {
+                "exact"
+            } else {
+                "atLeast"
+            },
+        ));
+    }
+    if row.table_row_header {
+        xml.push_str("<w:tblHeader/>");
+    }
+    xml.push_str("</w:trPr>");
+    xml
+}
+
+fn docx_table_grid_xml(bounds: &[i16], fallback_width: i32, fallback_columns: usize) -> String {
+    let mut grid = String::from("<w:tblGrid>");
+    if bounds.len() >= 2 {
+        for pair in bounds.windows(2) {
+            let width = i32::from(pair[1]).saturating_sub(i32::from(pair[0])).max(1);
+            grid.push_str(&format!("<w:gridCol w:w=\"{width}\"/>"));
+        }
+    } else {
+        let columns = fallback_columns.max(1);
+        let base = fallback_width.max(columns as i32) / columns as i32;
+        let remainder = fallback_width.max(columns as i32) - base * columns as i32;
+        for index in 0..columns {
+            let width = base + if index < remainder as usize { 1 } else { 0 };
+            grid.push_str(&format!("<w:gridCol w:w=\"{}\"/>", width.max(1)));
+        }
+    }
+    grid.push_str("</w:tblGrid>");
+    grid
+}
+
+fn docx_table_default_width(section: DocxSection) -> i32 {
+    i32::try_from(section.page_width)
+        .unwrap_or(i32::MAX)
+        .saturating_sub(section.margin_left)
+        .saturating_sub(section.margin_right)
+        .saturating_sub(section.gutter)
+        .max(1)
+}
+
+fn docx_table_column_count(paragraphs: &[DocxParagraph], start: usize) -> usize {
+    let mut maximum = 0usize;
+    let mut current = 0usize;
+    for paragraph in paragraphs.iter().skip(start) {
+        if !paragraph.table_cell {
+            break;
+        }
+        if paragraph.table_cell_merged {
+            if paragraph.table_row_end {
+                maximum = maximum.max(current);
+                current = 0;
+            }
+            continue;
+        }
+        current = current.saturating_add(paragraph.table_grid_span.max(1));
+        if paragraph.table_row_end {
+            maximum = maximum.max(current);
+            current = 0;
+        }
+    }
+    maximum.max(current).max(1)
+}
+
+fn docx_table_bounds(paragraphs: &[DocxParagraph], start: usize) -> Vec<i16> {
+    let mut bounds = paragraphs
+        .iter()
+        .skip(start)
+        .take_while(|paragraph| paragraph.table_cell)
+        .filter(|paragraph| !paragraph.table_cell_merged)
+        .flat_map(|paragraph| paragraph.table_grid_bounds.iter().copied())
+        .collect::<Vec<_>>();
+    bounds.sort_unstable();
+    bounds.dedup();
+    bounds
+}
+
+#[cfg(test)]
+fn docx_document(paragraphs: &[DocxParagraph], section: DocxSection) -> String {
+    docx_document_with_sections(
+        paragraphs,
+        &[WordBinarySection {
+            cp_end: i32::MAX,
+            properties: section,
+        }],
+    )
+}
+
+fn append_docx_section_breaks(
+    body: &mut String,
+    cp: i32,
+    sections: &[WordBinarySection],
+    next_section: &mut usize,
+    headers: &[WordBinaryHeaderFooter],
+) {
+    while *next_section + 1 < sections.len() && cp > 0 && cp >= sections[*next_section].cp_end {
+        body.push_str("    <w:p><w:pPr>");
+        body.push_str(&docx_section_properties_xml(
+            sections[*next_section].properties,
+            *next_section,
+            headers,
+        ));
+        body.push_str("</w:pPr></w:p>\n");
+        *next_section += 1;
+    }
+}
+
+fn docx_section_properties_xml(
+    section: DocxSection,
+    section_index: usize,
+    headers: &[WordBinaryHeaderFooter],
+) -> String {
+    let orientation = if section.landscape {
+        " w:orient=\"landscape\""
+    } else {
+        ""
+    };
+    let mut xml = String::from("<w:sectPr>");
+    // Header/footer references precede page properties in CT_SectPr.
+    for kind in [
+        "evenHeader",
+        "defaultHeader",
+        "firstHeader",
+        "evenFooter",
+        "defaultFooter",
+        "firstFooter",
+    ] {
+        let Some((index, record)) = headers
+            .iter()
+            .enumerate()
+            .filter(|(_, record)| record.kind == kind && record.section_index <= section_index)
+            .max_by_key(|(_, record)| record.section_index)
+        else {
+            continue;
+        };
+        let (tag, type_name) = if record.kind.ends_with("Header") {
+            ("headerReference", record.kind.trim_end_matches("Header"))
+        } else {
+            ("footerReference", record.kind.trim_end_matches("Footer"))
+        };
+        xml.push_str(&format!(
+            "<w:{} w:type=\"{}\" r:id=\"rId{}{}\"/>",
+            tag,
+            match type_name {
+                "even" => "even",
+                "first" => "first",
+                _ => "default",
+            },
+            if record.kind.ends_with("Header") {
+                "Header"
+            } else {
+                "Footer"
+            },
+            index + 1,
+        ));
+    }
+    xml.push_str(&format!(
+        "<w:type w:val=\"{}\"/><w:pgSz w:w=\"{}\" w:h=\"{}\"{} /><w:pgMar w:top=\"{}\" w:right=\"{}\" w:bottom=\"{}\" w:left=\"{}\" w:header=\"{}\" w:footer=\"{}\" w:gutter=\"{}\" />",
+        section.section_type,
+        section.page_width,
+        section.page_height,
+        orientation,
+        section.margin_top,
+        section.margin_right,
+        section.margin_bottom,
+        section.margin_left,
+        section.margin_header,
+        section.margin_footer,
+        section.gutter,
+    ));
+    let borders = [
+        ("top", section.page_border_top),
+        ("left", section.page_border_left),
+        ("bottom", section.page_border_bottom),
+        ("right", section.page_border_right),
+    ];
+    if borders.iter().any(|(_, border)| border.is_some()) {
+        xml.push_str(&format!(
+            "<w:pgBorders w:display=\"{}\" w:offsetFrom=\"{}\" w:zOrder=\"{}\">",
+            section.page_border_display,
+            section.page_border_offset_from,
+            section.page_border_z_order,
+        ));
+        for (side, border) in borders {
+            if let Some(border) = border {
+                xml.push_str(&docx_border_xml(side, border));
+            }
+        }
+        xml.push_str("</w:pgBorders>");
+    }
+    if section.columns > 1 || section.column_separator || section.column_rtl {
+        xml.push_str(&format!(
+            "<w:cols w:num=\"{}\" w:space=\"{}\"{}{} />",
+            section.columns.max(1),
+            section.column_spacing.max(0),
+            if section.column_separator {
+                " w:sep=\"1\""
+            } else {
+                ""
+            },
+            if section.column_rtl {
+                " w:rtl=\"1\""
+            } else {
+                ""
+            },
+        ));
+    }
+    if section.title_page {
+        xml.push_str("<w:titlePg/>");
+    }
+    xml.push_str("</w:sectPr>");
+    xml
+}
+
+#[cfg(test)]
+fn docx_document_with_sections(
+    paragraphs: &[DocxParagraph],
+    sections: &[WordBinarySection],
+) -> String {
+    docx_document_with_sections_and_headers(paragraphs, sections, &[])
+}
+
+fn docx_document_with_sections_and_headers(
+    paragraphs: &[DocxParagraph],
+    sections: &[WordBinarySection],
+    headers: &[WordBinaryHeaderFooter],
+) -> String {
     let mut body = String::new();
     let mut image_id = 0usize;
     let mut table_open = false;
     let mut row_open = false;
-    for paragraph in paragraphs {
+    let mut table_columns = 1usize;
+    let mut table_bounds = Vec::new();
+    let mut next_section = 0usize;
+    let final_section = sections
+        .last()
+        .map(|section| section.properties)
+        .unwrap_or_default();
+    for (paragraph_index, paragraph) in paragraphs.iter().enumerate() {
         if paragraph.table_cell_merged {
             continue;
         }
         if paragraph.table_cell {
             if !table_open {
-                body.push_str("    <w:tbl><w:tblPr><w:tblBorders><w:top w:val=\"single\" w:sz=\"4\"/><w:left w:val=\"single\" w:sz=\"4\"/><w:bottom w:val=\"single\" w:sz=\"4\"/><w:right w:val=\"single\" w:sz=\"4\"/><w:insideH w:val=\"single\" w:sz=\"4\"/><w:insideV w:val=\"single\" w:sz=\"4\"/></w:tblBorders></w:tblPr>\n");
+                let table_section = sections
+                    .iter()
+                    .find(|candidate| paragraph.source_cp_start <= candidate.cp_end)
+                    .map(|candidate| candidate.properties)
+                    .unwrap_or(final_section);
+                let fallback_width = docx_table_default_width(table_section);
+                table_bounds = docx_table_bounds(paragraphs, paragraph_index);
+                let fallback_columns = docx_table_column_count(paragraphs, paragraph_index);
+                table_columns = table_bounds
+                    .len()
+                    .saturating_sub(1)
+                    .max(fallback_columns)
+                    .max(1);
+                let width = table_bounds
+                    .first()
+                    .zip(table_bounds.last())
+                    .map(|(left, right)| i32::from(*right).saturating_sub(i32::from(*left)).max(1))
+                    .unwrap_or(fallback_width);
+                let explicit_cell_borders = paragraphs
+                    .iter()
+                    .skip(paragraph_index)
+                    .take_while(|candidate| candidate.table_cell)
+                    .any(|candidate| candidate.table_cell_borders_explicit);
+                let source_table_borders = paragraphs
+                    .iter()
+                    .skip(paragraph_index)
+                    .take_while(|candidate| candidate.table_cell)
+                    .find_map(|candidate| candidate.table_borders);
+                let table_alignment = paragraphs
+                    .iter()
+                    .skip(paragraph_index)
+                    .take_while(|candidate| candidate.table_cell)
+                    .find_map(|candidate| {
+                        (!candidate.table_alignment.is_empty()).then_some(candidate.table_alignment)
+                    })
+                    .map(|alignment| format!("<w:jc w:val=\"{alignment}\"/>"))
+                    .unwrap_or_default();
+                let table_indent = table_bounds
+                    .first()
+                    .copied()
+                    .filter(|value| *value != 0)
+                    .map(|value| format!("<w:tblInd w:w=\"{value}\" w:type=\"dxa\"/>"))
+                    .unwrap_or_default();
+                body.push_str(&format!(
+                    "    <w:tbl><w:tblPr><w:tblW w:w=\"{width}\" w:type=\"dxa\"/>{table_alignment}{table_indent}{}<w:tblLayout w:type=\"fixed\"/></w:tblPr>{}\n",
+                    docx_table_borders_xml(source_table_borders, explicit_cell_borders),
+                    docx_table_grid_xml(&table_bounds, width, table_columns)
+                ));
                 table_open = true;
             }
             if !row_open {
-                body.push_str("      <w:tr>\n");
+                body.push_str("      <w:tr>");
+                body.push_str(&docx_table_row_properties_xml(paragraphs, paragraph_index));
+                body.push('\n');
                 row_open = true;
             }
             body.push_str("        <w:tc>");
-            if paragraph.table_grid_span > 1 || !paragraph.table_v_merge.is_empty() {
-                body.push_str("<w:tcPr>");
-                if paragraph.table_grid_span > 1 {
-                    body.push_str(&format!(
-                        "<w:gridSpan w:val=\"{}\"/>",
-                        paragraph.table_grid_span
-                    ));
-                }
-                match paragraph.table_v_merge {
-                    "restart" => body.push_str("<w:vMerge w:val=\"restart\"/>"),
-                    "continue" => body.push_str("<w:vMerge/>"),
-                    _ => {}
-                }
-                body.push_str("</w:tcPr>");
+            body.push_str("<w:tcPr>");
+            let table_section = sections
+                .iter()
+                .find(|candidate| paragraph.source_cp_start <= candidate.cp_end)
+                .map(|candidate| candidate.properties)
+                .unwrap_or(final_section);
+            let fallback_width = docx_table_default_width(table_section);
+            let span = paragraph.table_grid_span.max(1);
+            let cell_width = if paragraph.table_cell_preferred_width > 0 {
+                i32::from(paragraph.table_cell_preferred_width)
+            } else {
+                paragraph
+                    .table_grid_bounds
+                    .first()
+                    .zip(paragraph.table_grid_bounds.last())
+                    .map(|(left, right)| {
+                        if paragraph.table_grid_left != paragraph.table_grid_right {
+                            i32::from(paragraph.table_grid_right)
+                                .saturating_sub(i32::from(paragraph.table_grid_left))
+                        } else {
+                            i32::from(*right).saturating_sub(i32::from(*left))
+                        }
+                    })
+                    .unwrap_or_else(|| fallback_width / table_columns.max(1) as i32 * span as i32)
+                    .max(1)
+            };
+            body.push_str(&format!("<w:tcW w:w=\"{cell_width}\" w:type=\"dxa\"/>"));
+            if span > 1 {
+                body.push_str(&format!("<w:gridSpan w:val=\"{span}\"/>"));
             }
+            match paragraph.table_v_merge {
+                "restart" => body.push_str("<w:vMerge w:val=\"restart\"/>"),
+                "continue" => body.push_str("<w:vMerge/>"),
+                _ => {}
+            }
+            body.push_str(&docx_cell_borders_xml(paragraph));
+            if paragraph.table_cell_no_wrap {
+                body.push_str("<w:noWrap/>");
+            }
+            body.push_str(&docx_cell_margins_xml(paragraph));
+            if !paragraph.table_cell_text_direction.is_empty() {
+                body.push_str(&format!(
+                    "<w:textDirection w:val=\"{}\"/>",
+                    paragraph.table_cell_text_direction
+                ));
+            }
+            if paragraph.table_cell_fit_text {
+                body.push_str("<w:tcFitText/>");
+            }
+            if !paragraph.table_cell_vertical_align.is_empty() {
+                body.push_str(&format!(
+                    "<w:vAlign w:val=\"{}\"/>",
+                    paragraph.table_cell_vertical_align
+                ));
+            }
+            body.push_str("</w:tcPr>");
             body.push('\n');
             body.push_str(&docx_paragraph_xml(paragraph, &mut image_id, "          "));
             body.push_str("        </w:tc>\n");
@@ -6485,8 +9907,24 @@ fn docx_document(paragraphs: &[DocxParagraph]) -> String {
         if table_open {
             body.push_str("    </w:tbl>\n");
             table_open = false;
+            table_columns = 1;
+            table_bounds.clear();
         }
+        append_docx_section_breaks(
+            &mut body,
+            paragraph.source_cp_start,
+            sections,
+            &mut next_section,
+            headers,
+        );
         body.push_str(&docx_paragraph_xml(paragraph, &mut image_id, "    "));
+        append_docx_section_breaks(
+            &mut body,
+            paragraph.source_cp_end,
+            sections,
+            &mut next_section,
+            headers,
+        );
     }
     if row_open {
         body.push_str("      </w:tr>\n");
@@ -6494,92 +9932,354 @@ fn docx_document(paragraphs: &[DocxParagraph]) -> String {
     if table_open {
         body.push_str("    </w:tbl>\n");
     }
+    while next_section + 1 < sections.len() {
+        body.push_str("    <w:p><w:pPr>");
+        body.push_str(&docx_section_properties_xml(
+            sections[next_section].properties,
+            next_section,
+            headers,
+        ));
+        body.push_str("</w:pPr></w:p>\n");
+        next_section += 1;
+    }
+    let final_section_xml =
+        docx_section_properties_xml(final_section, sections.len().saturating_sub(1), headers);
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
   <w:body>
-{body}  </w:body>
-</w:document>"#
+{body}    {}
+</w:body>
+</w:document>"#,
+        final_section_xml
     )
 }
 
-fn docx_paragraph_xml(
-    paragraph: &DocxParagraph,
-    image_id: &mut usize,
-    indent: &str,
-) -> String {
+fn docx_paragraph_xml(paragraph: &DocxParagraph, image_id: &mut usize, indent: &str) -> String {
     let mut body = String::new();
     body.push_str(indent);
     body.push_str("<w:p>\n");
-        if paragraph.heading_level > 0
-            || !paragraph.alignment.is_empty()
-            || !paragraph.list_kind.is_empty()
-        {
-            body.push_str(indent);
-            body.push_str("  <w:pPr>");
-            if paragraph.heading_level > 0 {
-                body.push_str(&format!(
-                    "<w:pStyle w:val=\"Heading{}\"/>",
-                    paragraph.heading_level.min(6)
-                ));
-            }
-            if !paragraph.alignment.is_empty() {
-                body.push_str(&format!("<w:jc w:val=\"{}\"/>", paragraph.alignment));
-            }
-            if !paragraph.list_kind.is_empty() {
-                let num_id = if paragraph.list_kind == "bullet" {
-                    "1"
-                } else {
-                    "2"
-                };
-                body.push_str(&format!(
-                    "<w:numPr><w:ilvl w:val=\"{}\"/><w:numId w:val=\"{num_id}\"/></w:numPr>",
-                    paragraph.list_level.min(8)
-                ));
-            }
-            body.push_str("</w:pPr>\n");
+    if paragraph.heading_level > 0
+        || !paragraph.alignment.is_empty()
+        || !paragraph.list_kind.is_empty()
+        || paragraph.spacing_before > 0
+        || paragraph.spacing_after > 0
+        || paragraph.line_spacing > 0
+        || paragraph.indent_left != 0
+        || paragraph.indent_right != 0
+        || paragraph.first_line_indent != 0
+        || !paragraph.shading.is_empty()
+        || paragraph.keep_next
+        || paragraph.keep_lines
+        || paragraph.page_break_before
+        || paragraph.bidi
+    {
+        body.push_str(indent);
+        body.push_str("  <w:pPr>");
+        if !paragraph.shading.is_empty() {
+            body.push_str(&format!(
+                "<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"{}\"/>",
+                paragraph.shading
+            ));
         }
-        if paragraph.runs.is_empty() {
-            body.push_str(indent);
-            body.push_str("  <w:r>");
-            if paragraph.bold {
-                body.push_str("<w:rPr><w:b/></w:rPr>");
+        if paragraph.spacing_before > 0 || paragraph.spacing_after > 0 || paragraph.line_spacing > 0
+        {
+            body.push_str("<w:spacing");
+            if paragraph.spacing_before > 0 {
+                body.push_str(&format!(" w:before=\"{}\"", paragraph.spacing_before));
             }
-            body.push_str(&word_text_xml(&paragraph.text));
-            body.push_str("</w:r>\n");
-        } else {
-            for run in &paragraph.runs {
-                if let Some(image) = run.image.as_ref() {
-                    *image_id += 1;
-                    body.push_str(indent);
-                    body.push_str("  <w:r>");
-                    body.push_str(&docx_inline_image(image, *image_id));
-                    body.push_str("</w:r>\n");
-                    continue;
-                }
+            if paragraph.spacing_after > 0 {
+                body.push_str(&format!(" w:after=\"{}\"", paragraph.spacing_after));
+            }
+            if paragraph.line_spacing > 0 {
+                body.push_str(&format!(
+                    " w:line=\"{}\" w:lineRule=\"{}\"",
+                    paragraph.line_spacing,
+                    if paragraph.line_spacing_rule.is_empty() {
+                        "auto"
+                    } else {
+                        paragraph.line_spacing_rule
+                    }
+                ));
+            }
+            body.push_str("/>");
+        }
+        if paragraph.keep_next {
+            body.push_str("<w:keepNext/>");
+        }
+        if paragraph.keep_lines {
+            body.push_str("<w:keepLines/>");
+        }
+        if paragraph.page_break_before {
+            body.push_str("<w:pageBreakBefore/>");
+        }
+        if paragraph.bidi {
+            body.push_str("<w:bidi/>");
+        }
+        if paragraph.indent_left != 0
+            || paragraph.indent_right != 0
+            || paragraph.first_line_indent != 0
+        {
+            body.push_str("<w:ind");
+            if paragraph.indent_left != 0 {
+                body.push_str(&format!(" w:left=\"{}\"", paragraph.indent_left));
+            }
+            if paragraph.indent_right != 0 {
+                body.push_str(&format!(" w:right=\"{}\"", paragraph.indent_right));
+            }
+            if paragraph.first_line_indent > 0 {
+                body.push_str(&format!(" w:firstLine=\"{}\"", paragraph.first_line_indent));
+            } else if paragraph.first_line_indent < 0 {
+                body.push_str(&format!(
+                    " w:hanging=\"{}\"",
+                    paragraph.first_line_indent.saturating_abs()
+                ));
+            }
+            body.push_str("/>");
+        }
+        if paragraph.heading_level > 0 {
+            body.push_str(&format!(
+                "<w:pStyle w:val=\"Heading{}\"/>",
+                paragraph.heading_level.min(6)
+            ));
+        }
+        if !paragraph.alignment.is_empty() {
+            body.push_str(&format!("<w:jc w:val=\"{}\"/>", paragraph.alignment));
+        }
+        if !paragraph.list_kind.is_empty() {
+            let num_id = if paragraph.list_kind == "bullet" {
+                1
+            } else if paragraph.list_id > 0 {
+                paragraph.list_id.saturating_add(10)
+            } else {
+                2
+            };
+            body.push_str(&format!(
+                "<w:numPr><w:ilvl w:val=\"{}\"/><w:numId w:val=\"{}\"/></w:numPr>",
+                paragraph.list_level.min(8),
+                num_id
+            ));
+        }
+        body.push_str("</w:pPr>\n");
+    }
+    if paragraph.runs.is_empty() {
+        body.push_str(indent);
+        body.push_str("  <w:r>");
+        if paragraph.bold {
+            body.push_str("<w:rPr><w:b/></w:rPr>");
+        }
+        body.push_str(&word_text_xml(&paragraph.text));
+        body.push_str("</w:r>\n");
+    } else {
+        for run in &paragraph.runs {
+            if !run.field_instruction.is_empty() {
+                body.push_str(indent);
+                body.push_str(&format!(
+                    "  <w:fldSimple w:instr=\"{}\" w:dirty=\"true\"><w:r>{}{}</w:r></w:fldSimple>\n",
+                    escape(&run.field_instruction),
+                    docx_run_properties(run),
+                    word_text_xml(&run.text),
+                ));
+                continue;
+            }
+            if let Some(image) = run.image.as_ref() {
+                *image_id += 1;
                 body.push_str(indent);
                 body.push_str("  <w:r>");
-                body.push_str(&docx_run_properties(run));
-                body.push_str(&word_text_xml(&run.text));
+                body.push_str(&docx_inline_image(image, *image_id));
                 body.push_str("</w:r>\n");
+                continue;
             }
+            body.push_str(indent);
+            body.push_str("  <w:r>");
+            body.push_str(&docx_run_properties(run));
+            body.push_str(&word_text_xml(&run.text));
+            body.push_str("</w:r>\n");
         }
+    }
     body.push_str(indent);
     body.push_str("</w:p>\n");
     body
 }
 
-fn docx_inline_image(image: &DocxImage, relationship_id: usize) -> String {
+fn docx_header_footer_xml(record: &WordBinaryHeaderFooter) -> String {
+    let mut body = String::new();
+    let mut image_id = 0usize;
+    for paragraph in &record.paragraphs {
+        body.push_str(&docx_paragraph_xml(paragraph, &mut image_id, "  "));
+    }
+    if body.is_empty() {
+        body.push_str("  <w:p/>\n");
+    }
+    let root = if record.kind.ends_with("Header") {
+        "hdr"
+    } else {
+        "ftr"
+    };
     format!(
-        r#"<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{}" cy="{}"/><wp:docPr id="{}" name="Picture {}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="{}" name="image{}.{}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdImage{}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{}" cy="{}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>"#,
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:{root} xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+{body}</w:{root}>"#
+    )
+}
+
+fn docx_header_footer_image_count(record: &WordBinaryHeaderFooter) -> usize {
+    record
+        .paragraphs
+        .iter()
+        .flat_map(|paragraph| paragraph.runs.iter())
+        .filter(|run| run.image.is_some())
+        .count()
+}
+
+fn docx_header_footer_relationships(
+    record: &WordBinaryHeaderFooter,
+    global_image_start: usize,
+) -> String {
+    let mut relationships = String::from(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+"#,
+    );
+    let mut local_image = 0usize;
+    for run in record
+        .paragraphs
+        .iter()
+        .flat_map(|paragraph| paragraph.runs.iter())
+    {
+        let Some(image) = run.image.as_ref() else {
+            continue;
+        };
+        local_image += 1;
+        relationships.push_str(&format!(
+            "  <Relationship Id=\"rIdImage{}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/image{}.{}\"/>\n",
+            local_image,
+            global_image_start + local_image,
+            image.extension,
+        ));
+    }
+    relationships.push_str("</Relationships>");
+    relationships
+}
+
+fn docx_inline_image(image: &DocxImage, relationship_id: usize) -> String {
+    let graphic = docx_picture_graphic(image, relationship_id);
+    if !image.floating {
+        return format!(
+            r#"<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{}" cy="{}"/><wp:docPr id="{}" name="Picture {}"/>{}</wp:inline></w:drawing>"#,
+            image.width_emu, image.height_emu, relationship_id, relationship_id, graphic,
+        );
+    }
+    let wrap = match image.wrap {
+        "none" => "<wp:wrapNone/>".to_string(),
+        "topAndBottom" => "<wp:wrapTopAndBottom/>".to_string(),
+        "tight" => docx_wrap_polygon("wrapTight", image.wrap_side, &image.wrap_polygon),
+        "through" => docx_wrap_polygon("wrapThrough", image.wrap_side, &image.wrap_polygon),
+        _ => format!("<wp:wrapSquare wrapText=\"{}\"/>", image.wrap_side),
+    };
+    let position_h = if image.anchor_align_h.is_empty() {
+        format!("<wp:posOffset>{}</wp:posOffset>", image.anchor_x_emu)
+    } else {
+        format!("<wp:align>{}</wp:align>", image.anchor_align_h)
+    };
+    let position_v = if image.anchor_align_v.is_empty() {
+        format!("<wp:posOffset>{}</wp:posOffset>", image.anchor_y_emu)
+    } else {
+        format!("<wp:align>{}</wp:align>", image.anchor_align_v)
+    };
+    format!(
+        r#"<w:drawing><wp:anchor distT="{}" distB="{}" distL="{}" distR="{}" simplePos="0" relativeHeight="{}" behindDoc="{}" locked="{}" layoutInCell="1" allowOverlap="1"><wp:simplePos x="0" y="0"/><wp:positionH relativeFrom="{}">{}</wp:positionH><wp:positionV relativeFrom="{}">{}</wp:positionV><wp:extent cx="{}" cy="{}"/><wp:effectExtent l="0" t="0" r="0" b="0"/>{}<wp:docPr id="{}" name="Picture {}"/><wp:cNvGraphicFramePr/>{}</wp:anchor></w:drawing>"#,
+        image.wrap_distance_top,
+        image.wrap_distance_bottom,
+        image.wrap_distance_left,
+        image.wrap_distance_right,
+        image.relative_height,
+        if image.behind_doc { 1 } else { 0 },
+        if image.anchor_lock { 1 } else { 0 },
+        image.relative_h,
+        position_h,
+        image.relative_v,
+        position_v,
         image.width_emu,
         image.height_emu,
+        wrap,
         relationship_id,
         relationship_id,
+        graphic,
+    )
+}
+
+fn docx_wrap_polygon(kind: &str, side: &str, polygon: &[(i32, i32)]) -> String {
+    let points = if polygon.len() >= 3 {
+        polygon.to_vec()
+    } else {
+        vec![(0, 0), (21_600, 0), (21_600, 21_600), (0, 21_600)]
+    };
+    let min_x = points.iter().map(|(x, _)| *x).min().unwrap_or(0);
+    let max_x = points.iter().map(|(x, _)| *x).max().unwrap_or(21_600);
+    let min_y = points.iter().map(|(_, y)| *y).min().unwrap_or(0);
+    let max_y = points.iter().map(|(_, y)| *y).max().unwrap_or(21_600);
+    let width = i64::from(max_x.saturating_sub(min_x)).max(1);
+    let height = i64::from(max_y.saturating_sub(min_y)).max(1);
+    let points = points
+        .into_iter()
+        .map(|(x, y)| {
+            (
+                ((i64::from(x.saturating_sub(min_x)) * 21_600) / width) as i32,
+                ((i64::from(y.saturating_sub(min_y)) * 21_600) / height) as i32,
+            )
+        })
+        .collect::<Vec<_>>();
+    let (start_x, start_y) = points.first().copied().unwrap_or((0, 0));
+    let points_xml = points
+        .iter()
+        .skip(1)
+        .map(|(x, y)| format!("<wp:lineTo x=\"{}\" y=\"{}\"/>", x, y))
+        .collect::<String>();
+    format!(
+        r#"<wp:{kind} wrapText="{side}"><wp:wrapPolygon edited="0"><wp:start x="{start_x}" y="{start_y}"/>{points_xml}</wp:wrapPolygon></wp:{kind}>"#
+    )
+}
+
+fn docx_picture_graphic(image: &DocxImage, relationship_id: usize) -> String {
+    let crop = if image.crop_left != 0
+        || image.crop_top != 0
+        || image.crop_right != 0
+        || image.crop_bottom != 0
+    {
+        format!(
+            "<a:srcRect l=\"{}\" t=\"{}\" r=\"{}\" b=\"{}\"/>",
+            image.crop_left, image.crop_top, image.crop_right, image.crop_bottom
+        )
+    } else {
+        String::new()
+    };
+    let mut transform = String::new();
+    if image.rotation != 0 {
+        transform.push_str(&format!(" rot=\"{}\"", image.rotation));
+    }
+    if image.flip_h {
+        transform.push_str(" flipH=\"1\"");
+    }
+    if image.flip_v {
+        transform.push_str(" flipV=\"1\"");
+    }
+    let blip = if let Some(opacity) = image.opacity.filter(|value| *value < 100_000) {
+        format!(
+            "<a:blip r:embed=\"rIdImage{}\"><a:alphaModFix amt=\"{}\"/></a:blip>",
+            relationship_id, opacity
+        )
+    } else {
+        format!("<a:blip r:embed=\"rIdImage{}\"/>", relationship_id)
+    };
+    format!(
+        r#"<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="{}" name="image{}.{}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill>{}{}<a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm{}><a:off x="0" y="0"/><a:ext cx="{}" cy="{}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic>"#,
         relationship_id,
         relationship_id,
         image.extension,
-        relationship_id,
+        blip,
+        crop,
+        transform,
         image.width_emu,
         image.height_emu,
     )
@@ -6589,8 +10289,14 @@ fn docx_run_properties(run: &DocxRun) -> String {
     if !run.bold
         && !run.italic
         && !run.underline
+        && run.underline_style.is_empty()
         && !run.strike
+        && !run.small_caps
+        && !run.caps
+        && !run.hidden
+        && !run.rtl
         && run.vertical_align.is_empty()
+        && run.font_name.is_empty()
         && run.font_size == 0
         && run.color.is_empty()
         && run.highlight.is_empty()
@@ -6598,6 +10304,12 @@ fn docx_run_properties(run: &DocxRun) -> String {
         return String::new();
     }
     let mut properties = String::from("<w:rPr>");
+    if !run.font_name.is_empty() {
+        let font = escape(&run.font_name);
+        properties.push_str(&format!(
+            "<w:rFonts w:ascii=\"{font}\" w:hAnsi=\"{font}\" w:eastAsia=\"{font}\" w:cs=\"{font}\"/>"
+        ));
+    }
     if run.bold {
         properties.push_str("<w:b/>");
     }
@@ -6605,10 +10317,29 @@ fn docx_run_properties(run: &DocxRun) -> String {
         properties.push_str("<w:i/>");
     }
     if run.underline {
-        properties.push_str("<w:u w:val=\"single\"/>");
+        properties.push_str(&format!(
+            "<w:u w:val=\"{}\"/>",
+            if run.underline_style.is_empty() {
+                "single"
+            } else {
+                run.underline_style
+            }
+        ));
     }
     if run.strike {
         properties.push_str("<w:strike/>");
+    }
+    if run.small_caps {
+        properties.push_str("<w:smallCaps/>");
+    }
+    if run.caps {
+        properties.push_str("<w:caps/>");
+    }
+    if run.hidden {
+        properties.push_str("<w:vanish/>");
+    }
+    if run.rtl {
+        properties.push_str("<w:rtl/>");
     }
     if !run.vertical_align.is_empty() {
         properties.push_str(&format!("<w:vertAlign w:val=\"{}\"/>", run.vertical_align));
@@ -6864,6 +10595,14 @@ fn validate_output(path: &str, target: &str) -> Result<(), ConvertError> {
             .ok_or_else(|| conversion_error(format!("{path} is not a complete 8-bit JPEG")))?;
         return Ok(());
     }
+    if target == "png" {
+        let bytes = fs::read(path)
+            .map_err(|error| conversion_error(format!("read {path} as PNG: {error}")))?;
+        if png_bounds(&bytes) != Some(bytes.len()) {
+            return Err(conversion_error(format!("{path} is not a complete PNG")));
+        }
+        return Ok(());
+    }
     let input = File::open(path)
         .map_err(|error| conversion_error(format!("open {path} as OpenXML zip: {error}")))?;
     let mut archive = ZipArchive::new(input)
@@ -7062,6 +10801,7 @@ fn required_entries(target: &str) -> &'static [&'static str] {
 fn content_type(target: &str) -> &'static str {
     match target {
         "jpg" | "jpeg" => "image/jpeg",
+        "png" => "image/png",
         "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -7091,6 +10831,33 @@ fn conversion_error(message: String) -> ConvertError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn test_png(width: u32, height: u32) -> Vec<u8> {
+        let mut png = b"\x89PNG\r\n\x1a\n".to_vec();
+        png.extend_from_slice(&13u32.to_be_bytes());
+        png.extend_from_slice(b"IHDR");
+        png.extend_from_slice(&width.to_be_bytes());
+        png.extend_from_slice(&height.to_be_bytes());
+        png.extend_from_slice(&[8, 6, 0, 0, 0]);
+        png.extend_from_slice(&[0, 0, 0, 0]);
+        png.extend_from_slice(&0u32.to_be_bytes());
+        png.extend_from_slice(b"IEND");
+        png.extend_from_slice(&[0, 0, 0, 0]);
+        png
+    }
+
+    fn test_icns(chunks: &[(&[u8; 4], &[u8])]) -> Vec<u8> {
+        let body_len: usize = chunks.iter().map(|(_, data)| 8 + data.len()).sum();
+        let mut icns = Vec::with_capacity(8 + body_len);
+        icns.extend_from_slice(b"icns");
+        icns.extend_from_slice(&u32::try_from(8 + body_len).unwrap().to_be_bytes());
+        for (kind, data) in chunks {
+            icns.extend_from_slice(*kind);
+            icns.extend_from_slice(&u32::try_from(8 + data.len()).unwrap().to_be_bytes());
+            icns.extend_from_slice(data);
+        }
+        icns
+    }
 
     fn test_jpeg(width: u16, height: u16, precision: u8, payload_size: usize) -> Vec<u8> {
         let mut jpeg = vec![
@@ -7131,6 +10898,40 @@ mod tests {
         jpeg
     }
 
+    fn test_emf(width: i32, height: i32) -> Vec<u8> {
+        let mut emf = vec![0u8; 88];
+        let size = emf.len() as u32;
+        emf[0..4].copy_from_slice(&1u32.to_le_bytes());
+        emf[4..8].copy_from_slice(&size.to_le_bytes());
+        emf[24..28].copy_from_slice(&0i32.to_le_bytes());
+        emf[28..32].copy_from_slice(&0i32.to_le_bytes());
+        emf[32..36].copy_from_slice(&width.to_le_bytes());
+        emf[36..40].copy_from_slice(&height.to_le_bytes());
+        emf[40..44].copy_from_slice(&0x464d4520u32.to_le_bytes());
+        emf[48..52].copy_from_slice(&size.to_le_bytes());
+        emf
+    }
+
+    fn test_wmf(width: i16, height: i16, inch: u16) -> Vec<u8> {
+        let mut wmf = vec![0u8; 40];
+        wmf[0..4].copy_from_slice(&0x9ac6cdd7u32.to_le_bytes());
+        wmf[6..8].copy_from_slice(&0i16.to_le_bytes());
+        wmf[8..10].copy_from_slice(&0i16.to_le_bytes());
+        wmf[10..12].copy_from_slice(&width.to_le_bytes());
+        wmf[12..14].copy_from_slice(&height.to_le_bytes());
+        wmf[14..16].copy_from_slice(&inch.to_le_bytes());
+        wmf[28..32].copy_from_slice(&20u32.to_le_bytes());
+        wmf
+    }
+
+    fn test_standard_wmf() -> Vec<u8> {
+        let mut wmf = vec![0u8; 40];
+        wmf[0..2].copy_from_slice(&1u16.to_le_bytes());
+        wmf[2..4].copy_from_slice(&9u16.to_le_bytes());
+        wmf[6..10].copy_from_slice(&20u32.to_le_bytes());
+        wmf
+    }
+
     #[test]
     fn extracts_largest_embedded_raw_jpeg_preview() {
         let small = test_jpeg(320, 240, 8, 4);
@@ -7141,6 +10942,593 @@ mod tests {
         assert_eq!(best_embedded_jpeg(&bytes), Some(large.as_slice()));
         assert!(best_embedded_jpeg(b"RAW without preview").is_none());
         assert!(is_raw_source("nrw") && is_raw_source("3fr") && is_raw_source("iiq"));
+    }
+
+    #[test]
+    fn preserves_legacy_vector_media() {
+        let emf = test_emf(2100, 2970);
+        let emf_image = extract_word_binary_image(&emf, 0).unwrap();
+        assert_eq!(emf_image.extension, "emf");
+        assert_eq!(emf_image.content_type, "image/x-emf");
+        assert_eq!(emf_image.data, emf);
+        assert!(emf_image.width_emu > 0 && emf_image.height_emu > 0);
+
+        let wmf = test_wmf(2100, 2970, 100);
+        let wmf_image = extract_word_binary_image(&wmf, 0).unwrap();
+        assert_eq!(wmf_image.extension, "wmf");
+        assert_eq!(wmf_image.content_type, "image/x-wmf");
+        assert_eq!(wmf_image.data, wmf);
+        assert!(wmf_image.width_emu > 0 && wmf_image.height_emu > 0);
+
+        let standard_wmf = test_standard_wmf();
+        let standard_image = extract_word_binary_image(&standard_wmf, 0).unwrap();
+        assert_eq!(standard_image.extension, "wmf");
+        assert_eq!(standard_image.data, standard_wmf);
+    }
+
+    #[test]
+    fn parses_legacy_officeart_shape_anchor_and_emits_floating_drawing() {
+        let count = 1usize;
+        let mut plc = vec![0u8; (count + 1) * 4 + count * 26];
+        plc[0..4].copy_from_slice(&7u32.to_le_bytes());
+        plc[4..8].copy_from_slice(&9u32.to_le_bytes());
+        let record = 8;
+        plc[record..record + 4].copy_from_slice(&42u32.to_le_bytes());
+        plc[record + 4..record + 8].copy_from_slice(&100i32.to_le_bytes());
+        plc[record + 8..record + 12].copy_from_slice(&200i32.to_le_bytes());
+        plc[record + 12..record + 16].copy_from_slice(&1_100i32.to_le_bytes());
+        plc[record + 16..record + 20].copy_from_slice(&1_200i32.to_le_bytes());
+        let flags = (2u16 << 3) | (2u16 << 5) | (1u16 << 9) | 0x8000;
+        plc[record + 20..record + 22].copy_from_slice(&flags.to_le_bytes());
+        let shapes = parse_word_binary_shape_anchors(&plc, 0, plc.len(), 0);
+        assert_eq!(shapes.len(), 1);
+        assert_eq!(shapes[0].cp, 7);
+        assert_eq!(shapes[0].relative_h, "margin");
+        assert_eq!(shapes[0].relative_v, "paragraph");
+        assert_eq!(shapes[0].wrap, "square");
+        assert_eq!(shapes[0].wrap_side, "left");
+        assert!(shapes[0].anchor_lock);
+
+        let mut paragraphs = vec![DocxParagraph {
+            source_cp_start: 5,
+            source_cp_end: 10,
+            runs: vec![DocxRun {
+                image: Some(DocxImage {
+                    data: test_png(10, 10),
+                    extension: "png",
+                    content_type: "image/png",
+                    width_emu: 100,
+                    height_emu: 100,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }],
+            ..Default::default()
+        }];
+        attach_word_binary_shape_anchors(&mut paragraphs, &shapes);
+        let image = paragraphs[0].runs[0].image.as_ref().unwrap();
+        assert!(image.floating && image.anchor_lock);
+        assert_eq!(image.anchor_x_emu, 63_500);
+        assert_eq!(image.anchor_y_emu, 127_000);
+        assert_eq!(image.width_emu, 635_000);
+        assert_eq!(image.height_emu, 635_000);
+        let drawing = docx_inline_image(image, 1);
+        assert!(drawing.contains("<wp:anchor "));
+        assert!(
+            drawing.contains("relativeFrom=\"margin\"")
+                && drawing.contains("relativeFrom=\"paragraph\"")
+        );
+        assert!(
+            drawing.contains("<wp:wrapSquare wrapText=\"left\"/>")
+                && drawing.contains("<wp:posOffset>63500</wp:posOffset>")
+        );
+    }
+
+    #[test]
+    fn parses_officeart_shape_properties_and_blip_binding() {
+        fn escher_record(options: u16, record_id: u16, payload: &[u8]) -> Vec<u8> {
+            let mut record = Vec::with_capacity(8 + payload.len());
+            record.extend_from_slice(&options.to_le_bytes());
+            record.extend_from_slice(&record_id.to_le_bytes());
+            record.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+            record.extend_from_slice(payload);
+            record
+        }
+
+        let png = test_png(12, 8);
+        let blip = escher_record(0, 0xf01e, &png);
+        let mut bse_payload = vec![0u8; 36];
+        let blip_name = b"pic\0";
+        bse_payload[33] = blip_name.len() as u8;
+        bse_payload.extend_from_slice(blip_name);
+        bse_payload.extend_from_slice(&blip);
+        let bse = escher_record(0, 0xf007, &bse_payload);
+        let bstore = escher_record(0x000f, 0xf001, &bse);
+        let dgg = escher_record(0x000f, 0xf000, &bstore);
+
+        let sp_flags = 0x0040u32 | 0x0080;
+        let mut sp_payload = Vec::new();
+        sp_payload.extend_from_slice(&42u32.to_le_bytes());
+        sp_payload.extend_from_slice(&sp_flags.to_le_bytes());
+        let sp = escher_record(0, 0xf00a, &sp_payload);
+        let mut opt_payload = Vec::new();
+        for (property, value) in [
+            (0x0104u16, 1u32),
+            (0x0004, 90u32.saturating_mul(65_536)),
+            (0x0100, 32_768),
+            (0x0101, 16_384),
+            (0x0102, 8_192),
+            (0x0103, 4_096),
+            (0x0182, 32_768),
+            (0x03aa, 7),
+            (0x03ba, 1),
+        ] {
+            opt_payload.extend_from_slice(&property.to_le_bytes());
+            opt_payload.extend_from_slice(&value.to_le_bytes());
+        }
+        let mut polygon = Vec::new();
+        polygon.extend_from_slice(&3u16.to_le_bytes());
+        polygon.extend_from_slice(&0u16.to_le_bytes());
+        polygon.extend_from_slice(&8u16.to_le_bytes());
+        for (x, y) in [(0i32, 0i32), (100, 0), (100, 100)] {
+            polygon.extend_from_slice(&x.to_le_bytes());
+            polygon.extend_from_slice(&y.to_le_bytes());
+        }
+        opt_payload.extend_from_slice(&(0x8000u16 | 0x0383).to_le_bytes());
+        opt_payload.extend_from_slice(&(polygon.len() as u32).to_le_bytes());
+        opt_payload.extend_from_slice(&polygon);
+        let opt = escher_record((10u16 << 4) | 3, 0xf00b, &opt_payload);
+        let mut tertiary_payload = Vec::new();
+        for (property, value) in [
+            (0x0384u16, 91_440u32),
+            (0x0385, 45_720),
+            (0x0386, 91_440),
+            (0x0387, 45_720),
+            (0x038f, 2),
+            (0x0390, 2),
+            (0x0391, 3),
+            (0x0392, 1),
+        ] {
+            tertiary_payload.extend_from_slice(&property.to_le_bytes());
+            tertiary_payload.extend_from_slice(&value.to_le_bytes());
+        }
+        let tertiary = escher_record((8u16 << 4) | 3, 0xf122, &tertiary_payload);
+        let shape = escher_record(0x000f, 0xf004, &[sp, opt, tertiary].concat());
+        let spgr = escher_record(0x000f, 0xf003, &shape);
+        let dg = escher_record(0x000f, 0xf002, &spgr);
+        let data = [dgg, vec![0], dg].concat();
+        let fib = WordBinaryFib {
+            fc_dgg_info: 0,
+            lcb_dgg_info: data.len(),
+            ..Default::default()
+        };
+
+        let office_art = parse_word_binary_officeart(&data, &[], fib);
+        assert_eq!(office_art.blips.len(), 1);
+        assert_eq!(office_art.shapes.len(), 1);
+        let shape = &office_art.shapes[0];
+        assert_eq!(shape.spid, 42);
+        assert_eq!(shape.blip_index, Some(1));
+        assert_eq!(shape.rotation, 90 * 60_000);
+        assert!(shape.flip_h && shape.flip_v && shape.behind_doc == Some(true));
+        assert_eq!(shape.crop_left, 12_500);
+        assert_eq!(shape.crop_top, 50_000);
+        assert_eq!(shape.z_order, Some(7));
+        assert_eq!(shape.wrap_polygon, vec![(0, 0), (100, 0), (100, 100)]);
+        assert_eq!(shape.opacity, Some(50_000));
+        assert_eq!(shape.position_h, "center");
+        assert_eq!(shape.position_v, "bottom");
+        assert_eq!(shape.relative_h, "page");
+        assert_eq!(shape.relative_v, "margin");
+        assert_eq!(shape.wrap_distance_left, 91_440);
+        assert_eq!(
+            shape.image.as_ref().map(|image| image.extension),
+            Some("png")
+        );
+        let mut image = shape.image.clone().unwrap();
+        image.floating = true;
+        image.wrap = "tight";
+        image.wrap_side = "bothSides";
+        apply_word_binary_shape_art(&mut image, shape);
+        let drawing = docx_inline_image(&image, 1);
+        assert!(drawing.contains("distT=\"45720\"") && drawing.contains("distL=\"91440\""));
+        assert!(drawing.contains("relativeFrom=\"page\"><wp:align>center</wp:align>"));
+        assert!(drawing.contains("relativeFrom=\"margin\"><wp:align>bottom</wp:align>"));
+        assert!(
+            drawing.contains("<a:alphaModFix amt=\"50000\"/>") && drawing.contains("flipH=\"1\"")
+        );
+        assert!(drawing.contains("<a:srcRect l=\"12500\" t=\"50000\""));
+        assert!(drawing.contains("<wp:wrapTight wrapText=\"bothSides\">"));
+    }
+
+    #[test]
+    fn resolves_officeart_delayed_blip_from_word_document() {
+        fn escher_record(options: u16, record_id: u16, payload: &[u8]) -> Vec<u8> {
+            let mut record = Vec::with_capacity(8 + payload.len());
+            record.extend_from_slice(&options.to_le_bytes());
+            record.extend_from_slice(&record_id.to_le_bytes());
+            record.extend_from_slice(&(payload.len() as u32).to_le_bytes());
+            record.extend_from_slice(payload);
+            record
+        }
+
+        let png = test_png(18, 12);
+        let delayed_blip = escher_record(0, 0xf01e, &png);
+        let delay_offset = 32usize;
+        let mut document = vec![0u8; delay_offset];
+        document.extend_from_slice(&delayed_blip);
+
+        let mut bse_payload = vec![0u8; 36];
+        bse_payload[28..32].copy_from_slice(&(delay_offset as u32).to_le_bytes());
+        let bse = escher_record(0, 0xf007, &bse_payload);
+        let dgg = escher_record(0x000f, 0xf000, &escher_record(0x000f, 0xf001, &bse));
+
+        let mut sp_payload = Vec::new();
+        sp_payload.extend_from_slice(&7u32.to_le_bytes());
+        sp_payload.extend_from_slice(&0u32.to_le_bytes());
+        let sp = escher_record(0, 0xf00a, &sp_payload);
+        let mut opt_payload = Vec::new();
+        opt_payload.extend_from_slice(&0x4104u16.to_le_bytes());
+        opt_payload.extend_from_slice(&1u32.to_le_bytes());
+        let opt = escher_record((1u16 << 4) | 3, 0xf00b, &opt_payload);
+        let shape = escher_record(0x000f, 0xf004, &[sp, opt].concat());
+        let dg = escher_record(0x000f, 0xf002, &escher_record(0x000f, 0xf003, &shape));
+        let table = [dgg, vec![0], dg].concat();
+        let fib = WordBinaryFib {
+            fc_dgg_info: 0,
+            lcb_dgg_info: table.len(),
+            ..Default::default()
+        };
+
+        let office_art = parse_word_binary_officeart(&table, &document, fib);
+        assert_eq!(office_art.blips.len(), 1);
+        assert_eq!(office_art.blip_delay_offsets, vec![Some(delay_offset)]);
+        assert_eq!(office_art.shapes.len(), 1);
+        let image = office_art.shapes[0].image.as_ref().unwrap();
+        assert_eq!(image.extension, "png");
+        assert_eq!(image.data, png);
+    }
+
+    #[test]
+    fn associates_unreferenced_document_media_with_its_paragraph() {
+        let jpeg = test_jpeg(320, 240, 8, 4);
+        let mut stream = vec![0u8; 4];
+        stream.extend_from_slice(&jpeg);
+        let mut paragraphs = vec![DocxParagraph {
+            text: "Before image".into(),
+            source_fc_start: 4,
+            source_fc_end: (stream.len() - 1) as u32,
+            runs: vec![DocxRun {
+                text: "Before image".into(),
+                ..Default::default()
+            }],
+            ..Default::default()
+        }];
+
+        append_unreferenced_word_binary_images(&mut paragraphs, &stream, true);
+
+        assert_eq!(paragraphs.len(), 1);
+        assert!(paragraphs[0].runs.iter().any(|run| run.image.is_some()));
+    }
+
+    #[test]
+    fn parses_legacy_section_page_properties() {
+        let mut grpprl = Vec::new();
+        grpprl.extend_from_slice(&0x3009u16.to_le_bytes());
+        grpprl.push(4);
+        grpprl.extend_from_slice(&0x001du16.to_le_bytes());
+        grpprl.push(1);
+        for (sprm, value) in [
+            (0x401fu16, 11_906i16),
+            (0x4020, 16_838),
+            (0x4021, 720),
+            (0x4022, 840),
+            (0x4023, 1_000),
+            (0x4024, 1_080),
+            (0x4025, 120),
+            (0x4017, 600),
+            (0x4018, 660),
+        ] {
+            grpprl.extend_from_slice(&sprm.to_le_bytes());
+            grpprl.extend_from_slice(&value.to_le_bytes());
+        }
+        grpprl.extend_from_slice(&0x500bu16.to_le_bytes());
+        grpprl.extend_from_slice(&2u16.to_le_bytes());
+        grpprl.extend_from_slice(&0x900cu16.to_le_bytes());
+        grpprl.extend_from_slice(&360u16.to_le_bytes());
+        grpprl.extend_from_slice(&0x3019u16.to_le_bytes());
+        grpprl.push(1);
+        grpprl.extend_from_slice(&0x3228u16.to_le_bytes());
+        grpprl.push(1);
+        grpprl.extend_from_slice(&0x702bu16.to_le_bytes());
+        grpprl.extend_from_slice(&[8, 1, 1, 3 | 0x20 | 0x40]);
+        grpprl.extend_from_slice(&0x522fu16.to_le_bytes());
+        grpprl.extend_from_slice(&[(1 | (1 << 3) | (1 << 5)), 0]);
+        let section = parse_word_binary_section_properties(&grpprl);
+        assert_eq!(section.section_type, "oddPage");
+        assert!(section.landscape);
+        assert_eq!(section.page_width, 16_838);
+        assert_eq!(section.page_height, 11_906);
+        assert_eq!(section.margin_left, 720);
+        assert_eq!(section.margin_right, 840);
+        assert_eq!(section.margin_top, 1_000);
+        assert_eq!(section.margin_bottom, 1_080);
+        assert_eq!(section.gutter, 120);
+        assert_eq!(section.margin_header, 600);
+        assert_eq!(section.margin_footer, 660);
+        assert_eq!(section.columns, 3);
+        assert_eq!(section.column_spacing, 360);
+        assert!(section.column_separator && section.column_rtl);
+        assert_eq!(
+            section.page_border_top.map(|border| border.style),
+            Some("single")
+        );
+        assert_eq!(
+            section.page_border_top.and_then(|border| border.color),
+            Some([0, 0, 0])
+        );
+        assert_eq!(section.page_border_top.map(|border| border.space), Some(3));
+        assert!(
+            section
+                .page_border_top
+                .is_some_and(|border| border.shadow && border.frame)
+        );
+        assert_eq!(section.page_border_display, "firstPage");
+        assert_eq!(section.page_border_offset_from, "page");
+        assert_eq!(section.page_border_z_order, "back");
+
+        let document = docx_document(&[], section);
+        assert!(document.contains("<w:type w:val=\"oddPage\"/>"));
+        assert!(document.contains("<w:pgSz w:w=\"16838\" w:h=\"11906\" w:orient=\"landscape\" />"));
+        assert!(
+            document.contains("w:top=\"1000\" w:right=\"840\" w:bottom=\"1080\" w:left=\"720\"")
+        );
+        assert!(
+            document.contains("<w:cols w:num=\"3\" w:space=\"360\" w:sep=\"1\" w:rtl=\"1\" />")
+        );
+        assert!(
+            document.contains(
+                "<w:pgBorders w:display=\"firstPage\" w:offsetFrom=\"page\" w:zOrder=\"back\">"
+            ) && document.contains("w:color=\"000000\"")
+        );
+        assert!(
+            document.contains("w:space=\"3\"") && document.contains("w:shadow=\"1\" w:frame=\"1\"")
+        );
+
+        let mut v9 = Vec::new();
+        v9.extend_from_slice(&0xd234u16.to_le_bytes());
+        v9.extend_from_slice(&[8, 0xff, 0x00, 0x00, 0x00, 8, 1, 5 | 0x20, 0]);
+        let v9_section = parse_word_binary_section_properties(&v9);
+        assert_eq!(
+            v9_section.page_border_top.map(|border| border.style),
+            Some("single")
+        );
+        assert_eq!(
+            v9_section.page_border_top.and_then(|border| border.color),
+            Some([255, 0, 0])
+        );
+        assert_eq!(
+            v9_section.page_border_top.map(|border| border.space),
+            Some(5)
+        );
+        assert!(
+            v9_section
+                .page_border_top
+                .is_some_and(|border| border.shadow && !border.frame)
+        );
+
+        let mut automatic_v9 = Vec::new();
+        automatic_v9.extend_from_slice(&0xd234u16.to_le_bytes());
+        automatic_v9.extend_from_slice(&[8, 0, 0, 0, 0xff, 8, 1, 0, 0]);
+        let automatic_section = parse_word_binary_section_properties(&automatic_v9);
+        assert_eq!(
+            automatic_section
+                .page_border_top
+                .and_then(|border| border.color),
+            None
+        );
+        assert!(docx_document(&[], automatic_section).contains("w:color=\"auto\""));
+
+        let second = DocxSection {
+            page_width: 12_240,
+            page_height: 15_840,
+            ..DocxSection::default()
+        };
+        let multi_section_document = docx_document_with_sections(
+            &[
+                DocxParagraph {
+                    text: "First".into(),
+                    source_cp_start: 0,
+                    source_cp_end: 10,
+                    ..Default::default()
+                },
+                DocxParagraph {
+                    text: "Second".into(),
+                    source_cp_start: 10,
+                    source_cp_end: 20,
+                    ..Default::default()
+                },
+            ],
+            &[
+                WordBinarySection {
+                    cp_end: 10,
+                    properties: section,
+                },
+                WordBinarySection {
+                    cp_end: i32::MAX,
+                    properties: second,
+                },
+            ],
+        );
+        assert_eq!(multi_section_document.matches("<w:sectPr>").count(), 2);
+        assert!(
+            multi_section_document
+                .contains("<w:pgSz w:w=\"16838\" w:h=\"11906\" w:orient=\"landscape\" />")
+        );
+        assert!(multi_section_document.contains("<w:pgSz w:w=\"12240\" w:h=\"15840\" />"));
+
+        let mut section_document = vec![0u8; 64];
+        let first_grpprl = [0x1du8, 0x00, 1];
+        section_document[8..10].copy_from_slice(&(first_grpprl.len() as u16).to_le_bytes());
+        section_document[10..13].copy_from_slice(&first_grpprl);
+        let second_grpprl = [0x1du8, 0x00, 0];
+        section_document[32..34].copy_from_slice(&(second_grpprl.len() as u16).to_le_bytes());
+        section_document[34..37].copy_from_slice(&second_grpprl);
+        let mut plc = vec![0u8; 36];
+        plc[4..8].copy_from_slice(&10i32.to_le_bytes());
+        plc[8..12].copy_from_slice(&20i32.to_le_bytes());
+        plc[12 + 2..12 + 6].copy_from_slice(&8u32.to_le_bytes());
+        plc[24 + 2..24 + 6].copy_from_slice(&32u32.to_le_bytes());
+        let parsed_sections = parse_word_binary_sections(
+            &section_document,
+            &plc,
+            WordBinaryFib {
+                fc_plcf_sed: 0,
+                lcb_plcf_sed: plc.len(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(parsed_sections.len(), 2);
+        assert_eq!(parsed_sections[0].cp_end, 10);
+        assert!(parsed_sections[0].properties.landscape);
+        assert_eq!(parsed_sections[1].cp_end, 20);
+        assert!(!parsed_sections[1].properties.landscape);
+    }
+
+    #[test]
+    fn parses_all_six_header_footer_stories_for_the_last_section() {
+        let document = b"\rB\rC\rD\rE\rF\r".to_vec();
+        let mut plc = Vec::new();
+        for cp in [0u32, 0, 0, 0, 0, 0, 0, 1, 3, 5, 7, 9, 11] {
+            plc.extend_from_slice(&cp.to_le_bytes());
+        }
+        let records = parse_word_binary_header_footers(
+            &document,
+            &[],
+            &plc,
+            WordBinaryFib {
+                ccp_hdd: document.len(),
+                fc_plcf_hdd: 0,
+                lcb_plcf_hdd: plc.len(),
+                ..Default::default()
+            },
+            &[WordBinaryPiece {
+                cp_start: 0,
+                cp_end: document.len() as i32,
+                file_offset: 0,
+                compressed: true,
+                prm: 0,
+            }],
+            &[],
+            &[],
+            &[],
+        );
+        assert_eq!(records.len(), 6);
+        assert_eq!(records[0].kind, "evenHeader");
+        assert!(records[0].paragraphs.is_empty());
+        assert!(docx_header_footer_xml(&records[0]).contains("<w:p/>"));
+        assert_eq!(
+            records.last().map(|record| record.kind),
+            Some("firstFooter")
+        );
+        assert_eq!(
+            records
+                .last()
+                .map(|record| record.paragraphs[0].text.as_str()),
+            Some("F")
+        );
+    }
+
+    #[test]
+    fn writes_legacy_header_footer_parts_and_references() {
+        let headers = vec![
+            WordBinaryHeaderFooter {
+                section_index: 0,
+                kind: "defaultHeader",
+                paragraphs: vec![DocxParagraph {
+                    text: "Header text".into(),
+                    ..Default::default()
+                }],
+            },
+            WordBinaryHeaderFooter {
+                section_index: 0,
+                kind: "defaultFooter",
+                paragraphs: vec![DocxParagraph {
+                    text: "Footer text".into(),
+                    ..Default::default()
+                }],
+            },
+            WordBinaryHeaderFooter {
+                section_index: 0,
+                kind: "evenHeader",
+                paragraphs: vec![DocxParagraph {
+                    text: "Even header".into(),
+                    ..Default::default()
+                }],
+            },
+        ];
+        let section_xml = docx_section_properties_xml(DocxSection::default(), 0, &headers);
+        assert!(
+            section_xml.contains("<w:headerReference w:type=\"default\" r:id=\"rIdHeader1\"/>")
+        );
+        assert!(
+            section_xml.contains("<w:footerReference w:type=\"default\" r:id=\"rIdFooter2\"/>")
+        );
+        assert!(section_xml.contains("<w:headerReference w:type=\"even\" r:id=\"rIdHeader3\"/>"));
+        let header_xml = docx_header_footer_xml(&headers[0]);
+        assert!(header_xml.contains("<w:hdr "));
+        assert!(header_xml.contains("Header text"));
+        assert!(docx_header_footer_xml(&headers[1]).contains("<w:ftr "));
+        let relationships = docx_document_relationships(false, &[], &headers);
+        assert!(relationships.contains("rIdHeader1") && relationships.contains("header1.xml"));
+        assert!(relationships.contains("rIdFooter2") && relationships.contains("footer2.xml"));
+        assert!(relationships.contains("rIdSettings") && relationships.contains("settings.xml"));
+        let content_types = docx_content_types(false, &[], &headers);
+        assert!(
+            content_types.contains("/word/header1.xml")
+                && content_types.contains("/word/footer2.xml")
+        );
+        assert!(content_types.contains("/word/settings.xml"));
+        assert!(docx_settings().contains("<w:evenAndOddHeaders/>"));
+        let image_header = WordBinaryHeaderFooter {
+            section_index: 0,
+            kind: "defaultHeader",
+            paragraphs: vec![DocxParagraph {
+                runs: vec![DocxRun {
+                    image: Some(DocxImage {
+                        data: test_png(2, 2),
+                        extension: "png",
+                        content_type: "image/png",
+                        width_emu: 100,
+                        height_emu: 100,
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }],
+                ..Default::default()
+            }],
+        };
+        assert_eq!(docx_header_footer_image_count(&image_header), 1);
+        assert!(docx_header_footer_relationships(&image_header, 3).contains("media/image4.png"));
+
+        let output =
+            env::temp_dir().join(format!("converter-core-even-header-{}.docx", process::id()));
+        write_docx_with_sections_and_headers(
+            output.to_str().unwrap(),
+            &[],
+            &[WordBinarySection {
+                cp_end: i32::MAX,
+                properties: DocxSection::default(),
+            }],
+            &headers,
+        )
+        .unwrap();
+        let file = File::open(&output).unwrap();
+        let mut archive = ZipArchive::new(file).unwrap();
+        assert!(archive.by_name("word/settings.xml").is_ok());
+        drop(archive);
+        let _ = fs::remove_file(output);
     }
 
     #[test]
@@ -7155,6 +11543,35 @@ mod tests {
         convert_raw_preview(input.to_str().unwrap(), output.to_str().unwrap(), "jpg").unwrap();
         assert_eq!(fs::read(&output).unwrap(), jpeg);
         validate_output(output.to_str().unwrap(), "jpg").unwrap();
+
+        for path in [input, output] {
+            let _ = fs::remove_file(path);
+        }
+    }
+
+    #[test]
+    fn extracts_largest_embedded_icns_png_preview() {
+        let small = test_png(32, 32);
+        let large = test_png(128, 128);
+        let bytes = test_icns(&[(b"icp5", &small), (b"ic09", &large)]);
+
+        assert_eq!(best_icns_png(&bytes), Some(large.as_slice()));
+        assert!(is_icns_source("icns"));
+        assert!(!is_icns_source("ico"));
+    }
+
+    #[test]
+    fn copies_icns_embedded_png_preview() {
+        let png = test_png(64, 64);
+        let icns = test_icns(&[(b"ic07", &png)]);
+        let base = env::temp_dir().join(format!("converter-core-icns-{}", process::id()));
+        let input = base.with_extension("icns");
+        let output = base.with_extension("png");
+        fs::write(&input, icns).unwrap();
+
+        convert_icns_preview(input.to_str().unwrap(), output.to_str().unwrap(), "png").unwrap();
+        assert_eq!(fs::read(&output).unwrap(), png);
+        validate_output(output.to_str().unwrap(), "png").unwrap();
 
         for path in [input, output] {
             let _ = fs::remove_file(path);
@@ -7202,6 +11619,83 @@ mod tests {
     }
 
     #[test]
+    fn preserves_legacy_word_fields_and_cached_results() {
+        let document = b"\x13 PAGE \\* MERGEFORMAT \x141\x15\r";
+        let paragraphs = decode_word_binary_paragraphs(
+            document,
+            &[],
+            &[WordBinaryPiece {
+                cp_start: 0,
+                cp_end: document.len() as i32,
+                file_offset: 0,
+                compressed: true,
+                prm: 0,
+            }],
+            &[],
+            &[],
+            &[],
+        );
+        assert_eq!(paragraphs.len(), 1);
+        assert_eq!(paragraphs[0].text, "1");
+        assert_eq!(paragraphs[0].runs.len(), 1);
+        assert_eq!(
+            paragraphs[0].runs[0].field_instruction,
+            "PAGE \\* MERGEFORMAT"
+        );
+        let xml = docx_document(&paragraphs, DocxSection::default());
+        assert!(xml.contains("<w:fldSimple w:instr=\"PAGE \\* MERGEFORMAT\" w:dirty=\"true\">"));
+        assert!(xml.contains("<w:t>1</w:t>"));
+    }
+
+    #[test]
+    fn simplifies_nested_legacy_fields_without_leaking_instructions() {
+        let document = b"\x13 IF \x13 PAGE \x141\x15 = 1 \"yes\" \"no\" \x14yes\x15\r";
+        let paragraphs = decode_word_binary_paragraphs(
+            document,
+            &[],
+            &[WordBinaryPiece {
+                cp_start: 0,
+                cp_end: document.len() as i32,
+                file_offset: 0,
+                compressed: true,
+                prm: 0,
+            }],
+            &[],
+            &[],
+            &[],
+        );
+        assert_eq!(paragraphs[0].text, "yes");
+        assert_eq!(
+            paragraphs[0].runs[0].field_instruction,
+            "IF 1 = 1 \"yes\" \"no\""
+        );
+        let xml = docx_document(&paragraphs, DocxSection::default());
+        assert_eq!(xml.matches("<w:fldSimple").count(), 1);
+        assert!(!xml.contains("PAGE 1"));
+
+        let no_cache = b"\x13 NUMPAGES \x15\r";
+        let paragraphs = decode_word_binary_paragraphs(
+            no_cache,
+            &[],
+            &[WordBinaryPiece {
+                cp_start: 0,
+                cp_end: no_cache.len() as i32,
+                file_offset: 0,
+                compressed: true,
+                prm: 0,
+            }],
+            &[],
+            &[],
+            &[],
+        );
+        assert_eq!(paragraphs[0].runs[0].field_instruction, "NUMPAGES");
+        assert!(
+            docx_document(&paragraphs, DocxSection::default())
+                .contains("<w:fldSimple w:instr=\"NUMPAGES\"")
+        );
+    }
+
+    #[test]
     fn writes_legacy_embedded_image_relationship() {
         let image = test_jpeg(320, 240, 8, 4);
         let base = env::temp_dir().join(format!("converter-core-image-{}", process::id()));
@@ -7214,6 +11708,7 @@ mod tests {
                     content_type: "image/jpeg",
                     width_emu: 3_048_000,
                     height_emu: 2_286_000,
+                    ..Default::default()
                 }),
                 ..Default::default()
             }],
@@ -7235,28 +11730,34 @@ mod tests {
 
     #[test]
     fn writes_legacy_table_cells_and_rows() {
-        let document = docx_document(&[
-            DocxParagraph {
-                text: "A".into(),
-                table_cell: true,
-                ..Default::default()
-            },
-            DocxParagraph {
-                text: "B".into(),
-                table_cell: true,
-                table_row_end: true,
-                ..Default::default()
-            },
-            DocxParagraph {
-                text: "C".into(),
-                table_cell: true,
-                table_row_end: true,
-                ..Default::default()
-            },
-        ]);
+        let document = docx_document(
+            &[
+                DocxParagraph {
+                    text: "A".into(),
+                    table_cell: true,
+                    ..Default::default()
+                },
+                DocxParagraph {
+                    text: "B".into(),
+                    table_cell: true,
+                    table_row_end: true,
+                    ..Default::default()
+                },
+                DocxParagraph {
+                    text: "C".into(),
+                    table_cell: true,
+                    table_row_end: true,
+                    ..Default::default()
+                },
+            ],
+            DocxSection::default(),
+        );
         assert_eq!(document.matches("<w:tbl>").count(), 1);
         assert_eq!(document.matches("<w:tr>").count(), 2);
         assert_eq!(document.matches("<w:tc>").count(), 3);
+        assert!(document.contains("<w:tblW w:w=\"10080\" w:type=\"dxa\"/>"));
+        assert_eq!(document.matches("<w:gridCol").count(), 2);
+        assert_eq!(document.matches("<w:tcW").count(), 3);
     }
 
     #[test]
@@ -7268,31 +11769,252 @@ mod tests {
         operand.extend(std::iter::repeat_n(0, 18));
         let definition = parse_word_binary_table_def(&operand).unwrap();
         assert_eq!(definition.rgdxa, [0, 1000, 2000]);
-        assert_eq!(definition.tcgrf, [0x60, 0x0002]);
+        assert_eq!(
+            definition
+                .cells
+                .iter()
+                .map(|cell| cell.flags)
+                .collect::<Vec<_>>(),
+            [0x60, 0x0002]
+        );
+    }
+
+    #[test]
+    fn preserves_legacy_table_cell_borders_and_layout() {
+        let mut operand = vec![0x1a, 0x00, 1, 0x00, 0x00, 0xe8, 0x03];
+        operand.extend_from_slice(&0x3684u16.to_le_bytes());
+        operand.extend_from_slice(&900u16.to_le_bytes());
+        operand.extend_from_slice(&[8, 1, 6, 2]);
+        operand.extend_from_slice(&[0, 0, 0, 0]);
+        operand.extend_from_slice(&[4, 3, 2, 0x20]);
+        operand.extend_from_slice(&[8, 7, 9, 0]);
+        let definition = parse_word_binary_table_def(&operand).unwrap();
+        assert_eq!(definition.cells[0].width, 900);
+        assert_eq!(
+            definition.cells[0].borders[0].and_then(|border| border.color),
+            Some([255, 0, 0])
+        );
+        assert!(definition.cells[0].borders[1].is_none());
+
+        let mut paragraphs = vec![DocxParagraph {
+            text: "Cell".into(),
+            table_cell: true,
+            table_row_end: true,
+            ..Default::default()
+        }];
+        apply_word_binary_table_definition(&mut paragraphs, &definition);
+        let document = docx_document(&paragraphs, DocxSection::default());
+        assert!(document.contains("<w:tblBorders><w:top w:val=\"nil\""));
+        assert!(document.contains("<w:tcW w:w=\"900\" w:type=\"dxa\"/>"));
+        assert!(
+            document
+                .contains("<w:top w:val=\"single\" w:sz=\"8\" w:space=\"2\" w:color=\"FF0000\"")
+        );
+        assert!(document.contains("<w:left w:val=\"nil\"/>"));
+        assert!(document.contains("<w:bottom w:val=\"double\" w:sz=\"4\" w:space=\"0\" w:color=\"0000FF\" w:shadow=\"1\"/>"));
+        assert!(document.contains(
+            "<w:noWrap/><w:textDirection w:val=\"tbRl\"/><w:tcFitText/><w:vAlign w:val=\"center\"/>"
+        ));
+    }
+
+    #[test]
+    fn preserves_legacy_table_row_height_and_pagination() {
+        let mut page = [0u8; 128];
+        let data = [
+            0, 0, // style id
+            0x03, 0x34, 1, // do not split the row
+            0x04, 0x34, 1, // repeat as a header row
+            0x07, 0x94, 0x2c, 0x01, // 300 twips
+        ];
+        page[32] = 0;
+        page[33] = (data.len() / 2) as u8;
+        page[34..34 + data.len()].copy_from_slice(&data);
+        let properties = parse_word_binary_papx_props(&page, 32, &[]).unwrap();
+        assert!(properties.table_row_cant_split && properties.table_row_header);
+        assert_eq!(properties.table_row_height, 300);
+
+        let document = docx_document(
+            &[DocxParagraph {
+                text: "Header".into(),
+                table_cell: true,
+                table_row_end: true,
+                table_row_height: -300,
+                table_row_cant_split: true,
+                table_row_header: true,
+                ..Default::default()
+            }],
+            DocxSection::default(),
+        );
+        assert!(document.contains(
+            "<w:trPr><w:cantSplit/><w:trHeight w:val=\"300\" w:hRule=\"exact\"/><w:tblHeader/></w:trPr>"
+        ));
+    }
+
+    #[test]
+    fn preserves_legacy_table_borders_alignment_and_cell_padding() {
+        let mut table_definition = vec![0x1a, 0x00, 1, 0x00, 0x00, 0xe8, 0x03];
+        table_definition.extend(std::iter::repeat_n(0, 20));
+        let mut data = vec![0, 0];
+        data.extend_from_slice(&0x5400u16.to_le_bytes());
+        data.extend_from_slice(&1u16.to_le_bytes());
+        data.extend_from_slice(&0xd605u16.to_le_bytes());
+        data.push(24);
+        for border in [
+            [8, 1, 6, 0],
+            [0, 0, 0, 0],
+            [4, 3, 2, 0],
+            [0, 0, 0, 0],
+            [2, 6, 9, 0],
+            [2, 7, 13, 0],
+        ] {
+            data.extend_from_slice(&border);
+        }
+        // Padding appears before TDef to cover the ordering used by some producers.
+        data.extend_from_slice(&0xd634u16.to_le_bytes());
+        data.extend_from_slice(&[6, 0, 1, 0x0f, 3, 120, 0]);
+        data.extend_from_slice(&0xd608u16.to_le_bytes());
+        data.extend_from_slice(&table_definition);
+        assert_eq!(data.len(), 71);
+        let mut page = [0u8; 128];
+        page[32] = 36;
+        page[33..33 + data.len()].copy_from_slice(&data);
+
+        let properties = parse_word_binary_papx_props(&page, 32, &[]).unwrap();
+        assert_eq!(properties.table_alignment, "center");
+        assert_eq!(
+            properties
+                .table_borders
+                .and_then(|borders| borders[0])
+                .and_then(|border| border.color),
+            Some([255, 0, 0])
+        );
+        let definition = properties.table_def.as_ref().unwrap();
+        assert_eq!(definition.cells[0].margins, [Some(120); 4]);
+
+        let mut paragraphs = vec![DocxParagraph {
+            text: "Cell".into(),
+            table_cell: true,
+            table_row_end: true,
+            table_alignment: properties.table_alignment,
+            table_borders: properties.table_borders,
+            ..Default::default()
+        }];
+        apply_word_binary_table_definition(&mut paragraphs, definition);
+        let document = docx_document(&paragraphs, DocxSection::default());
+        assert!(document.contains("<w:jc w:val=\"center\"/>"));
+        assert!(
+            document
+                .contains("<w:top w:val=\"single\" w:sz=\"8\" w:space=\"0\" w:color=\"FF0000\"/>")
+        );
+        assert!(document.contains("<w:insideH w:val=\"dotted\""));
+        assert!(document.contains("<w:tcMar><w:top w:w=\"120\" w:type=\"dxa\"/><w:left w:w=\"120\" w:type=\"dxa\"/><w:bottom w:w=\"120\" w:type=\"dxa\"/><w:right w:w=\"120\" w:type=\"dxa\"/></w:tcMar>"));
     }
 
     #[test]
     fn writes_legacy_table_merge_properties() {
-        let document = docx_document(&[
-            DocxParagraph {
-                text: "A".into(),
-                table_cell: true,
-                table_grid_span: 2,
-                table_v_merge: "restart",
-                table_row_end: true,
-                ..Default::default()
-            },
-            DocxParagraph {
-                text: "B".into(),
-                table_cell: true,
-                table_v_merge: "continue",
-                table_row_end: true,
-                ..Default::default()
-            },
-        ]);
+        let document = docx_document(
+            &[
+                DocxParagraph {
+                    text: "A".into(),
+                    table_cell: true,
+                    table_grid_span: 2,
+                    table_v_merge: "restart",
+                    table_row_end: true,
+                    ..Default::default()
+                },
+                DocxParagraph {
+                    text: "B".into(),
+                    table_cell: true,
+                    table_v_merge: "continue",
+                    table_row_end: true,
+                    ..Default::default()
+                },
+            ],
+            DocxSection::default(),
+        );
         assert!(document.contains("<w:gridSpan w:val=\"2\"/>"));
         assert!(document.contains("<w:vMerge w:val=\"restart\"/>"));
         assert!(document.contains("<w:vMerge/>"));
+    }
+
+    #[test]
+    fn writes_table_grid_from_all_rows() {
+        let document = docx_document(
+            &[
+                DocxParagraph {
+                    text: "A".into(),
+                    table_cell: true,
+                    table_grid_span: 3,
+                    table_grid_left: 0,
+                    table_grid_right: 6872,
+                    table_grid_bounds: vec![0, 6872, 9302],
+                    ..Default::default()
+                },
+                DocxParagraph {
+                    text: "B".into(),
+                    table_cell: true,
+                    table_grid_span: 2,
+                    table_grid_left: 6872,
+                    table_grid_right: 9302,
+                    table_grid_bounds: vec![0, 6872, 9302],
+                    table_row_end: true,
+                    ..Default::default()
+                },
+                DocxParagraph {
+                    text: "C".into(),
+                    table_cell: true,
+                    table_grid_left: 0,
+                    table_grid_right: 1062,
+                    table_grid_bounds: vec![0, 1062, 5738, 6872, 8148, 9302],
+                    table_row_end: true,
+                    ..Default::default()
+                },
+            ],
+            DocxSection::default(),
+        );
+        assert_eq!(document.matches("<w:gridCol").count(), 5);
+        assert!(document.contains("<w:gridSpan w:val=\"3\"/>"));
+        assert!(document.contains("<w:gridSpan w:val=\"2\"/>"));
+    }
+
+    #[test]
+    fn writes_legacy_table_indent_from_grid_origin() {
+        let document = docx_document(
+            &[DocxParagraph {
+                text: "Indented".into(),
+                table_cell: true,
+                table_row_end: true,
+                table_grid_left: 720,
+                table_grid_right: 1720,
+                table_grid_bounds: vec![720, 1720],
+                ..Default::default()
+            }],
+            DocxSection::default(),
+        );
+        assert!(document.contains("<w:tblInd w:w=\"720\" w:type=\"dxa\"/>"));
+    }
+
+    #[test]
+    fn writes_paragraph_layout_properties_as_valid_siblings() {
+        let document = docx_document(
+            &[DocxParagraph {
+                text: "Styled".into(),
+                spacing_before: 120,
+                spacing_after: 240,
+                line_spacing: 360,
+                line_spacing_rule: "auto",
+                keep_next: true,
+                keep_lines: true,
+                page_break_before: true,
+                bidi: true,
+                ..Default::default()
+            }],
+            DocxSection::default(),
+        );
+        assert!(document.contains(
+            "<w:spacing w:before=\"120\" w:after=\"240\" w:line=\"360\" w:lineRule=\"auto\"/><w:keepNext/><w:keepLines/><w:pageBreakBefore/><w:bidi/>"
+        ));
+        assert!(!document.contains("<w:spacing <w:keepNext"));
     }
 
     #[test]
@@ -7660,9 +12382,25 @@ mod tests {
         picture_stream.extend_from_slice(&0xf01du16.to_le_bytes());
         picture_stream.extend_from_slice(&(picture_payload.len() as u32).to_le_bytes());
         picture_stream.extend_from_slice(&picture_payload);
+        let png = test_png(640, 120);
+        let mut png_payload = vec![0u8; 17];
+        png_payload.extend_from_slice(&png);
+        png_payload.extend_from_slice(&[0xff, 0xd8, 0x12, 0x34]);
+        picture_stream.extend_from_slice(&0x6e00u16.to_le_bytes());
+        picture_stream.extend_from_slice(&0xf01eu16.to_le_bytes());
+        picture_stream.extend_from_slice(&(png_payload.len() as u32).to_le_bytes());
+        picture_stream.extend_from_slice(&png_payload);
         let pictures = parse_ppt_picture_stream(&picture_stream);
-        assert_eq!(pictures.len(), 1);
+        assert_eq!(pictures.len(), 2);
         assert_eq!(pictures[0].as_ref().unwrap().data, jpeg);
+        assert_eq!(pictures[1].as_ref().unwrap().extension, "png");
+        assert!(
+            pictures[1]
+                .as_ref()
+                .unwrap()
+                .data
+                .starts_with(b"\x89PNG\r\n\x1a\n")
+        );
 
         let mut fopt = Vec::new();
         fopt.extend_from_slice(&0x0013u16.to_le_bytes());
@@ -7670,7 +12408,56 @@ mod tests {
         fopt.extend_from_slice(&6u32.to_le_bytes());
         fopt.extend_from_slice(&0x4104u16.to_le_bytes());
         fopt.extend_from_slice(&1u32.to_le_bytes());
-        assert_eq!(find_ppt_blip_id(&fopt), Some(1));
+        assert_eq!(find_ppt_blip_ids(&fopt), [1]);
+        let mut second_fopt = fopt.clone();
+        second_fopt[10..14].copy_from_slice(&2u32.to_le_bytes());
+        let records = [fopt, second_fopt].concat();
+        assert_eq!(find_ppt_blip_ids(&records), [1, 2]);
+
+        let mut anchor = Vec::new();
+        anchor.extend_from_slice(&0u16.to_le_bytes());
+        anchor.extend_from_slice(&0xf010u16.to_le_bytes());
+        anchor.extend_from_slice(&8u32.to_le_bytes());
+        for value in [120u16, 240, 7_200, 4_000] {
+            anchor.extend_from_slice(&value.to_le_bytes());
+        }
+        let shape_payload = [records[..14].to_vec(), anchor].concat();
+        let mut shape = Vec::new();
+        shape.extend_from_slice(&0x000fu16.to_le_bytes());
+        shape.extend_from_slice(&0xf004u16.to_le_bytes());
+        shape.extend_from_slice(&(shape_payload.len() as u32).to_le_bytes());
+        shape.extend_from_slice(&shape_payload);
+        let layers = find_ppt_blip_layers(&shape);
+        assert_eq!(layers.len(), 1);
+        let layer_anchor = layers[0].1.unwrap();
+        assert_eq!((layer_anchor.left, layer_anchor.top), (120, 240));
+        assert_eq!((layer_anchor.right, layer_anchor.bottom), (7_200, 4_000));
+    }
+
+    #[test]
+    fn renders_powerpoint_image_layers_on_the_same_slide() {
+        let slide = OdfSlide {
+            name: "Layered slide".into(),
+            paragraphs: Vec::new(),
+            legacy_binary: true,
+            image: Some(PptSlideImage {
+                extension: "jpeg",
+                content_type: "image/jpeg",
+                data: test_jpeg(1600, 900, 8, 4),
+                anchor: None,
+            }),
+            overlay_images: vec![PptSlideImage {
+                extension: "png",
+                content_type: "image/png",
+                data: test_png(1200, 180),
+                anchor: None,
+            }],
+        };
+        let xml = pptx_slide(&slide);
+        let relationships = pptx_image_relationships(1, &pptx_image_layers(&slide));
+        assert!(xml.contains("rIdImage1") && xml.contains("rIdImage2"));
+        assert!(relationships.contains("image1-1.jpeg"));
+        assert!(relationships.contains("image1-2.png"));
     }
 
     #[test]

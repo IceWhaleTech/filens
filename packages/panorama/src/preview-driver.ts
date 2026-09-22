@@ -24,8 +24,8 @@ import {
   VideoTexture,
   WebGLRenderer
 } from 'three';
-import { createCalibratedPanoramaImageRenderer, createCalibratedPanoramaRenderer, type CalibratedPanoramaRenderer, type PanoramaStabilizationMode } from './calibrated-renderer';
-import type { PanoramaAssetManifest, PanoramaProcessor } from './wasm-processor';
+import { createBrowserCalibratedPanoramaRenderer, createCalibratedPanoramaImageRenderer, createCalibratedPanoramaRenderer, type CalibratedPanoramaRenderer, type PanoramaStabilizationMode } from './calibrated-renderer';
+import { PanoramaProcessorError, type PanoramaAssetManifest, type PanoramaProcessor } from './wasm-processor';
 
 type PreviewListenerMap = {
   [K in PreviewEventName]: Set<(payload: PreviewEventMap[K]) => void>;
@@ -418,18 +418,25 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
   }
 
   private async tryCalibratedVendor(source: PreviewSource, format: 'osv' | 'insv', name: string | undefined, signal: AbortSignal | undefined, scene: Scene): Promise<boolean> {
+    let manifest: PanoramaAssetManifest | undefined;
+    let ordered: { source: PreviewSource; companion?: PreviewSource; primaryName?: string } | undefined;
     try {
       const companion = format === 'insv' ? await this.resolveInstaCompanion(name) : undefined;
-      const ordered = orderInstaPair(source, companion, name);
+      ordered = orderInstaPair(source, companion, name);
       const sidecar = format === 'insv' ? await this.resolveInstaSidecar(ordered.primaryName) : undefined;
-      const manifest = await this.processor!.open(ordered.source, { format, sidecar, companion: ordered.companion, signal });
-      if (manifest.projection.kind === 'equirectangular') {
+      manifest = await this.processor!.open(ordered.source, { format, sidecar, companion: ordered.companion, signal });
+      const browserStitchedProxy = manifest.projection.kind === 'unknown'
+        && manifest.tracks.length === 1
+        && isEquirectangularSize(manifest.tracks[0].width, manifest.tracks[0].height);
+      if (manifest.projection.kind === 'equirectangular' || browserStitchedProxy) {
         this.state.vendor = manifest.vendor;
         this.state.cameraModel = manifest.cameraModel;
         this.state.calibrationSource = manifest.calibrationSource;
-        this.state.projection = manifest.projection.kind;
-        this.state.proxyPreview = Boolean(manifest.proxyPreview);
-        this.state.warnings = manifest.warnings;
+        this.state.projection = browserStitchedProxy ? 'equirectangular' : manifest.projection.kind;
+        this.state.proxyPreview = Boolean(manifest.proxyPreview) || browserStitchedProxy;
+        this.state.warnings = browserStitchedProxy
+          ? [...manifest.warnings, 'INSV calibration metadata was unavailable; using its browser-decodable 2:1 stitched track as a proxy.']
+          : manifest.warnings;
         if (this.state.warnings.length) this.emit('warnings', this.state.warnings);
         this.processor?.close();
         return false;
@@ -460,7 +467,38 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       return true;
     } catch (error) {
       this.processor?.close();
-      this.osmoFallbackReason = error instanceof Error ? error.message : String(error);
+      if (format === 'insv' && manifest && ordered && error instanceof PanoramaProcessorError && error.code === 'codec_unsupported') {
+        try {
+          const calibrated = await createBrowserCalibratedPanoramaRenderer(manifest, ordered.source, ordered.companion);
+          scene.add(calibrated.mesh);
+          this.calibratedRenderer = calibrated;
+          this.state.vendor = manifest.vendor;
+          this.state.cameraModel = manifest.cameraModel;
+          this.state.calibrationSource = manifest.calibrationSource;
+          this.state.projection = manifest.projection.kind;
+          this.state.decodeMode = 'browser-media';
+          this.state.stitchMode = 'calibrated-blend';
+          this.state.proxyPreview = false;
+          this.state.stabilizationAvailable = false;
+          this.state.stabilizationMode = 'off';
+          this.state.naturalWidth = manifest.tracks[0]?.width;
+          this.state.naturalHeight = manifest.tracks[0]?.height;
+          this.state.duration = calibrated.duration;
+          this.state.currentTime = calibrated.currentTime;
+          this.state.paused = calibrated.paused;
+          this.state.muted = true;
+          this.createCalibratedControls(calibrated);
+          this.state.warnings = [
+            'WebCodecs is unavailable; using browser media decoding. Dynamic seams and IMU stabilization are disabled.',
+            ...manifest.warnings
+          ];
+          this.emit('warnings', this.state.warnings);
+          return true;
+        } catch (fallbackError) {
+          error = fallbackError;
+        }
+      }
+      this.osmoFallbackReason = format === 'insv' ? describeInstaFallback(error) : error instanceof Error ? error.message : String(error);
       this.state.warnings = [format === 'osv' ? `${this.osmoFallbackReason} Falling back to the camera-generated LRF proxy.` : this.osmoFallbackReason];
       return false;
     }
@@ -735,6 +773,19 @@ export function normalizePanoramaLoadError(error: unknown, format?: string): Err
     return new Error(`${normalizedFormat.toUpperCase()} source could not be decoded by this browser. Stitch or export it with the camera vendor app as a 2:1 JPEG, MP4, or WebM file.`);
   }
   return error instanceof Error ? error : new Error(String(error));
+}
+
+function describeInstaFallback(error: unknown): string {
+  if (!(error instanceof PanoramaProcessorError)) {
+    return error instanceof Error ? error.message : String(error);
+  }
+  if (error.code === 'sidecar_missing') {
+    return 'This INSV needs its matching .insv.pb calibration sidecar. Upload the sidecar with the video, or export a stitched 2:1 MP4/WebM file.';
+  }
+  if (error.code === 'calibration_missing' || error.code === 'invalid_manifest') {
+    return 'This INSV needs both matching _00_/_10_ lens files and valid calibration metadata. Upload the pair, or export a stitched 2:1 MP4/WebM file.';
+  }
+  return error.message;
 }
 
 function previewSourceFromResource(

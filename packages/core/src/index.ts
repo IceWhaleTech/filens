@@ -19,6 +19,7 @@ export type {
   PreviewResourceResolveRequest,
   PreviewResourceResolveResult,
   PreviewResourceResolver,
+  PreviewerFactory,
   PreviewSession
 } from './preview/types';
 export type * from './types';

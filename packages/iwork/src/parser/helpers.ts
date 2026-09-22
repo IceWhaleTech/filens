@@ -907,6 +907,13 @@ export function buildTextFrameFromStorage(
   const paraStyleEntries = normalizeStyleEntries(readField(storage, ['tableParaStyle', 'table_para_style']), options.defaultParagraphStyleRef);
   const listStyleEntries = normalizeStyleEntries(readField(storage, ['tableListStyle', 'table_list_style']));
   const charStyleEntries = normalizeStyleEntries(readField(storage, ['tableCharStyle', 'table_char_style']));
+  const implicitListStyleCounts = countImplicitListStyleParagraphs(
+    archive,
+    text,
+    paragraphStarts,
+    paraStyleEntries,
+    listStyleEntries
+  );
   const paragraphs: TextParagraph[] = [];
 
   for (let index = 0; index < paragraphStarts.length; index += 1) {
@@ -914,7 +921,7 @@ export function buildTextFrameFromStorage(
     const end = paragraphStarts[index + 1] ?? text.length;
     const rawText = text.slice(start, end);
     const paragraphText = rawText.endsWith('\n') ? rawText.slice(0, -1) : rawText;
-    const paragraphStyleRef = resolveActiveStyleRef(paraStyleEntries, start);
+    const paragraphStyleRef = resolveActiveStyleRef(paraStyleEntries, start, true);
     const paragraphStyle = resolveMergedStyle(archive, paragraphStyleRef);
     const paragraphCharProps = asObject(readField(paragraphStyle, ['charProperties', 'char_properties']));
     const paraProps = asObject(readField(paragraphStyle, ['paraProperties', 'para_properties']));
@@ -922,10 +929,18 @@ export function buildTextFrameFromStorage(
     const defaultFontSize = resolveParagraphDefaultFontSize(runs, paragraphCharProps);
     const normalizedLevel = normalizeOutlineLevel(readField<number>(paraProps, ['outlineLevel', 'outline_level']));
     const listStyleRef = resolveParagraphListStyleRef(paraProps, listStyleEntries, start);
-    const bullet = resolveParagraphBullet(archive, listStyleRef, normalizedLevel);
+    const bullet = resolveParagraphBullet(
+      archive,
+      listStyleRef,
+      normalizedLevel,
+      paragraphText,
+      paraProps,
+      implicitListStyleCounts
+    );
     const listIndent = bullet ? resolveParagraphListIndent(archive, listStyleRef, normalizedLevel, defaultFontSize) : undefined;
     const marginLeft = resolveParagraphIndentValue(readField<number>(paraProps, ['leftIndent', 'left_indent']), listIndent?.marginLeft);
     const indent = resolveParagraphIndentValue(readField<number>(paraProps, ['firstLineIndent', 'first_line_indent']), listIndent?.indent);
+    const explicitSpaceAfter = Number(readField<number>(paraProps, ['spaceAfter', 'space_after']) ?? 0);
 
     paragraphs.push({
       align: paragraphAlignFromValue(readField(paraProps, ['alignment'])),
@@ -934,7 +949,8 @@ export function buildTextFrameFromStorage(
       marginLeft,
       indent,
       spaceBefore: Number(readField<number>(paraProps, ['spaceBefore', 'space_before']) ?? 0),
-      spaceAfter: Number(readField<number>(paraProps, ['spaceAfter', 'space_after']) ?? 0),
+      spaceAfter: bullet && explicitSpaceAfter <= 0 ? 6 : explicitSpaceAfter,
+      ...(archive.type === 'pages' ? { lineHeight: 1.2, lineHeightUnit: 'multiple' as const } : {}),
       runs: runs.length ? runs : [{ text: paragraphText }]
     });
   }
@@ -1013,11 +1029,18 @@ function normalizeStyleEntries(styleTableLike: unknown, leadingRef?: unknown): A
   return entries.sort((left, right) => left.index - right.index);
 }
 
-function resolveActiveStyleRef(entries: Array<{ index: number; refId?: number }>, offset: number): number | undefined {
+function resolveActiveStyleRef(
+  entries: Array<{ index: number; refId?: number }>,
+  offset: number,
+  preservePreviousOnEmpty = false
+): number | undefined {
   let active: number | undefined;
   for (const entry of entries) {
     if (entry.index > offset) {
       break;
+    }
+    if (preservePreviousOnEmpty && entry.refId == null) {
+      continue;
     }
     active = entry.refId;
   }
@@ -1110,7 +1133,10 @@ function resolveParagraphListStyleRef(
 function resolveParagraphBullet(
   archive: IworkArchiveIndex,
   listStyleRef: unknown,
-  level: number
+  level: number,
+  paragraphText: string,
+  paraProps: AnyObject | undefined,
+  implicitListStyleCounts: Map<number, number>
 ): TextParagraph['bullet'] | undefined {
   const listStyle = resolveMergedStyle(archive, listStyleRef);
   if (!listStyle) {
@@ -1118,8 +1144,15 @@ function resolveParagraphBullet(
   }
 
   const labelTypes = asArray<number>(readField(listStyle, ['labelTypes', 'label_types']));
-  const labelType = labelTypes[level] ?? labelTypes[0] ?? 0;
-  if (labelType === 0) {
+  const labelType = labelTypes[level] ?? labelTypes[0];
+  const implicitBullet = labelType == null && paragraphSupportsImplicitBullet(
+    archive,
+    listStyleRef,
+    paragraphText,
+    paraProps,
+    implicitListStyleCounts
+  );
+  if (labelType == null && !implicitBullet) {
     return undefined;
   }
 
@@ -1132,6 +1165,13 @@ function resolveParagraphBullet(
     color: isMeaningfulColorValue(colorValue) ? color : undefined,
     colorAlpha: isMeaningfulColorValue(colorValue) ? colorOpacity : undefined
   };
+
+  if (implicitBullet) {
+    return {
+      ...baseBullet,
+      char: '•'
+    };
+  }
 
   if (labelType === 2) {
     const strings = asArray<string>(readField(listStyle, ['strings']));
@@ -1155,6 +1195,76 @@ function resolveParagraphBullet(
   }
 
   return undefined;
+}
+
+function countImplicitListStyleParagraphs(
+  archive: IworkArchiveIndex,
+  text: string,
+  paragraphStarts: number[],
+  paraStyleEntries: Array<{ index: number; refId?: number }>,
+  listStyleEntries: Array<{ index: number; refId?: number }>
+): Map<number, number> {
+  const counts = new Map<number, number>();
+  if (archive.type !== 'pages') {
+    return counts;
+  }
+
+  for (let index = 0; index < paragraphStarts.length; index += 1) {
+    const start = paragraphStarts[index];
+    const end = paragraphStarts[index + 1] ?? text.length;
+    const paragraphText = text.slice(start, end).replace(/\n$/, '');
+    if (!hasMeaningfulParagraphText(paragraphText)) {
+      continue;
+    }
+
+    const paragraphStyleRef = resolveActiveStyleRef(paraStyleEntries, start, true);
+    const paragraphStyle = resolveMergedStyle(archive, paragraphStyleRef);
+    const paraProps = asObject(readField(paragraphStyle, ['paraProperties', 'para_properties']));
+    const listStyleRef = resolveParagraphListStyleRef(paraProps, listStyleEntries, start);
+    const listStyleId = getRefId(listStyleRef);
+    const listStyle = resolveMergedStyle(archive, listStyleRef);
+    const labelTypes = asArray<number>(readField(listStyle, ['labelTypes', 'label_types']));
+    if (listStyleId == null || !listStyle || labelTypes.length) {
+      continue;
+    }
+    counts.set(listStyleId, (counts.get(listStyleId) ?? 0) + 1);
+  }
+
+  return counts;
+}
+
+function paragraphSupportsImplicitBullet(
+  archive: IworkArchiveIndex,
+  listStyleRef: unknown,
+  paragraphText: string,
+  paraProps: AnyObject | undefined,
+  implicitListStyleCounts: Map<number, number>
+): boolean {
+  if (archive.type !== 'pages' || !hasMeaningfulParagraphText(paragraphText)) {
+    return false;
+  }
+
+  const listStyleId = getRefId(listStyleRef);
+  if (listStyleId == null) {
+    return false;
+  }
+  if ((implicitListStyleCounts.get(listStyleId) ?? 0) > 1) {
+    return true;
+  }
+
+  const firstLineIndent = Number(readField<number>(paraProps, ['firstLineIndent', 'first_line_indent']) ?? 0);
+  const leftIndent = Number(readField<number>(paraProps, ['leftIndent', 'left_indent']) ?? 0);
+  if (Math.abs(firstLineIndent) > 0.001 || Math.abs(leftIndent) > 0.001) {
+    return true;
+  }
+
+  const spaceBefore = Number(readField<number>(paraProps, ['spaceBefore', 'space_before']) ?? 0);
+  const spaceAfter = Number(readField<number>(paraProps, ['spaceAfter', 'space_after']) ?? 0);
+  return Math.abs(spaceBefore) <= 0.001 && Math.abs(spaceAfter) <= 0.001;
+}
+
+function hasMeaningfulParagraphText(text: string): boolean {
+  return text.replace(/[\u0000-\u0020\u00a0\uFFFC]/g, '').length > 0;
 }
 
 function resolveParagraphListIndent(

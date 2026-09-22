@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import JSZip from 'jszip';
-import { computed, defineAsyncComponent, ref, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import AppleLivePhotoPreview from './components/AppleLivePhotoPreview.vue';
+import { zimaAuth } from './zimaAuth';
 import { createWasmConverterClient } from '@filens/converter-client';
 import { createWasmPanoramaProcessor } from '@filens/panorama';
 import type { ZipArchiveResource } from '@filens/archive';
@@ -14,10 +15,6 @@ import {
   listPreviewFormats,
   type PreviewFamily,
   type PreviewFontResolver,
-  type PagedPreviewState,
-  type WorkbookPreviewState,
-  type EbookPreviewState,
-  type DiagramPreviewState,
   type ConverterClient,
   type PreviewFitMode,
   type PreviewItemState,
@@ -59,13 +56,20 @@ function zimaFileSource(relativePath: string): string {
   return `${zimaFilePrefix}${zimaSampleRoot}/${relativePath.replace(/^\/+/, '')}`;
 }
 
-function resolveZimaFileSource(source: PreviewSource): PreviewSource {
-  if (import.meta.env.PROD && typeof source === 'string' && source.startsWith('/samples/')) {
+function resolvePublicSamplePath(source: string): string {
+  if (source.startsWith('/samples/')) {
     return `${import.meta.env.BASE_URL}${source.slice('/'.length)}`;
   }
-  if (typeof source !== 'string' || !source.startsWith(zimaFilePrefix)) return source;
+  return source;
+}
+
+function resolveZimaFileSource(source: PreviewSource): PreviewSource {
+  if (typeof source !== 'string') return source;
+  const publicSamplePath = resolvePublicSamplePath(source);
+  if (publicSamplePath !== source) return publicSamplePath;
+  if (!source.startsWith(zimaFilePrefix)) return source;
   const filePath = source.slice(zimaFilePrefix.length);
-  const token = typeof localStorage === 'undefined' ? '' : localStorage.getItem('access_token') ?? '';
+  const token = zimaAuth.getAccessToken();
   const params = new URLSearchParams({ token, files: filePath, action: 'preview' });
   return `/v3/file?${params.toString()}`;
 }
@@ -96,7 +100,9 @@ type ConversionManifestEntry = { sourceFormat: string; targetFormat: string };
 const conversionKindBySource = new Map<string, DemoKind>(
   [...conversionManifest as ConversionManifestEntry[]].reverse().map((entry) => [entry.sourceFormat, demoKindForConversionTarget(entry.targetFormat)])
 );
-const converterCoreWasmUrl = new URL('../../../wasm/converter-core/dist/converter-core.wasm', import.meta.url).href;
+// Keep conversion modules outside the main graph; each module is fetched on its first matching route.
+const converterCoreWasmUrl = `${import.meta.env.BASE_URL}externals/converter-core.wasm`;
+const converterImageWasmUrl = `${import.meta.env.BASE_URL}externals/converter-image.wasm`;
 
 const staticSamples: DemoSource[] = [
   {
@@ -835,6 +841,14 @@ const staticSamples: DemoSource[] = [
   },
   {
     kind: 'image',
+    label: 'ICNS · Embedded PNG',
+    name: 'photo-transparency.icns',
+    source: '/samples/photo-transparency.icns',
+    contentType: 'application/x-icns',
+    mode: 'sample'
+  },
+  {
+    kind: 'image',
     label: 'BMP · Camera Sample',
     name: 'photo-sample.bmp',
     source: '/samples/photo-sample.bmp',
@@ -1278,16 +1292,11 @@ const staticSamples: DemoSource[] = [
 ];
 
 const defaultRemoteUrl = 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.pptx';
+const remotePrefetchKinds = new Set<DemoKind>(['pptx', 'key', 'pages', 'numbers', 'pdf', 'docx', 'xlsx', 'csv', 'ppt']);
 const Preview = defineAsyncComponent(() => import('@filens/vue').then(({ Preview: preview }) => preview));
 interface DemoBuildInfo {
   distBytes: number;
   runtimeBytes: number;
-  runtimeGzipBytes: number;
-  runtimeBrotliBytes: number;
-  referencedDist?: {
-    gzipBytes: number;
-    brotliBytes: number;
-  };
   entry?: {
     file: string;
     bytes: number;
@@ -1295,6 +1304,17 @@ interface DemoBuildInfo {
     brotliBytes?: number;
   };
   converterCoreWasm?: {
+    file?: string;
+    external?: boolean;
+    loading?: 'on-demand' | 'eager';
+    bytes: number;
+    gzipBytes?: number;
+    brotliBytes?: number;
+  };
+  converterImageWasm?: {
+    file?: string;
+    external?: boolean;
+    loading?: 'on-demand' | 'eager';
     bytes: number;
     gzipBytes?: number;
     brotliBytes?: number;
@@ -1517,9 +1537,14 @@ const lastError = ref<string | null>(null);
 const uploadResourceResolver = shallowRef<PreviewResourceResolver | undefined>(undefined);
 const renderStartedAt = shallowRef<number | null>(null);
 const renderTimeMs = shallowRef<number | null>(null);
+const downloadTimeMs = shallowRef<number | null>(null);
 const conversionTimeMs = shallowRef<number | null>(null);
+let pendingDownloadTimeMs: number | null = null;
 let measurementGeneration = 0;
-const converterCore = createWasmConverterClient({ wasm: converterCoreWasmUrl });
+const converterCore = createWasmConverterClient({
+  wasm: converterCoreWasmUrl,
+  imageWasm: converterImageWasmUrl
+});
 const converter: ConverterClient = {
   async convert(request, context) {
     const startedAt = performanceNow();
@@ -1534,15 +1559,68 @@ const converter: ConverterClient = {
   }
 };
 const panoramaProcessor = createWasmPanoramaProcessor({ wasm: converterCoreWasmUrl });
-type PreviewExposed = InstanceType<typeof Preview> & { goToIndex?: (index: number) => void };
-const previewRef = ref<PreviewExposed | null>(null);
-type SidebarTab = 'navigator' | 'samples';
-const sidebarTab = ref<SidebarTab>('navigator');
+const zimaAuthRequired = ref(false);
+const loginDialogOpen = ref(false);
+const loginBusy = ref(false);
+const loginError = ref<string | null>(null);
+let unsubscribeZimaAuth: (() => void) | undefined;
+let zimaAuthPollTimer: number | undefined;
+
+function syncZimaAuthState(): void {
+  if (!zimaAuthRequired.value) return;
+  if (zimaAuth.isAuthenticated()) {
+    if (zimaAuthPollTimer !== undefined) {
+      window.clearInterval(zimaAuthPollTimer);
+      zimaAuthPollTimer = undefined;
+    }
+    loginDialogOpen.value = false;
+    loginError.value = null;
+    return;
+  }
+  loginDialogOpen.value = true;
+}
+
+async function requestZimaLogin(): Promise<void> {
+  loginBusy.value = true;
+  loginError.value = null;
+  try {
+    const hostOpenedLogin = await zimaAuth.openLogin();
+    syncZimaAuthState();
+    if (!zimaAuth.isAuthenticated() && !hostOpenedLogin) {
+      loginError.value = '未检测到 ZimaOS 登录入口，请点击下方按钮跳转登录。';
+    }
+  } catch (error) {
+    loginError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    loginBusy.value = false;
+  }
+}
+
+function goToZimaLogin(): void {
+  zimaAuth.goToLogin();
+}
+
+onMounted(() => {
+  zimaAuthRequired.value = zimaAuth.isZimaRuntime();
+  if (!zimaAuthRequired.value) return;
+  unsubscribeZimaAuth = zimaAuth.subscribe(syncZimaAuthState);
+  syncZimaAuthState();
+  if (!zimaAuth.isAuthenticated()) {
+    zimaAuthPollTimer = window.setInterval(syncZimaAuthState, 500);
+    void requestZimaLogin();
+  }
+});
+
+onBeforeUnmount(() => {
+  unsubscribeZimaAuth?.();
+  if (zimaAuthPollTimer !== undefined) window.clearInterval(zimaAuthPollTimer);
+});
 
 function demoKindForConversionTarget(targetFormat: string): DemoKind {
   switch (targetFormat) {
     case 'jpg':
     case 'jpeg':
+    case 'png':
     case 'webp':
       return 'image';
     case 'docx':
@@ -1557,43 +1635,35 @@ void import('@filens/vue').then(({ createVueDefaultPreviewRoutes }) => {
   demoRoutes.value = createVueDefaultPreviewRoutes();
 });
 
-const viewerLabel = computed(() => `${current.value.label} (${current.value.name})`);
 const familyLabel = computed(() => renderedState.value?.family ?? detectKind(current.value.name) ?? current.value.kind);
 const warningCount = computed(() => renderedState.value?.warnings.length ?? 0);
-const referencedDistSizeLabel = computed(() => {
-  const referencedDist = buildInfo.value?.referencedDist;
-  if (referencedDist) {
-    return `${formatBytes(referencedDist.gzipBytes)} gzip · ${formatBytes(referencedDist.brotliBytes)} br`;
-  }
-  return buildInfo.value ? `${formatBytes(buildInfo.value.runtimeGzipBytes)} gzip · ${formatBytes(buildInfo.value.runtimeBrotliBytes)} br` : '构建后读取';
-});
 const entrySizeLabel = computed(() => {
   const entry = buildInfo.value?.entry;
   return entry ? `${formatBytes(entry.gzipBytes)} gzip · ${formatBytes(entry.brotliBytes)} br` : '构建后读取';
 });
 const renderTimeLabel = computed(() => formatDuration(renderTimeMs.value));
+const downloadTimeLabel = computed(() => formatDuration(downloadTimeMs.value));
 const conversionTimeLabel = computed(() => formatDuration(conversionTimeMs.value));
+const runtimeTimings = computed(() => [
+  downloadTimeMs.value === null ? null : { label: '下载', value: downloadTimeLabel.value },
+  conversionTimeMs.value === null ? null : { label: '转换', value: conversionTimeLabel.value },
+  renderTimeMs.value === null ? null : { label: '渲染', value: renderTimeLabel.value }
+].filter((timing): timing is { label: string; value: string } => timing !== null));
 const wasmSizeLabel = computed(() => {
   const wasm = buildInfo.value?.converterCoreWasm;
+  return wasm ? `${formatBytes(wasm.gzipBytes)} gzip · ${formatBytes(wasm.brotliBytes)} br` : '构建后读取';
+});
+const wasmDependencyLabel = computed(() => {
+  return '外挂 · 首次转换/全景操作时加载';
+});
+const imageWasmSizeLabel = computed(() => {
+  const wasm = buildInfo.value?.converterImageWasm;
   return wasm ? `${formatBytes(wasm.gzipBytes)} gzip · ${formatBytes(wasm.brotliBytes)} br` : '构建后读取';
 });
 const performanceLabel = computed(() => {
   const performance = buildInfo.value?.typicalPerformance;
   if (!performance) return '小样例快照';
   return `DOC→DOCX ${performance.smallDocToDocxMs ?? '—'}ms · XLS→XLSX ${performance.smallXlsToXlsxMs ?? '—'}ms · PPT→PPTX ${performance.smallPptToPptxMs ?? '—'}ms`;
-});
-const activeKind = computed<DemoKind>(() => current.value.kind);
-const showSideTabs = computed(() => true);
-const showNavigatorPanel = computed(() => sidebarTab.value === 'navigator' && Boolean(navigatorKind.value));
-const showSamplesPanel = computed(() => sidebarTab.value !== 'navigator' || !navigatorKind.value);
-const staticSamplesByKind = computed(() => {
-  const entries = new Map<DemoKind, DemoSource[]>();
-  for (const sample of staticSamples) {
-    const list = entries.get(sample.kind) ?? [];
-    list.push(sample);
-    entries.set(sample.kind, list);
-  }
-  return entries;
 });
 const businessFormatFamilies = computed(() => {
   const families = new Map(businessFormatFamilyOrder.map((id) => [id, {
@@ -1618,31 +1688,6 @@ const businessFormatFamilies = computed(() => {
 const selectedFormatFamily = computed(() => businessFormatFamilies.value.find((family) => family.id === selectedFormatFamilyId.value));
 const activeFormatExtension = computed(() => current.value.catalogId ?? inferExtensionFromName(current.value.name) ?? '');
 const previewFit = computed<PreviewFitMode>(() => iworkFormats.has(activeFormatExtension.value) ? 'width' : 'contain');
-const activeKindSamples = computed(() => staticSamplesByKind.value.get(activeKind.value) ?? []);
-const hasCurrentSample = computed(() =>
-  (staticSamplesByKind.value.get(current.value.kind) ?? []).some((sample) => sample.name === current.value.name)
-);
-const navigatorKind = computed<'page' | 'sheet' | 'chapter' | null>(() => {
-  const state = renderedState.value;
-  if (!state) return null;
-  if (state.family === 'paged') return 'page';
-  if (state.family === 'diagram') return 'page';
-  if (state.family === 'workbook') return 'sheet';
-  if (state.family === 'ebook') return 'chapter';
-  return null;
-});
-const navigatorTitle = computed(() => {
-  switch (navigatorKind.value) {
-    case 'page':
-      return 'Pages';
-    case 'sheet':
-      return 'Sheets';
-    case 'chapter':
-      return 'Chapters';
-    default:
-      return '';
-  }
-});
 
 watch(
   () => [current.value.name, current.value.contentType, current.value.source],
@@ -1650,6 +1695,8 @@ watch(
     measurementGeneration += 1;
     renderStartedAt.value = performanceNow();
     renderTimeMs.value = null;
+    downloadTimeMs.value = pendingDownloadTimeMs;
+    pendingDownloadTimeMs = null;
     conversionTimeMs.value = null;
     if (current.value.catalogId) {
       selectedFormatFamilyId.value = getBusinessFormatCategory(current.value.catalogId, 'image').familyId;
@@ -1669,57 +1716,6 @@ function selectFormatFamily(id: BusinessFormatFamilyId): void {
 function useFormatSample(extension: string): void {
   const sample = sampleByExtension.get(extension);
   if (sample) void useSample(sample);
-}
-const navigatorActiveIndex = computed(() => {
-  const state = renderedState.value;
-  if (!state) return 0;
-  if (state.family === 'paged') return (state as PagedPreviewState).pageIndex ?? 0;
-  if (state.family === 'diagram') return (state as DiagramPreviewState).pageIndex ?? 0;
-  if (state.family === 'workbook') return (state as WorkbookPreviewState).activeSheetIndex ?? 0;
-  if (state.family === 'ebook') return (state as EbookPreviewState).chapterIndex ?? 0;
-  return 0;
-});
-const navigatorItems = computed(() => {
-  const state = renderedState.value;
-  if (!state) return [] as Array<{ index: number; label: string; meta?: string }>;
-
-  if (state.family === 'paged') {
-    const paged = state as PagedPreviewState;
-    return Array.from({ length: Math.max(paged.pageCount ?? 0, 0) }, (_, index) => ({
-      index,
-      label: `Page ${index + 1}`
-    }));
-  }
-
-  if (state.family === 'diagram') {
-    const diagram = state as DiagramPreviewState;
-    return Array.from({ length: Math.max(diagram.pageCount ?? 0, 0) }, (_, index) => ({
-      index,
-      label: `Page ${index + 1}`
-    }));
-  }
-
-  if (state.family === 'workbook') {
-    const workbook = state as WorkbookPreviewState;
-    return (workbook.sheets ?? []).map((sheet, index) => ({
-      index,
-      label: sheet.name || `Sheet ${index + 1}`
-    }));
-  }
-
-  if (state.family === 'ebook') {
-    const ebook = state as EbookPreviewState;
-    return (ebook.chapters ?? []).map((chapter, index) => ({
-      index,
-      label: chapter.title || `Chapter ${index + 1}`
-    }));
-  }
-
-  return [] as Array<{ index: number; label: string; meta?: string }>;
-});
-
-function goToNavigator(index: number): void {
-  previewRef.value?.goToIndex?.(index);
 }
 
 const model3dSummary = computed(() => {
@@ -1753,6 +1749,8 @@ const fontResolver: PreviewFontResolver = ({ family, fontFile }) => {
 async function useSample(sample: DemoSource): Promise<void> {
   renderedState.value = null;
   lastError.value = null;
+  downloadTimeMs.value = null;
+  pendingDownloadTimeMs = null;
   const materialized = await materializeSample(sample);
   current.value = materialized;
   // Use the materialized resolver so companion/sidecar paths get the same
@@ -1761,27 +1759,32 @@ async function useSample(sample: DemoSource): Promise<void> {
   sourceMode.value = current.value.mode ?? 'sample';
 }
 
-function activateKind(kind: DemoKind): void {
-  const sample = staticSamplesByKind.value.get(kind)?.[0];
-  if (!sample) {
-    return;
-  }
-  void useSample(sample);
-}
-
 async function previewRemote(): Promise<void> {
   const kind = detectKind(remoteUrl.value) ?? 'pptx';
-  current.value = {
-    kind,
-    label: kind.toUpperCase(),
-    name: inferName(remoteUrl.value),
-    source: remoteUrl.value,
-    mode: 'url'
-  };
+  const sourceUrl = remoteUrl.value;
+  downloadTimeMs.value = null;
+  pendingDownloadTimeMs = null;
   sourceMode.value = 'url';
   renderedState.value = null;
   lastError.value = null;
   uploadResourceResolver.value = undefined;
+
+  try {
+    const name = inferName(sourceUrl);
+    const source = remotePrefetchKinds.has(kind)
+      ? await fetchRemoteSource(sourceUrl, name)
+      : { source: sourceUrl, durationMs: null };
+    pendingDownloadTimeMs = source.durationMs;
+    current.value = {
+      kind,
+      label: kind.toUpperCase(),
+      name,
+      source: source.source,
+      mode: 'url'
+    };
+  } catch (error) {
+    lastError.value = error instanceof Error ? error.message : String(error);
+  }
 }
 
 async function onFileChange(event: Event): Promise<void> {
@@ -1795,6 +1798,8 @@ async function onFileChange(event: Event): Promise<void> {
   sourceMode.value = 'upload';
   renderedState.value = null;
   lastError.value = null;
+  downloadTimeMs.value = null;
+  pendingDownloadTimeMs = null;
 
   try {
     if (files.length === 1 && isZipBundleCandidate(file.name)) {
@@ -1827,7 +1832,12 @@ async function onFileChange(event: Event): Promise<void> {
 function onRendered(state: PreviewItemState): void {
   renderedState.value = state;
   if (renderStartedAt.value !== null) {
-    renderTimeMs.value = performanceNow() - renderStartedAt.value;
+    const totalTimeMs = performanceNow() - renderStartedAt.value;
+    const measuredDownloadTimeMs = measureRemoteDownloadTime(current.value.source, renderStartedAt.value);
+    if (measuredDownloadTimeMs !== null) {
+      downloadTimeMs.value = measuredDownloadTimeMs;
+    }
+    renderTimeMs.value = Math.max(0, totalTimeMs - (downloadTimeMs.value ?? 0));
     renderStartedAt.value = null;
   }
   lastError.value = null;
@@ -1857,6 +1867,60 @@ function performanceNow(): number {
   return typeof performance !== 'undefined' ? performance.now() : Date.now();
 }
 
+async function fetchRemoteSource(url: string, name?: string): Promise<{ source: ArrayBuffer; durationMs: number }> {
+  const startedAt = performanceNow();
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to load ${name ?? 'remote source'}: ${response.status} ${response.statusText}`.trim());
+  }
+  const source = await response.arrayBuffer();
+  return {
+    source,
+    durationMs: performanceNow() - startedAt
+  };
+}
+
+function measureRemoteDownloadTime(source: PreviewSource, startedAt: number): number | null {
+  if (typeof source !== 'string' || !isRemoteSource(source) || typeof performance === 'undefined') {
+    return null;
+  }
+  const getEntriesByName = performance.getEntriesByName?.bind(performance);
+  if (!getEntriesByName) {
+    return null;
+  }
+
+  const names = new Set([source]);
+  if (typeof document !== 'undefined') {
+    try {
+      names.add(new URL(source, document.baseURI).href);
+    } catch {
+      // Keep the original resource name when URL normalization is unavailable.
+    }
+  }
+
+  const entries = [...names].flatMap((name) => getEntriesByName(name, 'resource'));
+  const entry = entries
+    .filter((candidate): candidate is PerformanceResourceTiming => (
+      candidate.entryType === 'resource'
+      && candidate.startTime >= startedAt - 1
+      && candidate.duration > 0
+    ))
+    .sort((left, right) => right.startTime - left.startTime)[0];
+  return entry ? entry.duration : null;
+}
+
+function isRemoteSource(source: string): boolean {
+  if (/^(?:data|blob):/i.test(source)) {
+    return false;
+  }
+  try {
+    const base = typeof document !== 'undefined' ? document.baseURI : 'http://localhost/';
+    return /^https?:$/i.test(new URL(source, base).protocol);
+  } catch {
+    return false;
+  }
+}
+
 function formatDuration(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return '—';
   return `${value < 100 ? value.toFixed(1) : Math.round(value)} ms`;
@@ -1868,6 +1932,19 @@ async function materializeSample(sample: DemoSource): Promise<DemoSource> {
     ...sample,
     source: resolveZimaFileSource(sample.source),
     previewSource: sample.previewSource ? resolveZimaFileSource(sample.previewSource) : undefined,
+    livePhoto: sample.livePhoto
+      ? {
+          ...sample.livePhoto,
+          photoSrc: resolvePublicSamplePath(sample.livePhoto.photoSrc),
+          videoSrc: resolvePublicSamplePath(sample.livePhoto.videoSrc),
+          originalPhotoSrc: sample.livePhoto.originalPhotoSrc
+            ? resolvePublicSamplePath(sample.livePhoto.originalPhotoSrc)
+            : undefined,
+          originalVideoSrc: sample.livePhoto.originalVideoSrc
+            ? resolvePublicSamplePath(sample.livePhoto.originalVideoSrc)
+            : undefined
+        }
+      : undefined,
     resourceResolver: originalResourceResolver
       ? async (context) => {
           const resource = await originalResourceResolver(context);
@@ -1888,13 +1965,11 @@ async function materializeSample(sample: DemoSource): Promise<DemoSource> {
     };
   }
   if (conversionKindBySource.has(extension) && typeof sample.source === 'string') {
-    const response = await fetch(sample.source);
-    if (!response.ok) {
-      throw new Error(`Failed to load ${sample.name}: ${response.status} ${response.statusText}`.trim());
-    }
+    const downloaded = await fetchRemoteSource(sample.source, sample.name);
+    pendingDownloadTimeMs = downloaded.durationMs;
     return {
       ...sample,
-      source: await response.arrayBuffer()
+      source: downloaded.source
     };
   }
   if (sample.kind === 'pdf' && sample.mode === 'generated') {
@@ -2080,9 +2155,22 @@ async function materializeZipBundleUpload(
 }
 
 function chooseZipBundlePrimaryEntry(entries: ZipArchiveResource[]): ZipArchiveResource | undefined {
-  return entries
+  const candidates = entries
     .filter((entry) => isLikelyPrimaryUpload(entry.name) && !isLikelyGeneratedPreviewArtifact(entry.name))
-    .sort(compareBundlePrimaryEntries)[0];
+    .sort(compareBundlePrimaryEntries);
+  const primary = candidates[0];
+  if (!primary) {
+    return undefined;
+  }
+
+  const primaryScore = bundlePrimaryScore(primary.name);
+  const hasTie = candidates.some((entry, index) => index > 0 && bundlePrimaryScore(entry.name) === primaryScore);
+  // Keep ordinary multi-file archives in the archive driver unless one entry is
+  // clearly identifiable as the bundle's primary browser-native document.
+  if (hasTie || (candidates.length > 1 && primaryScore < 70)) {
+    return undefined;
+  }
+  return primary;
 }
 
 function compareBundlePrimaryEntries(left: { name: string }, right: { name: string }): number {
@@ -2091,9 +2179,18 @@ function compareBundlePrimaryEntries(left: { name: string }, right: { name: stri
 
 function bundlePrimaryScore(name: string): number {
   const normalized = name.toLowerCase();
-  if (conversionKindBySource.has(extensionFromNormalizedName(normalized))) return 85;
+  const extension = extensionFromNormalizedName(normalized);
+  const kind = detectKind(name);
+  // Text/code files are already browser-native previews. Do not let the broad
+  // conversion manifest make README/metadata files outrank a real bundle asset.
+  if (conversionKindBySource.has(extension) && kind !== 'text' && kind !== 'code' && kind !== 'html') return 85;
   if (/\.(gltf|glb|3mf|kmz)$/.test(normalized)) return 100;
   if (/\.(dxf|drawio|dio|xmind|mm|opml)$/.test(normalized)) return 90;
+  if (kind === 'cad' || kind === 'diagram' || kind === 'mindmap') return 90;
+  if (kind === 'model3d') return 70;
+  if (kind === 'pptx' || kind === 'docx' || kind === 'xlsx' || kind === 'pdf' || kind === 'key' || kind === 'pages' || kind === 'numbers') return 85;
+  if (kind === 'html') return 80;
+  if (kind === 'image') return 40;
   if (/\.(html?|xhtml)$/.test(normalized)) return 80;
   if (/\.(obj|stl|ply|vtk|vox|ldr|mpd|md2|lwo|bvh|pdb|nrrd|nhdr)$/.test(normalized)) return 70;
   if (/\.png$/.test(normalized)) return 40;
@@ -3799,36 +3896,38 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   <main class="workbench">
     <header class="wb-header">
       <div class="wb-brand">
-        <span class="wb-brand-mark" aria-hidden="true"></span>
+        <span class="wb-brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 128 128" focusable="false">
+            <rect width="128" height="128" rx="30" fill="#151713" />
+            <path d="M28 20h36l18 18v51a9 9 0 0 1-9 9H28a9 9 0 0 1-9-9V29a9 9 0 0 1 9-9Z" fill="#c8ff3d" />
+            <path d="M64 20v18h18" fill="#a8d92d" />
+            <path d="M36 51h29M36 64h19" fill="none" stroke="#151713" stroke-linecap="round" stroke-width="7" />
+            <circle cx="83" cy="78" r="21" fill="#ff6847" stroke="#151713" stroke-width="6" />
+            <circle cx="83" cy="78" r="10" fill="#f4f2e9" />
+            <path d="m98 93 13 13" fill="none" stroke="#151713" stroke-linecap="round" stroke-width="8" />
+          </svg>
+        </span>
         <div>
-          <p class="wb-eyebrow">REAL FILE PREVIEW <span>5.6</span></p>
+          <p class="wb-eyebrow">REAL FILE PREVIEW</p>
           <h1 class="wb-title">文件预览台</h1>
-          <p class="wb-subtitle" :title="current.name">{{ viewerLabel }}</p>
         </div>
       </div>
 
-      <div class="wb-build-stats" aria-label="构建体积与性能">
+      <div class="wb-build-stats" aria-label="构建体积">
         <div class="wb-build-stat">
-          <small>REFERENCED DIST · gzip / Brotli</small>
-          <strong>{{ referencedDistSizeLabel }}</strong>
-          <span>浏览器运行时资源 · 不含样例</span>
-        </div>
-        <div class="wb-build-stat">
-          <small>ENTRY JS · gzip / Brotli</small>
+          <small>ENTRY JS</small>
           <strong>{{ entrySizeLabel }}</strong>
           <span>实际入口脚本</span>
         </div>
         <div class="wb-build-stat">
-          <small>CONVERTER CORE WASM · gzip / Brotli</small>
+          <small>CONVERTER-CORE.WASM</small>
           <strong>{{ wasmSizeLabel }}</strong>
-          <span>浏览器加载资源</span>
+          <span>{{ wasmDependencyLabel }}</span>
         </div>
-        <div class="wb-build-stat wb-build-stat--performance">
-          <small>典型性能 · 小样例</small>
-          <strong>{{ performanceLabel }}</strong>
-          <span :title="buildInfo?.typicalPerformance?.note">
-            渲染 {{ renderTimeLabel }} · 转换 {{ conversionTimeLabel }}
-          </span>
+        <div class="wb-build-stat">
+          <small>CONVERTER-IMAGE.WASM</small>
+          <strong>{{ imageWasmSizeLabel }}</strong>
+          <span>外挂 · RAW / ICNS 转换时加载</span>
         </div>
       </div>
 
@@ -3852,6 +3951,22 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
       </div>
     </header>
 
+    <div v-if="loginDialogOpen" class="zima-login-backdrop" role="presentation">
+      <section class="zima-login-dialog" role="dialog" aria-modal="true" aria-labelledby="zima-login-title">
+        <div class="zima-login-mark" aria-hidden="true">Z</div>
+        <p class="zima-login-kicker">ZIMAOS ACCESS</p>
+        <h2 id="zima-login-title">登录后继续预览</h2>
+        <p class="zima-login-copy">FiLens 需要 ZimaOS 登录态才能读取设备上的文件。登录完成后，这个窗口会自动关闭。</p>
+        <p v-if="loginError" class="zima-login-error" role="alert">{{ loginError }}</p>
+        <div class="zima-login-actions">
+          <button type="button" class="zima-login-primary" :disabled="loginBusy" @click="requestZimaLogin">
+            {{ loginBusy ? '正在打开登录…' : '打开登录窗口' }}
+          </button>
+          <button type="button" class="zima-login-secondary" @click="goToZimaLogin">前往 ZimaOS 登录</button>
+        </div>
+      </section>
+    </div>
+
     <nav class="wb-tabs" aria-label="格式分类">
       <span class="wb-command-label">格式</span>
       <button
@@ -3868,12 +3983,12 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
     </nav>
 
     <div class="wb-body">
-      <aside class="wb-sidebar" aria-label="文件导航与样例">
+      <aside class="wb-sidebar" aria-label="格式与预览信息">
         <header class="wb-sidebar-head">
           <span class="wb-file-badge">{{ current.label }}</span>
           <div>
-            <p>当前文件</p>
-            <h2 :title="current.name">{{ current.name }}</h2>
+            <p>当前格式</p>
+            <h2>{{ current.label }}</h2>
           </div>
         </header>
 
@@ -3913,78 +4028,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
           </div>
         </section>
 
-        <div v-if="showSideTabs" class="wb-side-tabs" role="tablist" aria-label="侧边栏内容">
-          <button
-            type="button"
-            class="wb-side-tab"
-            :class="{ 'is-active': sidebarTab === 'navigator' }"
-            :disabled="!navigatorKind"
-            :aria-selected="sidebarTab === 'navigator'"
-            @click="sidebarTab = 'navigator'"
-          >
-            导航
-          </button>
-          <button
-            type="button"
-            class="wb-side-tab"
-            :class="{ 'is-active': sidebarTab === 'samples' || !navigatorKind }"
-            :aria-selected="sidebarTab === 'samples' || !navigatorKind"
-            @click="sidebarTab = 'samples'"
-          >
-            样例
-          </button>
-        </div>
-
-        <section v-if="showNavigatorPanel" class="wb-section">
-          <h2 class="wb-section-title">{{ navigatorTitle }}</h2>
-          <div class="wb-navigator">
-            <button
-              v-for="item in navigatorItems"
-              :key="navigatorKind + ':' + item.index"
-              type="button"
-              class="wb-nav-item"
-              :class="{ 'is-active': item.index === navigatorActiveIndex }"
-              :aria-current="item.index === navigatorActiveIndex ? 'page' : undefined"
-              @click="goToNavigator(item.index)"
-            >
-              <span class="wb-nav-index">{{ String(item.index + 1).padStart(2, '0') }}</span>
-              <span class="wb-nav-label">{{ item.label }}</span>
-            </button>
-          </div>
-        </section>
-
-        <section v-else-if="showSamplesPanel" class="wb-section">
-          <h2 class="wb-section-title">格式样例</h2>
-          <div class="wb-variants">
-            <button
-              v-for="sample in activeKindSamples"
-              :key="sample.kind + ':' + sample.name"
-              type="button"
-              class="wb-variant"
-              :class="{ 'is-active': sample.name === current.name && hasCurrentSample }"
-              @click="useSample(sample)"
-            >
-              <span>{{ sample.label }}</span>
-              <small class="wb-variant-meta">{{ sample.name }}</small>
-            </button>
-          </div>
-          <div v-if="activeKind === 'panorama'" class="wb-external-samples">
-            <h3 class="wb-section-title">External raw samples</h3>
-            <div
-              v-for="sample in externalPanoramaSamples"
-              :key="sample.format"
-              class="wb-external-sample"
-            >
-              <button type="button" @click="useSample(sample)">
-                <strong>{{ sample.format }}</strong>
-                <span>{{ sample.label }}</span>
-                <small>{{ sample.size }} · {{ sample.note }}</small>
-              </button>
-              <a :href="sample.sourcePage" target="_blank" rel="noreferrer">Source</a>
-            </div>
-          </div>
-        </section>
-
         <section v-if="model3dSummary.length" class="wb-section">
           <h2 class="wb-section-title">3D 元数据</h2>
           <div class="wb-meta-grid">
@@ -3995,6 +4038,12 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
           </div>
         </section>
 
+        <section class="wb-performance-card" aria-label="小样例性能参考">
+          <small>小样例性能参考</small>
+          <strong>{{ performanceLabel }}</strong>
+          <span>{{ buildInfo?.typicalPerformance?.note ?? '仅供观察启动与执行量级' }}</span>
+        </section>
+
       </aside>
 
       <section class="wb-preview" :aria-label="current.name + ' 预览'">
@@ -4003,6 +4052,12 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
           <div class="wb-preview-title">
             <span>{{ current.label }}</span>
             <strong :title="current.name">{{ current.name }}</strong>
+          </div>
+          <div v-if="runtimeTimings.length" class="wb-runtime-timings" aria-label="此次预览耗时">
+            <span v-for="timing in runtimeTimings" :key="timing.label">
+              <small>{{ timing.label }}</small>
+              <strong>{{ timing.value }}</strong>
+            </span>
           </div>
         </header>
 
@@ -4018,7 +4073,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
           <Preview
             v-else
             :key="current.name"
-            ref="previewRef"
             :src="current.source"
             :name="current.name"
             :extension="current.extension"
@@ -4117,31 +4171,14 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   flex: 0 0 auto;
   width: 48px;
   height: 48px;
-  border-radius: 15px;
-  background: var(--ink);
   box-shadow: 0 12px 28px rgba(21, 23, 19, 0.2);
   transform: rotate(-3deg);
 }
 
-.wb-brand-mark::before,
-.wb-brand-mark::after {
-  position: absolute;
-  content: "";
-}
-
-.wb-brand-mark::before {
-  inset: 9px 20px 9px 9px;
-  border-radius: 8px;
-  background: var(--lime);
-}
-
-.wb-brand-mark::after {
-  right: 8px;
-  bottom: 8px;
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: var(--coral);
+.wb-brand-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .wb-eyebrow {
@@ -4169,16 +4206,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.04em;
-}
-
-.wb-subtitle {
-  max-width: min(46vw, 620px);
-  margin: 7px 0 0;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 12px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .wb-build-stats {
@@ -4224,11 +4251,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   font-size: 9px;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.wb-build-stat--performance {
-  border-color: rgba(49, 100, 255, 0.2);
-  background: rgba(255, 255, 255, 0.62);
 }
 
 .wb-header-right {
@@ -4576,39 +4598,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   color: #9b2e17;
 }
 
-.wb-side-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  margin-top: 14px;
-  padding: 4px;
-  border-radius: 14px;
-  background: rgba(21, 23, 19, 0.06);
-}
-
-.wb-side-tab {
-  min-height: 34px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.wb-side-tab.is-active {
-  background: white;
-  color: var(--ink);
-  box-shadow: 0 5px 14px rgba(21, 23, 19, 0.08);
-}
-
-.wb-side-tab:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-
 .wb-section {
   margin-top: 16px;
 }
@@ -4620,134 +4609,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   font-weight: 900;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-}
-
-.wb-navigator,
-.wb-variants {
-  display: grid;
-  gap: 7px;
-}
-
-.wb-external-samples {
-  display: grid;
-  gap: 7px;
-  margin-top: 16px;
-}
-
-.wb-external-sample {
-  display: flex;
-  align-items: stretch;
-  border: 1px solid rgba(21, 23, 19, 0.08);
-  border-radius: 14px;
-  background: rgba(21, 23, 19, 0.035);
-  color: var(--ink);
-  font-size: 11px;
-  overflow: hidden;
-}
-
-.wb-external-sample:hover {
-  border-color: rgba(21, 23, 19, 0.13);
-  background: white;
-}
-
-.wb-external-sample button {
-  display: grid;
-  flex: 1;
-  gap: 3px;
-  padding: 11px 12px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-  text-align: left;
-}
-
-.wb-external-sample small,
-.wb-external-sample a {
-  color: var(--muted);
-}
-
-.wb-external-sample a {
-  display: grid;
-  place-items: center;
-  padding: 0 10px;
-  border-left: 1px solid rgba(21, 23, 19, 0.08);
-  font-size: 9px;
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.wb-nav-item,
-.wb-variant {
-  width: 100%;
-  border: 1px solid transparent;
-  border-radius: 14px;
-  background: rgba(21, 23, 19, 0.035);
-  color: var(--ink);
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
-}
-
-.wb-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.wb-variant {
-  display: grid;
-  gap: 3px;
-  padding: 11px 12px;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.wb-nav-item:hover,
-.wb-variant:hover {
-  border-color: rgba(21, 23, 19, 0.13);
-  background: white;
-  transform: translateX(2px);
-}
-
-.wb-nav-item.is-active,
-.wb-variant.is-active {
-  border-color: rgba(21, 23, 19, 0.14);
-  background: var(--lime);
-}
-
-.wb-nav-index {
-  display: grid;
-  flex: 0 0 auto;
-  width: 31px;
-  height: 31px;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--ink);
-  color: white;
-  font-family: Consolas, monospace;
-  font-size: 10px;
-}
-
-.wb-nav-label,
-.wb-variant-meta {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wb-nav-label {
-  flex: 1 1 auto;
-}
-
-.wb-variant-meta {
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 600;
 }
 
 .wb-meta-grid {
@@ -4773,6 +4634,36 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 
 .wb-meta-item strong {
   font-size: 11px;
+}
+
+.wb-performance-card {
+  display: grid;
+  gap: 7px;
+  margin-top: 18px;
+  padding: 13px;
+  border: 1px solid rgba(49, 100, 255, 0.14);
+  border-radius: 15px;
+  background: rgba(49, 100, 255, 0.065);
+}
+
+.wb-performance-card small {
+  color: var(--blue);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.wb-performance-card strong {
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.wb-performance-card span {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
 }
 
 .wb-preview {
@@ -4838,6 +4729,38 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.wb-runtime-timings {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.wb-runtime-timings > span {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.055);
+  white-space: nowrap;
+}
+
+.wb-runtime-timings small {
+  color: #969b91;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wb-runtime-timings strong {
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
 }
 
 .wb-preview-stage {
@@ -4916,6 +4839,113 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 .wb-upload:has(input:focus-visible) {
   outline: 3px solid rgba(49, 100, 255, 0.35);
   outline-offset: 2px;
+}
+
+.zima-login-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(21, 23, 19, 0.54);
+  backdrop-filter: blur(8px);
+}
+
+.zima-login-dialog {
+  width: min(100%, 420px);
+  padding: 30px;
+  border: 1px solid rgba(21, 23, 19, 0.14);
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: 0 28px 90px rgba(21, 23, 19, 0.3);
+}
+
+.zima-login-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  margin-bottom: 20px;
+  border-radius: 13px;
+  background: var(--ink);
+  color: var(--lime);
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.zima-login-kicker {
+  margin: 0 0 7px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.zima-login-dialog h2 {
+  margin: 0;
+  font-family: Georgia, "Microsoft YaHei UI", serif;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+}
+
+.zima-login-copy {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.zima-login-error {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: rgba(255, 104, 71, 0.13);
+  color: #9b2e17;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.zima-login-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.zima-login-primary,
+.zima-login-secondary {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.zima-login-primary {
+  border: 0;
+  background: var(--ink);
+  color: white;
+}
+
+.zima-login-primary:hover {
+  background: var(--blue);
+}
+
+.zima-login-secondary {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+}
+
+.zima-login-secondary:hover {
+  background: white;
+}
+
+.zima-login-primary:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .wb-sidebar::-webkit-scrollbar {
@@ -5038,7 +5068,21 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   }
 
   .wb-preview {
+    grid-template-rows: auto minmax(0, 1fr);
     min-height: 72vh;
+  }
+
+  .wb-preview-head {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 8px;
+    padding-block: 10px;
+  }
+
+  .wb-runtime-timings {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    max-width: 100%;
+    overflow-x: auto;
   }
 }
 
@@ -5058,10 +5102,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 
   .wb-tabs {
     border-radius: 16px;
-  }
-
-  .wb-preview-head {
-    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .wb-preview {

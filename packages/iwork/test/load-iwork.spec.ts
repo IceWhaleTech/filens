@@ -74,6 +74,23 @@ describe('iWork parsing', () => {
     expect(document.pages[1]?.canvas.slide.items[0]?.kind).toBe('text');
     expect(document.pages[2]?.canvas.slide.items).toHaveLength(1);
     expect(document.pages[2]?.canvas.slide.items[0]?.kind).toBe('text');
+
+    const firstTable = document.pages
+      .flatMap((page) => page.canvas.slide.items)
+      .find((item) => item.kind === 'table');
+    expect(firstTable && firstTable.kind === 'table').toBe(true);
+    if (firstTable && firstTable.kind === 'table') {
+      const cellText = (row: number, column: number): string | undefined =>
+        firstTable.cells
+          .find((cell) => cell.row === row && cell.column === column)
+          ?.textFrame.paragraphs.map((paragraph) => paragraph.runs.map((run) => run.text).join('')).join('\n');
+
+      // Pages stores ordinary strings and rich cell payloads in overlapping
+      // key spaces; empty cells must also remain in the table grid.
+      expect(cellText(1, 2)).toBe('只');
+      expect(cellText(9, 5)).toBe('60000');
+      expect(cellText(10, 5)).toBe('');
+    }
   });
 
   it('loads numbers fixtures into sheet canvases with parsed tables', async () => {

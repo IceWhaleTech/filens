@@ -12191,7 +12191,13 @@
               "type": ".TSP.Reference",
               "id": 3
             }
-          }
+          },
+          "extensions": [
+            [
+              100,
+              536870911
+            ]
+          ]
         },
         "FreehandDrawingAnimationArchive": {
           "edition": "proto2",
@@ -12226,6 +12232,12 @@
               "id": 4
             }
           }
+        },
+        "freehandDrawingArchive": {
+          "edition": "proto2",
+          "type": ".TSD.FreehandDrawingArchive",
+          "id": 100,
+          "extend": ".TSD.GroupArchive"
         },
         "ShapeArchive": {
           "edition": "proto2",

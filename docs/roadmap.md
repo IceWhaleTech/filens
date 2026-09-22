@@ -38,7 +38,7 @@ This roadmap reflects the current repository state and the next logical delivery
 - dist validation in external sample apps
 - broader fixture-based regression coverage
 - publish workflow and versioning policy
-- document remaining non-goals such as embedded fonts, SmartArt parity, and exact autofit measurement
+- document remaining non-goals such as bundling complete font collections, SmartArt parity, and exact autofit measurement without the source fonts
 
 ## Track B: Multi-format File Preview Foundation
 
@@ -48,6 +48,7 @@ This roadmap reflects the current repository state and the next logical delivery
 - introduce generic viewer-driver contracts in `packages/core`
 - avoid forcing `docx`, `pdf`, and `xlsx` into the PPTX scene model
 - reserve non-document preview families from the beginning: image, video, audio, panorama, ebook, code, text, archive, CAD, 3D/model, mind-map, and diagram
+- treat browsers, desktop/mobile applications, CLI tools, edge runtimes, and backend services as hosts of the same WASM core, while keeping host-specific UI and transport outside format parsing and conversion logic
 
 ## M1: Native iWork Foundation
 
@@ -121,3 +122,54 @@ This roadmap reflects the current repository state and the next logical delivery
 - improve placeholder and template inheritance
 - improve shape/media specialization
 - close the gap on common real-world Keynote decks before broadening long-tail coverage
+
+## Track D: Encrypted Document Support
+
+## E0: Detection, Errors, and Safe Password Input
+
+- preserve the existing `password_required` and `password_invalid` error contract across browser WASM, CLI, and HTTP host shells
+- distinguish password encryption from corruption, unsupported encryption schemes, signatures, DRM, and enterprise rights management
+- expose a host-controlled password request flow through core preview options and Vue events instead of coupling the runtime to one dialog implementation
+- provide hidden CLI prompts, stdin, or host secret-provider hooks so passwords do not have to appear in process arguments, URLs, logs, analytics, or result payloads
+- never persist passwords by default, and clear password and decrypted-data buffers on a best-effort basis after preview or extraction ends
+
+## E1: Office and WPS Decryption
+
+- implement actual decryption in the front-end WASM conversion core for common password-protected legacy Office/WPS containers and encrypted OpenXML packages
+- keep backend Go code as a thin host that passes credentials to the same WASM core without adding format-specific cryptography or parsing
+- resume the existing preview-normalization route only after successful local decryption, with explicit errors for wrong passwords and unsupported encryption variants
+- add fixtures for correct passwords, wrong passwords, empty passwords, damaged encryption metadata, large encrypted files, and repeated open/close cycles
+
+## E2: PDF and Additional Containers
+
+- support common password-protected PDF variants through the front-end PDF path, including clear handling of user-password and permission-only cases
+- evaluate password-protected iWork and encrypted archive containers only after their encryption schemes, licensing, and browser-memory costs are understood
+- keep DRM, certificate-bound access, hardware-key workflows, and enterprise rights-managed documents out of the password-decryption promise unless a separate host integration is explicitly provided
+- ensure decrypted files remain local and ephemeral for preview, thumbnail generation, text extraction, OCR, search indexing, and Agent workflows
+
+## Track E: On-demand Font Coverage
+
+## F0: Font Discovery and Diagnostics
+
+- detect fonts referenced by Office, iWork, PDF, CAD, and other structured formats, and report whether each font was found, substituted, or cannot be rendered by the browser
+- normalize font metadata across preview drivers so hosts can expose missing-font warnings and likely layout drift consistently
+- distinguish document-embedded fonts, operating-system fonts, application-provided fonts, and fallback families without silently claiming exact fidelity
+
+## F1: Optional Font Packs
+
+- provide optional, independently loaded packs for common Latin, CJK, Emoji, and mathematical-symbol coverage instead of placing complete font collections in the core WASM or JavaScript artifacts
+- subset webfonts to the glyphs needed by a document where licensing allows, prefer WOFF2 delivery, and cache packs by version and character coverage
+- support region-, language-, and document-driven loading so applications pay the download and memory cost only when required
+- document font licenses, CORS requirements, cache behavior, and privacy implications for self-hosted and remote font sources
+
+## F2: Embedded and Host-provided Fonts
+
+- extend the existing `fontResolver` contract for application-managed font files, URLs, aliases, authorization, and explicit fallback decisions
+- parse supported embedded-font metadata from Office, iWork, and PDF inputs, while keeping actual font extraction and use subject to format rules and licensing
+- remeasure text, line wrapping, pagination, and autofit after a required font becomes available, without blocking the first preview indefinitely
+
+## F3: CAD Fonts
+
+- add explicit SHX font discovery and mapping through the application font resolver
+- evaluate a front-end SHX parser that can convert supported glyphs to paths when direct browser font loading is impossible
+- preserve visible missing-glyph and fallback warnings whenever an exact CAD font cannot be resolved

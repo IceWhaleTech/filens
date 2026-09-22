@@ -21,7 +21,7 @@
 - Before a dynamic seam is available, X5 blending combines front/back longitude ownership with distance from the calibrated fisheye rim so the less-distorted lens wins the overlap; DJI retains its calibrated angular weighting.
 - `.LRF/.LRV` remains a labeled proxy fallback. It is never reported as an accurate raw stitch.
 
-Unknown firmware, missing calibration, missing sidecars, unavailable byte ranges, absent WebCodecs, and unsupported HEVC are separate failures. IMU stabilization stays off when the IMU-to-camera rotation has not been confirmed on real hardware.
+Unknown firmware, missing calibration, missing sidecars, unavailable byte ranges, and unsupported browser media codecs are separate failures. Calibrated INSV can fall back to browser media decoding when WebCodecs is absent, with dynamic seams and IMU stabilization disabled. IMU stabilization stays off when the IMU-to-camera rotation has not been confirmed on real hardware.
 
 ## Local vendor samples
 
