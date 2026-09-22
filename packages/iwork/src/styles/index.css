@@ -24,7 +24,7 @@
 
 .iworkv-stage {
   min-height: 100%;
-  padding: 24px;
+  padding: 16px;
   box-sizing: border-box;
 }
 
@@ -63,7 +63,7 @@
 
 .iworkv-pages {
   display: grid;
-  gap: 24px;
+  gap: 18px;
   justify-content: center;
 }
 

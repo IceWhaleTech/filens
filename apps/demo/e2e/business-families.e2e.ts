@@ -79,6 +79,14 @@ test('offers polished samples across the supported Office families', async ({ pa
     await expect(page.locator('.wb-preview-stage')).toContainText(text);
     await expect(page.locator('.wb-note.is-error')).toHaveCount(0);
   }
+
+  await page.getByRole('button', { name: 'DOCX', exact: true }).click();
+  await page.getByRole('button', { name: '样例', exact: true }).click();
+  await page.locator('button.wb-variant').filter({ hasText: 'generated.docx' }).click();
+  await expect(page.locator('.wb-preview-stage')).toContainText('Product brief');
+  await expect(page.locator('.wb-preview-stage')).toContainText('Milestones and decisions');
+  await expect(page.locator('.wb-preview-stage')).toContainText('Success measures');
+  await expect(page.locator('.wb-note.is-error')).toHaveCount(0);
 });
 
 test('offers read-only TAR, TGZ, and GZIP samples', async ({ page }) => {

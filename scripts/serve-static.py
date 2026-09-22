@@ -4,9 +4,7 @@
 from __future__ import annotations
 
 import http.server
-import mimetypes
 import os
-import posixpath
 import shutil
 import sys
 import urllib.error
@@ -18,6 +16,29 @@ DRIVE_DOWNLOADS = {
     "/external-samples/insta360/insp": "https://drive.usercontent.google.com/download?id=1H_7MHubgvRnRbBwT5gn2dCBwghqEqaDZ&export=download&confirm=t",
     "/external-samples/insta360/insv-00": "https://drive.usercontent.google.com/download?id=10YnAzLoNuzJX0fNIatlo0tlJ4XagJqgs&export=download&confirm=t",
     "/external-samples/insta360/insv-10": "https://drive.usercontent.google.com/download?id=1B9h_a1nKSl5Zm1k5sRRN2phqU-ma8ZBf&export=download&confirm=t",
+}
+
+DOWNLOAD_TARGETS = {
+    "insp": (DRIVE_DOWNLOADS["/external-samples/insta360/insp"], "IMG_20220701_170732_00_018.insp"),
+    "insv-00": (DRIVE_DOWNLOADS["/external-samples/insta360/insv-00"], "VID_20220625_140410_00_008.insv"),
+    "insv-10": (DRIVE_DOWNLOADS["/external-samples/insta360/insv-10"], "VID_20220625_140410_00_008.insv"),
+    "osv": (
+        "https://huggingface.co/datasets/SamuelLDX/osmo360-lidar-preview/resolve/main/CAM_20260728172420_0008_D.OSV",
+        "CAM_20260728172420_0008_D.OSV",
+    ),
+    "lrf": (
+        "https://huggingface.co/datasets/SamuelLDX/osmo360-lidar-preview/resolve/main/CAM_20260728172420_0008_D.LRF",
+        "CAM_20260728172420_0008_D.LRF",
+    ),
+    "flower-mp4": (
+        "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+        "flower.mp4",
+    ),
+    "flower-webm": (
+        "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm",
+        "flower.webm",
+    ),
+    "sample-mov": ("https://filesamples.com/samples/video/mov/sample_640x360.mov", "sample_640x360.mov"),
 }
 
 
@@ -53,9 +74,29 @@ class PreviewHandler(http.server.SimpleHTTPRequestHandler):
 
     def _proxy_if_needed(self) -> bool:
         parsed = urllib.parse.urlsplit(self.path)
+        if parsed.path in ("/api/files/download", "/files/download"):
+            return self._download_if_authorized(parsed.query)
         target = external_target(parsed.path, parsed.query)
         if target is None:
             return False
+        return self._proxy_target(target)
+
+    def _download_if_authorized(self, query: str) -> bool:
+        params = urllib.parse.parse_qs(query)
+        expected_token = os.environ.get("FILENS_DOWNLOAD_TOKEN", "")
+        supplied_token = params.get("token", [""])[0]
+        if not expected_token or supplied_token != expected_token:
+            self.send_error(401, "A valid download token is required")
+            return True
+        file_id = params.get("file", [""])[0].lower()
+        resource = DOWNLOAD_TARGETS.get(file_id)
+        if resource is None:
+            self.send_error(404, "Unknown file resource")
+            return True
+        target, filename = resource
+        return self._proxy_target(target, filename)
+
+    def _proxy_target(self, target: str, filename: str | None = None) -> bool:
 
         headers = {"User-Agent": "filens-demo/0.1"}
         for name in ("Accept", "Range", "If-Range"):
@@ -77,6 +118,9 @@ class PreviewHandler(http.server.SimpleHTTPRequestHandler):
                 value = upstream.headers.get(name)
                 if value:
                     self.send_header(name, value)
+            if filename:
+                encoded_name = urllib.parse.quote(filename)
+                self.send_header("Content-Disposition", f"inline; filename*=UTF-8''{encoded_name}")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             if self.command != "HEAD" and getattr(upstream, "status", upstream.getcode()) not in (204, 304):

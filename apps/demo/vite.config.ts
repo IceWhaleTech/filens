@@ -1,6 +1,133 @@
 import { defineConfig } from 'vite';
+import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 import path from 'node:path';
 import vue from '@vitejs/plugin-vue';
+
+const compressibleAssets = /\.(?:css|html|js|json|mjs|wasm)$/;
+
+function precompressAssets() {
+  let outputDir: string | undefined;
+  return {
+    name: 'filens-precompress-assets',
+    apply: 'build' as const,
+    enforce: 'post' as const,
+    configResolved(config: { root: string; build: { outDir: string } }) {
+      outputDir = path.resolve(config.root, config.build.outDir);
+    },
+    generateBundle(_options: unknown, bundle: Record<string, { type: string; code?: string; source?: string | Uint8Array }>) {
+      for (const [fileName, output] of Object.entries(bundle)) {
+        if (!compressibleAssets.test(fileName)) continue;
+        const source = output.type === 'chunk' ? output.code : output.source;
+        if (source === undefined) continue;
+        const bytes = typeof source === 'string' ? Buffer.from(source) : Buffer.from(source);
+        this.emitFile({
+          type: 'asset',
+          fileName: `${fileName}.gz`,
+          source: gzipSync(bytes, { level: 9 })
+        });
+        this.emitFile({
+          type: 'asset',
+          fileName: `${fileName}.br`,
+          source: brotliCompressSync(bytes, {
+            params: { [constants.BROTLI_PARAM_QUALITY]: 11 }
+          })
+        });
+      }
+    },
+    async closeBundle() {
+      if (outputDir) await writeBuildInfo(outputDir);
+    }
+  };
+}
+
+async function listFiles(root: string): Promise<string[]> {
+  const entries = await readdir(root, { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries) {
+    const filePath = path.join(root, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await listFiles(filePath));
+    } else if (entry.isFile()) {
+      files.push(filePath);
+    }
+  }
+  return files;
+}
+
+function sumBytes(files: Array<{ bytes: number }>): number {
+  return files.reduce((total, file) => total + file.bytes, 0);
+}
+
+async function writeBuildInfo(outputDir: string): Promise<void> {
+  const absoluteFiles = await listFiles(outputDir);
+  const files = await Promise.all(absoluteFiles.map(async (filePath) => ({
+    path: path.relative(outputDir, filePath).replaceAll(path.sep, '/'),
+    bytes: (await stat(filePath)).size
+  })));
+  const rawFiles = files.filter(({ path: filePath }) => !filePath.endsWith('.gz') && !filePath.endsWith('.br'));
+  const runtimeFiles = rawFiles.filter(({ path: filePath }) => !filePath.startsWith('samples/'));
+  const runtimeTransferFiles = files.filter(({ path: filePath }) => !filePath.startsWith('samples/') && (filePath.endsWith('.gz') || filePath.endsWith('.br')));
+  const wasm = rawFiles.find(({ path: filePath }) => /^assets\/converter-core-[^/]+\.wasm$/.test(filePath));
+  const entryReference = (await readFile(path.join(outputDir, 'index.html'), 'utf8')).match(/src="([^"]+\.js)"/)?.[1]?.match(/assets\/[^/]+\.js$/)?.[0];
+  const entry = entryReference ? rawFiles.find(({ path: filePath }) => filePath === entryReference) : undefined;
+  const compressedSize = (filePath: string | undefined, suffix: '.gz' | '.br'): number | undefined => {
+    if (!filePath) return undefined;
+    return files.find(({ path: candidate }) => candidate === `${filePath}${suffix}`)?.bytes;
+  };
+
+  const info = {
+    schemaVersion: 1,
+    distBytes: sumBytes(rawFiles),
+    runtimeBytes: sumBytes(runtimeFiles),
+    runtimeGzipBytes: sumBytes(runtimeTransferFiles.filter(({ path: filePath }) => filePath.endsWith('.gz'))),
+    runtimeBrotliBytes: sumBytes(runtimeTransferFiles.filter(({ path: filePath }) => filePath.endsWith('.br'))),
+    referencedDist: {
+      gzipBytes: sumBytes(runtimeTransferFiles.filter(({ path: filePath }) => filePath.endsWith('.gz'))),
+      brotliBytes: sumBytes(runtimeTransferFiles.filter(({ path: filePath }) => filePath.endsWith('.br')))
+    },
+    entry: entry ? {
+      file: entry.path,
+      bytes: entry.bytes,
+      gzipBytes: compressedSize(entry.path, '.gz'),
+      brotliBytes: compressedSize(entry.path, '.br')
+    } : undefined,
+    converterCoreWasm: wasm ? {
+      file: wasm.path,
+      bytes: wasm.bytes,
+      gzipBytes: compressedSize(wasm.path, '.gz'),
+      brotliBytes: compressedSize(wasm.path, '.br')
+    } : undefined,
+    typicalPerformance: {
+      source: 'README.zh-CN.md 本机性能快照（Windows 10 / Xeon E5-2696 v4 / Node.js 20.20 / Go 1.24）',
+      smallDocToDocxMs: 1,
+      smallXlsToXlsxMs: 1,
+      smallPptToPptxMs: 1,
+      note: '小样例量级，不代表复杂文件或浏览器跨设备基准。'
+    }
+  };
+  const payload = `${JSON.stringify(info, null, 2)}\n`;
+  await writeFile(path.join(outputDir, 'build-info.json'), payload);
+  await writeFile(path.join(outputDir, 'build-info.json.gz'), gzipSync(Buffer.from(payload), { level: 9 }));
+  await writeFile(path.join(outputDir, 'build-info.json.br'), brotliCompressSync(Buffer.from(payload), {
+    params: { [constants.BROTLI_PARAM_QUALITY]: 11 }
+  }));
+}
+
+function manualChunkForModule(id: string): string | undefined {
+  const normalized = id.replaceAll(path.sep, '/');
+  if (normalized.includes('/node_modules/')) return 'vendor';
+  if (normalized.includes('/packages/iwork/')) return 'iwork';
+  if (normalized.includes('/packages/model3d/')) return 'model3d';
+  if (normalized.includes('/packages/core/')) return 'core';
+  if (normalized.includes('/packages/cad/') || normalized.includes('/packages/diagram/') || normalized.includes('/packages/mindmap/')) return 'design';
+  if (normalized.includes('/packages/panorama/') || normalized.includes('/packages/media/')) return 'media';
+  if (normalized.includes('/packages/archive/')) return 'archive';
+  if (normalized.includes('/packages/docx/') || normalized.includes('/packages/pdf/') || normalized.includes('/packages/xlsx/')) return 'office';
+  if (normalized.includes('/packages/ebook/') || normalized.includes('/packages/text/')) return 'text';
+  if (normalized.includes('/packages/vue/')) return 'preview';
+  return undefined;
+}
 
 const configureGoogleDrive = (proxy: { on(event: 'proxyReq', listener: (request: { removeHeader(name: string): void }) => void): void }) => {
   proxy.on('proxyReq', (request) => {
@@ -66,7 +193,8 @@ const externalSampleProxy = {
 };
 
 export default defineConfig({
-  plugins: [vue()],
+  base: '/modules/filens/',
+  plugins: [vue(), precompressAssets()],
   server: { proxy: externalSampleProxy },
   preview: { proxy: externalSampleProxy },
   resolve: {
@@ -104,4 +232,11 @@ export default defineConfig({
       '@filens/vue': path.resolve(__dirname, '../../packages/vue/src/index.ts')
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: manualChunkForModule
+      }
+    }
+  }
 });

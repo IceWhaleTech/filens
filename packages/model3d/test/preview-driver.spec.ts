@@ -567,6 +567,13 @@ describe('model3d preview driver', () => {
     });
   });
 
+  it('parses 3MF meshes stored in external model parts', async () => {
+    const geometry = await load3mfGeometry(await createExternalObject3mfFixture());
+
+    expect(geometry.triangleCount).toBe(1);
+    expect(Array.from(geometry.positions.slice(0, 9))).toEqual([0, 0, 0, 1, 0, 0, 0, 1, 0]);
+  });
+
   it('parses 3MF base material colors into geometry vertex colors', async () => {
     const geometry = await load3mfGeometry(await createColored3mfFixture());
 
@@ -4331,6 +4338,41 @@ async function createComponent3mfFixture(): Promise<ArrayBuffer> {
   <build>
     <item objectid="2" transform="1 0 0 0 1 0 0 0 1 10 20 30"/>
   </build>
+</model>`);
+  return zip.generateAsync({ type: 'arraybuffer' });
+}
+
+async function createExternalObject3mfFixture(): Promise<ArrayBuffer> {
+  const zip = new JSZip();
+  zip.file('3D/3dmodel.model', `<?xml version="1.0" encoding="UTF-8"?>
+<model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06">
+  <resources>
+    <object id="1" type="model">
+      <components>
+        <component objectid="2" p:path="/3D/Objects/object_2.model"/>
+      </components>
+    </object>
+  </resources>
+  <build>
+    <item objectid="1"/>
+  </build>
+</model>`);
+  zip.file('3D/Objects/object_2.model', `<?xml version="1.0" encoding="UTF-8"?>
+<model unit="millimeter" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">
+  <resources>
+    <object id="2" type="model">
+      <mesh>
+        <vertices>
+          <vertex x="0" y="0" z="0"/>
+          <vertex x="1" y="0" z="0"/>
+          <vertex x="0" y="1" z="0"/>
+        </vertices>
+        <triangles>
+          <triangle v1="0" v2="1" v3="2"/>
+        </triangles>
+      </mesh>
+    </object>
+  </resources>
 </model>`);
   return zip.generateAsync({ type: 'arraybuffer' });
 }

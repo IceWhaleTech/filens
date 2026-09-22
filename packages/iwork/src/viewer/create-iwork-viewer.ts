@@ -17,6 +17,7 @@ type EventHandler<T extends IworkViewerEventName> = (payload: IworkViewerEventMa
 export function createIworkViewer(container: HTMLElement, options: IworkViewerOptions = {}): IworkViewerInstance {
   const listeners = new Map<IworkViewerEventName, Set<(payload: unknown) => void>>();
   const worker = new IworkWorkerClient();
+  const usePagedWidthFitByDefault = options.fit === undefined;
   let mediaRegistry: MediaRegistry | null = null;
   const state: IworkViewerState = {
     loading: false,
@@ -273,8 +274,10 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
     }
 
     const bounds = stage.getBoundingClientRect();
-    const availableWidth = Math.max(bounds.width - 48, 1);
-    const availableHeight = Math.max(bounds.height - 48, 1);
+    // The stage owns 16px padding on each side. Keep the fit calculation in
+    // sync with that padding so paged iWork canvases use the viewport.
+    const availableWidth = Math.max(bounds.width - 32, 1);
+    const availableHeight = Math.max(bounds.height - 32, 1);
     if (state.fit === 'width') {
       state.scale = availableWidth / Math.max(width, 1);
       return state.scale;
@@ -360,6 +363,11 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
       state.document = document;
       state.kind = document.kind;
       state.warnings = document.warnings.slice();
+      // Paged iWork canvases are best read at viewport width. The toolbar
+      // still exposes Fit for users who prefer the full canvas in view.
+      if (usePagedWidthFitByDefault && (document.kind === 'key' || document.kind === 'pages') && state.fit === 'contain') {
+        state.fit = 'width';
+      }
       state.currentPage = 0;
       state.currentSheet = 0;
       sheetLoads.clear();

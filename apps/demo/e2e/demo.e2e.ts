@@ -51,8 +51,10 @@ test('renders rich built-in document, workbook, and presentation samples', async
   await page.goto('/');
 
   await page.getByRole('button', { name: 'DOCX', exact: true }).click();
-  await expect(page.locator('.wb-preview-title strong')).toHaveText('rich-docx-tables.docx');
-  await expect(page.locator('.wb-preview-stage table')).toHaveCount(3);
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('generated.docx');
+  await expect(page.locator('.wb-preview-stage')).toContainText('Product brief');
+  await expect(page.locator('.wb-preview-stage')).toContainText('Success measures');
+  await expect(page.locator('.wb-preview-stage')).toContainText('Milestones and decisions');
 
   await page.getByRole('button', { name: 'XLSX', exact: true }).click();
   await expect(page.locator('.wb-preview-title strong')).toHaveText('rich-xlsx-many-columns.xlsx');

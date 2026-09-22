@@ -62,7 +62,8 @@
     "run:real-samples-ci": "node ./scripts/run-real-samples-ci.mjs",
     "run:real-samples-e2e": "node ./scripts/run-real-samples-e2e.mjs",
     "proto:iwork": "node ./scripts/generate-iwork-proto.mjs",
-    "test:demo": "npm.cmd run build:demo"
+    "test:demo": "npm.cmd run build:demo",
+    "package:zimaos:filens": "npm run build --workspace @filens/demo && ./scripts/package-zimaos-filens.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.0",

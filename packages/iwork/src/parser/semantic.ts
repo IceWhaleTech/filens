@@ -1,5 +1,6 @@
 import type {
   FillStyle,
+  ItemTransform,
   ParsedPresentation,
   SlideItem,
   SlideModel,
@@ -26,6 +27,8 @@ import {
   asArray,
   asObject,
   buildTextFrameFromStorage,
+  colorAlpha,
+  colorToHex,
   collectStorageObjectAttributeEntries,
   fillFromValue,
   getRecord,
@@ -40,6 +43,9 @@ import {
   transformFromGeometry,
   verticalAlignFromValue
 } from './helpers';
+
+type AnyObject = Record<string, unknown>;
+type ShapeType = Extract<SlideItem, { kind: 'shape' }>['shapeType'];
 
 export interface SemanticBuildContext {
   archive: IworkArchiveIndex;
@@ -247,6 +253,7 @@ function buildPagesDocument(context: SemanticBuildContext): ParsedPagesDocument 
   let paginatedBodyPages: PaginatedPagesBodyPage[] = [];
   let paragraphMetrics: PagesParagraphMetrics | undefined;
   const inlineAttachmentsByPage = new Map<number, PagesInlineAttachment[]>();
+  const pencilItemsByPage = new Map<number, SlideItem[]>();
   const attachmentPositionHints = buildPagesAttachmentPositionHints(context.archive, documentValue);
   const layoutStatePageCount = resolvePagesLayoutStatePageCount(context.archive, documentValue);
 
@@ -338,6 +345,11 @@ function buildPagesDocument(context: SemanticBuildContext): ParsedPagesDocument 
           bottomMargin: layout.bottomMargin,
           pageHeight: layout.height
         });
+
+        const pencilItems = buildPencilAnnotationItems(context, drawable, attachmentOrder, attachmentItem.transform);
+        const pagePencilItems = pencilItemsByPage.get(pageIndex) ?? [];
+        pagePencilItems.push(...pencilItems);
+        pencilItemsByPage.set(pageIndex, pagePencilItems);
 
         const pageBucket = inlineAttachmentsByPage.get(pageIndex) ?? [];
         pageBucket.push({
@@ -435,6 +447,11 @@ function buildPagesDocument(context: SemanticBuildContext): ParsedPagesDocument 
     if (floatingGroup) {
       items.push(...floatingGroup.drawableItems, ...floatingGroup.foregroundItems);
       blocks.push(...floatingGroup.blocks);
+    }
+
+    const pagePencilItems = pencilItemsByPage.get(pageIndex);
+    if (pagePencilItems?.length) {
+      items.push(...pagePencilItems);
     }
 
     if (templateDecorations.trailingItems.length) {
@@ -743,6 +760,9 @@ function buildKeynoteSlideItems(
       }
     });
     if (!item) {
+      if (context.archive.type === 'key') {
+        items.push(...buildPencilAnnotationItems(context, drawable, items.length));
+      }
       return;
     }
     const placeholderKind = drawableRecord?.typeName === 'KN.PlaceholderArchive'
@@ -761,6 +781,9 @@ function buildKeynoteSlideItems(
     }
 
     items.push(item);
+    if (context.archive.type === 'key') {
+      items.push(...buildPencilAnnotationItems(context, drawable, items.length));
+    }
     if (drawableRecord?.id != null) {
       seenDrawableIds.add(drawableRecord.id);
     }
@@ -827,6 +850,96 @@ function findRecordByType(archive: IworkArchiveIndex, typeName: string, required
       return value ? requiredKeys.every((key) => key in value) : false;
     }) ?? records[0]
   );
+}
+
+function buildPencilAnnotationItems(
+  context: SemanticBuildContext,
+  drawable: Record<string, unknown>,
+  orderOffset: number,
+  parentTransformOverride?: ItemTransform
+): SlideItem[] {
+  const annotationRefs = asArray<unknown>(readFieldInDrawableChain(drawable, ['pencilAnnotations', 'pencil_annotations']));
+  if (!annotationRefs.length) {
+    return [];
+  }
+
+  const parentTransform = parentTransformOverride ?? transformFromGeometry(resolveDrawableGeometry(drawable));
+  const items: SlideItem[] = [];
+  annotationRefs.forEach((annotationRef, annotationIndex) => {
+    const annotation = asObject(getRecordValue(context.archive, annotationRef)) ?? asObject(annotationRef);
+    const storageRef = annotation && readField(annotation, ['pencilAnnotationStorage', 'pencil_annotation_storage']);
+    const storage = asObject(getRecordValue(context.archive, storageRef)) ?? asObject(storageRef);
+    if (!storage) {
+      return;
+    }
+
+    const path = asObject(readField(storage, ['drawingPath', 'drawing_path']));
+    if (!path) {
+      return;
+    }
+
+    const origin = asObject(readField(storage, ['strokesBoundingBoxOrigin', 'strokes_bounding_box_origin'])) ??
+      asObject(readField(storage, ['strokePointsFrameOrigin', 'stroke_points_frame_origin'])) ??
+      { x: 0, y: 0 };
+    const size = asObject(readField(storage, ['strokesBoundingBoxSize', 'strokes_bounding_box_size'])) ??
+      asObject(readField(storage, ['strokePointsFrameSize', 'stroke_points_frame_size'])) ??
+      asObject(readField(storage, ['renderedFrameSize', 'rendered_frame_size'])) ??
+      { width: parentTransform.width, height: parentTransform.height };
+    const width = Math.max(Number(readField<number>(size, ['width']) ?? parentTransform.width), 1);
+    const height = Math.max(Number(readField<number>(size, ['height']) ?? parentTransform.height), 1);
+    const geometry = pathSourceToGeometry({ path, naturalSize: { width, height } }, width, height);
+    if (!geometry) {
+      return;
+    }
+
+    const color = asObject(readField(storage, ['penColor', 'pen_color']));
+    const toolType = Number(readField<number>(storage, ['toolType', 'tool_type']) ?? 0);
+    const drawingScale = Number(readField<number>(storage, ['pencilAnnotationDrawingScale', 'pencil_annotation_drawing_scale']) ?? 1);
+    const storedWidth = Number(readField<number>(storage, ['penWidth', 'pen_width', 'strokeWidth', 'stroke_width']) ?? NaN);
+    const baseWidth = Number.isFinite(storedWidth) && storedWidth > 0
+      ? storedWidth
+      : toolType === 1
+        ? 8
+        : 2;
+    const alpha = Number(((colorAlpha(color) ?? 1) * (toolType === 1 ? 0.38 : 1)).toFixed(4));
+    const item: SlideItem = {
+      id: `pencil-${orderOffset}-${annotationIndex + 1}`,
+      kind: 'shape',
+      name: 'Pencil annotation',
+      order: orderOffset + annotationIndex,
+      groupPath: [],
+      transform: {
+        x: parentTransform.x + Number(readField<number>(origin, ['x']) ?? 0),
+        y: parentTransform.y + Number(readField<number>(origin, ['y']) ?? 0),
+        width,
+        height,
+        rotation: 0,
+        flipH: false,
+        flipV: false
+      },
+      fill: { type: 'none' },
+      line: {
+        color: colorToHex(color, '#111827'),
+        alpha,
+        width: Math.max(1, Math.min(32, baseWidth * Math.max(drawingScale, 0.25))),
+        lineCap: 'round',
+        lineJoin: 'round'
+      },
+      shapeType: pencilGeometryLooksOpen(geometry) ? 'line' : 'unknown',
+      geometry
+    } as DrawableRenderItem;
+    items.push(item);
+  });
+
+  return items;
+}
+
+function pencilGeometryLooksOpen(geometry: NonNullable<Extract<SlideItem, { kind: 'shape' }>['geometry']>): boolean {
+  if (geometry.type !== 'custom') {
+    return false;
+  }
+  return geometry.paths.some((path) => path.commands.some((command) => command.type !== 'Z')) &&
+    geometry.paths.every((path) => path.commands.every((command) => command.type !== 'Z'));
 }
 
 function buildDrawableItem(
@@ -978,7 +1091,7 @@ function buildDrawableItem(
       shadow,
       href: hyperlink,
       opacity,
-      shapeType: isLineShape(pathSource) ? 'line' : 'unknown',
+      shapeType: resolveShapeType(pathSource),
       geometry: geometryModel,
       textFrame
     };
@@ -1898,6 +2011,16 @@ function appendPagesFloatingEntries(
       item,
       sourceRecordId: drawableRecord?.id
     });
+    const pencilItems = buildPencilAnnotationItems(context, drawable, target.length);
+    target.push(...pencilItems);
+    pencilItems.forEach((pencilItem) => {
+      group.blocks.push({
+        id: `pages-floating-${pageIndex + 1}-${group.blocks.length + 1}`,
+        kind: 'drawable',
+        item: pencilItem,
+        sourceRecordId: drawableRecord?.id
+      });
+    });
     if (drawableRecord?.id != null) {
       group.seenRecordIds.add(drawableRecord.id);
     }
@@ -2530,6 +2653,20 @@ function buildPagesTemplateDecorations(
       item,
       sourceRecordId: drawableRecord?.id
     });
+    const pencilItems = buildPencilAnnotationItems(
+      context,
+      drawable,
+      target.length + leadingItems.length + trailingItems.length
+    );
+    target.push(...pencilItems);
+    pencilItems.forEach((pencilItem) => {
+      blocks.push({
+        id: `pages-template-${resolvedSection.documentPageNumber}-${blocks.length + 1}`,
+        kind: 'drawable',
+        item: pencilItem,
+        sourceRecordId: drawableRecord?.id
+      });
+    });
     if (drawableRecord?.id != null) {
       seen.add(drawableRecord.id);
     }
@@ -2891,7 +3028,73 @@ function asFiniteNumber(value: unknown): number | undefined {
 
 function isLineShape(pathSource: unknown): boolean {
   const path = asObject(pathSource);
-  return Boolean(readField(path, ['connectionLinePathSource', 'connection_line_path_source']));
+  if (!path) {
+    return false;
+  }
+  if (readField(path, ['connectionLinePathSource', 'connection_line_path_source'])) {
+    return true;
+  }
+
+  const bezier = asObject(readField(path, ['bezierPathSource', 'bezier_path_source'])) ?? path;
+  const pathValue = asObject(readField(bezier, ['path'])) ?? (asArray(readField(bezier, ['elements'])).length ? bezier : undefined);
+  const elements = asArray<AnyObject>(readField(pathValue, ['elements']));
+  if (elements.length) {
+    const hasClose = elements.some((element) => Number(readField<number>(element, ['type']) ?? 0) === 5);
+    const drawableTypes = elements.filter((element) => Number(readField<number>(element, ['type']) ?? 0) !== 5);
+    return !hasClose && drawableTypes.length === 2 &&
+      Number(readField<number>(drawableTypes[0], ['type']) ?? 0) === 1 &&
+      Number(readField<number>(drawableTypes[1], ['type']) ?? 0) === 2;
+  }
+
+  const editable = asObject(readField(path, ['editableBezierPathSource', 'editable_bezier_path_source']));
+  const subpaths = asArray<AnyObject>(readField(editable, ['subpaths']));
+  if (subpaths.length !== 1) {
+    return false;
+  }
+  const subpath = subpaths[0];
+  const nodes = asArray(readField(subpath, ['nodes']));
+  return readField<boolean>(subpath, ['closed']) !== true && nodes.length === 2;
+}
+
+function resolveShapeType(pathSource: unknown): ShapeType {
+  if (isLineShape(pathSource)) {
+    return 'line';
+  }
+
+  const path = asObject(pathSource);
+  const pointSource = asObject(readField(path, ['pointPathSource', 'point_path_source']));
+  if (pointSource) {
+    switch (Number(readField<number>(pointSource, ['type']) ?? 0)) {
+      case 0:
+        return 'leftArrow';
+      case 1:
+        return 'rightArrow';
+      case 10:
+        return 'leftRightArrow';
+      case 100:
+        return 'star5';
+      case 200:
+        return 'plus';
+      default:
+        break;
+    }
+  }
+
+  const scalarSource = asObject(readField(path, ['scalarPathSource', 'scalar_path_source']));
+  if (scalarSource) {
+    switch (Number(readField<number>(scalarSource, ['type']) ?? 0)) {
+      case 0:
+        return 'roundRect';
+      case 2:
+        return 'chevron';
+      case 1:
+        return 'hexagon';
+      default:
+        break;
+    }
+  }
+
+  return 'unknown';
 }
 
 function findCanvasTitle(items: SlideItem[]): string | undefined {

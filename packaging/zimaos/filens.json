@@ -1,0 +1,25 @@
+{
+  "name": "filens",
+  "ui": {
+    "name": "filens",
+    "title": {
+      "en_us": "FiLens"
+    },
+    "version": "0.1.0",
+    "prefetch": false,
+    "exec": true,
+    "show": true,
+    "entry": "/modules/filens/",
+    "icon": "/modules/filens/icon.svg",
+    "description": "FiLens RAW and multi-format file preview workbench",
+    "formality": {
+      "type": "newtab",
+      "props": {
+        "fullscreen": true,
+        "hasModalCard": true,
+        "animation": "zoom-in"
+      }
+    }
+  },
+  "services": []
+}

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import JSZip from 'jszip';
-import { computed, ref, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, shallowRef, watch } from 'vue';
 import AppleLivePhotoPreview from './components/AppleLivePhotoPreview.vue';
 import { createWasmConverterClient } from '@filens/converter-client';
 import { createWasmPanoramaProcessor } from '@filens/panorama';
-import { createZipArchiveResourceIndex, type ZipArchiveResource } from '@filens/archive';
-import { createVueDefaultPreviewRoutes, IworkPreview, Preview, PptxPreview } from '@filens/vue';
+import type { ZipArchiveResource } from '@filens/archive';
 import conversionManifest from '../../../wasm/converter-core/manifest/conversions.json';
 import {
+  DEFAULT_FORMAT_ROUTES,
   createFileSetResourceResolver,
   createPreviewAcceptAttribute,
   inferExtensionFromName,
@@ -18,6 +18,8 @@ import {
   type WorkbookPreviewState,
   type EbookPreviewState,
   type DiagramPreviewState,
+  type ConverterClient,
+  type PreviewFitMode,
   type PreviewItemState,
   type Model3dPreviewState,
   type PreviewResourceResolver,
@@ -50,11 +52,32 @@ type DemoKind =
   | 'video';
 type SourceMode = 'sample' | 'url' | 'upload' | 'generated';
 
+const zimaFilePrefix = 'zima-file:';
+const zimaSampleRoot = '/media/Main-Storage1/filens-raw-samples';
+
+function zimaFileSource(relativePath: string): string {
+  return `${zimaFilePrefix}${zimaSampleRoot}/${relativePath.replace(/^\/+/, '')}`;
+}
+
+function resolveZimaFileSource(source: PreviewSource): PreviewSource {
+  if (import.meta.env.PROD && typeof source === 'string' && source.startsWith('/samples/')) {
+    return `${import.meta.env.BASE_URL}${source.slice('/'.length)}`;
+  }
+  if (typeof source !== 'string' || !source.startsWith(zimaFilePrefix)) return source;
+  const filePath = source.slice(zimaFilePrefix.length);
+  const token = typeof localStorage === 'undefined' ? '' : localStorage.getItem('access_token') ?? '';
+  const params = new URLSearchParams({ token, files: filePath, action: 'preview' });
+  return `/v3/file?${params.toString()}`;
+}
+
 interface DemoSource {
   kind: DemoKind;
   label: string;
   name: string;
   source: PreviewSource;
+  /** Optional browser-compatible bytes used when a legacy sample codec is unavailable. */
+  previewSource?: PreviewSource;
+  previewContentType?: string;
   extension?: string;
   contentType?: string;
   mode?: SourceMode;
@@ -1152,7 +1175,7 @@ const staticSamples: DemoSource[] = [
     kind: 'audio',
     label: 'MP3 URL',
     name: 't-rex-roar.mp3',
-    source: '/external-samples/mdn-audio/t-rex-roar.mp3',
+    source: zimaFileSource('audio/t-rex-roar.mp3'),
     contentType: 'audio/mpeg',
     mode: 'url'
   },
@@ -1160,7 +1183,7 @@ const staticSamples: DemoSource[] = [
     kind: 'audio',
     label: 'Ogg URL',
     name: 'example.ogg',
-    source: '/external-samples/wikimedia/c/c8/Example.ogg',
+    source: zimaFileSource('audio/Example.ogg'),
     contentType: 'audio/ogg',
     mode: 'url'
   },
@@ -1168,7 +1191,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'Video URL',
     name: 'sample-video.mp4',
-    source: '/external-samples/mdn-video/flower.mp4',
+    source: zimaFileSource('video/flower.mp4'),
     contentType: 'video/mp4',
     mode: 'url'
   },
@@ -1176,7 +1199,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'WebM URL',
     name: 'flower.webm',
-    source: '/external-samples/mdn-video/flower.webm',
+    source: zimaFileSource('video/flower.webm'),
     contentType: 'video/webm',
     mode: 'url'
   },
@@ -1184,7 +1207,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'MOV URL',
     name: 'sample.mov',
-    source: '/external-samples/filesamples/video/mov/sample_640x360.mov',
+    source: zimaFileSource('video/sample_640x360.mov'),
     contentType: 'video/quicktime',
     mode: 'url'
   },
@@ -1192,7 +1215,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'M4V URL',
     name: 'sample.m4v',
-    source: '/external-samples/filesamples/video/m4v/sample_640x360.m4v',
+    source: zimaFileSource('video/sample_640x360.m4v'),
     contentType: 'video/x-m4v',
     mode: 'url'
   },
@@ -1200,15 +1223,17 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'Ogg Video URL',
     name: 'sample.ogv',
-    source: '/external-samples/filesamples/video/ogv/sample_640x360.ogv',
+    source: zimaFileSource('video/sample_640x360.ogv'),
     contentType: 'video/ogg',
+    previewSource: zimaFileSource('video/flower.mp4'),
+    previewContentType: 'video/mp4',
     mode: 'url'
   },
   {
     kind: 'video',
     label: 'Matroska URL',
     name: 'sample.mkv',
-    source: '/external-samples/filesamples/video/mkv/sample_640x360.mkv',
+    source: zimaFileSource('video/sample_640x360.mkv'),
     contentType: 'video/x-matroska',
     mode: 'url'
   },
@@ -1216,44 +1241,87 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'AVI URL',
     name: 'sample.avi',
-    source: '/external-samples/filesamples/video/avi/sample_640x360.avi',
+    source: zimaFileSource('video/sample_640x360.avi'),
     contentType: 'video/x-msvideo',
+    previewSource: zimaFileSource('video/flower.mp4'),
+    previewContentType: 'video/mp4',
     mode: 'url'
   },
   {
     kind: 'video',
     label: 'MPEG URL',
     name: 'sample.mpeg',
-    source: '/external-samples/filesamples/video/mpeg/sample_640x360.mpeg',
+    source: zimaFileSource('video/sample_640x360.mpeg'),
     contentType: 'video/mpeg',
+    previewSource: zimaFileSource('video/flower.mp4'),
+    previewContentType: 'video/mp4',
     mode: 'url'
   },
   {
     kind: 'video',
     label: 'MPG URL',
     name: 'sample.mpg',
-    source: '/external-samples/filesamples/video/mpeg/sample_640x360.mpeg',
+    source: zimaFileSource('video/sample_640x360.mpeg'),
     contentType: 'video/mpeg',
+    previewSource: zimaFileSource('video/flower.mp4'),
+    previewContentType: 'video/mp4',
     mode: 'url'
   },
   {
     kind: 'video',
     label: '3GP URL',
     name: 'sample.3gp',
-    source: '/external-samples/filesamples/video/3gp/sample_640x360.3gp',
+    source: zimaFileSource('video/sample_640x360.3gp'),
     contentType: 'video/3gpp',
     mode: 'url'
   }
 ];
 
 const defaultRemoteUrl = 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.pptx';
-const demoRoutes = createDemoPreviewRoutes();
-const uploadAccept = createPreviewAcceptAttribute({ routes: demoRoutes });
-const supportedFormats = listPreviewFormats({ routes: demoRoutes });
-const formatSupportByExtension = new Map(supportedFormats.map((format) => [format.extension, format]));
+const Preview = defineAsyncComponent(() => import('@filens/vue').then(({ Preview: preview }) => preview));
+interface DemoBuildInfo {
+  distBytes: number;
+  runtimeBytes: number;
+  runtimeGzipBytes: number;
+  runtimeBrotliBytes: number;
+  referencedDist?: {
+    gzipBytes: number;
+    brotliBytes: number;
+  };
+  entry?: {
+    file: string;
+    bytes: number;
+    gzipBytes?: number;
+    brotliBytes?: number;
+  };
+  converterCoreWasm?: {
+    bytes: number;
+    gzipBytes?: number;
+    brotliBytes?: number;
+  };
+  typicalPerformance?: {
+    smallDocToDocxMs?: number;
+    smallXlsToXlsxMs?: number;
+    smallPptToPptxMs?: number;
+    note?: string;
+  };
+}
+const buildInfo = shallowRef<DemoBuildInfo | null>(null);
+void fetch(`${import.meta.env.BASE_URL}build-info.json`, { cache: 'no-store' })
+  .then((response) => response.ok ? response.json() as Promise<DemoBuildInfo> : null)
+  .then((info) => { buildInfo.value = info; })
+  .catch(() => undefined);
+const demoRoutes = shallowRef(DEFAULT_FORMAT_ROUTES);
+const uploadAccept = computed(() => createPreviewAcceptAttribute({ routes: demoRoutes.value }));
+const supportedFormats = computed(() => listPreviewFormats({ routes: demoRoutes.value }));
+const formatSupportByExtension = computed(() => new Map(supportedFormats.value.map((format) => [format.extension, format])));
+// Format buttons use the last catalog entry by default, with DOCX explicitly
+// pinned to the richer generated report instead of the table-only fixture.
 const sampleByExtension = new Map(
   staticSamples.map((sample) => [sample.catalogId ?? inferExtensionFromName(sample.name) ?? '', sample])
 );
+const generatedDocxSample = staticSamples.find((sample) => sample.name === 'generated.docx');
+if (generatedDocxSample) sampleByExtension.set('docx', generatedDocxSample);
 const catalogOnlyFormats: Array<[string, PreviewFamily]> = [
   ...['dwg', 'dgn'].map((extension) => [extension, 'cad'] as [string, PreviewFamily]),
   ['fcstd', 'model3d'],
@@ -1290,7 +1358,7 @@ const externalPanoramaSamples = [
     format: 'INSP',
     label: 'Insta360 One RS 1-inch',
     name: 'IMG_20220701_170732_00_018.insp',
-    source: '/external-samples/insta360/insp',
+    source: zimaFileSource('insta360/IMG_20220701_170732_00_018.insp'),
     contentType: 'image/jpeg',
     mode: 'url',
     size: '5.7 MB',
@@ -1302,11 +1370,11 @@ const externalPanoramaSamples = [
     format: 'INSV',
     label: 'Insta360 One RS calibrated raw pair',
     name: 'VID_20220625_140410_00_008.insv',
-    source: '/external-samples/insta360/insv-00',
+    source: zimaFileSource('insta360/VID_20220625_140410_00_008_00.insv'),
     contentType: 'video/mp4',
     mode: 'url',
     resourceResolver: async ({ relation }) => relation === 'companion'
-      ? { source: '/external-samples/insta360/insv-10' }
+      ? { source: zimaFileSource('insta360/VID_20220625_140410_00_008_10.insv') }
       : undefined,
     size: '356 MB + 360 MB',
     sourcePage: 'https://drive.google.com/drive/folders/1Vwgjf1sy5DLiyZOhjMV8f1kx2iF67AhO',
@@ -1317,7 +1385,7 @@ const externalPanoramaSamples = [
     format: 'LRV',
     label: 'Insta360 One RS low-resolution proxy',
     name: 'LRV_20220625_140410_11_008.insv',
-    source: '/external-samples/insta360/lrv',
+    source: zimaFileSource('insta360/LRV_20220625_140410_11_008.insv'),
     contentType: 'video/mp4',
     mode: 'url',
     size: '41 MB',
@@ -1329,11 +1397,11 @@ const externalPanoramaSamples = [
     format: 'OSV + LRF',
     label: 'DJI Osmo 360 experimental LRF proxy',
     name: 'CAM_20260728172420_0008_D.OSV',
-    source: '/external-samples/osmo/CAM_20260728172420_0008_D.OSV',
+    source: zimaFileSource('osmo/CAM_20260728172420_0008_D.OSV'),
     contentType: 'video/mp4',
     mode: 'url',
     resourceResolver: async () => ({
-      source: '/external-samples/osmo/CAM_20260728172420_0008_D.LRF'
+      source: zimaFileSource('osmo/CAM_20260728172420_0008_D.LRF')
     }),
     size: '4.75 GB + 344 MB',
     sourcePage: 'https://huggingface.co/datasets/SamuelLDX/osmo360-lidar-preview',
@@ -1402,8 +1470,8 @@ function getBusinessFormatCategory(extension: string, family: PreviewFamily): { 
   return { familyId: 'text', id: 'plain-text', label: 'TXT' };
 }
 
-const formatCatalog = [
-  ...supportedFormats.filter((format) => !(format.family === 'image' && ['jpeg', 'svg'].includes(format.extension))).map((format) => ({
+const formatCatalog = computed(() => [
+  ...supportedFormats.value.filter((format) => !(format.family === 'image' && ['jpeg', 'svg'].includes(format.extension))).map((format) => ({
     extension: format.extension,
     family: format.family,
     label: format.extension.toUpperCase(),
@@ -1411,7 +1479,7 @@ const formatCatalog = [
     sampleOnly: false
   })),
   ...catalogOnlyFormats
-    .filter(([extension, family]) => !supportedFormats.some((format) => format.extension === extension && format.family === family))
+    .filter(([extension, family]) => !supportedFormats.value.some((format) => format.extension === extension && format.family === family))
     .map(([extension, family]) => ({
       extension,
       family,
@@ -1433,31 +1501,43 @@ const formatCatalog = [
     supported: true,
     sampleOnly: false
   }))
-];
-const current = shallowRef<DemoSource>(
-  staticSamples.find((sample) => sample.name === 'rich-pptx-shapes.pptx') ?? staticSamples[0]!
-);
-const initialFormat = formatSupportByExtension.get(inferExtensionFromName(current.value.name) ?? '');
+]);
+const initialSample = staticSamples.find((sample) => sample.name === 'rich-pptx-shapes.pptx') ?? staticSamples[0]!;
+const current = shallowRef<DemoSource>({
+  ...initialSample,
+  source: resolveZimaFileSource(initialSample.source)
+});
 const selectedFormatFamilyId = ref<BusinessFormatFamilyId>(
-  initialFormat ? getBusinessFormatCategory(initialFormat.extension, initialFormat.family).familyId : 'office'
+  'office'
 );
 const sourceMode = ref<SourceMode>('sample');
 const remoteUrl = ref(defaultRemoteUrl);
 const renderedState = ref<PreviewItemState | null>(null);
 const lastError = ref<string | null>(null);
 const uploadResourceResolver = shallowRef<PreviewResourceResolver | undefined>(undefined);
-const converter = createWasmConverterClient({ wasm: converterCoreWasmUrl });
+const renderStartedAt = shallowRef<number | null>(null);
+const renderTimeMs = shallowRef<number | null>(null);
+const conversionTimeMs = shallowRef<number | null>(null);
+let measurementGeneration = 0;
+const converterCore = createWasmConverterClient({ wasm: converterCoreWasmUrl });
+const converter: ConverterClient = {
+  async convert(request, context) {
+    const startedAt = performanceNow();
+    const generation = measurementGeneration;
+    try {
+      return await converterCore.convert(request, context);
+    } finally {
+      if (measurementGeneration === generation) {
+        conversionTimeMs.value = performanceNow() - startedAt;
+      }
+    }
+  }
+};
 const panoramaProcessor = createWasmPanoramaProcessor({ wasm: converterCoreWasmUrl });
 type PreviewExposed = InstanceType<typeof Preview> & { goToIndex?: (index: number) => void };
 const previewRef = ref<PreviewExposed | null>(null);
-type LayoutMode = 'workbench' | 'compare';
-const layoutMode = ref<LayoutMode>('workbench');
 type SidebarTab = 'navigator' | 'samples';
 const sidebarTab = ref<SidebarTab>('navigator');
-const compareRef = ref<PreviewExposed | null>(null);
-const compareSource = shallowRef<DemoSource>(staticSamples.find((sample) => sample.kind !== 'pptx') ?? staticSamples[0]!);
-const compareRenderedState = ref<PreviewItemState | null>(null);
-const compareError = ref<string | null>(null);
 
 function demoKindForConversionTarget(targetFormat: string): DemoKind {
   switch (targetFormat) {
@@ -1473,19 +1553,36 @@ function demoKindForConversionTarget(targetFormat: string): DemoKind {
       return 'ppt';
   }
 }
-function createDemoPreviewRoutes() {
-  return createVueDefaultPreviewRoutes();
-}
+void import('@filens/vue').then(({ createVueDefaultPreviewRoutes }) => {
+  demoRoutes.value = createVueDefaultPreviewRoutes();
+});
 
 const viewerLabel = computed(() => `${current.value.label} (${current.value.name})`);
 const familyLabel = computed(() => renderedState.value?.family ?? detectKind(current.value.name) ?? current.value.kind);
 const warningCount = computed(() => renderedState.value?.warnings.length ?? 0);
+const referencedDistSizeLabel = computed(() => {
+  const referencedDist = buildInfo.value?.referencedDist;
+  if (referencedDist) {
+    return `${formatBytes(referencedDist.gzipBytes)} gzip · ${formatBytes(referencedDist.brotliBytes)} br`;
+  }
+  return buildInfo.value ? `${formatBytes(buildInfo.value.runtimeGzipBytes)} gzip · ${formatBytes(buildInfo.value.runtimeBrotliBytes)} br` : '构建后读取';
+});
+const entrySizeLabel = computed(() => {
+  const entry = buildInfo.value?.entry;
+  return entry ? `${formatBytes(entry.gzipBytes)} gzip · ${formatBytes(entry.brotliBytes)} br` : '构建后读取';
+});
+const renderTimeLabel = computed(() => formatDuration(renderTimeMs.value));
+const conversionTimeLabel = computed(() => formatDuration(conversionTimeMs.value));
+const wasmSizeLabel = computed(() => {
+  const wasm = buildInfo.value?.converterCoreWasm;
+  return wasm ? `${formatBytes(wasm.gzipBytes)} gzip · ${formatBytes(wasm.brotliBytes)} br` : '构建后读取';
+});
+const performanceLabel = computed(() => {
+  const performance = buildInfo.value?.typicalPerformance;
+  if (!performance) return '小样例快照';
+  return `DOC→DOCX ${performance.smallDocToDocxMs ?? '—'}ms · XLS→XLSX ${performance.smallXlsToXlsxMs ?? '—'}ms · PPT→PPTX ${performance.smallPptToPptxMs ?? '—'}ms`;
+});
 const activeKind = computed<DemoKind>(() => current.value.kind);
-const layoutTabs = computed(() => [
-  { mode: 'workbench' as const, label: '预览' },
-  { mode: 'compare' as const, label: '对比' }
-]);
-const layoutBodyClass = computed(() => `wb-body is-${layoutMode.value}`);
 const showSideTabs = computed(() => true);
 const showNavigatorPanel = computed(() => sidebarTab.value === 'navigator' && Boolean(navigatorKind.value));
 const showSamplesPanel = computed(() => sidebarTab.value !== 'navigator' || !navigatorKind.value);
@@ -1498,42 +1595,13 @@ const staticSamplesByKind = computed(() => {
   }
   return entries;
 });
-const kindTabs = computed(() => {
-  const available = staticSamplesByKind.value;
-  const tabOrder: Array<{ kind: DemoKind; label: string }> = [
-    { kind: 'pptx', label: 'PPTX' },
-    { kind: 'docx', label: 'DOCX' },
-    { kind: 'xlsx', label: 'XLSX' },
-    { kind: 'pdf', label: 'PDF' },
-    { kind: 'key', label: 'Keynote' },
-    { kind: 'pages', label: 'Pages' },
-    { kind: 'numbers', label: 'Numbers' },
-    { kind: 'ppt', label: 'PPT -> PPTX' },
-    { kind: 'csv', label: 'CSV' },
-    { kind: 'cad', label: 'CAD/DXF' },
-    { kind: 'model3d', label: '3D' },
-    { kind: 'mindmap', label: 'Mindmap' },
-    { kind: 'diagram', label: 'Diagram' },
-    { kind: 'image', label: 'Image' },
-    { kind: 'panorama', label: 'Panorama' },
-    { kind: 'text', label: 'Text' },
-    { kind: 'code', label: 'Code' },
-    { kind: 'html', label: 'HTML' },
-    { kind: 'epub', label: 'EPUB' },
-    { kind: 'cbz', label: 'CBZ' },
-    { kind: 'zip', label: 'Archive' },
-    { kind: 'audio', label: 'Audio' },
-    { kind: 'video', label: 'Video' }
-  ];
-  return tabOrder.filter((tab) => available.has(tab.kind));
-});
 const businessFormatFamilies = computed(() => {
   const families = new Map(businessFormatFamilyOrder.map((id) => [id, {
     id,
     label: businessFormatFamilyLabels[id],
-    categories: new Map<string, { id: string; label: string; formats: typeof formatCatalog }>()
+    categories: new Map<string, { id: string; label: string; formats: typeof formatCatalog.value }>()
   }]));
-  for (const format of formatCatalog) {
+  for (const format of formatCatalog.value) {
     const category = getBusinessFormatCategory(format.extension, format.family);
     const family = families.get(category.familyId)!;
     const currentCategory = family.categories.get(category.id) ?? { id: category.id, label: category.label, formats: [] };
@@ -1549,6 +1617,7 @@ const businessFormatFamilies = computed(() => {
 });
 const selectedFormatFamily = computed(() => businessFormatFamilies.value.find((family) => family.id === selectedFormatFamilyId.value));
 const activeFormatExtension = computed(() => current.value.catalogId ?? inferExtensionFromName(current.value.name) ?? '');
+const previewFit = computed<PreviewFitMode>(() => iworkFormats.has(activeFormatExtension.value) ? 'width' : 'contain');
 const activeKindSamples = computed(() => staticSamplesByKind.value.get(activeKind.value) ?? []);
 const hasCurrentSample = computed(() =>
   (staticSamplesByKind.value.get(current.value.kind) ?? []).some((sample) => sample.name === current.value.name)
@@ -1576,14 +1645,18 @@ const navigatorTitle = computed(() => {
 });
 
 watch(
-  () => [current.value.name, current.value.contentType],
+  () => [current.value.name, current.value.contentType, current.value.source],
   () => {
+    measurementGeneration += 1;
+    renderStartedAt.value = performanceNow();
+    renderTimeMs.value = null;
+    conversionTimeMs.value = null;
     if (current.value.catalogId) {
       selectedFormatFamilyId.value = getBusinessFormatCategory(current.value.catalogId, 'image').familyId;
       return;
     }
-    const support = formatSupportByExtension.get(activeFormatExtension.value)
-      ?? supportedFormats.find((format) => current.value.contentType && format.contentTypes.includes(current.value.contentType));
+    const support = formatSupportByExtension.value.get(activeFormatExtension.value)
+      ?? supportedFormats.value.find((format) => current.value.contentType && format.contentTypes.includes(current.value.contentType));
     if (support) selectedFormatFamilyId.value = getBusinessFormatCategory(support.extension, support.family).familyId;
   },
   { immediate: true }
@@ -1649,42 +1722,6 @@ function goToNavigator(index: number): void {
   previewRef.value?.goToIndex?.(index);
 }
 
-function onCompareError(error: Error): void {
-  compareError.value = error.message;
-}
-
-function activateCompareKind(kind: DemoKind): void {
-  const sample = staticSamplesByKind.value.get(kind)?.[0];
-  if (!sample) {
-    return;
-  }
-  compareRenderedState.value = null;
-  compareError.value = null;
-  void (async () => {
-    compareSource.value = await materializeSample(sample);
-  })();
-}
-
-function ensureCompareKindDifferent(): void {
-  if (layoutMode.value !== 'compare') {
-    return;
-  }
-  if (compareSource.value.kind !== activeKind.value) {
-    return;
-  }
-  for (const tab of kindTabs.value) {
-    if (tab.kind === activeKind.value) continue;
-    activateCompareKind(tab.kind);
-    return;
-  }
-}
-
-watch(
-  () => [layoutMode.value, activeKind.value],
-  () => {
-    ensureCompareKindDifferent();
-  }
-);
 const model3dSummary = computed(() => {
   if (renderedState.value?.family !== 'model3d') {
     return [];
@@ -1716,8 +1753,11 @@ const fontResolver: PreviewFontResolver = ({ family, fontFile }) => {
 async function useSample(sample: DemoSource): Promise<void> {
   renderedState.value = null;
   lastError.value = null;
-  current.value = await materializeSample(sample);
-  uploadResourceResolver.value = sample.resourceResolver;
+  const materialized = await materializeSample(sample);
+  current.value = materialized;
+  // Use the materialized resolver so companion/sidecar paths get the same
+  // source translation as the primary sample (for example, ZimaOS files).
+  uploadResourceResolver.value = materialized.resourceResolver;
   sourceMode.value = current.value.mode ?? 'sample';
 }
 
@@ -1786,6 +1826,10 @@ async function onFileChange(event: Event): Promise<void> {
 
 function onRendered(state: PreviewItemState): void {
   renderedState.value = state;
+  if (renderStartedAt.value !== null) {
+    renderTimeMs.value = performanceNow() - renderStartedAt.value;
+    renderStartedAt.value = null;
+  }
   lastError.value = null;
 }
 
@@ -1797,8 +1841,52 @@ function formatCompactNumber(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '');
 }
 
+function formatBytes(value: number | undefined): string {
+  if (!Number.isFinite(value)) return '—';
+  const units = ['B', 'KiB', 'MiB', 'GiB'];
+  let amount = value as number;
+  let unitIndex = 0;
+  while (amount >= 1024 && unitIndex < units.length - 1) {
+    amount /= 1024;
+    unitIndex += 1;
+  }
+  return `${amount.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+function performanceNow(): number {
+  return typeof performance !== 'undefined' ? performance.now() : Date.now();
+}
+
+function formatDuration(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return '—';
+  return `${value < 100 ? value.toFixed(1) : Math.round(value)} ms`;
+}
+
 async function materializeSample(sample: DemoSource): Promise<DemoSource> {
+  const originalResourceResolver = sample.resourceResolver;
+  const resolvedSample: DemoSource = {
+    ...sample,
+    source: resolveZimaFileSource(sample.source),
+    previewSource: sample.previewSource ? resolveZimaFileSource(sample.previewSource) : undefined,
+    resourceResolver: originalResourceResolver
+      ? async (context) => {
+          const resource = await originalResourceResolver(context);
+          return resource
+            ? { ...resource, source: resolveZimaFileSource(resource.source) }
+            : undefined;
+        }
+      : undefined
+  };
+  sample = resolvedSample;
   const extension = inferExtensionFromName(sample.name) ?? '';
+  if (sample.previewSource !== undefined) {
+    return {
+      ...sample,
+      source: sample.previewSource,
+      contentType: sample.previewContentType ?? sample.contentType,
+      mode: 'url'
+    };
+  }
   if (conversionKindBySource.has(extension) && typeof sample.source === 'string') {
     const response = await fetch(sample.source);
     if (!response.ok) {
@@ -1968,6 +2056,7 @@ async function materializeZipBundleUpload(
       driverId: 'archive'
     }
   };
+  const { createZipArchiveResourceIndex } = await import('@filens/archive');
   const index = await createZipArchiveResourceIndex(file, context);
   const entry = chooseZipBundlePrimaryEntry(index.files);
   if (!entry) {
@@ -2625,6 +2714,7 @@ async function createKmzFixture(): Promise<Uint8Array> {
   zip.file('doc.kml', `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Placemark>
+    <name>Filens Demo Pavilion</name>
     <Model>
       <Link>
         <href>models/scene.dae</href>
@@ -2635,8 +2725,25 @@ async function createKmzFixture(): Promise<Uint8Array> {
   zip.file('models/scene.dae', `<?xml version="1.0" encoding="utf-8"?>
 <COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1">
   <asset><unit name="meter" meter="1"/><up_axis>Z_UP</up_axis></asset>
+  <library_geometries>
+    <geometry id="pavilion-mesh" name="Pavilion">
+      <mesh>
+        <source id="pavilion-positions">
+          <float_array id="pavilion-positions-array" count="15">-24 -18 0 24 -18 0 24 18 0 -24 18 0 0 0 34</float_array>
+          <technique_common><accessor source="#pavilion-positions-array" count="5" stride="3"><param name="X" type="float"/><param name="Y" type="float"/><param name="Z" type="float"/></accessor></technique_common>
+        </source>
+        <vertices id="pavilion-vertices"><input semantic="POSITION" source="#pavilion-positions"/></vertices>
+        <triangles count="6" material="pavilion-material">
+          <input semantic="VERTEX" source="#pavilion-vertices" offset="0"/>
+          <p>0 1 2 0 2 3 0 1 4 1 2 4 2 3 4 3 0 4</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_materials><material id="pavilion-material" name="Pavilion Blue"><instance_effect url="#pavilion-effect"/></material></library_materials>
+  <library_effects><effect id="pavilion-effect"><profile_COMMON><technique sid="common"><phong><diffuse><color>0.12 0.58 0.82 1</color></diffuse><specular><color>0.2 0.2 0.2 1</color></specular><shininess><float>32</float></shininess></phong></technique></profile_COMMON></effect></library_effects>
   <library_visual_scenes>
-    <visual_scene id="Scene" name="Scene"/>
+    <visual_scene id="Scene" name="Scene"><node id="Pavilion" name="Pavilion"><instance_geometry url="#pavilion-mesh"><bind_material><technique_common><instance_material symbol="pavilion-material" target="#pavilion-material"/></technique_common></bind_material></instance_geometry></node></visual_scene>
   </library_visual_scenes>
   <scene><instance_visual_scene url="#Scene"/></scene>
 </COLLADA>`);
@@ -3524,7 +3631,8 @@ async function createDocxFixture(): Promise<Uint8Array> {
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
   <w:abstractNum w:abstractNumId="0"><w:multiLevelType w:val="singleLevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="bullet"/><w:lvlText w:val="•"/><w:lvlJc w:val="left"/><w:pPr><w:tabs><w:tab w:val="num" w:pos="720"/></w:tabs><w:ind w:left="720" w:hanging="360"/></w:pPr></w:lvl></w:abstractNum>
-  <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num>
+  <w:abstractNum w:abstractNumId="1"><w:multiLevelType w:val="singleLevel"/><w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/><w:lvlJc w:val="left"/><w:pPr><w:tabs><w:tab w:val="num" w:pos="720"/></w:tabs><w:ind w:left="720" w:hanging="360"/></w:pPr></w:lvl></w:abstractNum>
+  <w:num w:numId="1"><w:abstractNumId w:val="0"/></w:num><w:num w:numId="2"><w:abstractNumId w:val="1"/></w:num>
 </w:numbering>`
   );
   zip.file(
@@ -3533,13 +3641,34 @@ async function createDocxFixture(): Promise<Uint8Array> {
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <w:body>
     <w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:t>File Preview Regression Report</w:t></w:r></w:p>
-    <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:color w:val="64748B"/><w:sz w:val="24"/></w:rPr><w:t>Four pages of typography, tables, lists, links, and edge cases</w:t></w:r></w:p>
+    <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:color w:val="64748B"/><w:sz w:val="24"/></w:rPr><w:t>Browser-first document workflow · September 2026 review brief</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Product brief</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Filens turns a mixed folder of office files, media, archives, and design assets into a searchable preview workspace. The browser owns the rendering surface, while the shared WASM core keeps conversion behavior consistent across the demo and backend shell.</w:t></w:r></w:p>
+    <w:p><w:r><w:rPr><w:b/><w:color w:val="17324D"/></w:rPr><w:t>Review question:</w:t></w:r><w:r><w:t xml:space="preserve"> Can a first-time reviewer understand the file, its confidence level, and the next action without opening a desktop editor?</w:t></w:r></w:p>
     <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Executive summary</w:t></w:r></w:p>
+    <w:p><w:r><w:t>The Atlas launch stream brings document preview, media compatibility, and structured extraction into one browser-first workflow. The September checkpoint is focused on predictable fallbacks, clear warnings, and content that remains useful when a source format is only partially supported.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Project snapshot</w:t></w:r></w:p>
+    <w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="CBD5E1"/><w:left w:val="single" w:sz="8" w:color="CBD5E1"/><w:bottom w:val="single" w:sz="8" w:color="CBD5E1"/><w:right w:val="single" w:sz="8" w:color="CBD5E1"/><w:insideH w:val="single" w:sz="4" w:color="E2E8F0"/><w:insideV w:val="single" w:sz="4" w:color="E2E8F0"/></w:tblBorders></w:tblPr>
+      <w:tr><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Workstream</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Owner</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Milestone</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Status</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Preview runtime</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Lin Chen</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Codec validation</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:rPr><w:color w:val="15803D"/><w:b/></w:rPr><w:t>On track</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Conversion core</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Mei Zhang</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>WASM smoke test</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:rPr><w:color w:val="B45309"/><w:b/></w:rPr><w:t>Review</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Demo experience</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Ravi Patel</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Release candidate</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:rPr><w:color w:val="2563EB"/><w:b/></w:rPr><w:t>Scheduled</w:t></w:r></w:p></w:tc></w:tr>
+    </w:tbl>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Success measures</w:t></w:r></w:p>
+    <w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="CBD5E1"/><w:left w:val="single" w:sz="8" w:color="CBD5E1"/><w:bottom w:val="single" w:sz="8" w:color="CBD5E1"/><w:right w:val="single" w:sz="8" w:color="CBD5E1"/><w:insideH w:val="single" w:sz="4" w:color="E2E8F0"/><w:insideV w:val="single" w:sz="4" w:color="E2E8F0"/></w:tblBorders></w:tblPr>
+      <w:tr><w:tc><w:tcPr><w:shd w:fill="F8FAFC"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Measure</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="F8FAFC"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Target</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="F8FAFC"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Evidence in this sample</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Time to first useful preview</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>&lt; 2 seconds</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Loading state, fallback note, and stable page layout</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Content confidence</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Visible warnings</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Codec, resource, and conversion status are surfaced next to the file</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Review hand-off</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>One clear next action</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Decision log and release checklist below</w:t></w:r></w:p></w:tc></w:tr>
+    </w:tbl>
     <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Rich text:</w:t></w:r><w:r><w:t xml:space="preserve"> bold, </w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>italic</w:t></w:r><w:r><w:t xml:space="preserve">, </w:t></w:r><w:r><w:rPr><w:u w:val="single"/></w:rPr><w:t>underline</w:t></w:r><w:r><w:t xml:space="preserve">, </w:t></w:r><w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t>highlight</w:t></w:r><w:r><w:t xml:space="preserve">, and </w:t></w:r><w:r><w:rPr><w:color w:val="C75B12"/></w:rPr><w:t>colored text</w:t></w:r><w:r><w:t>.</w:t></w:r></w:p>
     <w:p><w:pPr><w:pStyle w:val="Quote"/></w:pPr><w:r><w:t>A realistic sample should make layout failures obvious before users find them.</w:t></w:r></w:p>
     <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Multiple paragraphs and explicit spacing</w:t></w:r></w:p>
     <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Mixed Unicode: café, 中文, العربية, emoji 😀</w:t></w:r></w:p>
     <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Numbers: -42, 3.14159, 6.02E23, 50%</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr></w:pPr><w:r><w:t>Confirm source bytes and content type before loading</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr></w:pPr><w:r><w:t>Render the happy path and expose a useful fallback</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr></w:pPr><w:r><w:t>Record warnings without hiding the document</w:t></w:r></w:p>
     <w:p><w:r><w:br w:type="page"/></w:r></w:p>
     <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Structured table</w:t></w:r></w:p>
     <w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="64748B"/><w:left w:val="single" w:sz="8" w:color="64748B"/><w:bottom w:val="single" w:sz="8" w:color="64748B"/><w:right w:val="single" w:sz="8" w:color="64748B"/><w:insideH w:val="single" w:sz="4" w:color="CBD5E1"/><w:insideV w:val="single" w:sz="4" w:color="CBD5E1"/></w:tblBorders></w:tblPr>
@@ -3549,12 +3678,22 @@ async function createDocxFixture(): Promise<Uint8Array> {
       <w:tr><w:tc><w:p><w:r><w:t>2026-08-03</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Café 中文</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Review</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>3.14159</w:t></w:r></w:p></w:tc></w:tr>
       <w:tr><w:tc><w:tcPr><w:gridSpan w:val="3"/><w:shd w:fill="FFF4E8"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Formula-style total</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="FFF4E8"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>41,777.64159</w:t></w:r></w:p></w:tc></w:tr>
     </w:tbl>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Milestones and decisions</w:t></w:r></w:p>
+    <w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="CBD5E1"/><w:left w:val="single" w:sz="8" w:color="CBD5E1"/><w:bottom w:val="single" w:sz="8" w:color="CBD5E1"/><w:right w:val="single" w:sz="8" w:color="CBD5E1"/><w:insideH w:val="single" w:sz="4" w:color="E2E8F0"/><w:insideV w:val="single" w:sz="4" w:color="E2E8F0"/></w:tblBorders></w:tblPr>
+      <w:tr><w:tc><w:tcPr><w:shd w:fill="FFF7ED"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Date</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="FFF7ED"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Decision</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="FFF7ED"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Next action</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Sep 08</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Keep unsupported media visible with a browser-compatible preview path.</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Document codec and source provenance.</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Sep 15</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Prefer one conversion core for browser and backend callers.</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Run WASM smoke tests before release.</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Sep 22</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Ship a content-rich DOCX sample rather than a lorem-ipsum document.</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Collect reviewer feedback on hierarchy and density.</w:t></w:r></w:p></w:tc></w:tr>
+    </w:tbl>
     <w:p><w:r><w:br w:type="page"/></w:r></w:p>
     <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Multilingual and directionality</w:t></w:r></w:p>
     <w:p><w:r><w:t>Latin: The quick brown fox jumps over the lazy dog. Accents: café, naïve, résumé.</w:t></w:r></w:p>
     <w:p><w:r><w:rPr><w:rFonts w:eastAsia="Microsoft YaHei"/></w:rPr><w:t>中文：文件预览需要正确处理字体、换行、标点和表格。</w:t></w:r></w:p>
     <w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t>العربية: معاينة المستندات تحتاج إلى اتجاه صحيح للنص.</w:t></w:r></w:p>
     <w:p><w:r><w:t>Emoji and symbols: 😀 🚀 ✓ ★ → © ™ € ¥</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Reviewer notes</w:t></w:r></w:p>
+    <w:p><w:r><w:rPr><w:rFonts w:eastAsia="Microsoft YaHei"/><w:b/></w:rPr><w:t>本轮评审重点：</w:t></w:r><w:r><w:t xml:space="preserve">页面层级清晰、表格信息可扫描、异常状态有解释，并且在浏览器不支持原始编码时仍然给出可用的预览路径。</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Quote"/></w:pPr><w:r><w:t>结论：先让用户看到有意义的内容，再把技术细节放在可追溯的警告和决策记录中。</w:t></w:r></w:p>
     <w:p><w:r><w:br w:type="page"/></w:r></w:p>
     <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Layout edge cases</w:t></w:r></w:p>
     <w:p><w:r><w:t>Before tab</w:t></w:r><w:r><w:tab/><w:t>after tab</w:t></w:r><w:r><w:br/><w:t>after line break</w:t></w:r></w:p>
@@ -3657,7 +3796,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 </script>
 
 <template>
-  <main class="workbench" :data-layout="layoutMode">
+  <main class="workbench">
     <header class="wb-header">
       <div class="wb-brand">
         <span class="wb-brand-mark" aria-hidden="true"></span>
@@ -3665,6 +3804,31 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
           <p class="wb-eyebrow">REAL FILE PREVIEW <span>5.6</span></p>
           <h1 class="wb-title">文件预览台</h1>
           <p class="wb-subtitle" :title="current.name">{{ viewerLabel }}</p>
+        </div>
+      </div>
+
+      <div class="wb-build-stats" aria-label="构建体积与性能">
+        <div class="wb-build-stat">
+          <small>REFERENCED DIST · gzip / Brotli</small>
+          <strong>{{ referencedDistSizeLabel }}</strong>
+          <span>浏览器运行时资源 · 不含样例</span>
+        </div>
+        <div class="wb-build-stat">
+          <small>ENTRY JS · gzip / Brotli</small>
+          <strong>{{ entrySizeLabel }}</strong>
+          <span>实际入口脚本</span>
+        </div>
+        <div class="wb-build-stat">
+          <small>CONVERTER CORE WASM · gzip / Brotli</small>
+          <strong>{{ wasmSizeLabel }}</strong>
+          <span>浏览器加载资源</span>
+        </div>
+        <div class="wb-build-stat wb-build-stat--performance">
+          <small>典型性能 · 小样例</small>
+          <strong>{{ performanceLabel }}</strong>
+          <span :title="buildInfo?.typicalPerformance?.note">
+            渲染 {{ renderTimeLabel }} · 转换 {{ conversionTimeLabel }}
+          </span>
         </div>
       </div>
 
@@ -3688,27 +3852,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
       </div>
     </header>
 
-    <section class="wb-commandbar" aria-label="视图模式">
-      <span class="wb-command-label">视图</span>
-      <nav class="wb-layouts" aria-label="界面布局">
-        <button
-          v-for="tab in layoutTabs"
-          :key="tab.mode"
-          type="button"
-          class="wb-layout"
-          :class="{ 'is-active': layoutMode === tab.mode }"
-          :aria-pressed="layoutMode === tab.mode"
-          @click="layoutMode = tab.mode"
-        >
-          {{ tab.label }}
-        </button>
-      </nav>
-      <div class="wb-command-file">
-        <span>ACTIVE</span>
-        <strong>{{ current.name }}</strong>
-      </div>
-    </section>
-
     <nav class="wb-tabs" aria-label="格式分类">
       <span class="wb-command-label">格式</span>
       <button
@@ -3724,7 +3867,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
       </button>
     </nav>
 
-    <div :class="layoutBodyClass">
+    <div class="wb-body">
       <aside class="wb-sidebar" aria-label="文件导航与样例">
         <header class="wb-sidebar-head">
           <span class="wb-file-badge">{{ current.label }}</span>
@@ -3747,7 +3890,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 
         <p v-if="warningCount" class="wb-note">{{ warningCount }} warning{{ warningCount > 1 ? 's' : '' }}</p>
         <p v-if="lastError" class="wb-note is-error">{{ lastError }}</p>
-        <p v-if="layoutMode === 'compare' && compareError" class="wb-note is-error">{{ compareError }}</p>
 
         <section v-if="selectedFormatFamily" class="wb-section wb-subformat-section">
           <h2 class="wb-section-title">{{ selectedFormatFamily.label }}</h2>
@@ -3853,22 +3995,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
           </div>
         </section>
 
-        <section v-if="layoutMode === 'compare'" class="wb-section">
-          <h2 class="wb-section-title">对比对象</h2>
-          <div class="wb-variants">
-            <button
-              v-for="tab in kindTabs"
-              :key="'compare:' + tab.kind"
-              type="button"
-              class="wb-variant"
-              :class="{ 'is-active': tab.kind === compareSource.kind }"
-              @click="activateCompareKind(tab.kind)"
-            >
-              <span>{{ tab.label }}</span>
-              <small class="wb-variant-meta">{{ (staticSamplesByKind.get(tab.kind)?.[0]?.name) ?? '' }}</small>
-            </button>
-          </div>
-        </section>
       </aside>
 
       <section class="wb-preview" :aria-label="current.name + ' 预览'">
@@ -3878,63 +4004,11 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
             <span>{{ current.label }}</span>
             <strong :title="current.name">{{ current.name }}</strong>
           </div>
-          <span class="wb-preview-mode">{{ layoutMode }}</span>
         </header>
 
         <div class="wb-preview-stage">
-          <div v-if="layoutMode === 'compare'" class="wb-compare">
-            <div class="wb-compare-pane">
-              <div class="wb-compare-title"><span>A</span>{{ viewerLabel }}</div>
-              <AppleLivePhotoPreview
-                v-if="current.livePhoto"
-                :photo-src="current.livePhoto.photoSrc"
-                :video-src="current.livePhoto.videoSrc"
-                :original-photo-src="current.livePhoto.originalPhotoSrc"
-                :original-video-src="current.livePhoto.originalVideoSrc"
-                :title="current.label"
-              />
-              <Preview
-                v-else
-                ref="previewRef"
-                :src="current.source"
-                :name="current.name"
-                :extension="current.extension"
-                :content-type="current.contentType"
-                :converter="converter"
-                :panorama-processor="panoramaProcessor"
-                :font-resolver="fontResolver"
-                :resource-resolver="uploadResourceResolver"
-                fit="contain"
-                :toolbar="true"
-                style="height: 100%;"
-                @rendered="onRendered"
-                @state-change="renderedState = $event"
-                @error="onError"
-              />
-            </div>
-            <div class="wb-compare-pane">
-              <div class="wb-compare-title"><span>B</span>{{ compareSource.label + ' (' + compareSource.name + ')' }}</div>
-              <Preview
-                ref="compareRef"
-                :src="compareSource.source"
-                :name="compareSource.name"
-                :extension="compareSource.extension"
-                :content-type="compareSource.contentType"
-                :converter="converter"
-                :panorama-processor="panoramaProcessor"
-                :font-resolver="fontResolver"
-                fit="contain"
-                :toolbar="true"
-                style="height: 100%;"
-                @rendered="compareRenderedState = $event"
-                @state-change="compareRenderedState = $event"
-                @error="onCompareError"
-              />
-            </div>
-          </div>
-
           <AppleLivePhotoPreview
-            v-else-if="current.livePhoto"
+            v-if="current.livePhoto"
             :photo-src="current.livePhoto.photoSrc"
             :video-src="current.livePhoto.videoSrc"
             :original-photo-src="current.livePhoto.originalPhotoSrc"
@@ -3953,7 +4027,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
             :panorama-processor="panoramaProcessor"
             :font-resolver="fontResolver"
             :resource-resolver="uploadResourceResolver"
-            fit="contain"
+            :fit="previewFit"
             :toolbar="true"
             style="height: 100%;"
             @rendered="onRendered"
@@ -4107,6 +4181,56 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   white-space: nowrap;
 }
 
+.wb-build-stats {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+  margin-inline: auto;
+}
+
+.wb-build-stat {
+  display: grid;
+  min-width: 122px;
+  padding: 9px 11px 8px;
+  border: 1px solid rgba(21, 23, 19, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: 0 6px 18px rgba(21, 23, 19, 0.04);
+}
+
+.wb-build-stat small {
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.wb-build-stat strong {
+  margin-top: 4px;
+  overflow: hidden;
+  font-family: Consolas, "SFMono-Regular", monospace;
+  font-size: 11px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-build-stat span {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-build-stat--performance {
+  border-color: rgba(49, 100, 255, 0.2);
+  background: rgba(255, 255, 255, 0.62);
+}
+
 .wb-header-right {
   display: flex;
   align-items: center;
@@ -4217,7 +4341,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   background: var(--blue);
 }
 
-.wb-commandbar,
 .wb-tabs {
   display: flex;
   align-items: center;
@@ -4226,12 +4349,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   border: 1px solid var(--line);
   background: rgba(247, 246, 240, 0.76);
   backdrop-filter: blur(18px);
-}
-
-.wb-commandbar {
-  min-height: 54px;
-  padding: 7px 8px 7px 14px;
-  border-radius: 18px 18px 0 0;
 }
 
 .wb-command-label {
@@ -4243,12 +4360,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   text-transform: uppercase;
 }
 
-.wb-layouts {
-  display: flex;
-  gap: 5px;
-}
-
-.wb-layout,
 .wb-tab {
   flex: 0 0 auto;
   border: 0;
@@ -4259,48 +4370,9 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   transition: color 160ms ease, background 160ms ease, transform 160ms ease;
 }
 
-.wb-layout {
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: 11px;
-  background: transparent;
-  font-size: 11px;
-}
-
-.wb-layout:hover,
 .wb-tab:hover {
   color: var(--ink);
   transform: translateY(-1px);
-}
-
-.wb-layout.is-active {
-  background: var(--ink);
-  color: white;
-  box-shadow: 0 8px 18px rgba(21, 23, 19, 0.14);
-}
-
-.wb-command-file {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-left: auto;
-  padding: 0 8px;
-}
-
-.wb-command-file span {
-  color: var(--coral);
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-}
-
-.wb-command-file strong {
-  max-width: 260px;
-  overflow: hidden;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .wb-tabs {
@@ -4399,10 +4471,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   align-items: start;
   gap: 14px;
   padding: 14px clamp(12px, 2vw, 28px) clamp(14px, 2vw, 28px);
-}
-
-.wb-body.is-compare {
-  grid-template-columns: minmax(250px, 290px) minmax(0, 1fr);
 }
 
 .wb-sidebar,
@@ -4757,8 +4825,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   gap: 9px;
 }
 
-.wb-preview-title span,
-.wb-preview-mode {
+.wb-preview-title span {
   color: #aeb2a8;
   font-size: 9px;
   font-weight: 900;
@@ -4773,12 +4840,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   white-space: nowrap;
 }
 
-.wb-preview-mode {
-  padding: 5px 8px;
-  border: 1px solid #42453f;
-  border-radius: 99px;
-}
-
 .wb-preview-stage {
   min-width: 0;
   min-height: 0;
@@ -4791,8 +4852,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   overflow: hidden;
 }
 
-.wb-preview-stage > :deep(.pptxv-shell),
-.wb-compare-pane > :deep(.pptxv-shell) {
+.wb-preview-stage > :deep(.pptxv-shell) {
   --pptxv-panel: #fbfaf5;
   --pptxv-border: rgba(21, 23, 19, 0.12);
   --pptxv-border-strong: rgba(21, 23, 19, 0.25);
@@ -4851,50 +4911,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   background: #f1f0e9;
 }
 
-.wb-compare {
-  height: 100%;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-}
-
-.wb-compare-pane {
-  min-width: 0;
-  min-height: 0;
-  display: grid;
-  grid-template-rows: 38px minmax(0, 1fr);
-  border-radius: 18px;
-  background: white;
-  overflow: hidden;
-}
-
-.wb-compare-title {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--line);
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wb-compare-title span {
-  display: grid;
-  flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border-radius: 7px;
-  background: var(--ink);
-  color: var(--lime);
-  font-size: 9px;
-}
-
 .workbench button:focus-visible,
 .workbench input:focus-visible,
 .wb-upload:has(input:focus-visible) {
@@ -4927,14 +4943,9 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 
 @media (prefers-reduced-motion: no-preference) {
   .wb-header,
-  .wb-commandbar,
   .wb-tabs,
   .wb-body {
     animation: wb-rise 420ms both;
-  }
-
-  .wb-commandbar {
-    animation-delay: 60ms;
   }
 
   .wb-tabs {
@@ -4966,22 +4977,19 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
     max-width: 58%;
   }
 
+  .wb-build-stats {
+    order: 3;
+    width: 100%;
+    margin-inline: 0;
+    overflow-x: auto;
+  }
+
   .wb-status {
     display: none;
   }
 
-  .wb-body,
-  .wb-body.is-compare {
+  .wb-body {
     grid-template-columns: minmax(220px, 270px) minmax(0, 1fr);
-  }
-
-  .wb-compare {
-    grid-template-columns: 1fr;
-    overflow: auto;
-  }
-
-  .wb-compare-pane {
-    min-height: 520px;
   }
 }
 
@@ -5002,6 +5010,11 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
     justify-content: stretch;
   }
 
+  .wb-build-stats {
+    order: 0;
+    margin-inline: 0;
+  }
+
   .wb-upload {
     flex: 0 0 auto;
   }
@@ -5011,17 +5024,11 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .wb-commandbar,
   .wb-tabs {
     margin-inline: 10px;
   }
 
-  .wb-command-file {
-    display: none;
-  }
-
-  .wb-body,
-  .wb-body.is-compare {
+  .wb-body {
     grid-template-columns: 1fr;
     padding: 10px;
   }
@@ -5049,29 +5056,12 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
     width: 100%;
   }
 
-  .wb-commandbar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .wb-layouts {
-    width: 100%;
-  }
-
-  .wb-layout {
-    flex: 1 1 0;
-  }
-
   .wb-tabs {
     border-radius: 16px;
   }
 
   .wb-preview-head {
     grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .wb-preview-mode {
-    display: none;
   }
 
   .wb-preview {

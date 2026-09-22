@@ -2,6 +2,7 @@
 import { MediaRegistry, type ParsedPresentation } from '@filens/core';
 import {
   createIworkViewer,
+  type IworkFitMode,
   type IworkSource,
   type IworkTypeHint,
   type IworkViewerInstance,
@@ -15,6 +16,7 @@ const props = withDefaults(
   defineProps<{
     src: IworkSource;
     type?: IworkTypeHint;
+    fit?: IworkFitMode;
     initialScale?: number;
     minScale?: number;
     maxScale?: number;
@@ -53,7 +55,7 @@ const viewerState = ref<IworkViewerState>({
   currentSheet: 0,
   sheetCount: 0,
   scale: props.initialScale,
-  fit: 'contain',
+  fit: props.fit ?? 'contain',
   warnings: [],
   document: null
 });
@@ -126,7 +128,7 @@ async function recreateViewer(): Promise<void> {
 
   viewer.value = createIworkViewer(viewerHost.value, {
     type: props.type,
-    fit: 'contain',
+    fit: props.fit,
     initialScale: props.initialScale,
     minScale: props.minScale,
     maxScale: props.maxScale
@@ -259,7 +261,7 @@ watch(
 );
 
 watch(
-  () => props.type,
+  () => [props.type, props.fit],
   async () => {
     await recreateViewer();
     await loadSource();

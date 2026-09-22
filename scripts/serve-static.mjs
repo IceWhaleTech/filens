@@ -29,9 +29,24 @@ const defaultTypes = new Map([
   ['.pdf', 'application/pdf'],
   ['.zip', 'application/zip']
 ]);
+const precompressedExtensions = /\.(?:css|html|js|json|mjs|wasm)$/;
 
 function contentTypeFor(filePath) {
   return defaultTypes.get(path.extname(filePath).toLowerCase()) || 'application/octet-stream';
+}
+
+function acceptsEncoding(request, encoding) {
+  const header = request.headers['accept-encoding'];
+  if (!header) return false;
+  let wildcard = 0;
+  for (const item of header.toLowerCase().split(',')) {
+    const [name, ...parameters] = item.trim().split(';');
+    const quality = Number(parameters.find((parameter) => parameter.trim().startsWith('q='))?.trim().slice(2) ?? '1');
+    if (!Number.isFinite(quality) || quality <= 0) continue;
+    if (name === encoding) return quality;
+    if (name === '*') wildcard = quality;
+  }
+  return wildcard;
 }
 
 function within(root, target) {
@@ -57,7 +72,22 @@ async function main() {
         return;
       }
 
-      const st = await fs.stat(candidate).catch(() => null);
+      let servedPath = candidate;
+      let contentEncoding;
+      if (precompressedExtensions.test(candidate)) {
+        const variants = acceptsEncoding(req, 'br') ? [['br', `${candidate}.br`]] : [];
+        if (acceptsEncoding(req, 'gzip')) variants.push(['gzip', `${candidate}.gz`]);
+        for (const [encoding, variant] of variants) {
+          const variantStat = await fs.stat(variant).catch(() => null);
+          if (variantStat?.isFile()) {
+            servedPath = variant;
+            contentEncoding = encoding;
+            break;
+          }
+        }
+      }
+
+      const st = await fs.stat(servedPath).catch(() => null);
       if (!st || !st.isFile()) {
         res.statusCode = 404;
         res.end('Not found');
@@ -66,8 +96,13 @@ async function main() {
 
       res.statusCode = 200;
       res.setHeader('Content-Type', contentTypeFor(candidate));
+      res.setHeader('Content-Length', String(st.size));
+      if (precompressedExtensions.test(candidate)) res.setHeader('Vary', 'Accept-Encoding');
+      if (contentEncoding) {
+        res.setHeader('Content-Encoding', contentEncoding);
+      }
       res.setHeader('Cache-Control', 'no-store');
-      createReadStream(candidate).pipe(res);
+      createReadStream(servedPath).pipe(res);
     } catch (err) {
       res.statusCode = 500;
       res.end(String(err));

@@ -671,4 +671,67 @@ describe('buildTextFrameFromStorage', () => {
       ]
     });
   });
+
+  it('preserves newer Keynote path strings and their natural size', () => {
+    const geometry = pathSourceToGeometry({
+      bezierPathSource: {
+        pathString: 'M 0 0 C 20 4 40 6 80 40 Z',
+        naturalSize: { width: 80, height: 40 }
+      }
+    }, 10, 10);
+
+    expect(geometry).toMatchObject({
+      type: 'custom',
+      paths: [{
+        width: 80,
+        height: 40,
+        commands: [
+          { type: 'M', x: 0, y: 0 },
+          { type: 'C', x1: 20, y1: 4, x2: 40, y2: 6, x: 80, y: 40 },
+          { type: 'Z' }
+        ]
+      }]
+    });
+  });
+
+  it('supports direct drawing paths used by pencil annotations', () => {
+    const geometry = pathSourceToGeometry({
+      path: {
+        elements: [
+          { type: 1, points: [{ x: 4, y: 8 }] },
+          { type: 2, points: [{ x: 44, y: 28 }] }
+        ]
+      },
+      naturalSize: { width: 40, height: 20 }
+    }, 1, 1);
+
+    expect(geometry).toMatchObject({
+      type: 'custom',
+      paths: [{
+        width: 40,
+        height: 20,
+        commands: [
+          { type: 'M', x: 4, y: 8 },
+          { type: 'L', x: 44, y: 28 }
+        ]
+      }]
+    });
+  });
+
+  it('keeps absolute and relative horizontal/vertical path segments anchored', () => {
+    const geometry = pathSourceToGeometry({
+      bezierPathSource: {
+        pathString: 'M 10 20 h 30 v 10 H 5 V 2',
+        naturalSize: { width: 40, height: 30 }
+      }
+    }, 1, 1);
+
+    expect(geometry?.paths[0]?.commands).toEqual([
+      { type: 'M', x: 10, y: 20 },
+      { type: 'L', x: 40, y: 20 },
+      { type: 'L', x: 40, y: 30 },
+      { type: 'L', x: 5, y: 30 },
+      { type: 'L', x: 5, y: 2 }
+    ]);
+  });
 });

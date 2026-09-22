@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildNumbersSheetAt, buildParsedDocument } from '../src/parser/semantic';
 import { createIworkViewer } from '../src/viewer/create-iwork-viewer';
-import type { IworkArchiveIndex, ParsedPagesDocument } from '../src/types';
+import type { IworkArchiveIndex, ParsedKeynoteDocument, ParsedPagesDocument } from '../src/types';
 
 const parseMock = vi.fn();
 const parseSheetMock = vi.fn();
@@ -64,6 +64,38 @@ function createPagesDocument(): ParsedPagesDocument {
   };
 }
 
+function createKeynoteDocument(): ParsedKeynoteDocument {
+  const slide = {
+    id: 'key-slide-1',
+    index: 0,
+    title: 'Slide 1',
+    background: { type: 'solid' as const, color: '#ffffff', alpha: 1 },
+    width: 800,
+    height: 450,
+    items: [],
+    warnings: []
+  };
+  return {
+    kind: 'key',
+    archive: {
+      type: 'key',
+      records: {},
+      references: { outgoing: {}, incoming: {} },
+      dataEntries: {},
+      warnings: []
+    },
+    warnings: [],
+    presentation: {
+      size: { width: slide.width, height: slide.height },
+      theme: { colors: {}, fonts: {} },
+      slides: [slide],
+      media: {},
+      warnings: []
+    },
+    slides: [{ id: slide.id, index: slide.index, title: slide.title, width: slide.width, height: slide.height, slide }]
+  };
+}
+
 describe('iWork viewer', () => {
   afterEach(() => {
     parseMock.mockReset();
@@ -94,6 +126,21 @@ describe('iWork viewer', () => {
     viewer.destroy();
   });
 
+  it('uses width fit for Keynote only when fit was not explicitly provided', async () => {
+    parseMock.mockResolvedValue(createKeynoteDocument());
+    const container = document.body.appendChild(document.createElement('div'));
+    const defaultViewer = createIworkViewer(container);
+    await defaultViewer.preview(new Uint8Array([1, 2, 3]));
+    expect(defaultViewer.getState().fit).toBe('width');
+    defaultViewer.destroy();
+
+    parseMock.mockResolvedValue(createKeynoteDocument());
+    const explicitViewer = createIworkViewer(container, { fit: 'contain' });
+    await explicitViewer.preview(new Uint8Array([1, 2, 3]));
+    expect(explicitViewer.getState().fit).toBe('contain');
+    explicitViewer.destroy();
+  });
+
   it('passes source file name to the worker parser', async () => {
     parseMock.mockResolvedValue(createPagesDocument());
     const container = document.createElement('div');
@@ -111,6 +158,7 @@ describe('iWork viewer', () => {
     await viewer.preview('https://example.com/files/Quarterly%20Report.pages?download=1');
 
     expect(parseMock).toHaveBeenCalledWith(expect.any(Uint8Array), undefined, 'Quarterly Report.pages');
+    expect(viewer.getState().fit).toBe('width');
     viewer.destroy();
   });
 

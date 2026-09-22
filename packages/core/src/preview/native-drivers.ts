@@ -23,6 +23,26 @@ const IMAGE_FORMATS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'apn
 const HTML_FORMATS = new Set(['html', 'htm', 'shtml', 'xhtml', 'xht', 'xhtm']);
 const VIDEO_FORMATS = new Set(['mp4', 'webm', 'mov', 'm4v', 'ogv', 'mkv', 'avi', 'mpeg', 'mpg', '3gp']);
 const AUDIO_FORMATS = new Set(['mp3', 'wav', 'aac', 'm4a', 'flac', 'ogg', 'oga', 'opus']);
+const MEDIA_CONTENT_TYPES: Record<string, string> = {
+  mp4: 'video/mp4',
+  webm: 'video/webm',
+  mov: 'video/quicktime',
+  m4v: 'video/x-m4v',
+  ogv: 'video/ogg',
+  mkv: 'video/x-matroska',
+  avi: 'video/x-msvideo',
+  mpeg: 'video/mpeg',
+  mpg: 'video/mpeg',
+  '3gp': 'video/3gpp',
+  mp3: 'audio/mpeg',
+  wav: 'audio/wav',
+  aac: 'audio/aac',
+  m4a: 'audio/mp4',
+  flac: 'audio/flac',
+  ogg: 'audio/ogg',
+  oga: 'audio/ogg',
+  opus: 'audio/opus'
+};
 const TEXT_FORMATS = new Set(['txt', 'log', 'text']);
 const CODE_FORMATS = new Set([
   'js',
@@ -761,7 +781,18 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
       media.className = `pptxv-native-media pptxv-native-media--${family === 'audio' ? 'audio' : 'video'}`;
       media.controls = true;
       media.preload = 'metadata';
-      media.src = this.sourceToUrl(source, context.descriptor.contentType);
+      const contentType = resolveMediaContentType(context);
+      media.dataset.contentType = contentType ?? '';
+      media.dataset.sourceFormat = normalizeExtension(context.route?.sourceFormat ?? context.descriptor.extension ?? '');
+      const mediaUrl = this.sourceToUrl(source, contentType);
+      if (contentType) {
+        const sourceElement = document.createElement('source');
+        sourceElement.src = mediaUrl;
+        sourceElement.type = contentType;
+        media.appendChild(sourceElement);
+      } else {
+        media.src = mediaUrl;
+      }
       media.addEventListener('loadedmetadata', () => {
         this.syncMediaState(media);
         this.state.loading = false;
@@ -785,7 +816,11 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
         this.emit('statechange', this.state);
       });
       media.addEventListener('error', () => {
-        const error = new Error('Failed to load media preview.');
+        const error = new Error(
+          contentType
+            ? `Failed to load media preview (${contentType}). The browser may not support this codec.`
+            : 'Failed to load media preview. The browser may not support this codec.'
+        );
         this.state.loading = false;
         this.state.error = error.message;
         this.emit('error', error);
@@ -1147,6 +1182,16 @@ function resolveMediaFamily(context: PreviewLoadContext): MediaPreviewState['fam
     return 'audio';
   }
   return 'video';
+}
+
+function resolveMediaContentType(context: PreviewLoadContext): string | undefined {
+  const declared = context.descriptor.contentType?.split(';', 1)[0]?.trim().toLowerCase();
+  if (declared) {
+    return declared;
+  }
+
+  const format = normalizeExtension(context.route?.sourceFormat ?? context.descriptor.extension ?? '');
+  return MEDIA_CONTENT_TYPES[format];
 }
 
 function inferLanguage(format: string | undefined): string | undefined {

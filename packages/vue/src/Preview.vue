@@ -98,7 +98,6 @@ const props = withDefaults(
     panoramaProcessor?: MediaPreviewDriverOptions['panoramaProcessor'];
   }>(),
   {
-    fit: 'contain',
     initialScale: 1,
     minScale: 0.4,
     maxScale: 4,

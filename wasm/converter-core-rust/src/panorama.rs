@@ -253,13 +253,28 @@ impl SparseFile {
 }
 
 fn inspect_insp(file: &SparseFile) -> Result<InspectOutcome, InspectError> {
-    let Some(bytes) = file.read(0, file.size.min(1 << 20) as usize) else {
-        return Ok(InspectOutcome::NeedRanges(vec![file.need(0, file.size.min(1 << 20))]));
+    let mut prefix_length = file.size.min(1 << 20);
+    let (width, height) = loop {
+        let Some(bytes) = file.read(0, prefix_length as usize) else {
+            return Ok(InspectOutcome::NeedRanges(vec![file.need(0, prefix_length)]));
+        };
+        if let Some(dimensions) = jpeg_dimensions(&bytes) {
+            break dimensions;
+        }
+        if prefix_length >= file.size || prefix_length >= MAX_RANGE_BYTES {
+            return Err(InspectError {
+                code: "unsupported_projection",
+                message: "INSP is not a readable JPEG panorama".into(),
+            });
+        }
+        // X5 INSP files can place several megabytes of APP2 metadata before SOF.
+        // Grow the prefix instead of treating a truncated JPEG header as invalid.
+        let next_length = prefix_length.saturating_mul(2).min(file.size).min(MAX_RANGE_BYTES);
+        if file.read(0, next_length as usize).is_none() {
+            return Ok(InspectOutcome::NeedRanges(vec![file.need(0, next_length)]));
+        }
+        prefix_length = next_length;
     };
-    let (width, height) = jpeg_dimensions(&bytes).ok_or_else(|| InspectError {
-        code: "unsupported_projection",
-        message: "INSP is not a readable JPEG panorama".into(),
-    })?;
     let insta_info = match inspect_insta_info(file)? {
         InstaInfoOutcome::Complete(value) => Some(value),
         InstaInfoOutcome::NeedRange(range) => return Ok(InspectOutcome::NeedRanges(vec![range])),
@@ -271,13 +286,22 @@ fn inspect_insp(file: &SparseFile) -> Result<InspectOutcome, InspectError> {
         let model = info.get("cameraModel").and_then(Value::as_str);
         let crop = json_size(info.get("windowCropInfo"), "dstWidth", "dstHeight")?;
         let image_size = (u32::from(width) / 2, u32::from(height));
+        if model.is_some_and(|value| value.eq_ignore_ascii_case("Insta360 X5")) {
+            return info.get("extendedCalibration")
+                .and_then(Value::as_str)
+                .and_then(extended_calibration_values)
+                .and_then(|values| decode_insta_x5_values(&values, image_size, crop));
+        }
         info.get("offsetV3").and_then(Value::as_str).and_then(|offset| {
             (raw_dual_fisheye && insta_embedded_offset_supported(model))
                 .then(|| decode_insta_offset_v3(offset, model, image_size, crop)).flatten()
         })
     });
     let (camera_model, firmware, texture_origin, mut lenses) = calibration.as_ref().map(|value| (
-        value.get("model").cloned().unwrap_or(Value::Null),
+        insta_info.as_ref().and_then(|info| info.get("cameraModel")).cloned()
+            .filter(|model| !model.is_null())
+            .or_else(|| value.get("model").cloned().filter(|model| !model.is_null()))
+            .unwrap_or(Value::Null),
         insta_info.as_ref().and_then(|info| info.get("firmware")).cloned().unwrap_or(Value::Null),
         value.get("textureOrigin").cloned().unwrap_or(Value::Null),
         value.get("lenses").cloned().unwrap_or_else(|| json!([])),
@@ -1067,6 +1091,43 @@ mod tests {
     fn parses_jpeg_dimensions() {
         let jpeg = [0xff,0xd8,0xff,0xc0,0x00,0x11,0x08,0x04,0x00,0x08,0x00,0x03,0x01,0x11,0x00,0x02,0x11,0x00,0x03,0x11,0x00];
         assert_eq!(jpeg_dimensions(&jpeg), Some((2048,1024)));
+    }
+
+    #[test]
+    fn grows_insp_prefix_for_large_jpeg_metadata() {
+        let mut jpeg = vec![0xff, 0xd8];
+        for _ in 0..17 {
+            jpeg.extend_from_slice(&[0xff, 0xe2, 0xff, 0xff]);
+            jpeg.extend(std::iter::repeat_n(0, 65_533));
+        }
+        jpeg.extend_from_slice(&[
+            0xff, 0xc0, 0x00, 0x11, 0x08, 0x04, 0x00, 0x08, 0x00, 0x08, 0x00, 0x03, 0x01, 0x11,
+            0x00, 0x02, 0x11, 0x00, 0x03, 0x11, 0x00, 0xff, 0xd9,
+        ]);
+        assert!(jpeg.len() > 1 << 20);
+
+        let first_range = SparseFile {
+            size: jpeg.len() as u64,
+            segments: vec![Segment {
+                offset: 0,
+                bytes: jpeg[..1 << 20].to_vec(),
+            }],
+        };
+        let InspectOutcome::NeedRanges(ranges) = inspect_insp(&first_range).unwrap() else {
+            panic!("expected a larger JPEG prefix range");
+        };
+        assert_eq!(ranges, vec![RequiredRange { offset: 0, length: jpeg.len() as u64 }]);
+
+        let complete = SparseFile {
+            size: jpeg.len() as u64,
+            segments: vec![Segment { offset: 0, bytes: jpeg }],
+        };
+        let InspectOutcome::Complete(manifest) = inspect_insp(&complete).unwrap() else {
+            panic!("expected complete INSP manifest");
+        };
+        assert_eq!(manifest["projection"], "equirectangular");
+        assert_eq!(manifest["width"], 2048);
+        assert_eq!(manifest["height"], 1024);
     }
 
     #[test]

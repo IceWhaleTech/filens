@@ -518,10 +518,19 @@ export function pathSourceToGeometry(pathSourceLike: unknown, fallbackWidth: num
   if (bezierPathSource) {
     const path = asObject(readField(bezierPathSource, ['path']));
     const naturalSize = asObject(readField(bezierPathSource, ['naturalSize', 'natural_size']));
+    const width = Number(readField<number>(naturalSize, ['width']) ?? fallbackWidth);
+    const height = Number(readField<number>(naturalSize, ['height']) ?? fallbackHeight);
+    const pathString = readField<string>(bezierPathSource, ['pathString', 'path_string']);
+    if (pathString) {
+      const commands = parseSvgPathString(pathString);
+      if (commands.length) {
+        return customPathGeometry(width, height, commands);
+      }
+    }
     return pathToGeometry(
       path,
-      Number(readField<number>(naturalSize, ['width']) ?? fallbackWidth),
-      Number(readField<number>(naturalSize, ['height']) ?? fallbackHeight)
+      width,
+      height
     );
   }
 
@@ -530,19 +539,182 @@ export function pathSourceToGeometry(pathSourceLike: unknown, fallbackWidth: num
     const superValue = asObject(readField(connectionLinePathSource, ['super']));
     const path = asObject(readField(superValue, ['path']));
     const naturalSize = asObject(readField(superValue, ['naturalSize', 'natural_size']));
+    const width = Number(readField<number>(naturalSize, ['width']) ?? fallbackWidth);
+    const height = Number(readField<number>(naturalSize, ['height']) ?? fallbackHeight);
+    const pathString = readField<string>(superValue, ['pathString', 'path_string']);
+    if (pathString) {
+      const commands = parseSvgPathString(pathString);
+      if (commands.length) {
+        return customPathGeometry(width, height, commands);
+      }
+    }
     return pathToGeometry(
       path,
-      Number(readField<number>(naturalSize, ['width']) ?? fallbackWidth),
-      Number(readField<number>(naturalSize, ['height']) ?? fallbackHeight)
+      width,
+      height
     );
   }
 
   const editableBezierPathSource = asObject(readField(pathSource, ['editableBezierPathSource', 'editable_bezier_path_source']));
   if (editableBezierPathSource) {
-    return editableBezierToGeometry(editableBezierPathSource, fallbackWidth, fallbackHeight);
+    const naturalSize = asObject(readField(editableBezierPathSource, ['naturalSize', 'natural_size']));
+    return editableBezierToGeometry(
+      editableBezierPathSource,
+      Number(readField<number>(naturalSize, ['width']) ?? fallbackWidth),
+      Number(readField<number>(naturalSize, ['height']) ?? fallbackHeight)
+    );
+  }
+
+  // Pencil annotations and a few older iWork records carry a TSP.Path
+  // directly instead of wrapping it in a BezierPathSourceArchive.
+  const directPath = asObject(readField(pathSource, ['path']));
+  if (directPath) {
+    const naturalSize = asObject(readField(pathSource, ['naturalSize', 'natural_size']));
+    return pathToGeometry(
+      directPath,
+      Number(readField<number>(naturalSize, ['width']) ?? fallbackWidth),
+      Number(readField<number>(naturalSize, ['height']) ?? fallbackHeight)
+    );
+  }
+
+  if (asArray(readField(pathSource, ['elements'])).length) {
+    return pathToGeometry(pathSource, fallbackWidth, fallbackHeight);
   }
 
   return undefined;
+}
+
+function customPathGeometry(width: number, height: number, commands: CustomShapeCommand[]): CustomShapeGeometry {
+  return {
+    type: 'custom',
+    paths: [
+      {
+        width: Math.max(width, 1),
+        height: Math.max(height, 1),
+        commands
+      }
+    ]
+  };
+}
+
+/** Parse the compact path strings emitted by newer Keynote versions. */
+function parseSvgPathString(value: string): CustomShapeCommand[] {
+  const tokens = value.match(/[a-z]|[-+]?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi) ?? [];
+  const commands: CustomShapeCommand[] = [];
+  let cursor = 0;
+  let command = '';
+  let currentX = 0;
+  let currentY = 0;
+  let subpathX = 0;
+  let subpathY = 0;
+
+  const readNumber = (): number | undefined => {
+    const token = tokens[cursor];
+    if (!token || /^[a-z]$/i.test(token)) {
+      return undefined;
+    }
+    cursor += 1;
+    const number = Number(token);
+    return Number.isFinite(number) ? number : undefined;
+  };
+
+  while (cursor < tokens.length) {
+    if (/^[a-z]$/i.test(tokens[cursor] ?? '')) {
+      command = tokens[cursor++] ?? '';
+    }
+    if (!command) {
+      cursor += 1;
+      continue;
+    }
+
+    const relative = command === command.toLowerCase();
+    const normalized = command.toUpperCase();
+    if (normalized === 'Z') {
+      commands.push({ type: 'Z' });
+      currentX = subpathX;
+      currentY = subpathY;
+      command = '';
+      continue;
+    }
+
+    const point = (x: number, y: number): [number, number] => [relative ? currentX + x : x, relative ? currentY + y : y];
+
+    if (normalized === 'H' || normalized === 'V') {
+      const coordinate = readNumber();
+      if (coordinate == null) {
+        command = '';
+        continue;
+      }
+      const [x, y] = normalized === 'H'
+        ? [relative ? currentX + coordinate : coordinate, currentY]
+        : [currentX, relative ? currentY + coordinate : coordinate];
+      commands.push({ type: 'L', x, y });
+      currentX = x;
+      currentY = y;
+      continue;
+    }
+
+    const firstX = readNumber();
+    const firstY = firstX == null ? undefined : readNumber();
+    if (firstX == null || firstY == null) {
+      command = '';
+      continue;
+    }
+
+    if (normalized === 'M' || normalized === 'L') {
+      const [x, y] = point(firstX, firstY);
+      commands.push({ type: normalized === 'M' ? 'M' : 'L', x, y });
+      currentX = x;
+      currentY = y;
+      if (normalized === 'M') {
+        subpathX = x;
+        subpathY = y;
+        command = relative ? 'l' : 'L';
+      }
+      continue;
+    }
+
+    if (normalized === 'Q') {
+      const controlX = firstX;
+      const controlY = firstY;
+      const endX = readNumber();
+      const endY = endX == null ? undefined : readNumber();
+      if (endX == null || endY == null) {
+        command = '';
+        continue;
+      }
+      const [x1, y1] = point(controlX, controlY);
+      const [x, y] = point(endX, endY);
+      commands.push({ type: 'Q', x1, y1, x, y });
+      currentX = x;
+      currentY = y;
+      continue;
+    }
+
+    if (normalized === 'C') {
+      const x2 = readNumber();
+      const y2 = x2 == null ? undefined : readNumber();
+      const x3 = y2 == null ? undefined : readNumber();
+      const y3 = x3 == null ? undefined : readNumber();
+      if (x2 == null || y2 == null || x3 == null || y3 == null) {
+        command = '';
+        continue;
+      }
+      const [x1, y1] = point(firstX, firstY);
+      const [cx, cy] = point(x2, y2);
+      const [x, y] = point(x3, y3);
+      commands.push({ type: 'C', x1, y1, x2: cx, y2: cy, x, y });
+      currentX = x;
+      currentY = y;
+      continue;
+    }
+
+    // Unsupported SVG commands (arcs/smooth curves) are skipped safely. The
+    // archive's structured Path.Element representation remains the fallback.
+    command = '';
+  }
+
+  return commands;
 }
 
 function pathToGeometry(pathLike: unknown, width: number, height: number): CustomShapeGeometry | undefined {
@@ -613,16 +785,7 @@ function pathToGeometry(pathLike: unknown, width: number, height: number): Custo
     return undefined;
   }
 
-  return {
-    type: 'custom',
-    paths: [
-      {
-        width: Math.max(width, 1),
-        height: Math.max(height, 1),
-        commands
-      }
-    ]
-  };
+  return customPathGeometry(width, height, commands);
 }
 
 function editableBezierToGeometry(source: AnyObject, fallbackWidth: number, fallbackHeight: number): CustomShapeGeometry | undefined {

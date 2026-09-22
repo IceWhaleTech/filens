@@ -743,16 +743,19 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
         return;
       }
       if (format === 'kmz') {
-        const object = loadKmzObject(buffer);
-        this.createObjectScene(object);
+        const result = await loadKmzObjectWithWarnings(buffer);
+        this.createObjectScene(result.object);
         this.state = {
           ...this.state,
           loading: false,
           error: null,
-          warnings: [],
-          metadata: collectObjectPreviewMetadata(object, format),
+          warnings: result.warnings,
+          metadata: collectObjectPreviewMetadata(result.object, format),
           camera: this.currentCameraState()
         };
+        if (this.state.warnings.length) {
+          this.emit('warnings', this.state.warnings);
+        }
         this.emit('rendered', this.state);
         this.emit('statechange', this.state);
         return;
@@ -2838,76 +2841,108 @@ export async function load3mfGeometryWithWarnings(source: ArrayBuffer): Promise<
     throw new Error('3MF package is missing 3D/3dmodel.model.');
   }
 
-  const xml = await modelFile.async('text');
-  const document = new DOMParser().parseFromString(xml, 'application/xml');
-  const parserError = document.getElementsByTagName('parsererror')[0];
-  if (parserError) {
-    throw new Error('3MF model XML is invalid.');
+  // Production 3MF files commonly keep each printable object in its own
+  // `3D/Objects/*.model` part while the root model only contains build items.
+  const modelFiles = [
+    modelFile,
+    ...Object.values(archive.files).filter((entry) =>
+      !entry.dir && /\.model$/i.test(entry.name) && entry.name !== modelFile.name
+    )
+  ];
+  const documents: Document[] = [];
+  for (const file of modelFiles) {
+    const xml = await file.async('text');
+    const parsed = new DOMParser().parseFromString(xml, 'application/xml');
+    const parserError = parsed.getElementsByTagName('parsererror')[0];
+    if (parserError) {
+      if (file === modelFile) {
+        throw new Error('3MF model XML is invalid.');
+      }
+      continue;
+    }
+    documents.push(parsed);
   }
 
-  const colorMaterials = read3mfColorMaterials(document);
-  const warnings = collect3mfUnsupportedMaterialWarnings(document);
+  const colorMaterials = new Map<string, Array<[number, number, number]>>();
+  const warnings = new Set<string>();
+  for (const document of documents) {
+    for (const [id, colors] of read3mfColorMaterials(document)) {
+      if (!colorMaterials.has(id)) {
+        colorMaterials.set(id, colors);
+      }
+    }
+    for (const warning of collect3mfUnsupportedMaterialWarnings(document)) {
+      warnings.add(warning);
+    }
+  }
   const unsupportedReferencedMaterialIds = new Set<string>();
   const objectElements = new Map<string, Element>();
   const objectMeshes = new Map<string, Mesh3mf>();
-  for (const objectElement of localElements(document, 'object')) {
-    const id = objectElement.getAttribute('id');
-    if (!id) {
-      continue;
-    }
-    objectElements.set(id, objectElement);
-    const meshElement = localElements(objectElement, 'mesh')[0];
-    if (!meshElement) {
-      continue;
-    }
-    const vertices = localElements(meshElement, 'vertex').map((vertex) => [
-      numberPart(vertex.getAttribute('x') ?? undefined),
-      numberPart(vertex.getAttribute('y') ?? undefined),
-      numberPart(vertex.getAttribute('z') ?? undefined)
-    ] as [number, number, number]);
-
-    const objectPositions: Array<[number, number, number]> = [];
-    const objectColors: Array<[number, number, number]> = [];
-    const objectColor = resolve3mfColorReference(
-      objectElement.getAttribute('pid'),
-      objectElement.getAttribute('pindex'),
-      colorMaterials
-    );
-    noteUnsupported3mfMaterialReference(objectElement.getAttribute('pid'), colorMaterials, unsupportedReferencedMaterialIds);
-    for (const triangle of localElements(meshElement, 'triangle')) {
-      const indices = ['v1', 'v2', 'v3']
-        .map((name) => Number(triangle.getAttribute(name)))
-        .filter((value) => Number.isInteger(value) && value >= 0 && value < vertices.length);
-      if (indices.length !== 3) {
+  for (const document of documents) {
+    for (const objectElement of localElements(document, 'object')) {
+      const id = objectElement.getAttribute('id');
+      if (!id) {
         continue;
       }
-      const materialResourceId = triangle.getAttribute('pid') ?? objectElement.getAttribute('pid');
-      noteUnsupported3mfMaterialReference(materialResourceId, colorMaterials, unsupportedReferencedMaterialIds);
-      const triangleColors: Array<[number, number, number]> = ['p1', 'p2', 'p3'].map((name) =>
-        resolve3mfColorReference(
-          materialResourceId,
-          triangle.getAttribute(name) ?? triangle.getAttribute('pindex') ?? objectElement.getAttribute('pindex'),
+      const meshElement = localElements(objectElement, 'mesh')[0];
+      const hadMesh = objectMeshes.has(id);
+      if (meshElement) {
+        const vertices = localElements(meshElement, 'vertex').map((vertex) => [
+          numberPart(vertex.getAttribute('x') ?? undefined),
+          numberPart(vertex.getAttribute('y') ?? undefined),
+          numberPart(vertex.getAttribute('z') ?? undefined)
+        ] as [number, number, number]);
+
+        const objectPositions: Array<[number, number, number]> = [];
+        const objectColors: Array<[number, number, number]> = [];
+        const objectColor = resolve3mfColorReference(
+          objectElement.getAttribute('pid'),
+          objectElement.getAttribute('pindex'),
           colorMaterials
-        ) ?? objectColor ?? [0.49, 0.83, 0.99]
-      );
-      objectPositions.push(vertices[indices[0]!]!, vertices[indices[1]!]!, vertices[indices[2]!]!);
-      objectColors.push(...triangleColors);
-    }
-    if (objectPositions.length) {
-      objectMeshes.set(id, {
-        positions: objectPositions,
-        colors: objectColors
-      });
+        );
+        noteUnsupported3mfMaterialReference(objectElement.getAttribute('pid'), colorMaterials, unsupportedReferencedMaterialIds);
+        for (const triangle of localElements(meshElement, 'triangle')) {
+          const indices = ['v1', 'v2', 'v3']
+            .map((name) => Number(triangle.getAttribute(name)))
+            .filter((value) => Number.isInteger(value) && value >= 0 && value < vertices.length);
+          if (indices.length !== 3) {
+            continue;
+          }
+          const materialResourceId = triangle.getAttribute('pid') ?? objectElement.getAttribute('pid');
+          noteUnsupported3mfMaterialReference(materialResourceId, colorMaterials, unsupportedReferencedMaterialIds);
+          const triangleColors: Array<[number, number, number]> = ['p1', 'p2', 'p3'].map((name) =>
+            resolve3mfColorReference(
+              materialResourceId,
+              triangle.getAttribute(name) ?? triangle.getAttribute('pindex') ?? objectElement.getAttribute('pindex'),
+              colorMaterials
+            ) ?? objectColor ?? [0.49, 0.83, 0.99]
+          );
+          objectPositions.push(vertices[indices[0]!]!, vertices[indices[1]!]!, vertices[indices[2]!]!);
+          objectColors.push(...triangleColors);
+        }
+        // Keep the root model's definition when a package repeats an object ID,
+        // but allow an external component part to fill an otherwise empty one.
+        if (objectPositions.length && !hadMesh) {
+          objectMeshes.set(id, {
+            positions: objectPositions,
+            colors: objectColors
+          });
+        }
+      }
+      if (!objectElements.has(id) || (!hadMesh && objectMeshes.has(id))) {
+        objectElements.set(id, objectElement);
+      }
     }
   }
   for (const id of objectElements.keys()) {
     resolve3mfObjectMesh(id, objectElements, objectMeshes, new Set());
   }
 
+  const rootDocument = documents[0]!;
   const positions: number[] = [];
   const normals: number[] = [];
   const colors: number[] = [];
-  const buildItems = localElements(document, 'item');
+  const buildItems = localElements(rootDocument, 'item');
   const items = buildItems.length ? buildItems : [...objectMeshes.keys()].map((objectId) => ({ objectId }));
   for (const item of items) {
     const objectId = item instanceof Element ? item.getAttribute('objectid') : item.objectId;
@@ -2935,12 +2970,14 @@ export async function load3mfGeometryWithWarnings(source: ArrayBuffer): Promise<
   if (!positions.length) {
     throw new Error('No 3MF mesh triangles found.');
   }
-  warnings.push(...Array.from(unsupportedReferencedMaterialIds).map((id) =>
+  for (const warning of Array.from(unsupportedReferencedMaterialIds).map((id) =>
     `3MF material resource "${id}" is not a supported color palette; fallback vertex colors were used.`
-  ));
+  )) {
+    warnings.add(warning);
+  }
   return {
     geometry: geometryFromArrays(positions, normals, colors),
-    warnings
+    warnings: [...warnings]
   };
 }
 
@@ -2988,6 +3025,162 @@ export function loadColladaObjectWithWarnings(
 
 export function loadKmzObject(source: ArrayBuffer): Object3D {
   return new KMZLoader().parse(source).scene;
+}
+
+export async function loadKmzObjectWithWarnings(source: ArrayBuffer): Promise<ModelObjectLoadResult> {
+  let loaderObject: Object3D | undefined;
+  try {
+    loaderObject = loadKmzObject(source);
+    if (hasRenderableObjectContent(loaderObject)) {
+      return { object: loaderObject, warnings: [] };
+    }
+  } catch {
+    // Some KMZ files use a nested or URL-encoded model path that KMZLoader cannot resolve.
+  }
+
+  let archive: JSZip;
+  try {
+    archive = await JSZip.loadAsync(source);
+  } catch (error) {
+    if (loaderObject) {
+      return {
+        object: loaderObject,
+        warnings: [`KMZ archive could not be inspected: ${error instanceof Error ? error.message : String(error)}`]
+      };
+    }
+    throw error;
+  }
+  const entries = Object.values(archive.files).filter((entry) => !entry.dir);
+  const kmlEntry = findKmzEntry(entries, (name) => /(^|\/)doc\.kml$/i.test(name))
+    ?? findKmzEntry(entries, (name) => /\.kml$/i.test(name));
+  const kmlText = kmlEntry ? await kmlEntry.async('text') : undefined;
+  const modelHref = kmlText ? findKmzModelHref(kmlText) : undefined;
+  const modelEntry = (modelHref ? findKmzEntry(entries, (name) => isKmzPathMatch(name, modelHref, kmlEntry?.name)) : undefined)
+    ?? findKmzEntry(entries, (name) => /\.dae$/i.test(name));
+  if (!modelEntry) {
+    if (loaderObject) {
+      return {
+        object: loaderObject,
+        warnings: ['KMZ archive does not contain a Collada (.dae) model with renderable geometry.']
+      };
+    }
+    throw new Error('KMZ archive does not contain a Collada (.dae) model.');
+  }
+
+  const warnings: string[] = [];
+  const objectUrls: string[] = [];
+  const resourceBytes = new Map<string, Uint8Array>();
+  for (const entry of entries) {
+    if (/\.(?:png|jpe?g|gif|webp|bmp|tga|dds)$/i.test(entry.name)) {
+      resourceBytes.set(entry.name, await entry.async('uint8array'));
+    }
+  }
+  const manager = new LoadingManager();
+  manager.setURLModifier((url) => {
+    const resource = findKmzEntry(entries, (name) => isKmzPathMatch(name, url, modelEntry.name));
+    const bytes = resource ? resourceBytes.get(resource.name) : undefined;
+    if (!resource || !bytes) {
+      return url;
+    }
+    const blobBytes = new Uint8Array(bytes.byteLength);
+    blobBytes.set(bytes);
+    const resourceUrl = URL.createObjectURL(new Blob([blobBytes.buffer], { type: mimeTypeForKmzEntry(resource.name) }));
+    objectUrls.push(resourceUrl);
+    return resourceUrl;
+  });
+  const dae = await modelEntry.async('text');
+  const object = new ColladaLoader(manager).parse(dae, `${directoryName(modelEntry.name)}/`).scene;
+  if (objectUrls.length) {
+    object.userData.previewObjectUrls = objectUrls;
+  }
+  if (!hasRenderableObjectContent(object)) {
+    warnings.push('KMZ Collada model contains no renderable geometry.');
+  }
+  return { object, warnings };
+}
+
+function hasRenderableObjectContent(object: Object3D): boolean {
+  let renderable = false;
+  object.traverse((node) => {
+    const candidate = node as Object3D & { geometry?: BufferGeometry };
+    if (candidate.geometry?.getAttribute('position')?.count) {
+      renderable = true;
+    }
+  });
+  return renderable;
+}
+
+function findKmzEntry(entries: JSZip.JSZipObject[], predicate: (name: string) => boolean): JSZip.JSZipObject | undefined {
+  return entries.find((entry) => predicate(entry.name));
+}
+
+function findKmzModelHref(source: string): string | undefined {
+  const document = new DOMParser().parseFromString(source, 'application/xml');
+  const parserError = document.getElementsByTagName('parsererror')[0];
+  if (parserError) {
+    return undefined;
+  }
+  for (const element of Array.from(document.getElementsByTagName('*'))) {
+    if (element.localName?.toLowerCase() !== 'href') {
+      continue;
+    }
+    const value = element.textContent?.trim();
+    if (value && /\.dae(?:[?#].*)?$/i.test(value)) {
+      return value;
+    }
+  }
+  return undefined;
+}
+
+function isKmzPathMatch(name: string, href: string, relativeTo?: string): boolean {
+  const normalizedName = normalizeKmzPath(name);
+  const normalizedHref = normalizeKmzPath(href);
+  const candidates = [normalizedHref];
+  if (relativeTo) {
+    candidates.push(normalizeKmzPath(`${directoryName(relativeTo)}/${normalizedHref}`));
+  }
+  return candidates.some((candidate) => normalizedName === candidate || normalizedName.endsWith(`/${candidate}`));
+}
+
+function normalizeKmzPath(value: string): string {
+  let normalized = value.trim().replace(/\\/g, '/').split(/[?#]/, 1)[0] ?? '';
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+    // Keep the original path when a producer emitted malformed percent escapes.
+  }
+  normalized = normalized.replace(/^\.\//, '').replace(/^\/+/, '');
+  const parts: string[] = [];
+  for (const part of normalized.split('/')) {
+    if (!part || part === '.') continue;
+    if (part === '..') {
+      parts.pop();
+      continue;
+    }
+    parts.push(part);
+  }
+  return parts.join('/');
+}
+
+function directoryName(value: string): string {
+  const normalized = normalizeKmzPath(value);
+  const slash = normalized.lastIndexOf('/');
+  return slash >= 0 ? normalized.slice(0, slash) : '';
+}
+
+function mimeTypeForKmzEntry(name: string): string {
+  const extension = name.split('.').pop()?.toLowerCase();
+  switch (extension) {
+    case 'png': return 'image/png';
+    case 'jpg':
+    case 'jpeg': return 'image/jpeg';
+    case 'gif': return 'image/gif';
+    case 'webp': return 'image/webp';
+    case 'bmp': return 'image/bmp';
+    case 'tga': return 'image/x-tga';
+    case 'dds': return 'image/vnd-ms.dds';
+    default: return 'application/octet-stream';
+  }
 }
 
 export function loadMd2Object(source: ArrayBuffer): Object3D {
@@ -4145,9 +4338,10 @@ interface Mesh3mf {
 }
 
 const IDENTITY_TRANSFORM: Transform3mf = [
-  1, 0, 0, 0,
-  0, 1, 0, 0,
-  0, 0, 1, 0
+  1, 0, 0,
+  0, 1, 0,
+  0, 0, 1,
+  0, 0, 0
 ];
 
 function localElements(root: ParentNode, localName: string): Element[] {
@@ -4288,9 +4482,9 @@ function parse3mfTransform(value: string | null): Transform3mf {
 
 function apply3mfTransform(vertex: [number, number, number], transform: Transform3mf): [number, number, number] {
   return [
-    vertex[0] * transform[0] + vertex[1] * transform[3] + vertex[2] * transform[6] + transform[9],
-    vertex[0] * transform[1] + vertex[1] * transform[4] + vertex[2] * transform[7] + transform[10],
-    vertex[0] * transform[2] + vertex[1] * transform[5] + vertex[2] * transform[8] + transform[11]
+    vertex[0] * transform[0] + vertex[1] * transform[1] + vertex[2] * transform[2] + transform[9],
+    vertex[0] * transform[3] + vertex[1] * transform[4] + vertex[2] * transform[5] + transform[10],
+    vertex[0] * transform[6] + vertex[1] * transform[7] + vertex[2] * transform[8] + transform[11]
   ];
 }
 

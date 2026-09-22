@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs::{self, File};
-use std::io::{Cursor, Read, Write};
+use std::io::{Read, Write};
 use std::path::Path;
 use std::process;
 use std::time::Instant;
@@ -32,7 +32,7 @@ const HTML_TEXT_WARNING: &str = "Text backend performed lightweight HTML text ex
 const RTF_WARNING: &str = "RTF backend performed lightweight text extraction; complex layout, embedded objects, and full style fidelity are not preserved.";
 const TABULAR_WARNING: &str = "Tabular backend performed lightweight spreadsheet data extraction; formulas, formatting, indexes, code pages, memo fields, and macros are not preserved.";
 const ODF_WARNING: &str = "ODF backend performed lightweight OpenDocument extraction; layout, styles, media, formulas, and macros are not preserved.";
-const WORD_BINARY_WARNING: &str = "Word binary backend preserves supported paragraph, run, table, header, footer, page, and media styling; unsupported legacy drawings, fields, macros, and embedded objects may be simplified or omitted.";
+const WORD_BINARY_WARNING: &str = "Word binary backend uses the built-in CFB/piece-table parser; supported paragraph/run styles, simple lists, basic tables and table merges, heading-like lines, and embedded JPEG/PNG images are preserved, while legacy drawings, fields, macros, and embedded objects may be simplified or omitted.";
 const BIFF_WARNING: &str = "BIFF conversion core performed lightweight binary spreadsheet extraction; basic formulas and formatting are preserved, but charts, macros, embedded objects, and unsupported formula tokens are not preserved.";
 const PPT_BINARY_WARNING: &str = "PowerPoint binary backend preserves embedded full-slide JPEG/PNG artwork where available and otherwise extracts text; editable layout, animations, charts, macros, and embedded objects are not preserved.";
 const RAW_PREVIEW_WARNING: &str = "RAW preview backend extracted the camera-generated embedded JPEG; full-resolution sensor data, custom picture profiles, and edits are not developed.";
@@ -71,6 +71,23 @@ struct DocxParagraph {
     alignment: &'static str,
     bold: bool,
     runs: Vec<DocxRun>,
+    table_cell: bool,
+    table_row_end: bool,
+    table_cell_merged: bool,
+    table_grid_span: usize,
+    table_v_merge: &'static str,
+    table_grid_left: i16,
+    table_grid_right: i16,
+    table_grid_bounds: Vec<i16>,
+}
+
+#[derive(Clone, Default)]
+struct DocxImage {
+    data: Vec<u8>,
+    extension: &'static str,
+    content_type: &'static str,
+    width_emu: u64,
+    height_emu: u64,
 }
 
 #[derive(Clone, Default)]
@@ -84,6 +101,7 @@ struct DocxRun {
     font_size: usize,
     color: String,
     highlight: String,
+    image: Option<DocxImage>,
 }
 
 #[derive(Clone)]
@@ -2317,6 +2335,7 @@ struct WordBinaryStreams {
     document: Vec<u8>,
     table0: Vec<u8>,
     table1: Vec<u8>,
+    data: Vec<u8>,
 }
 
 struct WordBinaryPiece {
@@ -2324,28 +2343,70 @@ struct WordBinaryPiece {
     cp_end: i32,
     file_offset: usize,
     compressed: bool,
+    prm: u16,
+}
+
+#[derive(Clone, Copy, Default)]
+struct WordBinaryFib {
+    flags: u16,
+    fc_clx: usize,
+    lcb_clx: usize,
+    fc_chpx: usize,
+    lcb_chpx: usize,
+    fc_papx: usize,
+    lcb_papx: usize,
+}
+
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+struct WordBinaryCharProps {
+    bold: bool,
+    italic: bool,
+    underline: bool,
+    strike: bool,
+    vertical_align: &'static str,
+    font_size: usize,
+    color: Option<[u8; 3]>,
+    highlight: Option<[u8; 3]>,
+    picture_offset: Option<u32>,
+}
+
+#[derive(Clone, Default)]
+struct WordBinaryParaProps {
+    heading_level: usize,
+    list_kind: &'static str,
+    list_level: usize,
+    alignment: &'static str,
+    table_cell: bool,
+    table_row_end: bool,
+    table_def: Option<WordBinaryTableDef>,
+}
+
+#[derive(Clone, Default)]
+struct WordBinaryTableDef {
+    rgdxa: Vec<i16>,
+    tcgrf: Vec<u16>,
+}
+
+const WORD_BINARY_F_MERGED: u16 = 0x0002;
+const WORD_BINARY_F_VERT_MERGE: u16 = 0x0020;
+const WORD_BINARY_F_VERT_RESTART: u16 = 0x0040;
+
+#[derive(Clone)]
+struct WordBinaryChar {
+    value: char,
+    fc: u32,
+    props: WordBinaryCharProps,
 }
 
 fn convert_word_binary(input: &str, output: &str) -> Result<(), ConvertError> {
     let bytes =
         fs::read(input).map_err(|error| io_error(format!("read Word binary input: {error}")))?;
-    if let Ok(document) = rwml::Document::open(&bytes) {
-        if let Some(parent) = Path::new(output).parent() {
-            fs::create_dir_all(parent)
-                .map_err(|error| io_error(format!("create output directory: {error}")))?;
-        }
-        let package = sanitize_rwml_docx(&document.to_docx(), &bytes)?;
-        return fs::write(output, package)
-            .map_err(|error| io_error(format!("write converted Word document: {error}")));
-    }
-
-    // Keep accepting the compact synthetic fixtures and uncommon WPS variants
-    // supported by the original piece-table extractor.
     let file = CompoundFile::parse(&bytes)?;
     let mut streams = WordBinaryStreams {
         document: Vec::new(),
         table0: Vec::new(),
         table1: Vec::new(),
+        data: Vec::new(),
     };
     for entry in file
         .entries
@@ -2356,6 +2417,7 @@ fn convert_word_binary(input: &str, output: &str) -> Result<(), ConvertError> {
             "worddocument" => &mut streams.document,
             "0table" => &mut streams.table0,
             "1table" => &mut streams.table1,
+            "data" => &mut streams.data,
             _ => continue,
         };
         if let Ok(data) = file.read_stream(entry) {
@@ -2367,385 +2429,84 @@ fn convert_word_binary(input: &str, output: &str) -> Result<(), ConvertError> {
             "compound file has no WordDocument stream".into(),
         ));
     }
-    let pieces = parse_word_binary_piece_table(&streams).ok_or_else(|| ConvertError {
+    let fib = parse_word_binary_fib(&streams.document).unwrap_or_default();
+    let pieces = parse_word_binary_piece_table(&streams, fib).ok_or_else(|| ConvertError {
         code: "engine_unavailable",
         message: "unsupported legacy Word binary structure: no decodable WordDocument CLX piece table was found".into(),
     })?;
+    let chpx = parse_word_binary_chpx(&streams.document, word_binary_table(&streams, fib), fib);
+    let papx = parse_word_binary_papx(&streams.document, word_binary_table(&streams, fib), fib);
     write_docx(
         output,
-        &decode_word_binary_paragraphs(&streams.document, &pieces),
+        &decode_word_binary_paragraphs(
+            &streams.document,
+            &streams.data,
+            &pieces,
+            &chpx,
+            &papx,
+        ),
     )
 }
 
-struct WordPackageEntry {
-    name: String,
-    is_dir: bool,
-    content: Vec<u8>,
+fn parse_word_binary_fib(document: &[u8]) -> Option<WordBinaryFib> {
+    if document.len() < 36 || u16::from_le_bytes(document.get(..2)?.try_into().ok()?) != 0xA5EC {
+        return None;
+    }
+    let flags = u16::from_le_bytes(document.get(0x0a..0x0c)?.try_into().ok()?);
+    let csw = u16::from_le_bytes(document.get(32..34)?.try_into().ok()?) as usize;
+    let cslw_offset = 34usize.checked_add(csw.checked_mul(2)?)?;
+    let cslw = u16::from_le_bytes(document.get(cslw_offset..cslw_offset + 2)?.try_into().ok()?) as usize;
+    let rglw_offset = cslw_offset.checked_add(2)?;
+    let fclcb_count_offset = rglw_offset.checked_add(cslw.checked_mul(4)?)?;
+    let fclcb_offset = fclcb_count_offset.checked_add(2)?;
+    let pair = |index: usize| {
+        let offset = fclcb_offset.checked_add(index.checked_mul(8)?)?;
+        Some((
+            u32::from_le_bytes(document.get(offset..offset + 4)?.try_into().ok()?) as usize,
+            u32::from_le_bytes(document.get(offset + 4..offset + 8)?.try_into().ok()?) as usize,
+        ))
+    };
+    let (fc_clx, lcb_clx) = pair(33)?;
+    let (fc_chpx, lcb_chpx) = pair(12).unwrap_or((0, 0));
+    let (fc_papx, lcb_papx) = pair(13).unwrap_or((0, 0));
+    Some(WordBinaryFib {
+        flags,
+        fc_clx,
+        lcb_clx,
+        fc_chpx,
+        lcb_chpx,
+        fc_papx,
+        lcb_papx,
+    })
 }
 
-struct RecoveredJpeg<'a> {
-    bytes: &'a [u8],
-    width: u16,
-    height: u16,
-}
-
-fn sanitize_rwml_docx(package: &[u8], source: &[u8]) -> Result<Vec<u8>, ConvertError> {
-    let mut archive = ZipArchive::new(Cursor::new(package))
-        .map_err(|error| conversion_error(format!("open converted Word package: {error}")))?;
-    if archive.len() > MAX_PACKAGE_ENTRIES {
-        return Err(conversion_error(
-            "converted Word package has too many entries".into(),
-        ));
+fn word_binary_table<'a>(streams: &'a WordBinaryStreams, fib: WordBinaryFib) -> &'a [u8] {
+    if fib.flags & 0x0200 != 0 {
+        if !streams.table1.is_empty() {
+            return &streams.table1;
+        }
+    } else if !streams.table0.is_empty() {
+        return &streams.table0;
     }
-
-    let mut entries = Vec::with_capacity(archive.len() + 4);
-    let mut total_bytes = 0u64;
-    for index in 0..archive.len() {
-        let mut entry = archive
-            .by_index(index)
-            .map_err(|error| conversion_error(format!("open converted Word entry: {error}")))?;
-        let name = safe_part(entry.name())?;
-        if entry.size() > MAX_ENTRY_BYTES
-            || total_bytes > MAX_PACKAGE_BYTES.saturating_sub(entry.size())
-        {
-            return Err(conversion_error(format!(
-                "converted Word entry {name} exceeds package limits"
-            )));
-        }
-        total_bytes += entry.size();
-        let mut content = Vec::with_capacity(entry.size().min(usize::MAX as u64) as usize);
-        if !entry.is_dir() {
-            entry.read_to_end(&mut content).map_err(|error| {
-                conversion_error(format!("read converted Word entry {name}: {error}"))
-            })?;
-        }
-        entries.push(WordPackageEntry {
-            name,
-            is_dir: entry.is_dir(),
-            content,
-        });
-    }
-
-    restore_rwml_header_images(&mut entries, source, &mut total_bytes)?;
-    for entry in &mut entries {
-        if entry.name.starts_with("word/") && entry.name.ends_with(".xml") {
-            entry.content = strip_rwml_placeholder_text(&entry.content)?;
-        }
-    }
-
-    let mut writer = ZipWriter::new(Cursor::new(Vec::new()));
-    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
-    for entry in entries {
-        if entry.is_dir {
-            writer
-                .add_directory(entry.name, options)
-                .map_err(|error| conversion_error(format!("create Word output entry: {error}")))?;
-            continue;
-        }
-        writer.start_file(&entry.name, options).map_err(|error| {
-            conversion_error(format!("create Word output entry {}: {error}", entry.name))
-        })?;
-        writer.write_all(&entry.content).map_err(|error| {
-            conversion_error(format!("write Word output entry {}: {error}", entry.name))
-        })?;
-    }
-
-    writer
-        .finish()
-        .map(Cursor::into_inner)
-        .map_err(|error| conversion_error(format!("close converted Word package: {error}")))
-}
-
-fn restore_rwml_header_images(
-    entries: &mut Vec<WordPackageEntry>,
-    source: &[u8],
-    total_bytes: &mut u64,
-) -> Result<(), ConvertError> {
-    let existing_media: Vec<Vec<u8>> = entries
-        .iter()
-        .filter(|entry| entry.name.starts_with("word/media/") && !entry.is_dir)
-        .map(|entry| entry.content.clone())
-        .collect();
-    let recovered: Vec<_> = embedded_jpegs(source)
-        .into_iter()
-        .filter(|image| {
-            image.bytes.len() >= 256
-                && image.width >= 32
-                && image.height >= 16
-                && !existing_media
-                    .iter()
-                    .any(|existing| existing.as_slice() == image.bytes)
-        })
-        .collect();
-    if recovered.is_empty() {
-        return Ok(());
-    }
-
-    let mut header_names: Vec<_> = entries
-        .iter()
-        .filter(|entry| entry.name.starts_with("word/header") && entry.name.ends_with(".xml"))
-        .map(|entry| entry.name.clone())
-        .collect();
-    header_names.sort_unstable();
-    let mut recovered_index = 0usize;
-    for header_name in header_names {
-        while let Some(image) = recovered.get(recovered_index) {
-            let relation_name = word_relationship_part(&header_name);
-            let relation_id = next_recovered_relationship_id(entries, &relation_name);
-            let media_name = next_recovered_media_name(entries, recovered_index + 1);
-            let drawing = recovered_image_drawing(
-                &relation_id,
-                recovered_index + 1,
-                image.width,
-                image.height,
-            );
-            let restored = entries
-                .iter_mut()
-                .find(|entry| entry.name == header_name)
-                .ok_or_else(|| {
-                    conversion_error(format!("missing converted Word part {header_name}"))
-                })
-                .and_then(|entry| {
-                    replace_first_rwml_image_placeholder(&mut entry.content, &drawing)
-                })?;
-            if !restored {
-                break;
-            }
-            if *total_bytes > MAX_PACKAGE_BYTES.saturating_sub(image.bytes.len() as u64) {
-                return Err(conversion_error(
-                    "recovered Word media exceeds package limits".into(),
-                ));
-            }
-            *total_bytes += image.bytes.len() as u64;
-            add_word_image_relationship(entries, &relation_name, &relation_id, &media_name)?;
-            entries.push(WordPackageEntry {
-                name: format!("word/media/{media_name}"),
-                is_dir: false,
-                content: image.bytes.to_vec(),
-            });
-            ensure_jpeg_content_type(entries)?;
-            recovered_index += 1;
-        }
-        if recovered_index == recovered.len() {
-            break;
-        }
-    }
-    Ok(())
-}
-
-fn embedded_jpegs(bytes: &[u8]) -> Vec<RecoveredJpeg<'_>> {
-    let mut images = Vec::new();
-    let mut cursor = 0usize;
-    while cursor + 2 < bytes.len() {
-        let Some(offset) = bytes[cursor..]
-            .windows(3)
-            .position(|value| value == [0xff, 0xd8, 0xff])
-        else {
-            break;
-        };
-        let start = cursor + offset;
-        if let Some((end, width, height)) = jpeg_bounds(bytes, start) {
-            images.push(RecoveredJpeg {
-                bytes: &bytes[start..end],
-                width,
-                height,
-            });
-            cursor = end;
-        } else {
-            cursor = start + 3;
-        }
-    }
-    images
-}
-
-fn replace_first_rwml_image_placeholder(
-    content: &mut Vec<u8>,
-    drawing: &str,
-) -> Result<bool, ConvertError> {
-    let mut xml = String::from_utf8(content.clone())
-        .map_err(|error| conversion_error(format!("decode converted Word XML: {error}")))?;
-    let mut search_from = 0usize;
-    while let Some(relative_start) = xml[search_from..].find("<w:t") {
-        let start = search_from + relative_start;
-        if !xml
-            .as_bytes()
-            .get(start + 4)
-            .is_some_and(|value| *value == b'>' || value.is_ascii_whitespace())
-        {
-            search_from = start + 4;
-            continue;
-        }
-        let Some(open_end) = xml[start..].find('>').map(|offset| start + offset) else {
-            return Err(conversion_error(
-                "converted Word text element is truncated".into(),
-            ));
-        };
-        let Some(close_start) = xml[open_end + 1..]
-            .find("</w:t>")
-            .map(|offset| open_end + 1 + offset)
-        else {
-            return Err(conversion_error(
-                "converted Word text element is not closed".into(),
-            ));
-        };
-        if is_rwml_image_placeholder(xml[open_end + 1..close_start].as_bytes()) {
-            xml.replace_range(start..close_start + "</w:t>".len(), drawing);
-            *content = xml.into_bytes();
-            return Ok(true);
-        }
-        search_from = close_start + "</w:t>".len();
-    }
-    Ok(false)
-}
-
-fn is_rwml_image_placeholder(value: &[u8]) -> bool {
-    let value = String::from_utf8_lossy(value);
-    let value = value.trim();
-    value.starts_with("[rwml image placeholder:") && value.ends_with(']')
-}
-
-fn recovered_image_drawing(relation_id: &str, index: usize, width: u16, height: u16) -> String {
-    let width_emu = u64::from(width) * 9_525;
-    let height_emu = u64::from(height) * 9_525;
-    let drawing_id = 900_000usize.saturating_add(index);
-    format!(
-        r#"<w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{width_emu}" cy="{height_emu}"/><wp:docPr id="{drawing_id}" name="Recovered image {index}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="Recovered image {index}.jpg"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="{relation_id}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{width_emu}" cy="{height_emu}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>"#
-    )
-}
-
-fn word_relationship_part(part: &str) -> String {
-    let (directory, name) = part.rsplit_once('/').unwrap_or(("", part));
-    if directory.is_empty() {
-        format!("_rels/{name}.rels")
+    if !streams.table0.is_empty() {
+        &streams.table0
     } else {
-        format!("{directory}/_rels/{name}.rels")
+        &streams.table1
     }
 }
 
-fn next_recovered_relationship_id(entries: &[WordPackageEntry], relation_name: &str) -> String {
-    let relations = entries
-        .iter()
-        .find(|entry| entry.name == relation_name)
-        .map(|entry| String::from_utf8_lossy(&entry.content));
-    for index in 1usize.. {
-        let candidate = format!("rIdFilensRecovered{index}");
-        if relations
-            .as_deref()
-            .is_none_or(|content| !content.contains(&format!("Id=\"{candidate}\"")))
-        {
-            return candidate;
-        }
-    }
-    unreachable!()
-}
-
-fn next_recovered_media_name(entries: &[WordPackageEntry], start: usize) -> String {
-    for index in start.. {
-        let candidate = format!("filens-recovered-{index}.jpg");
-        if !entries
-            .iter()
-            .any(|entry| entry.name == format!("word/media/{candidate}"))
-        {
-            return candidate;
-        }
-    }
-    unreachable!()
-}
-
-fn add_word_image_relationship(
-    entries: &mut Vec<WordPackageEntry>,
-    relation_name: &str,
-    relation_id: &str,
-    media_name: &str,
-) -> Result<(), ConvertError> {
-    let relationship = format!(
-        r#"<Relationship Id="{relation_id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{media_name}"/>"#
-    );
-    if let Some(entry) = entries.iter_mut().find(|entry| entry.name == relation_name) {
-        insert_xml_before_close(&mut entry.content, "</Relationships>", &relationship)?;
-    } else {
-        entries.push(WordPackageEntry {
-            name: relation_name.into(),
-            is_dir: false,
-            content: format!(
-                r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">{relationship}</Relationships>"#
-            )
-            .into_bytes(),
-        });
-    }
-    Ok(())
-}
-
-fn ensure_jpeg_content_type(entries: &mut [WordPackageEntry]) -> Result<(), ConvertError> {
-    let entry = entries
-        .iter_mut()
-        .find(|entry| entry.name.eq_ignore_ascii_case("[Content_Types].xml"))
-        .ok_or_else(|| conversion_error("converted Word package has no content types".into()))?;
-    let content = String::from_utf8_lossy(&entry.content);
-    if content.contains("Extension=\"jpg\"") {
-        return Ok(());
-    }
-    insert_xml_before_close(
-        &mut entry.content,
-        "</Types>",
-        r#"<Default Extension="jpg" ContentType="image/jpeg"/>"#,
-    )
-}
-
-fn insert_xml_before_close(
-    content: &mut Vec<u8>,
-    closing: &str,
-    fragment: &str,
-) -> Result<(), ConvertError> {
-    let mut xml = String::from_utf8(content.clone())
-        .map_err(|error| conversion_error(format!("decode converted Word XML: {error}")))?;
-    let offset = xml
-        .rfind(closing)
-        .ok_or_else(|| conversion_error(format!("converted Word XML has no {closing}")))?;
-    xml.insert_str(offset, fragment);
-    *content = xml.into_bytes();
-    Ok(())
-}
-
-fn strip_rwml_placeholder_text(content: &[u8]) -> Result<Vec<u8>, ConvertError> {
-    let mut reader = Reader::from_reader(content);
-    reader.config_mut().trim_text(false);
-    let mut writer = Writer::new(Vec::new());
-    loop {
-        let event = reader
-            .read_event()
-            .map_err(|error| conversion_error(format!("parse converted Word XML: {error}")))?;
-        match event {
-            Event::Eof => break,
-            Event::Text(text) if is_rwml_placeholder(text.as_ref()) => {}
-            event => writer
-                .write_event(event.into_owned())
-                .map_err(|error| conversion_error(format!("encode converted Word XML: {error}")))?,
-        }
-    }
-    Ok(writer.into_inner())
-}
-
-fn is_rwml_placeholder(value: &[u8]) -> bool {
-    let value = String::from_utf8_lossy(value);
-    let value = value.trim();
-    (value.starts_with("[rwml image placeholder:") || value.starts_with("[rwml chart placeholder:"))
-        && value.ends_with(']')
-}
-
-fn parse_word_binary_piece_table(streams: &WordBinaryStreams) -> Option<Vec<WordBinaryPiece>> {
-    let flags = streams
-        .document
-        .get(0x0a..0x0c)
-        .map(|value| u16::from_le_bytes(value.try_into().unwrap()))
-        .unwrap_or(0);
+fn parse_word_binary_piece_table(
+    streams: &WordBinaryStreams,
+    fib: WordBinaryFib,
+) -> Option<Vec<WordBinaryPiece>> {
+    let flags = fib.flags;
     let tables = if flags & 0x0200 != 0 {
         [&streams.table1, &streams.table0]
     } else {
         [&streams.table0, &streams.table1]
     };
     for table in tables.into_iter().filter(|table| !table.is_empty()) {
-        if let Some(clx) = word_binary_clx(&streams.document, table) {
+        if let Some(clx) = word_binary_clx(&streams.document, table, fib) {
             if let Some(pieces) = parse_word_binary_clx(clx, streams.document.len()) {
                 return Some(pieces);
             }
@@ -2769,10 +2530,13 @@ fn parse_word_binary_piece_table(streams: &WordBinaryStreams) -> Option<Vec<Word
     None
 }
 
-fn word_binary_clx<'a>(document: &[u8], table: &'a [u8]) -> Option<&'a [u8]> {
-    let fib = document.get(0x01a2..0x01aa)?;
-    let offset = u32::from_le_bytes(fib[..4].try_into().unwrap()) as usize;
-    let size = u32::from_le_bytes(fib[4..].try_into().unwrap()) as usize;
+fn word_binary_clx<'a>(
+    _document: &[u8],
+    table: &'a [u8],
+    fib: WordBinaryFib,
+) -> Option<&'a [u8]> {
+    let offset = fib.fc_clx;
+    let size = fib.lcb_clx;
     (size > 0 && offset <= table.len().saturating_sub(size)).then(|| &table[offset..offset + size])
 }
 
@@ -2830,6 +2594,7 @@ fn parse_word_binary_plcpcd(data: &[u8], document_size: usize) -> Option<Vec<Wor
             cp_end,
             file_offset,
             compressed,
+            prm: u16::from_le_bytes(pcd[6..8].try_into().unwrap()),
         });
     }
     (!pieces.is_empty()).then_some(pieces)
@@ -2863,107 +2628,648 @@ fn word_binary_offset_in_range(value: u32, document_size: usize) -> bool {
 
 fn decode_word_binary_paragraphs(
     document: &[u8],
+    data: &[u8],
     pieces: &[WordBinaryPiece],
+    chpx: &[WordBinaryChpxEntry],
+    papx: &[WordBinaryPapxEntry],
 ) -> Vec<DocxParagraph> {
-    let mut text = String::new();
+    let mut current = Vec::new();
+    let mut paragraphs: Vec<DocxParagraph> = Vec::new();
+    let flush = |current: &mut Vec<WordBinaryChar>,
+                 paragraphs: &mut Vec<DocxParagraph>,
+                 terminator_fc: Option<u32>| {
+        if current.is_empty() {
+            if let Some(fc) = terminator_fc {
+                let properties = word_binary_papx_at(papx, fc);
+                let row_marker_already_attached = properties.table_row_end
+                    && paragraphs
+                        .last()
+                        .is_some_and(|paragraph| paragraph.table_cell && paragraph.table_row_end);
+                if properties.table_cell
+                    && !row_marker_already_attached
+                    && paragraphs.len() < MAX_WORD_PARAGRAPHS
+                {
+                    paragraphs.push(DocxParagraph {
+                        table_cell: true,
+                        table_row_end: properties.table_row_end,
+                        ..Default::default()
+                    });
+                    if let Some(definition) = properties.table_def.as_ref()
+                        && properties.table_row_end
+                    {
+                        apply_word_binary_table_definition(paragraphs, definition);
+                    }
+                }
+            }
+            current.clear();
+            return;
+        }
+        if paragraphs.len() >= MAX_WORD_PARAGRAPHS {
+            current.clear();
+            return;
+        }
+        while current.first().is_some_and(|item| item.value.is_whitespace()) {
+            current.remove(0);
+        }
+        while current.last().is_some_and(|item| item.value.is_whitespace()) {
+            current.pop();
+        }
+        if current.is_empty() {
+            return;
+        }
+        let fc = terminator_fc
+            .or_else(|| current.first().map(|item| item.fc))
+            .unwrap_or(0);
+        let properties = word_binary_papx_at(papx, fc);
+        let mut runs = Vec::new();
+        let mut text = String::new();
+        for item in current.drain(..) {
+            if let Some(offset) = item.props.picture_offset {
+                if let Some(image) = extract_word_binary_image(data, offset as usize) {
+                    runs.push(DocxRun {
+                        image: Some(image),
+                        ..Default::default()
+                    });
+                }
+                continue;
+            }
+            text.push(item.value);
+            let props = item.props;
+            if let Some(last) = runs.last_mut().filter(|run: &&mut DocxRun| {
+                run.image.is_none()
+                    && run.bold == props.bold
+                    && run.italic == props.italic
+                    && run.underline == props.underline
+                    && run.strike == props.strike
+                    && run.vertical_align == props.vertical_align
+                    && run.font_size == props.font_size
+                    && run.color == props.color.map(word_binary_rgb_hex).unwrap_or_default()
+                    && run.highlight == props.highlight.map(word_binary_rgb_hex).unwrap_or_default()
+            }) {
+                last.text.push(item.value);
+            } else {
+                runs.push(DocxRun {
+                    text: item.value.to_string(),
+                    bold: props.bold,
+                    italic: props.italic,
+                    underline: props.underline,
+                    strike: props.strike,
+                    vertical_align: props.vertical_align,
+                    font_size: props.font_size,
+                    color: props.color.map(word_binary_rgb_hex).unwrap_or_default(),
+                    highlight: props.highlight.map(word_binary_rgb_hex).unwrap_or_default(),
+                    ..Default::default()
+                });
+            }
+        }
+        let mut paragraph = DocxParagraph {
+            text: text.clone(),
+            heading_level: properties.heading_level,
+            list_kind: properties.list_kind,
+            list_level: properties.list_level,
+            alignment: properties.alignment,
+            table_cell: properties.table_cell,
+            table_row_end: properties.table_row_end,
+            runs,
+            ..Default::default()
+        };
+        if paragraph.heading_level == 0 && paragraph.list_kind.is_empty() {
+            if let Some((kind, item)) = visible_list_marker(&paragraph.text) {
+                let removed = paragraph.text.chars().count().saturating_sub(item.chars().count());
+                trim_word_binary_run_prefix(&mut paragraph.runs, removed);
+                paragraph.list_kind = kind;
+                paragraph.text = item.to_string();
+            }
+            if paragraph.heading_level == 0 {
+                paragraph.heading_level = usize::from(word_binary_heading(&paragraph.text));
+                paragraph.bold = paragraph.heading_level > 0;
+            }
+        }
+        let table_def = properties.table_def.clone();
+        paragraphs.push(paragraph);
+        if let Some(definition) = table_def.as_ref().filter(|_| properties.table_row_end) {
+            apply_word_binary_table_definition(paragraphs, definition);
+        }
+    };
     for piece in pieces {
         let count = (piece.cp_end - piece.cp_start) as usize;
         if count == 0 || piece.file_offset >= document.len() {
             continue;
         }
-        if piece.compressed {
-            let end = piece.file_offset.saturating_add(count).min(document.len());
-            text.extend(
-                document[piece.file_offset..end]
-                    .iter()
-                    .map(|byte| windows_1252_char(*byte)),
-            );
-        } else {
-            let end = piece
-                .file_offset
-                .saturating_add(count.saturating_mul(2))
-                .min(document.len());
-            text.push_str(&decode_utf16(&document[piece.file_offset..end], true));
+        for index in 0..count {
+            let offset = piece.file_offset.saturating_add(index * if piece.compressed { 1 } else { 2 });
+            let fc = offset.min(u32::MAX as usize) as u32;
+            let mut props = word_binary_chpx_at(chpx, fc);
+            apply_word_binary_prm0(&mut props, piece.prm);
+            let value = if piece.compressed {
+                document.get(offset).copied().map(windows_1252_char)
+            } else {
+                document
+                    .get(offset..offset.saturating_add(2))
+                    .and_then(|bytes| bytes.try_into().ok())
+                    .map(u16::from_le_bytes)
+                    .map(|value| char::from_u32(value as u32).unwrap_or('\u{fffd}'))
+            };
+            let Some(value) = value else { break };
+            match value {
+                '\r' | '\n' | '\u{000c}' | '\u{0007}' => {
+                    let terminator_props = word_binary_papx_at(papx, fc);
+                    if current.is_empty() && terminator_props.table_row_end {
+                        if let Some(previous) = paragraphs.last_mut() {
+                            previous.table_row_end = true;
+                        }
+                        if let Some(definition) = terminator_props.table_def.as_ref() {
+                            apply_word_binary_table_definition(&mut paragraphs, definition);
+                        }
+                    }
+                    flush(&mut current, &mut paragraphs, Some(fc))
+                }
+                '\u{000b}' => current.push(WordBinaryChar { value: '\n', fc, props }),
+                '\u{0013}' | '\u{0014}' | '\u{0015}' => {}
+                value if value < '\u{0020}' && value != '\t' => {
+                    current.push(WordBinaryChar { value: ' ', fc, props })
+                }
+                value => current.push(WordBinaryChar { value, fc, props }),
+            }
         }
     }
-    let normalized = normalize_word_binary_text(&text);
-    let mut paragraphs: Vec<_> = normalized
-        .split('\n')
-        .filter_map(word_binary_paragraph)
-        .take(MAX_WORD_PARAGRAPHS)
-        .collect();
-    if paragraphs.is_empty() {
-        if let Some(paragraph) = word_binary_paragraph(&normalized) {
-            paragraphs.push(paragraph);
-        }
-    }
+    flush(&mut current, &mut paragraphs, None);
+    normalize_word_binary_table_grid_spans(&mut paragraphs);
     paragraphs
 }
 
-fn normalize_word_binary_text(value: &str) -> String {
-    value
-        .replace("\r\n", "\n")
-        .chars()
-        .filter_map(|character| match character {
-            '\r' | '\n' | '\u{000c}' | '\u{0007}' => Some('\n'),
-            '\u{000b}' => Some('\u{e001}'),
-            '\t' => Some('\t'),
-            '\u{0013}' | '\u{0014}' | '\u{0015}' => None,
-            value if value < '\u{0020}' => Some(' '),
-            value => Some(value),
-        })
-        .collect()
+fn trim_word_binary_run_prefix(runs: &mut Vec<DocxRun>, mut count: usize) {
+    for run in runs.iter_mut() {
+        if count == 0 || run.image.is_some() {
+            continue;
+        }
+        let chars = run.text.chars().count();
+        if chars <= count {
+            run.text.clear();
+            count -= chars;
+        } else {
+            run.text = run.text.chars().skip(count).collect();
+            break;
+        }
+    }
+    runs.retain(|run| run.image.is_some() || !run.text.is_empty());
 }
 
-fn word_binary_paragraph(value: &str) -> Option<DocxParagraph> {
-    let text = normalize_word_binary_paragraph(value);
-    if text.is_empty() {
+fn apply_word_binary_table_definition(
+    paragraphs: &mut [DocxParagraph],
+    definition: &WordBinaryTableDef,
+) {
+    if definition.tcgrf.is_empty() {
+        return;
+    }
+    let Some(row_end) = paragraphs.iter().rposition(|paragraph| paragraph.table_cell) else {
+        return;
+    };
+    let row_start = paragraphs[..row_end]
+        .iter()
+        .rposition(|paragraph| !paragraph.table_cell || paragraph.table_row_end)
+        .map_or(0, |index| index + 1);
+    let cells: Vec<usize> = paragraphs[row_start..]
+        .iter()
+        .enumerate()
+        .filter_map(|(offset, paragraph)| paragraph.table_cell.then_some(row_start + offset))
+        .collect();
+    if cells.is_empty() {
+        return;
+    }
+
+    // Word streams one paragraph per physical cell. fMerged folds a physical
+    // cell into the preceding logical cell, so carry its text into that cell
+    // and suppress the duplicate <w:tc>.
+    let mut logical_cells: Vec<usize> = Vec::new();
+    for (physical, flags) in definition.tcgrf.iter().copied().enumerate() {
+        let Some(&paragraph_index) = cells.get(physical) else {
+            break;
+        };
+        if let (Some(&left), Some(&right)) = (
+            definition.rgdxa.get(physical),
+            definition.rgdxa.get(physical + 1),
+        ) {
+            paragraphs[paragraph_index].table_grid_left = left;
+            paragraphs[paragraph_index].table_grid_right = right;
+            paragraphs[paragraph_index].table_grid_bounds = definition.rgdxa.clone();
+        }
+        if flags & WORD_BINARY_F_MERGED != 0 {
+            if let Some(&previous_index) = logical_cells.last() {
+                let (before, after) = paragraphs.split_at_mut(paragraph_index);
+                append_word_binary_merged_cell(&mut before[previous_index], &mut after[0]);
+                paragraphs[previous_index].table_grid_right =
+                    paragraphs[paragraph_index].table_grid_right;
+                paragraphs[paragraph_index].table_cell_merged = true;
+                continue;
+            }
+        }
+        logical_cells.push(paragraph_index);
+        paragraphs[paragraph_index].table_grid_span = 1;
+        paragraphs[paragraph_index].table_v_merge = if flags & WORD_BINARY_F_VERT_RESTART != 0 {
+            "restart"
+        } else if flags & WORD_BINARY_F_VERT_MERGE != 0 {
+            "continue"
+        } else {
+            ""
+        };
+    }
+
+    // A merged physical cell can carry the row terminator. Move it to the
+    // logical owner so the writer closes the row at the right place.
+    if let Some(&last_index) = cells.last()
+        && paragraphs[last_index].table_row_end
+        && let Some(&logical_index) = logical_cells.last()
+    {
+        paragraphs[logical_index].table_row_end = true;
+    }
+}
+
+fn normalize_word_binary_table_grid_spans(paragraphs: &mut [DocxParagraph]) {
+    let mut group = Vec::new();
+    for index in 0..=paragraphs.len() {
+        if index < paragraphs.len() && paragraphs[index].table_cell {
+            group.push(index);
+            continue;
+        }
+        if group.is_empty() {
+            continue;
+        }
+        let mut bounds: Vec<i16> = group
+            .iter()
+            .flat_map(|index| paragraphs[*index].table_grid_bounds.iter().copied())
+            .collect();
+        bounds.sort_unstable();
+        bounds.dedup();
+        if bounds.len() >= 2 {
+            let visible: Vec<usize> = group
+                .iter()
+                .copied()
+                .filter(|index| !paragraphs[*index].table_cell_merged)
+                .collect();
+            for index in visible {
+                let paragraph = &mut paragraphs[index];
+                let Some(left) = bounds.binary_search(&paragraph.table_grid_left).ok() else {
+                    continue;
+                };
+                let Some(right) = bounds.binary_search(&paragraph.table_grid_right).ok() else {
+                    continue;
+                };
+                paragraph.table_grid_span = right.saturating_sub(left).max(1);
+            }
+        }
+        group.clear();
+    }
+}
+
+fn append_word_binary_merged_cell(target: &mut DocxParagraph, source: &mut DocxParagraph) {
+    if !source.text.is_empty() {
+        if !target.text.is_empty() {
+            target.text.push(' ');
+        }
+        target.text.push_str(&source.text);
+    }
+    target.runs.append(&mut source.runs);
+    target.table_grid_span = target.table_grid_span.saturating_add(1);
+    if source.table_row_end {
+        target.table_row_end = true;
+    }
+}
+
+fn apply_word_binary_prm0(props: &mut WordBinaryCharProps, prm: u16) {
+    if prm & 1 != 0 {
+        return;
+    }
+    let value = (prm >> 8) as u8;
+    let enabled = match value {
+        0 => false,
+        1 => true,
+        _ => return,
+    };
+    match ((prm >> 1) & 0x7f) as u8 {
+        0x55 => props.bold = enabled,
+        0x56 => props.italic = enabled,
+        0x57 => props.strike = enabled,
+        _ => {}
+    }
+}
+
+#[derive(Clone, Copy, Default)]
+struct WordBinaryChpxEntry {
+    fc_start: u32,
+    fc_lim: u32,
+    props: WordBinaryCharProps,
+}
+
+#[derive(Clone)]
+struct WordBinaryPapxEntry {
+    fc_start: u32,
+    fc_lim: u32,
+    props: WordBinaryParaProps,
+}
+
+fn parse_word_binary_chpx(
+    document: &[u8],
+    table: &[u8],
+    fib: WordBinaryFib,
+) -> Vec<WordBinaryChpxEntry> {
+    let Some(plc) = table.get(fib.fc_chpx..fib.fc_chpx.saturating_add(fib.lcb_chpx)) else {
+        return Vec::new();
+    };
+    if plc.len() < 12 || (plc.len() - 4) % 8 != 0 {
+        return Vec::new();
+    }
+    let count = (plc.len() - 4) / 8;
+    let pn_base = (count + 1) * 4;
+    let mut entries = Vec::new();
+    for index in 0..count {
+        let Some(fc_start) = word_binary_u32(plc, index * 4) else { continue };
+        let Some(fc_lim) = word_binary_u32(plc, (index + 1) * 4) else { continue };
+        let Some(pn) = word_binary_u32(plc, pn_base + index * 4) else { continue };
+        let page_offset = (pn & 0x003f_ffff) as usize * 512;
+        let Some(page) = document.get(page_offset..page_offset.saturating_add(512)) else { continue };
+        let run_count = *page.last().unwrap_or(&0) as usize;
+        if run_count == 0 || run_count > 0x65 || 4 * (run_count + 1) + run_count > 511 {
+            continue;
+        }
+        for run in 0..run_count {
+            let Some(run_start) = word_binary_u32(page, run * 4) else { continue };
+            let Some(run_lim) = word_binary_u32(page, (run + 1) * 4) else { continue };
+            let start = run_start.max(fc_start);
+            let lim = run_lim.min(fc_lim);
+            if start >= lim { continue; }
+            let rgb = 4 * (run_count + 1);
+            let offset = page[rgb + run] as usize * 2;
+            let props = if offset == 0 {
+                WordBinaryCharProps::default()
+            } else {
+                parse_word_binary_chpx_props(page, offset).unwrap_or_default()
+            };
+            entries.push(WordBinaryChpxEntry { fc_start: start, fc_lim: lim, props });
+        }
+    }
+    entries.sort_by_key(|entry| entry.fc_start);
+    entries
+}
+
+fn parse_word_binary_chpx_props(page: &[u8], offset: usize) -> Option<WordBinaryCharProps> {
+    let cb = *page.get(offset)? as usize;
+    let end = offset.checked_add(1)?.checked_add(cb)?;
+    let group = page.get(offset + 1..end)?;
+    let mut props = WordBinaryCharProps::default();
+    let mut pos = 0;
+    let mut special = false;
+    while pos + 2 <= group.len() {
+        let sprm = u16::from_le_bytes(group[pos..pos + 2].try_into().ok()?);
+        let operand = pos + 2;
+        let len = word_binary_sprm_operand_len(sprm, group, operand)?;
+        let value = group.get(operand..operand + len)?;
+        match sprm {
+            0x0835 => props.bold = value.first().copied().is_some_and(|v| v == 1 || v == 0x81),
+            0x0836 => props.italic = value.first().copied().is_some_and(|v| v == 1 || v == 0x81),
+            0x0837 => props.strike = value.first().copied().is_some_and(|v| v == 1 || v == 0x81),
+            0x2a3e => props.underline = value.first().copied().is_some_and(|v| v != 0),
+            0x4a43 => props.font_size = u16::from_le_bytes(value.get(..2)?.try_into().ok()?) as usize,
+            0x2a48 => props.vertical_align = match value.first().copied()? {
+                1 => "superscript",
+                2 => "subscript",
+                _ => "",
+            },
+            0x6870 => {
+                props.color = Some([value[0], value[1], value[2]]);
+            }
+            0x2a42 => {
+                props.color = word_binary_palette_color(value.first().copied().unwrap_or(0));
+            }
+            0x2a0c => {
+                props.highlight = word_binary_palette_color(value.first().copied().unwrap_or(0));
+            }
+            0x0855 => special = value.first().copied().unwrap_or(0) != 0,
+            0x6a03 if value.len() >= 4 => {
+                props.picture_offset = Some(u32::from_le_bytes(value[..4].try_into().ok()?));
+            }
+            _ => {}
+        }
+        pos += 2 + len;
+    }
+    if !special {
+        props.picture_offset = None;
+    }
+    Some(props)
+}
+
+fn parse_word_binary_papx(
+    document: &[u8],
+    table: &[u8],
+    fib: WordBinaryFib,
+) -> Vec<WordBinaryPapxEntry> {
+    let Some(plc) = table.get(fib.fc_papx..fib.fc_papx.saturating_add(fib.lcb_papx)) else {
+        return Vec::new();
+    };
+    if plc.len() < 12 || (plc.len() - 4) % 8 != 0 { return Vec::new(); }
+    let count = (plc.len() - 4) / 8;
+    let pn_base = (count + 1) * 4;
+    let mut entries = Vec::new();
+    for index in 0..count {
+        let Some(fc_start) = word_binary_u32(plc, index * 4) else { continue };
+        let Some(fc_lim) = word_binary_u32(plc, (index + 1) * 4) else { continue };
+        let Some(pn) = word_binary_u32(plc, pn_base + index * 4) else { continue };
+        let page_offset = (pn & 0x003f_ffff) as usize * 512;
+        let Some(page) = document.get(page_offset..page_offset.saturating_add(512)) else { continue };
+        let run_count = *page.last().unwrap_or(&0) as usize;
+        if run_count == 0 || run_count > 0x3f || 4 * (run_count + 1) + 13 * run_count > 511 { continue; }
+        for run in 0..run_count {
+            let Some(run_start) = word_binary_u32(page, run * 4) else { continue };
+            let Some(run_lim) = word_binary_u32(page, (run + 1) * 4) else { continue };
+            let bx = 4 * (run_count + 1) + run * 13;
+            let offset = page[bx] as usize * 2;
+            let props = if offset == 0 {
+                WordBinaryParaProps::default()
+            } else {
+                parse_word_binary_papx_props(page, offset).unwrap_or_default()
+            };
+            entries.push(WordBinaryPapxEntry {
+                fc_start: run_start.max(fc_start),
+                fc_lim: run_lim.min(fc_lim),
+                props,
+            });
+        }
+    }
+    entries.sort_by_key(|entry| entry.fc_lim);
+    entries
+}
+
+fn parse_word_binary_papx_props(page: &[u8], offset: usize) -> Option<WordBinaryParaProps> {
+    let first = *page.get(offset)? as usize;
+    let (data_offset, data_len) = if first != 0 {
+        (offset + 1, first * 2 - 1)
+    } else {
+        let second = *page.get(offset + 1)? as usize;
+        (offset + 2, second * 2)
+    };
+    let data = page.get(data_offset..data_offset.checked_add(data_len)?)?;
+    let group = data.get(2..).unwrap_or_default();
+    let mut props = WordBinaryParaProps::default();
+    let mut pos = 0;
+    while pos + 2 <= group.len() {
+        let sprm = u16::from_le_bytes(group[pos..pos + 2].try_into().ok()?);
+        let operand = pos + 2;
+        let len = word_binary_sprm_operand_len(sprm, group, operand)?;
+        let value = group.get(operand..operand + len)?;
+        match sprm {
+            0x2416 => props.table_cell = value.first().copied().unwrap_or(0) != 0,
+            0x2417 => props.table_row_end = value.first().copied().unwrap_or(0) != 0,
+            0xD608 => props.table_def = parse_word_binary_table_def(value),
+            0x2403 | 0x2461 => props.alignment = match value.first().copied()? {
+                1 => "left", 2 => "right", 3 => "both", 0 => "center", _ => "",
+            },
+            0x2640 => {
+                let level = value.first().copied().unwrap_or(9);
+                if level < 9 { props.heading_level = usize::from(level) + 1; }
+            }
+            0x260a => props.list_level = value.first().copied().unwrap_or(0) as usize,
+            0x460b => {
+                if u16::from_le_bytes(value.get(..2)?.try_into().ok()?) != 0 {
+                    props.list_kind = "decimal";
+                }
+            }
+            _ => {}
+        }
+        pos += 2 + len;
+    }
+    Some(props)
+}
+
+fn parse_word_binary_table_def(operand: &[u8]) -> Option<WordBinaryTableDef> {
+    let declared = usize::from(u16::from_le_bytes([
+        *operand.first()?,
+        *operand.get(1)?,
+    ]));
+    if declared == 0 || operand.len() != declared.saturating_add(1) {
         return None;
     }
-    if let Some((kind, item)) = visible_list_marker(&text) {
-        return Some(DocxParagraph {
-            text: item.to_string(),
-            list_kind: kind,
-            ..Default::default()
-        });
+    let cell_count = usize::from(*operand.get(2)?);
+    if cell_count == 0 || cell_count > 63 {
+        return None;
     }
-    let heading_level = usize::from(word_binary_heading(&text));
-    Some(DocxParagraph {
-        text,
-        heading_level,
-        bold: heading_level > 0,
-        ..Default::default()
+    let boundaries_start = 3usize;
+    let boundaries_len = cell_count.checked_add(1)?.checked_mul(2)?;
+    let cells_start = boundaries_start.checked_add(boundaries_len)?;
+    let cells_end = cells_start.checked_add(cell_count.checked_mul(20)?)?;
+    if cells_start > operand.len() || cells_end > operand.len() {
+        return None;
+    }
+    let mut rgdxa = Vec::with_capacity(cell_count + 1);
+    for index in 0..=cell_count {
+        let offset = boundaries_start + index * 2;
+        rgdxa.push(i16::from_le_bytes([
+            *operand.get(offset)?,
+            *operand.get(offset + 1)?,
+        ]));
+    }
+    if rgdxa.windows(2).any(|pair| pair[0] > pair[1]) {
+        return None;
+    }
+    let mut tcgrf = Vec::with_capacity(cell_count);
+    for index in 0..cell_count {
+        let offset = cells_start + index * 20;
+        tcgrf.push(u16::from_le_bytes([
+            *operand.get(offset)?,
+            *operand.get(offset + 1)?,
+        ]));
+    }
+    Some(WordBinaryTableDef { rgdxa, tcgrf })
+}
+
+fn word_binary_u32(data: &[u8], offset: usize) -> Option<u32> {
+    Some(u32::from_le_bytes(data.get(offset..offset + 4)?.try_into().ok()?))
+}
+
+fn word_binary_sprm_operand_len(sprm: u16, data: &[u8], offset: usize) -> Option<usize> {
+    if sprm == 0xD608 {
+        let cb = usize::from(u16::from_le_bytes(
+            data.get(offset..offset + 2)?.try_into().ok()?,
+        ));
+        return (cb != 0).then_some(cb + 1);
+    }
+    match (sprm >> 13) & 7 {
+        0 | 1 => Some(1),
+        2 | 4 | 5 => Some(2),
+        3 => Some(4),
+        7 => Some(3),
+        6 => Some(1 + usize::from(*data.get(offset)?)),
+        _ => None,
+    }
+}
+
+fn word_binary_chpx_at(entries: &[WordBinaryChpxEntry], fc: u32) -> WordBinaryCharProps {
+    entries.iter().rev().find(|entry| entry.fc_start <= fc && fc < entry.fc_lim).map_or_else(WordBinaryCharProps::default, |entry| entry.props)
+}
+
+fn word_binary_papx_at(entries: &[WordBinaryPapxEntry], fc: u32) -> WordBinaryParaProps {
+    entries
+        .iter()
+        .find(|entry| entry.fc_start <= fc && fc < entry.fc_lim)
+        .map_or_else(WordBinaryParaProps::default, |entry| entry.props.clone())
+}
+
+fn word_binary_rgb_hex(rgb: [u8; 3]) -> String {
+    format!("{:02X}{:02X}{:02X}", rgb[0], rgb[1], rgb[2])
+}
+
+fn word_binary_palette_color(index: u8) -> Option<[u8; 3]> {
+    match index {
+        2 => Some([0, 0, 255]), 3 => Some([0, 255, 255]), 4 => Some([0, 255, 0]), 5 => Some([255, 0, 255]), 6 => Some([255, 0, 0]),
+        7 => Some([255, 255, 0]), 8 => Some([255, 255, 255]), 9 => Some([0, 0, 128]), 10 => Some([0, 128, 128]), 11 => Some([0, 128, 0]),
+        12 => Some([128, 0, 128]), 13 => Some([128, 0, 0]), 14 => Some([128, 128, 0]), 15 => Some([128, 128, 128]), 16 => Some([192, 192, 192]),
+        _ => None,
+    }
+}
+
+fn extract_word_binary_image(data: &[u8], start: usize) -> Option<DocxImage> {
+    let end = data.len().min(start.saturating_add(16 << 20));
+    let bytes = data.get(start..end)?;
+    let jpeg = bytes.windows(3).position(|window| window == [0xff, 0xd8, 0xff]).map(|offset| {
+        let from = &bytes[offset..];
+        let end = from.windows(2).position(|window| window == [0xff, 0xd9]).map(|value| value + 2).unwrap_or(from.len());
+        ("jpeg", "image/jpeg", from[..end].to_vec())
+    });
+    let png = bytes.windows(8).position(|window| window == [0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a]).and_then(|offset| {
+        let from = &bytes[offset..];
+        let end = from.windows(8).position(|window| window == [0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]).map(|value| value + 8)?;
+        Some(("png", "image/png", from[..end].to_vec()))
+    });
+    let (extension, content_type, image) = jpeg.or(png)?;
+    let (width, height) = if extension == "png" && image.len() >= 24 {
+        (u32::from_be_bytes(image[16..20].try_into().ok()?), u32::from_be_bytes(image[20..24].try_into().ok()?))
+    } else if extension == "jpeg" {
+        word_binary_jpeg_dimensions(&image).unwrap_or((800, 600))
+    } else {
+        (800, 600)
+    };
+    Some(DocxImage {
+        data: image,
+        extension,
+        content_type,
+        width_emu: u64::from(width).saturating_mul(9525),
+        height_emu: u64::from(height).saturating_mul(9525),
     })
 }
 
-fn normalize_word_binary_paragraph(value: &str) -> String {
-    let mut output = String::new();
-    let mut previous_space = false;
-    for character in value.replace('\u{e001}', "\n").chars() {
-        match character {
-            '\n' => {
-                if !output.is_empty() && !output.ends_with('\n') {
-                    output.push('\n');
-                }
-                previous_space = false;
-            }
-            '\t' => {
-                output.push('\t');
-                previous_space = true;
-            }
-            value if value.is_whitespace() => {
-                if !output.is_empty() && !previous_space {
-                    output.push(' ');
-                }
-                previous_space = true;
-            }
-            value => {
-                output.push(value);
-                previous_space = false;
-            }
+fn word_binary_jpeg_dimensions(data: &[u8]) -> Option<(u32, u32)> {
+    let mut offset = 2;
+    while offset + 9 < data.len() {
+        if data[offset] != 0xff { offset += 1; continue; }
+        let marker = data[offset + 1];
+        let length = u16::from_be_bytes(data[offset + 2..offset + 4].try_into().ok()?) as usize;
+        if (0xc0..=0xc3).contains(&marker) && length >= 7 {
+            let height = u16::from_be_bytes(data[offset + 5..offset + 7].try_into().ok()?);
+            let width = u16::from_be_bytes(data[offset + 7..offset + 9].try_into().ok()?);
+            return Some((u32::from(width), u32::from(height)));
         }
+        offset = offset.saturating_add(2 + length);
     }
-    output.trim().to_string()
+    None
 }
 
 fn visible_list_marker(text: &str) -> Option<(&'static str, &str)> {
@@ -5970,12 +6276,18 @@ fn write_docx(output: &str, paragraphs: &[DocxParagraph]) -> Result<(), ConvertE
     let has_numbering = paragraphs
         .iter()
         .any(|paragraph| !paragraph.list_kind.is_empty());
+    let images = paragraphs
+        .iter()
+        .flat_map(|paragraph| paragraph.runs.iter())
+        .filter_map(|run| run.image.as_ref())
+        .cloned()
+        .collect::<Vec<_>>();
     let mut files = vec![
-        ("[Content_Types].xml", docx_content_types(has_numbering)),
+        ("[Content_Types].xml", docx_content_types(has_numbering, &images)),
         ("_rels/.rels", docx_root_relationships()),
         (
             "word/_rels/document.xml.rels",
-            docx_document_relationships(has_numbering),
+            docx_document_relationships(has_numbering, &images),
         ),
         ("word/styles.xml", docx_styles()),
         ("word/document.xml", docx_document(paragraphs)),
@@ -5991,18 +6303,38 @@ fn write_docx(output: &str, paragraphs: &[DocxParagraph]) -> Result<(), ConvertE
             .write_all(content.as_bytes())
             .map_err(|error| io_error(format!("write output entry {name}: {error}")))?;
     }
+    for (index, image) in images.iter().enumerate() {
+        let name = format!("word/media/image{}.{}", index + 1, image.extension);
+        writer
+            .start_file(&name, options)
+            .map_err(|error| io_error(format!("create output entry {name}: {error}")))?;
+        writer
+            .write_all(&image.data)
+            .map_err(|error| io_error(format!("write output entry {name}: {error}")))?;
+    }
     writer
         .finish()
         .map_err(|error| io_error(format!("close output archive: {error}")))?;
     Ok(())
 }
 
-fn docx_content_types(has_numbering: bool) -> String {
+fn docx_content_types(has_numbering: bool, images: &[DocxImage]) -> String {
+    let mut image_defaults = String::new();
+    let mut seen = HashSet::new();
+    for image in images {
+        if seen.insert(image.extension) {
+            image_defaults.push_str(&format!(
+                "  <Default Extension=\"{}\" ContentType=\"{}\"/>\n",
+                image.extension, image.content_type
+            ));
+        }
+    }
     format!(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
+{image_defaults}
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
   <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
 {}</Types>"#,
@@ -6021,18 +6353,28 @@ fn docx_root_relationships() -> String {
 </Relationships>"#.into()
 }
 
-fn docx_document_relationships(has_numbering: bool) -> String {
-    format!(
+fn docx_document_relationships(has_numbering: bool, images: &[DocxImage]) -> String {
+    let mut relationships = String::from(
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rIdStyles" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-{}</Relationships>"#,
-        if has_numbering {
-            "  <Relationship Id=\"rIdNumbering\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering\" Target=\"numbering.xml\"/>\n"
-        } else {
-            ""
-        }
-    )
+"#,
+    );
+    if has_numbering {
+        relationships.push_str(
+            "  <Relationship Id=\"rIdNumbering\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering\" Target=\"numbering.xml\"/>\n",
+        );
+    }
+    for (index, image) in images.iter().enumerate() {
+        relationships.push_str(&format!(
+            "  <Relationship Id=\"rIdImage{}\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/image\" Target=\"media/image{}.{}\"/>\n",
+            index + 1,
+            index + 1,
+            image.extension
+        ));
+    }
+    relationships.push_str("</Relationships>");
+    relationships
 }
 
 fn docx_numbering() -> String {
@@ -6095,13 +6437,86 @@ fn docx_styles() -> String {
 
 fn docx_document(paragraphs: &[DocxParagraph]) -> String {
     let mut body = String::new();
+    let mut image_id = 0usize;
+    let mut table_open = false;
+    let mut row_open = false;
     for paragraph in paragraphs {
-        body.push_str("    <w:p>\n");
+        if paragraph.table_cell_merged {
+            continue;
+        }
+        if paragraph.table_cell {
+            if !table_open {
+                body.push_str("    <w:tbl><w:tblPr><w:tblBorders><w:top w:val=\"single\" w:sz=\"4\"/><w:left w:val=\"single\" w:sz=\"4\"/><w:bottom w:val=\"single\" w:sz=\"4\"/><w:right w:val=\"single\" w:sz=\"4\"/><w:insideH w:val=\"single\" w:sz=\"4\"/><w:insideV w:val=\"single\" w:sz=\"4\"/></w:tblBorders></w:tblPr>\n");
+                table_open = true;
+            }
+            if !row_open {
+                body.push_str("      <w:tr>\n");
+                row_open = true;
+            }
+            body.push_str("        <w:tc>");
+            if paragraph.table_grid_span > 1 || !paragraph.table_v_merge.is_empty() {
+                body.push_str("<w:tcPr>");
+                if paragraph.table_grid_span > 1 {
+                    body.push_str(&format!(
+                        "<w:gridSpan w:val=\"{}\"/>",
+                        paragraph.table_grid_span
+                    ));
+                }
+                match paragraph.table_v_merge {
+                    "restart" => body.push_str("<w:vMerge w:val=\"restart\"/>"),
+                    "continue" => body.push_str("<w:vMerge/>"),
+                    _ => {}
+                }
+                body.push_str("</w:tcPr>");
+            }
+            body.push('\n');
+            body.push_str(&docx_paragraph_xml(paragraph, &mut image_id, "          "));
+            body.push_str("        </w:tc>\n");
+            if paragraph.table_row_end {
+                body.push_str("      </w:tr>\n");
+                row_open = false;
+            }
+            continue;
+        }
+        if row_open {
+            body.push_str("      </w:tr>\n");
+            row_open = false;
+        }
+        if table_open {
+            body.push_str("    </w:tbl>\n");
+            table_open = false;
+        }
+        body.push_str(&docx_paragraph_xml(paragraph, &mut image_id, "    "));
+    }
+    if row_open {
+        body.push_str("      </w:tr>\n");
+    }
+    if table_open {
+        body.push_str("    </w:tbl>\n");
+    }
+    format!(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:body>
+{body}  </w:body>
+</w:document>"#
+    )
+}
+
+fn docx_paragraph_xml(
+    paragraph: &DocxParagraph,
+    image_id: &mut usize,
+    indent: &str,
+) -> String {
+    let mut body = String::new();
+    body.push_str(indent);
+    body.push_str("<w:p>\n");
         if paragraph.heading_level > 0
             || !paragraph.alignment.is_empty()
             || !paragraph.list_kind.is_empty()
         {
-            body.push_str("      <w:pPr>");
+            body.push_str(indent);
+            body.push_str("  <w:pPr>");
             if paragraph.heading_level > 0 {
                 body.push_str(&format!(
                     "<w:pStyle w:val=\"Heading{}\"/>",
@@ -6125,7 +6540,8 @@ fn docx_document(paragraphs: &[DocxParagraph]) -> String {
             body.push_str("</w:pPr>\n");
         }
         if paragraph.runs.is_empty() {
-            body.push_str("      <w:r>");
+            body.push_str(indent);
+            body.push_str("  <w:r>");
             if paragraph.bold {
                 body.push_str("<w:rPr><w:b/></w:rPr>");
             }
@@ -6133,20 +6549,39 @@ fn docx_document(paragraphs: &[DocxParagraph]) -> String {
             body.push_str("</w:r>\n");
         } else {
             for run in &paragraph.runs {
-                body.push_str("      <w:r>");
+                if let Some(image) = run.image.as_ref() {
+                    *image_id += 1;
+                    body.push_str(indent);
+                    body.push_str("  <w:r>");
+                    body.push_str(&docx_inline_image(image, *image_id));
+                    body.push_str("</w:r>\n");
+                    continue;
+                }
+                body.push_str(indent);
+                body.push_str("  <w:r>");
                 body.push_str(&docx_run_properties(run));
                 body.push_str(&word_text_xml(&run.text));
                 body.push_str("</w:r>\n");
             }
         }
-        body.push_str("    </w:p>\n");
-    }
+    body.push_str(indent);
+    body.push_str("</w:p>\n");
+    body
+}
+
+fn docx_inline_image(image: &DocxImage, relationship_id: usize) -> String {
     format!(
-        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body>
-{body}  </w:body>
-</w:document>"#
+        r#"<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="{}" cy="{}"/><wp:docPr id="{}" name="Picture {}"/><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic><pic:nvPicPr><pic:cNvPr id="{}" name="image{}.{}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="rIdImage{}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{}" cy="{}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>"#,
+        image.width_emu,
+        image.height_emu,
+        relationship_id,
+        relationship_id,
+        relationship_id,
+        relationship_id,
+        image.extension,
+        relationship_id,
+        image.width_emu,
+        image.height_emu,
     )
 }
 
@@ -6741,67 +7176,123 @@ mod tests {
     }
 
     #[test]
-    fn strips_internal_rwml_placeholders_without_dropping_document_text() {
-        let input = br#"<?xml version="1.0"?><w:p xmlns:w="w"><w:r><w:t>[rwml image placeholder: bytes unavailable]</w:t></w:r><w:r><w:t>Visible text</w:t></w:r><w:r><w:t>[rwml chart placeholder: chart unavailable]</w:t></w:r></w:p>"#;
-        let output = String::from_utf8(strip_rwml_placeholder_text(input).unwrap()).unwrap();
-
-        assert!(!output.contains("rwml image placeholder"));
-        assert!(!output.contains("rwml chart placeholder"));
-        assert!(output.contains("Visible text"));
-    }
-
-    #[test]
-    fn restores_embedded_jpeg_in_rwml_header_placeholder() {
-        let jpeg = test_jpeg(200, 63, 8, 512);
-        let source = [b"compound".as_slice(), jpeg.as_slice(), b"tail"].concat();
-        let mut package = ZipWriter::new(Cursor::new(Vec::new()));
-        let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
-        package.start_file("[Content_Types].xml", options).unwrap();
-        package
-            .write_all(
-                br#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/></Types>"#,
-            )
-            .unwrap();
-        package.start_file("word/header1.xml", options).unwrap();
-        package
-            .write_all(br#"<?xml version="1.0"?><w:hdr xmlns:w="w" xmlns:r="r"><w:tbl><w:tr><w:tc><w:p><w:r><w:t xml:space="preserve">[rwml image placeholder: image unavailable]</w:t></w:r></w:p></w:tc></w:tr></w:tbl></w:hdr>"#)
-            .unwrap();
-        let package = package.finish().unwrap().into_inner();
-
-        let output = sanitize_rwml_docx(&package, &source).unwrap();
-        let mut archive = ZipArchive::new(Cursor::new(output)).unwrap();
-        let mut header = String::new();
-        archive
-            .by_name("word/header1.xml")
-            .unwrap()
-            .read_to_string(&mut header)
-            .unwrap();
-        assert!(header.contains("<w:drawing>"));
-        assert!(!header.contains("rwml image placeholder"));
-
-        let mut media = Vec::new();
-        archive
-            .by_name("word/media/filens-recovered-1.jpg")
-            .unwrap()
-            .read_to_end(&mut media)
-            .unwrap();
-        assert_eq!(media, jpeg);
-
-        let mut relationships = String::new();
-        archive
-            .by_name("word/_rels/header1.xml.rels")
-            .unwrap()
-            .read_to_string(&mut relationships)
-            .unwrap();
-        assert!(relationships.contains("relationships/image"));
-    }
-
-    #[test]
     fn preserves_plain_text_blocks_tabs_and_spaces() {
         let paragraphs = extract_text_paragraphs("Alpha\nBeta\n \nGamma\twith  spaces\n");
         assert_eq!(paragraphs, ["Alpha\nBeta", "Gamma\twith  spaces"]);
         assert!(word_text_xml(&paragraphs[1]).contains("<w:tab/>"));
         assert!(word_text_xml(&paragraphs[1]).contains("xml:space=\"preserve\""));
+    }
+
+    #[test]
+    fn maps_legacy_word_run_properties() {
+        let mut page = [0u8; 512];
+        let props = [
+            0x35, 0x08, 1, // bold
+            0x36, 0x08, 1, // italic
+            0x3e, 0x2a, 1, // underline
+            0x43, 0x4a, 28, 0, // 14pt
+            0x70, 0x68, 255, 0, 0, 0, // red
+        ];
+        page[160] = props.len() as u8;
+        page[161..161 + props.len()].copy_from_slice(&props);
+        let parsed = parse_word_binary_chpx_props(&page, 160).unwrap();
+        assert!(parsed.bold && parsed.italic && parsed.underline);
+        assert_eq!(parsed.font_size, 28);
+        assert_eq!(parsed.color, Some([255, 0, 0]));
+    }
+
+    #[test]
+    fn writes_legacy_embedded_image_relationship() {
+        let image = test_jpeg(320, 240, 8, 4);
+        let base = env::temp_dir().join(format!("converter-core-image-{}", process::id()));
+        let output = base.with_extension("docx");
+        let paragraphs = vec![DocxParagraph {
+            runs: vec![DocxRun {
+                image: Some(DocxImage {
+                    data: image,
+                    extension: "jpeg",
+                    content_type: "image/jpeg",
+                    width_emu: 3_048_000,
+                    height_emu: 2_286_000,
+                }),
+                ..Default::default()
+            }],
+            ..Default::default()
+        }];
+        write_docx(output.to_str().unwrap(), &paragraphs).unwrap();
+        let file = File::open(&output).unwrap();
+        let mut archive = ZipArchive::new(file).unwrap();
+        assert!(archive.by_name("word/media/image1.jpeg").is_ok());
+        let mut rels = String::new();
+        archive
+            .by_name("word/_rels/document.xml.rels")
+            .unwrap()
+            .read_to_string(&mut rels)
+            .unwrap();
+        assert!(rels.contains("rIdImage1") && rels.contains("media/image1.jpeg"));
+        let _ = fs::remove_file(output);
+    }
+
+    #[test]
+    fn writes_legacy_table_cells_and_rows() {
+        let document = docx_document(&[
+            DocxParagraph {
+                text: "A".into(),
+                table_cell: true,
+                ..Default::default()
+            },
+            DocxParagraph {
+                text: "B".into(),
+                table_cell: true,
+                table_row_end: true,
+                ..Default::default()
+            },
+            DocxParagraph {
+                text: "C".into(),
+                table_cell: true,
+                table_row_end: true,
+                ..Default::default()
+            },
+        ]);
+        assert_eq!(document.matches("<w:tbl>").count(), 1);
+        assert_eq!(document.matches("<w:tr>").count(), 2);
+        assert_eq!(document.matches("<w:tc>").count(), 3);
+    }
+
+    #[test]
+    fn parses_legacy_table_definition_merge_flags() {
+        let mut operand = vec![0x30, 0x00, 2, 0x00, 0x00, 0xE8, 0x03, 0xD0, 0x07];
+        operand.extend_from_slice(&[0x60, 0x00]);
+        operand.extend(std::iter::repeat_n(0, 18));
+        operand.extend_from_slice(&[0x02, 0x00]);
+        operand.extend(std::iter::repeat_n(0, 18));
+        let definition = parse_word_binary_table_def(&operand).unwrap();
+        assert_eq!(definition.rgdxa, [0, 1000, 2000]);
+        assert_eq!(definition.tcgrf, [0x60, 0x0002]);
+    }
+
+    #[test]
+    fn writes_legacy_table_merge_properties() {
+        let document = docx_document(&[
+            DocxParagraph {
+                text: "A".into(),
+                table_cell: true,
+                table_grid_span: 2,
+                table_v_merge: "restart",
+                table_row_end: true,
+                ..Default::default()
+            },
+            DocxParagraph {
+                text: "B".into(),
+                table_cell: true,
+                table_v_merge: "continue",
+                table_row_end: true,
+                ..Default::default()
+            },
+        ]);
+        assert!(document.contains("<w:gridSpan w:val=\"2\"/>"));
+        assert!(document.contains("<w:vMerge w:val=\"restart\"/>"));
+        assert!(document.contains("<w:vMerge/>"));
     }
 
     #[test]
