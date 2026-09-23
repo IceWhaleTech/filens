@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import JSZip from 'jszip';
-import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, onMounted, ref, shallowRef, watch } from 'vue';
 import AppleLivePhotoPreview from './components/AppleLivePhotoPreview.vue';
 import { zimaAuth } from './zimaAuth';
 import { createWasmConverterClient } from '@filens/converter-client';
@@ -1559,61 +1559,9 @@ const converter: ConverterClient = {
   }
 };
 const panoramaProcessor = createWasmPanoramaProcessor({ wasm: converterCoreWasmUrl });
-const zimaAuthRequired = ref(false);
-const loginDialogOpen = ref(false);
-const loginBusy = ref(false);
-const loginError = ref<string | null>(null);
-let unsubscribeZimaAuth: (() => void) | undefined;
-let zimaAuthPollTimer: number | undefined;
-
-function syncZimaAuthState(): void {
-  if (!zimaAuthRequired.value) return;
-  if (zimaAuth.isAuthenticated()) {
-    if (zimaAuthPollTimer !== undefined) {
-      window.clearInterval(zimaAuthPollTimer);
-      zimaAuthPollTimer = undefined;
-    }
-    loginDialogOpen.value = false;
-    loginError.value = null;
-    return;
-  }
-  loginDialogOpen.value = true;
-}
-
-async function requestZimaLogin(): Promise<void> {
-  loginBusy.value = true;
-  loginError.value = null;
-  try {
-    const hostOpenedLogin = await zimaAuth.openLogin();
-    syncZimaAuthState();
-    if (!zimaAuth.isAuthenticated() && !hostOpenedLogin) {
-      loginError.value = '未检测到 ZimaOS 登录入口，请点击下方按钮跳转登录。';
-    }
-  } catch (error) {
-    loginError.value = error instanceof Error ? error.message : String(error);
-  } finally {
-    loginBusy.value = false;
-  }
-}
-
-function goToZimaLogin(): void {
-  zimaAuth.goToLogin();
-}
 
 onMounted(() => {
-  zimaAuthRequired.value = zimaAuth.isZimaRuntime();
-  if (!zimaAuthRequired.value) return;
-  unsubscribeZimaAuth = zimaAuth.subscribe(syncZimaAuthState);
-  syncZimaAuthState();
-  if (!zimaAuth.isAuthenticated()) {
-    zimaAuthPollTimer = window.setInterval(syncZimaAuthState, 500);
-    void requestZimaLogin();
-  }
-});
-
-onBeforeUnmount(() => {
-  unsubscribeZimaAuth?.();
-  if (zimaAuthPollTimer !== undefined) window.clearInterval(zimaAuthPollTimer);
+  if (zimaAuth.isZimaRuntime() && !zimaAuth.isAuthenticated()) zimaAuth.goToLogin();
 });
 
 function demoKindForConversionTarget(targetFormat: string): DemoKind {
@@ -3951,22 +3899,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
       </div>
     </header>
 
-    <div v-if="loginDialogOpen" class="zima-login-backdrop" role="presentation">
-      <section class="zima-login-dialog" role="dialog" aria-modal="true" aria-labelledby="zima-login-title">
-        <div class="zima-login-mark" aria-hidden="true">Z</div>
-        <p class="zima-login-kicker">ZIMAOS ACCESS</p>
-        <h2 id="zima-login-title">登录后继续预览</h2>
-        <p class="zima-login-copy">FiLens 需要 ZimaOS 登录态才能读取设备上的文件。登录完成后，这个窗口会自动关闭。</p>
-        <p v-if="loginError" class="zima-login-error" role="alert">{{ loginError }}</p>
-        <div class="zima-login-actions">
-          <button type="button" class="zima-login-primary" :disabled="loginBusy" @click="requestZimaLogin">
-            {{ loginBusy ? '正在打开登录…' : '打开登录窗口' }}
-          </button>
-          <button type="button" class="zima-login-secondary" @click="goToZimaLogin">前往 ZimaOS 登录</button>
-        </div>
-      </section>
-    </div>
-
     <nav class="wb-tabs" aria-label="格式分类">
       <span class="wb-command-label">格式</span>
       <button
@@ -4839,113 +4771,6 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 .wb-upload:has(input:focus-visible) {
   outline: 3px solid rgba(49, 100, 255, 0.35);
   outline-offset: 2px;
-}
-
-.zima-login-backdrop {
-  position: fixed;
-  z-index: 20;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(21, 23, 19, 0.54);
-  backdrop-filter: blur(8px);
-}
-
-.zima-login-dialog {
-  width: min(100%, 420px);
-  padding: 30px;
-  border: 1px solid rgba(21, 23, 19, 0.14);
-  border-radius: 24px;
-  background: var(--paper);
-  box-shadow: 0 28px 90px rgba(21, 23, 19, 0.3);
-}
-
-.zima-login-mark {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  place-items: center;
-  margin-bottom: 20px;
-  border-radius: 13px;
-  background: var(--ink);
-  color: var(--lime);
-  font-family: Georgia, serif;
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.zima-login-kicker {
-  margin: 0 0 7px;
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.16em;
-}
-
-.zima-login-dialog h2 {
-  margin: 0;
-  font-family: Georgia, "Microsoft YaHei UI", serif;
-  font-size: 28px;
-  letter-spacing: -0.03em;
-}
-
-.zima-login-copy {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.65;
-}
-
-.zima-login-error {
-  margin: 14px 0 0;
-  padding: 10px 12px;
-  border-radius: 11px;
-  background: rgba(255, 104, 71, 0.13);
-  color: #9b2e17;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.zima-login-actions {
-  display: grid;
-  gap: 8px;
-  margin-top: 22px;
-}
-
-.zima-login-primary,
-.zima-login-secondary {
-  min-height: 42px;
-  padding: 0 16px;
-  border-radius: 12px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.zima-login-primary {
-  border: 0;
-  background: var(--ink);
-  color: white;
-}
-
-.zima-login-primary:hover {
-  background: var(--blue);
-}
-
-.zima-login-secondary {
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--ink);
-}
-
-.zima-login-secondary:hover {
-  background: white;
-}
-
-.zima-login-primary:disabled {
-  cursor: wait;
-  opacity: 0.6;
 }
 
 .wb-sidebar::-webkit-scrollbar {

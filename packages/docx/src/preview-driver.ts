@@ -74,6 +74,7 @@ export class DocxPreviewSession implements PreviewSession<FlowPreviewState> {
       this.documentHost.replaceChildren();
       await renderAsync(blob, this.documentHost, undefined, {
         breakPages: true,
+        ignoreLastRenderedPageBreak: false,
         className: 'docx'
       });
       this.state.loading = false;

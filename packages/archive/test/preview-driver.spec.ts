@@ -103,7 +103,8 @@ describe('Archive preview driver', () => {
         }
       ]
     });
-    expect(host.querySelector('.archivev-summary')?.textContent).toContain('/docs/');
+    expect(host.querySelector('.archivev-summary')?.textContent).toContain('sample.zip›docs');
+    expect(host.querySelector('.archivev-summary')?.textContent).not.toContain('/docs/');
     expect(host.querySelector('.archivev-table')?.textContent).toContain('readme.txt');
 
     const readmeRow = Array.from(host.querySelectorAll<HTMLTableRowElement>('tr.archivev-row')).find((row) =>
@@ -114,14 +115,20 @@ describe('Archive preview driver', () => {
 
     expect(host.querySelector('.archivev-entry-text')?.textContent).toContain('Archive preview');
     expect(host.querySelector('.archivev-breadcrumbs')?.textContent).toContain('docs');
-    host.querySelector<HTMLButtonElement>('.archivev-button')?.click();
+    const docsBreadcrumb = Array.from(host.querySelectorAll<HTMLButtonElement>('.archivev-breadcrumb')).find((button) =>
+      button.textContent === 'docs'
+    );
+    expect(docsBreadcrumb?.disabled).toBe(false);
+    docsBreadcrumb?.click();
     expect(host.querySelector('.archivev-table')?.textContent).toContain('readme.txt');
 
-    const rootBreadcrumb = Array.from(host.querySelectorAll<HTMLButtonElement>('.archivev-breadcrumb')).find((button) =>
-      button.textContent === '/'
+    const archiveBreadcrumb = Array.from(host.querySelectorAll<HTMLButtonElement>('.archivev-breadcrumb')).find((button) =>
+      button.textContent === 'sample.zip'
     );
-    rootBreadcrumb?.click();
+    expect(archiveBreadcrumb?.disabled).toBe(false);
+    archiveBreadcrumb?.click();
     expect(session.getState()).toMatchObject({ route: '/' });
+    expect(host.querySelector<HTMLButtonElement>('.archivev-breadcrumb')?.disabled).toBe(true);
 
     session.destroy();
     host.remove();

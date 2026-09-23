@@ -188,13 +188,13 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
   }
 
   private render(): void {
-    const stackLabel = this.archiveStack.map((item) => item.label).join(' › ');
-    const routeLabel = this.state.route || '/';
-    const summaryLabel = stackLabel ? `${stackLabel} • ${routeLabel}` : routeLabel;
     const summary = document.createElement('div');
     summary.className = 'archivev-summary';
-    summary.textContent = `${summaryLabel} • ${this.state.entries.length} item${this.state.entries.length === 1 ? '' : 's'}`;
     summary.appendChild(this.createBreadcrumbs());
+    const itemCount = document.createElement('span');
+    itemCount.className = 'archivev-item-count';
+    itemCount.textContent = `${this.state.entries.length} item${this.state.entries.length === 1 ? '' : 's'}`;
+    summary.appendChild(itemCount);
 
     const toolbar = document.createElement('div');
     toolbar.className = 'archivev-toolbar';
@@ -277,27 +277,28 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     breadcrumbs.className = 'archivev-breadcrumbs';
     breadcrumbs.setAttribute('aria-label', 'Archive path');
 
+    const route = normalizeArchiveRoute(this.state.route);
+    const hasCurrentEntry = this.activeEntry !== null;
+
     this.archiveStack.forEach((frame, index) => {
       if (index > 0) breadcrumbs.appendChild(createBreadcrumbSeparator());
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'archivev-breadcrumb';
       button.textContent = frame.label;
-      button.disabled = index === this.archiveStack.length - 1;
-      button.addEventListener('click', () => this.popToArchive(index));
+      const isCurrentArchive = index === this.archiveStack.length - 1;
+      button.disabled = isCurrentArchive && route === '/' && !hasCurrentEntry;
+      button.addEventListener('click', () => {
+        if (isCurrentArchive) {
+          this.setRoute('/');
+        } else {
+          this.popToArchive(index);
+        }
+      });
       breadcrumbs.appendChild(button);
     });
 
-    const route = normalizeArchiveRoute(this.state.route);
     const parts = route === '/' ? [] : route.slice(1, -1).split('/').filter(Boolean);
-    const rootButton = document.createElement('button');
-    rootButton.type = 'button';
-    rootButton.className = 'archivev-breadcrumb';
-    rootButton.textContent = '/';
-    rootButton.disabled = route === '/';
-    rootButton.addEventListener('click', () => this.setRoute('/'));
-    breadcrumbs.appendChild(createBreadcrumbSeparator());
-    breadcrumbs.appendChild(rootButton);
 
     let nextRoute = '/';
     for (const part of parts) {
@@ -307,7 +308,7 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
       button.type = 'button';
       button.className = 'archivev-breadcrumb';
       button.textContent = part;
-      button.disabled = nextRoute === route;
+      button.disabled = nextRoute === route && !hasCurrentEntry;
       const targetRoute = nextRoute;
       button.addEventListener('click', () => this.setRoute(targetRoute));
       breadcrumbs.appendChild(button);

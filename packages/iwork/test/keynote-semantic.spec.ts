@@ -322,8 +322,8 @@ describe('keynote semantic builder', () => {
         item.kind === 'text' &&
         item.textFrame.paragraphs.some((paragraph) => paragraph.runs.some((run) => run.text === '1'))
     );
-    expect(slideNumberItem?.transform.width).toBeGreaterThan(0);
-    expect(slideNumberItem?.transform.height).toBeGreaterThan(0);
+    expect(slideNumberItem?.transform.width).toBe(0);
+    expect(slideNumberItem?.transform.height).toBe(0);
   });
 
   it('reads snake_case Keynote show tree and slide-number visibility fields', () => {
@@ -486,8 +486,8 @@ describe('keynote semantic builder', () => {
         item.kind === 'text' &&
         item.textFrame.paragraphs.some((paragraph) => paragraph.runs.some((run) => run.text === '1'))
     );
-    expect(slideNumberItem?.transform.width).toBeGreaterThan(0);
-    expect(slideNumberItem?.transform.height).toBeGreaterThan(0);
+    expect(slideNumberItem?.transform.width).toBe(0);
+    expect(slideNumberItem?.transform.height).toBe(0);
   });
 
   it('includes Keynote placeholders listed in aggregate placeholder fields', () => {
@@ -4565,7 +4565,7 @@ describe('keynote semantic builder', () => {
     expect(text).toBeTruthy();
   });
 
-  it('maps Keynote stroke dash patterns and miter limits onto rendered shape items', () => {
+  it('reconstructs rotated zero-height Keynote connector lines and exact dash patterns', () => {
     const archive = createEmptyArchive();
     const media: Record<string, IworkImageAsset> = {};
 
@@ -4633,11 +4633,22 @@ describe('keynote semantic builder', () => {
           super: {
             geometry: {
               position: { x: 120, y: 160 },
-              size: { width: 280, height: 160 },
-              angle: 0
+              size: { width: 280, height: 0 },
+              angle: 30
             }
           },
-          style: { identifier: 60 }
+          style: { identifier: 60 },
+          pathsource: {
+            bezierPathSource: {
+              naturalSize: { width: 280, height: 0 },
+              path: {
+                elements: [
+                  { type: 1, points: [{ x: 0, y: 0 }] },
+                  { type: 2, points: [{ x: 141.421356, y: 0 }] }
+                ]
+              }
+            }
+          }
         }
       }
     };
@@ -4673,13 +4684,14 @@ describe('keynote semantic builder', () => {
           stroke: {
             color: { r: 0.121, g: 0.235, b: 0.921, a: 1 },
             opacity: 0.35,
-            width: 6,
+            width: 2,
             join: 0,
             miterLimit: 7,
             pattern: {
               type: 0,
               count: 2,
-              pattern: [3, 1, 0, 0, 0, 0]
+              phase: 1.5,
+              pattern: [6, 6, 0, 0, 0, 0]
             }
           }
         }
@@ -4694,15 +4706,36 @@ describe('keynote semantic builder', () => {
 
     const shape = document.slides[0].slide.items.find((item) => item.kind === 'shape' && item.name === 'Dashed stroke shape');
     expect(shape).toMatchObject({
+      shapeType: 'line',
+      transform: {
+        rotation: 0,
+        flipH: false,
+        flipV: false
+      },
+      geometry: {
+        type: 'line'
+      },
       line: {
         color: '#1f3ceb',
         alpha: 0.35,
-        width: 6,
+        width: 2,
         lineJoin: 'miter',
-        dash: 'lgDash',
+        dash: 'dash',
+        dashPattern: [6, 6],
+        dashOffset: 1.5,
         miterLimit: 7
       }
     });
+    if (shape?.kind === 'shape' && shape.geometry?.type === 'line') {
+      expect(shape.transform.x).toBeCloseTo(138.756, 3);
+      expect(shape.transform.y).toBeCloseTo(90, 3);
+      expect(shape.transform.width).toBeCloseTo(242.487, 3);
+      expect(shape.transform.height).toBeCloseTo(140, 3);
+      expect(shape.geometry.x1).toBeCloseTo(0, 3);
+      expect(shape.geometry.y1).toBeCloseTo(140, 3);
+      expect(shape.geometry.x2).toBeCloseTo(242.487, 3);
+      expect(shape.geometry.y2).toBeCloseTo(0, 3);
+    }
   });
 
   it('uses a secondary data reference as poster media for videos when explicit poster fields are absent', () => {

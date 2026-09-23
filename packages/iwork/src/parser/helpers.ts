@@ -348,15 +348,43 @@ export function lineFromValue(strokeLike: unknown): LineStyle | undefined {
   const alpha =
     strokeOpacity == null ? baseAlpha : Number(Math.max(0, Math.min(1, baseAlpha * strokeOpacity)).toFixed(4));
 
+  const pattern = asObject(readField(stroke, ['pattern']));
+  const dashPattern = lineDashPattern(pattern);
+  const dashOffset = dashPattern?.length
+    ? readFiniteNumber(readField<number>(pattern, ['phase']))
+    : undefined;
+
   return {
     color: colorToHex(color),
     alpha,
     width: Number(readField<number>(stroke, ['width']) ?? 1),
-    dash: mapLineDash(asObject(readField(stroke, ['pattern']))),
+    dash: mapLineDash(pattern),
+    dashPattern,
+    dashOffset,
     lineCap: mapLineCap(readField<number>(stroke, ['cap'])),
     lineJoin: mapLineJoin(readField<number>(stroke, ['join'])),
     miterLimit: readFinitePositiveNumber(readField<number>(stroke, ['miterLimit', 'miter_limit']))
   };
+}
+
+function lineDashPattern(pattern: AnyObject | undefined): number[] | undefined {
+  if (!pattern || Number(readField<number>(pattern, ['type']) ?? 1) !== 0) {
+    return undefined;
+  }
+
+  const count = Math.max(0, Math.floor(Number(readField<number>(pattern, ['count']) ?? 0)));
+  if (count <= 0) {
+    return undefined;
+  }
+
+  const values = asArray<number>(readField(pattern, ['pattern']))
+    .slice(0, count)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0);
+  return values.length ? values : undefined;
+}
+
+function readFiniteNumber(value: number | undefined): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 function mapLineDash(patternLike: unknown): LineStyle['dash'] {

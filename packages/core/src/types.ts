@@ -118,6 +118,8 @@ export interface LineStyle {
   alpha?: number;
   width?: number;
   dash?: string;
+  dashPattern?: number[];
+  dashOffset?: number;
   compound?: LineCompoundType;
   lineCap?: LineCapType;
   lineJoin?: LineJoinType;
@@ -320,7 +322,15 @@ export interface CustomShapeGeometry {
   paths: CustomShapePath[];
 }
 
-export type ShapeGeometry = PresetShapeGeometry | CustomShapeGeometry;
+export interface LineShapeGeometry {
+  type: 'line';
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export type ShapeGeometry = PresetShapeGeometry | CustomShapeGeometry | LineShapeGeometry;
 
 export interface ShapeItem extends BaseSlideItem {
   kind: 'shape';

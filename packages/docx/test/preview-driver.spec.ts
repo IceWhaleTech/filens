@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { renderAsync } from 'docx-preview';
 import { createDocxPreviewDriver, createDocxPreviewRoutes } from '../src';
 
 vi.mock('docx-preview', () => ({
@@ -47,6 +48,15 @@ describe('DOCX preview driver', () => {
     });
 
     expect(host.querySelector('.docxv-document .docx')?.textContent).toBe('Rendered DOCX');
+    expect(vi.mocked(renderAsync)).toHaveBeenCalledWith(
+      expect.any(Blob),
+      expect.any(HTMLElement),
+      undefined,
+      expect.objectContaining({
+        breakPages: true,
+        ignoreLastRenderedPageBreak: false
+      })
+    );
     expect(session.getState()).toMatchObject({
       family: 'flow',
       loading: false,

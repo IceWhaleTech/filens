@@ -3336,6 +3336,47 @@ describe('renderSlideToElement', () => {
     expect(paragraph?.style.maxWidth).toBe('100%');
   });
 
+  it('centers zero-sized text boxes on their Keynote anchor point', () => {
+    const slide = createBaseSlide([
+      {
+        id: 'auto-text-box-1',
+        kind: 'text',
+        name: 'Auto-sized label',
+        transform: {
+          x: 320,
+          y: 200,
+          width: 0,
+          height: 0,
+          rotation: 0,
+          flipH: false,
+          flipV: false
+        },
+        fill: { type: 'none' },
+        order: 1,
+        groupPath: [],
+        textFrame: {
+          verticalAlign: 'middle',
+          padding: { top: 4, right: 4, bottom: 4, left: 4 },
+          paragraphs: [{ align: 'center', runs: [{ text: 'Q3新增', fontSize: 22 }] }]
+        }
+      } satisfies TextItem
+    ]);
+
+    const rendered = renderSlideToElement(slide, createPresentation(slide));
+    const item = rendered.querySelector('.pptxv-item--text') as HTMLDivElement | null;
+    const frame = rendered.querySelector('.pptxv-text-frame') as HTMLDivElement | null;
+
+    expect(item?.style.left).toBe('320px');
+    expect(item?.style.top).toBe('200px');
+    expect(item?.style.width).toBe('auto');
+    expect(item?.style.minWidth).toBe('fit-content');
+    expect(item?.style.height).toBe('auto');
+    expect(item?.style.transform).toBe('translate(-50%, -50%)');
+    expect(item?.style.transformOrigin).toBe('0 0');
+    expect(frame?.style.width).toBe('auto');
+    expect(frame?.style.height).toBe('auto');
+  });
+
   it('renders table border overrides from parsed cell data', () => {
     const slide = createBaseSlide([
       {
@@ -4136,6 +4177,53 @@ describe('renderSlideToElement', () => {
     const line = rendered.querySelector('line');
 
     expect(line?.getAttribute('stroke-dasharray')).toBe('18 9 3 6 3 6');
+  });
+
+  it('renders exact iWork dash arrays and reconstructed line endpoints', () => {
+    const slide = createBaseSlide([
+      {
+        id: 'iwork-line-1',
+        kind: 'shape',
+        name: 'Keynote connector',
+        shapeType: 'line',
+        transform: {
+          x: 114,
+          y: 504,
+          width: 296,
+          height: 88,
+          rotation: 0,
+          flipH: false,
+          flipV: false
+        },
+        geometry: {
+          type: 'line',
+          x1: 0,
+          y1: 88,
+          x2: 296,
+          y2: 0
+        },
+        fill: { type: 'none' },
+        line: {
+          color: '#929292',
+          width: 2,
+          dash: 'dash',
+          dashPattern: [6, 6],
+          dashOffset: 1.5
+        },
+        order: 1,
+        groupPath: []
+      } satisfies ShapeItem
+    ]);
+
+    const rendered = renderSlideToElement(slide, createPresentation(slide));
+    const line = rendered.querySelector('line');
+
+    expect(line?.getAttribute('x1')).toBe('0');
+    expect(line?.getAttribute('y1')).toBe('88');
+    expect(line?.getAttribute('x2')).toBe('296');
+    expect(line?.getAttribute('y2')).toBe('0');
+    expect(line?.getAttribute('stroke-dasharray')).toBe('6 6');
+    expect(line?.getAttribute('stroke-dashoffset')).toBe('1.5');
   });
 
   it('renders arrow preset polygons for supported shape types', () => {

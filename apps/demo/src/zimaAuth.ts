@@ -174,19 +174,31 @@ export async function openLogin(): Promise<boolean> {
   return false;
 }
 
-export function getLoginPath(): string {
-  return '/logout';
+export function getLoginPath(currentHref = typeof window === 'undefined' ? '' : window.location.href): string {
+  const redirectUrl = currentHref ? new URL(currentHref).href : '';
+  return `/login?redirect=${encodeURI(redirectUrl)}`;
+}
+
+export function getLoginUrl(currentHref = typeof window === 'undefined' ? '' : window.location.href): string {
+  if (!currentHref) return getLoginPath();
+
+  const currentUrl = new URL(currentHref);
+  const loginUrl = new URL(currentUrl.href);
+  loginUrl.pathname = '/';
+  loginUrl.hash = getLoginPath(currentUrl.href);
+  return loginUrl.href;
 }
 
 export function goToLogin(): void {
   if (typeof window === 'undefined') return;
-  const path = getLoginPath();
+  const currentHref = window.location.href;
+  const path = getLoginPath(currentHref);
   const jump = window.$wujie?.props?.jump;
   if (jump) {
     jump({ path });
     return;
   }
-  window.location.assign(path);
+  window.location.assign(getLoginUrl(currentHref));
 }
 
 export const zimaAuth = {
@@ -197,6 +209,7 @@ export const zimaAuth = {
   subscribe,
   openLogin,
   getLoginPath,
+  getLoginUrl,
   goToLogin
 };
 

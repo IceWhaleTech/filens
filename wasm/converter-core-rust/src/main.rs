@@ -32,7 +32,7 @@ const HTML_TEXT_WARNING: &str = "Text backend performed lightweight HTML text ex
 const RTF_WARNING: &str = "RTF backend performed lightweight text extraction; complex layout, embedded objects, and full style fidelity are not preserved.";
 const TABULAR_WARNING: &str = "Tabular backend performed lightweight spreadsheet data extraction; formulas, formatting, indexes, code pages, memo fields, and macros are not preserved.";
 const ODF_WARNING: &str = "ODF backend performed lightweight OpenDocument extraction; layout, styles, media, formulas, and macros are not preserved.";
-const WORD_BINARY_WARNING: &str = "Word binary backend uses the built-in CFB/piece-table parser; paragraph/run styles (including inherited spacing, indentation, alignment, fonts, colors, and rich text), section page setup, columns, page borders, header/footer stories, common fields with cached results, OfficeArt FSPA/Escher picture positions, custom wrapping, rotation, flips, crop, opacity, and z-order, multi-level lists, table grids, merges, cell borders/layout, row pagination, heading-like lines, and embedded raster/WMF/EMF images are preserved, while editable legacy OfficeArt shapes, nested or complex fields, macros, and embedded objects may be simplified or omitted.";
+const WORD_BINARY_WARNING: &str = "Word binary backend uses the built-in CFB/piece-table parser; paragraph/run styles (including inherited spacing, indentation, alignment, fonts, colors, and rich text), section page setup, manual and last-saved/estimated pagination, columns, page borders, header/footer stories, common fields with cached results, OfficeArt FSPA/Escher picture positions, custom wrapping, rotation, flips, crop, opacity, and z-order, multi-level lists, table grids, merges, cell borders/layout, row pagination, heading-like lines, and embedded raster/WMF/EMF images are preserved, while editable legacy OfficeArt shapes, nested or complex fields, macros, and embedded objects may be simplified or omitted.";
 const BIFF_WARNING: &str = "BIFF conversion core performed lightweight binary spreadsheet extraction; basic formulas and formatting are preserved, but charts, macros, embedded objects, and unsupported formula tokens are not preserved.";
 const PPT_BINARY_WARNING: &str = "PowerPoint binary backend preserves embedded full-slide JPEG/PNG artwork where available and otherwise extracts text; editable layout, animations, charts, macros, and embedded objects are not preserved.";
 const RAW_PREVIEW_WARNING: &str = "RAW preview backend extracted the largest embedded 8-bit JPEG; use the optional converter-image WASM module when sensor decoding is required.";
@@ -86,6 +86,9 @@ struct DocxParagraph {
     keep_next: bool,
     keep_lines: bool,
     page_break_before: bool,
+    page_break_after: bool,
+    last_rendered_page_break_before: bool,
+    rendered_page_break_offsets: Vec<usize>,
     bidi: bool,
     bold: bool,
     runs: Vec<DocxRun>,
@@ -2743,6 +2746,8 @@ struct WordBinaryFib {
     lcb_stshf: usize,
     fc_sttbf_ffn: usize,
     lcb_sttbf_ffn: usize,
+    fc_dop: usize,
+    lcb_dop: usize,
     fc_plcf_sed: usize,
     lcb_plcf_sed: usize,
     fc_plcf_hdd: usize,
@@ -2882,6 +2887,7 @@ fn convert_word_binary(input: &str, output: &str) -> Result<(), ConvertError> {
     })?;
     let chpx = parse_word_binary_chpx(&streams.document, table, fib);
     let papx = parse_word_binary_papx(&streams.document, table, fib, &styles);
+    let page_count = parse_word_binary_page_count(table, fib);
     let paragraphs = decode_word_binary_paragraphs(
         &streams.document,
         &streams.data,
@@ -2927,6 +2933,7 @@ fn convert_word_binary(input: &str, output: &str) -> Result<(), ConvertError> {
     append_unreferenced_word_binary_images(&mut paragraphs, &streams.data, false);
     append_unreferenced_word_binary_images(&mut paragraphs, &streams.document, true);
     attach_word_binary_shape_anchors_with_art(&mut paragraphs, &main_shape_anchors, &office_art);
+    apply_word_binary_pagination(&mut paragraphs, &sections, page_count);
     write_docx_with_sections_and_headers(output, &paragraphs, &sections, &header_footers)
 }
 
@@ -3933,6 +3940,7 @@ fn parse_word_binary_fib(document: &[u8]) -> Option<WordBinaryFib> {
     let (fc_papx, lcb_papx) = pair(13).unwrap_or((0, 0));
     let (fc_stshf, lcb_stshf) = pair(1).unwrap_or((0, 0));
     let (fc_sttbf_ffn, lcb_sttbf_ffn) = pair(15).unwrap_or((0, 0));
+    let (fc_dop, lcb_dop) = pair(31).unwrap_or((0, 0));
     Some(WordBinaryFib {
         flags,
         ccp_text: lw(3).unwrap_or(0),
@@ -3948,6 +3956,8 @@ fn parse_word_binary_fib(document: &[u8]) -> Option<WordBinaryFib> {
         lcb_stshf,
         fc_sttbf_ffn,
         lcb_sttbf_ffn,
+        fc_dop,
+        lcb_dop,
         fc_plcf_sed,
         lcb_plcf_sed,
         fc_plcf_hdd,
@@ -3959,6 +3969,12 @@ fn parse_word_binary_fib(document: &[u8]) -> Option<WordBinaryFib> {
         fc_dgg_info,
         lcb_dgg_info,
     })
+}
+
+fn parse_word_binary_page_count(table: &[u8], fib: WordBinaryFib) -> Option<usize> {
+    let dop = table.get(fib.fc_dop..fib.fc_dop.saturating_add(fib.lcb_dop))?;
+    let pages = word_binary_u16(dop, 46)? as usize;
+    (pages > 0 && pages <= MAX_WORD_PARAGRAPHS).then_some(pages)
 }
 
 fn word_binary_table<'a>(streams: &'a WordBinaryStreams, fib: WordBinaryFib) -> &'a [u8] {
@@ -4334,6 +4350,23 @@ fn apply_word_binary_table_row_properties(
     paragraph.table_borders = properties.table_borders;
 }
 
+fn mark_word_binary_page_break(paragraphs: &mut Vec<DocxParagraph>, cp: i32, fc: u32) {
+    if let Some(paragraph) = paragraphs.last_mut() {
+        paragraph.page_break_after = true;
+        return;
+    }
+    if paragraphs.len() < MAX_WORD_PARAGRAPHS {
+        paragraphs.push(DocxParagraph {
+            source_cp_start: cp,
+            source_cp_end: cp,
+            source_fc_start: fc,
+            source_fc_end: fc,
+            page_break_after: true,
+            ..Default::default()
+        });
+    }
+}
+
 fn decode_word_binary_paragraphs(
     document: &[u8],
     data: &[u8],
@@ -4604,7 +4637,7 @@ fn decode_word_binary_paragraphs(
             };
             let Some(value) = value else { break };
             match value {
-                '\r' | '\n' | '\u{000c}' => {
+                '\r' | '\n' => {
                     let terminator_props = word_binary_papx_at(papx, fc);
                     if current.is_empty() && terminator_props.table_row_end {
                         if let Some(previous) = paragraphs.last_mut() {
@@ -4622,6 +4655,21 @@ fn decode_word_binary_paragraphs(
                         Some(piece.cp_start.saturating_add(index as i32)),
                         false,
                     )
+                }
+                '\u{000c}' => {
+                    let terminator_props = word_binary_papx_at(papx, fc);
+                    if current.is_empty() && terminator_props.table_row_end {
+                        if let Some(previous) = paragraphs.last_mut() {
+                            previous.table_row_end = true;
+                            apply_word_binary_table_row_properties(previous, &terminator_props);
+                        }
+                        if let Some(definition) = terminator_props.table_def.as_ref() {
+                            apply_word_binary_table_definition(&mut paragraphs, definition);
+                        }
+                    }
+                    let cp = piece.cp_start.saturating_add(index as i32);
+                    flush(&mut current, &mut paragraphs, Some(fc), Some(cp), false);
+                    mark_word_binary_page_break(&mut paragraphs, cp, fc);
                 }
                 '\u{0007}' => {
                     let terminator_props = word_binary_papx_at(papx, fc);
@@ -4673,6 +4721,360 @@ fn decode_word_binary_paragraphs(
     flush(&mut current, &mut paragraphs, None, None, false);
     normalize_word_binary_table_grid_spans(&mut paragraphs);
     paragraphs
+}
+
+#[derive(Clone, Copy)]
+struct WordBinaryLayoutBlock {
+    start: usize,
+    end: usize,
+    section_index: usize,
+    page_weight: u64,
+}
+
+fn word_binary_section_index(sections: &[WordBinarySection], cp: i32) -> usize {
+    sections
+        .iter()
+        .position(|section| cp <= section.cp_end)
+        .unwrap_or_else(|| sections.len().saturating_sub(1))
+}
+
+fn word_binary_page_content_width(section: DocxSection) -> u64 {
+    let total = i64::from(section.page_width)
+        .saturating_sub(i64::from(section.margin_left))
+        .saturating_sub(i64::from(section.margin_right))
+        .saturating_sub(i64::from(section.gutter))
+        .max(1) as u64;
+    let columns = u64::from(section.columns.max(1));
+    let gaps = u64::try_from(section.column_spacing.max(0))
+        .unwrap_or(0)
+        .saturating_mul(columns.saturating_sub(1));
+    total.saturating_sub(gaps).max(columns) / columns
+}
+
+fn word_binary_page_content_height(section: DocxSection) -> u64 {
+    i64::from(section.page_height)
+        .saturating_sub(i64::from(section.margin_top))
+        .saturating_sub(i64::from(section.margin_bottom))
+        .max(1) as u64
+}
+
+fn word_binary_paragraph_font_twips(paragraph: &DocxParagraph) -> u64 {
+    let run_size = paragraph
+        .runs
+        .iter()
+        .filter(|run| !run.hidden && run.image.is_none())
+        .map(|run| run.font_size)
+        .max()
+        .unwrap_or(0);
+    let heading_size = match paragraph.heading_level {
+        1 => 32,
+        2 => 28,
+        3 => 24,
+        4 => 22,
+        _ => 20,
+    };
+    u64::try_from(run_size.max(heading_size)).unwrap_or(20) * 10
+}
+
+fn word_binary_text_width_units(text: &str) -> u64 {
+    text.chars()
+        .map(|value| match value {
+            '\t' => 8,
+            value if value.is_ascii() => 1,
+            _ => 2,
+        })
+        .sum()
+}
+
+fn word_binary_paragraph_height(paragraph: &DocxParagraph, section: DocxSection) -> u64 {
+    let font_twips = word_binary_paragraph_font_twips(paragraph).max(1);
+    let mut width = if paragraph.table_cell_preferred_width > 0 {
+        u64::from(paragraph.table_cell_preferred_width)
+    } else if paragraph.table_grid_right != paragraph.table_grid_left {
+        u64::from(
+            paragraph
+                .table_grid_right
+                .abs_diff(paragraph.table_grid_left),
+        )
+    } else {
+        word_binary_page_content_width(section)
+    };
+    width = width
+        .saturating_sub(u64::from(paragraph.indent_left.unsigned_abs()))
+        .saturating_sub(u64::from(paragraph.indent_right.unsigned_abs()))
+        .max(font_twips / 2);
+    let units_per_line = width
+        .saturating_mul(2)
+        .checked_div(font_twips)
+        .unwrap_or(1)
+        .max(1);
+    let line_count = paragraph
+        .text
+        .split('\n')
+        .map(|line| {
+            word_binary_text_width_units(line)
+                .max(1)
+                .saturating_add(units_per_line - 1)
+                / units_per_line
+        })
+        .sum::<u64>()
+        .max(1);
+    let natural_line_height = font_twips.saturating_mul(6) / 5;
+    let line_spacing = u64::from(paragraph.line_spacing.max(240));
+    let line_height = match paragraph.line_spacing_rule {
+        "exact" => line_spacing,
+        "atLeast" => natural_line_height.max(line_spacing),
+        _ => natural_line_height.saturating_mul(line_spacing) / 240,
+    }
+    .max(1);
+    let text_height = line_count.saturating_mul(line_height);
+    let mut inline_image_height = 0u64;
+    let mut floating_image_height = 0u64;
+    for image in paragraph.runs.iter().filter_map(|run| run.image.as_ref()) {
+        let height = image.height_emu / 635;
+        if image.floating {
+            let contribution = if image.wrap == "topAndBottom" {
+                height
+            } else {
+                height / 3
+            };
+            floating_image_height = floating_image_height.max(contribution);
+        } else {
+            inline_image_height = inline_image_height.max(height);
+        }
+    }
+    let cell_spacing = if paragraph.table_cell {
+        paragraph.table_cell_margins[0]
+            .unwrap_or(0)
+            .max(0)
+            .saturating_add(paragraph.table_cell_margins[2].unwrap_or(0).max(0)) as u64
+    } else {
+        0
+    };
+    text_height
+        .max(inline_image_height)
+        .saturating_add(floating_image_height)
+        .saturating_add(u64::from(paragraph.spacing_before))
+        .saturating_add(u64::from(paragraph.spacing_after))
+        .saturating_add(cell_spacing)
+        .max(line_height)
+}
+
+fn word_binary_layout_blocks(
+    paragraphs: &[DocxParagraph],
+    sections: &[WordBinarySection],
+) -> Vec<WordBinaryLayoutBlock> {
+    let mut blocks = Vec::new();
+    let mut start = 0usize;
+    while start < paragraphs.len() {
+        let section_index = word_binary_section_index(sections, paragraphs[start].source_cp_start);
+        let section = sections
+            .get(section_index)
+            .map(|value| value.properties)
+            .unwrap_or_default();
+        let mut end = start + 1;
+        let height = if paragraphs[start].table_cell {
+            while end < paragraphs.len()
+                && paragraphs[end - 1].table_cell
+                && !paragraphs[end - 1].table_row_end
+                && paragraphs[end].table_cell
+            {
+                end += 1;
+            }
+            let content_height = paragraphs[start..end]
+                .iter()
+                .map(|paragraph| word_binary_paragraph_height(paragraph, section))
+                .max()
+                .unwrap_or(1);
+            let row_height = paragraphs[start..end]
+                .iter()
+                .map(|paragraph| u64::from(paragraph.table_row_height.unsigned_abs()))
+                .max()
+                .unwrap_or(0);
+            content_height.max(row_height)
+        } else {
+            word_binary_paragraph_height(&paragraphs[start], section)
+        };
+        let page_height = word_binary_page_content_height(section);
+        blocks.push(WordBinaryLayoutBlock {
+            start,
+            end,
+            section_index,
+            page_weight: height.saturating_mul(1_000_000) / page_height.max(1),
+        });
+        start = end;
+    }
+    blocks
+}
+
+fn word_binary_page_break_offsets(text: &str, count: usize) -> Vec<usize> {
+    let chars = text.chars().collect::<Vec<_>>();
+    if count == 0 || chars.len() < 2 {
+        return Vec::new();
+    }
+    let mut offsets = Vec::with_capacity(count);
+    for index in 1..=count {
+        let target = chars.len().saturating_mul(index) / (count + 1);
+        let mut offset = target.clamp(1, chars.len() - 1);
+        for distance in 0..=40usize {
+            let right = target.saturating_add(distance);
+            if right < chars.len() && chars[right].is_whitespace() {
+                offset = (right + 1).min(chars.len() - 1);
+                break;
+            }
+            if let Some(left) = target.checked_sub(distance + 1)
+                && chars[left].is_whitespace()
+            {
+                offset = (left + 1).min(chars.len() - 1);
+                break;
+            }
+        }
+        if offsets.last().copied() != Some(offset) {
+            offsets.push(offset);
+        }
+    }
+    offsets
+}
+
+fn apply_word_binary_pagination(
+    paragraphs: &mut [DocxParagraph],
+    sections: &[WordBinarySection],
+    reported_pages: Option<usize>,
+) {
+    if paragraphs.is_empty() || sections.is_empty() {
+        return;
+    }
+    for paragraph in paragraphs.iter_mut() {
+        if paragraph.page_break_after
+            && sections[..sections.len().saturating_sub(1)]
+                .iter()
+                .any(|section| paragraph.source_cp_end.abs_diff(section.cp_end) <= 1)
+        {
+            paragraph.page_break_after = false;
+        }
+        paragraph.last_rendered_page_break_before = paragraph.page_break_before;
+        paragraph.rendered_page_break_offsets.clear();
+    }
+    let blocks = word_binary_layout_blocks(paragraphs, sections);
+    if blocks.is_empty() {
+        return;
+    }
+    let mut chosen = vec![false; blocks.len() + 1];
+    for boundary in 1..blocks.len() {
+        let previous = blocks[boundary - 1];
+        let current = blocks[boundary];
+        let forced_after = paragraphs[previous.end - 1].page_break_after;
+        let forced_before = paragraphs[current.start].page_break_before;
+        let section_break = previous.section_index != current.section_index
+            && sections
+                .get(previous.section_index)
+                .is_some_and(|section| section.properties.section_type != "continuous");
+        chosen[boundary] = forced_after || forced_before || section_break;
+        if (forced_before || section_break) && !forced_after {
+            paragraphs[current.start].last_rendered_page_break_before = true;
+        }
+    }
+    let mut positions = vec![0u64; blocks.len() + 1];
+    for (index, block) in blocks.iter().enumerate() {
+        positions[index + 1] = positions[index].saturating_add(block.page_weight.max(1));
+    }
+    let total = positions.last().copied().unwrap_or(1).max(1);
+    let forced_breaks = chosen.iter().filter(|value| **value).count();
+    let estimated_pages = total.saturating_add(899_999) / 900_000;
+    // Auto page boundaries are usually absent, so distribute saved/estimated pages by layout weight.
+    let target_pages = reported_pages
+        .map(|pages| pages as u64)
+        .unwrap_or(estimated_pages)
+        .max(forced_breaks.saturating_add(1) as u64)
+        .min(MAX_WORD_PARAGRAPHS as u64) as usize;
+    let desired_breaks = target_pages.saturating_sub(1);
+    if forced_breaks >= desired_breaks {
+        return;
+    }
+    let segment_count = desired_breaks + 1;
+    let targets = (1..=desired_breaks)
+        .map(|index| total.saturating_mul(index as u64) / segment_count as u64)
+        .collect::<Vec<_>>();
+    let mut target_taken = vec![false; targets.len()];
+    for boundary in (1..blocks.len()).filter(|boundary| chosen[*boundary]) {
+        if let Some((target, _)) = targets
+            .iter()
+            .enumerate()
+            .filter(|(index, _)| !target_taken[*index])
+            .min_by_key(|(_, target)| positions[boundary].abs_diff(**target))
+        {
+            target_taken[target] = true;
+        }
+    }
+    let keep_penalty = total / segment_count as u64;
+    for (target_index, target) in targets.iter().enumerate() {
+        if target_taken[target_index] {
+            continue;
+        }
+        let Some((boundary, _)) = (1..blocks.len())
+            .filter(|boundary| !chosen[*boundary])
+            .map(|boundary| {
+                let previous = blocks[boundary - 1];
+                let keep_together = paragraphs[previous.end - 1].keep_next;
+                let penalty = if keep_together { keep_penalty } else { 0 };
+                (
+                    boundary,
+                    positions[boundary]
+                        .abs_diff(*target)
+                        .saturating_add(penalty),
+                )
+            })
+            .min_by_key(|(_, score)| *score)
+        else {
+            break;
+        };
+        chosen[boundary] = true;
+    }
+    for boundary in 1..blocks.len() {
+        if chosen[boundary] {
+            let previous = blocks[boundary - 1];
+            if !paragraphs[previous.end - 1].page_break_after
+                || paragraphs[previous.end - 1].table_cell
+                || paragraphs[blocks[boundary].start].table_cell
+            {
+                paragraphs[blocks[boundary].start].last_rendered_page_break_before = true;
+            }
+        }
+    }
+    let selected_boundaries = chosen.iter().filter(|value| **value).count();
+    let mut missing_breaks = desired_breaks.saturating_sub(selected_boundaries);
+    let mut internal_counts = vec![0usize; paragraphs.len()];
+    while missing_breaks > 0 {
+        let Some((paragraph_index, _)) = blocks
+            .iter()
+            .filter(|block| block.end == block.start + 1)
+            .filter_map(|block| {
+                let paragraph = &paragraphs[block.start];
+                let char_count = paragraph.text.chars().count();
+                let eligible = !paragraph.table_cell
+                    && char_count > internal_counts[block.start] + 1
+                    && paragraph
+                        .runs
+                        .iter()
+                        .all(|run| run.field_instruction.is_empty());
+                eligible.then_some((
+                    block.start,
+                    block.page_weight / (internal_counts[block.start] as u64 + 1),
+                ))
+            })
+            .max_by_key(|(_, score)| *score)
+        else {
+            break;
+        };
+        internal_counts[paragraph_index] += 1;
+        missing_breaks -= 1;
+    }
+    for (index, count) in internal_counts.into_iter().enumerate() {
+        if count > 0 {
+            paragraphs[index].rendered_page_break_offsets =
+                word_binary_page_break_offsets(&paragraphs[index].text, count);
+        }
+    }
 }
 
 fn trim_word_binary_run_prefix(runs: &mut Vec<DocxRun>, mut count: usize) {
@@ -9776,6 +10178,21 @@ fn docx_document_with_sections_and_headers(
         if paragraph.table_cell_merged {
             continue;
         }
+        if paragraph.table_cell
+            && (paragraph.last_rendered_page_break_before || paragraph.page_break_before)
+        {
+            if row_open {
+                body.push_str("      </w:tr>\n");
+                row_open = false;
+            }
+            if table_open {
+                body.push_str("    </w:tbl>\n");
+                table_open = false;
+                table_columns = 1;
+                table_bounds.clear();
+            }
+            body.push_str("    <w:p><w:r><w:lastRenderedPageBreak/></w:r></w:p>\n");
+        }
         if paragraph.table_cell {
             if !table_open {
                 let table_section = sections
@@ -9955,6 +10372,22 @@ fn docx_document_with_sections_and_headers(
     )
 }
 
+fn append_docx_rendered_page_break(body: &mut String, indent: &str) {
+    body.push_str(indent);
+    body.push_str("  <w:r><w:lastRenderedPageBreak/></w:r>\n");
+}
+
+fn append_docx_text_run(body: &mut String, indent: &str, properties: &str, text: &str) {
+    if text.is_empty() {
+        return;
+    }
+    body.push_str(indent);
+    body.push_str("  <w:r>");
+    body.push_str(properties);
+    body.push_str(&word_text_xml(text));
+    body.push_str("</w:r>\n");
+}
+
 fn docx_paragraph_xml(paragraph: &DocxParagraph, image_id: &mut usize, indent: &str) -> String {
     let mut body = String::new();
     body.push_str(indent);
@@ -10062,16 +10495,48 @@ fn docx_paragraph_xml(paragraph: &DocxParagraph, image_id: &mut usize, indent: &
         }
         body.push_str("</w:pPr>\n");
     }
+    if (paragraph.last_rendered_page_break_before || paragraph.page_break_before)
+        && !paragraph.table_cell
+    {
+        append_docx_rendered_page_break(&mut body, indent);
+    }
+    let mut break_offsets = paragraph.rendered_page_break_offsets.iter().peekable();
+    let mut text_offset = 0usize;
     if paragraph.runs.is_empty() {
-        body.push_str(indent);
-        body.push_str("  <w:r>");
-        if paragraph.bold {
-            body.push_str("<w:rPr><w:b/></w:rPr>");
+        let properties = if paragraph.bold {
+            "<w:rPr><w:b/></w:rPr>"
+        } else {
+            ""
+        };
+        let chars = paragraph.text.chars().collect::<Vec<_>>();
+        let mut start = 0usize;
+        while let Some(offset) = break_offsets.next_if(|offset| **offset < chars.len()) {
+            let end = (*offset).max(start).min(chars.len());
+            append_docx_text_run(
+                &mut body,
+                indent,
+                properties,
+                &chars[start..end].iter().collect::<String>(),
+            );
+            append_docx_rendered_page_break(&mut body, indent);
+            start = end;
         }
-        body.push_str(&word_text_xml(&paragraph.text));
-        body.push_str("</w:r>\n");
+        append_docx_text_run(
+            &mut body,
+            indent,
+            properties,
+            &chars[start..].iter().collect::<String>(),
+        );
     } else {
         for run in &paragraph.runs {
+            while break_offsets
+                .peek()
+                .is_some_and(|offset| **offset <= text_offset)
+            {
+                break_offsets.next();
+                append_docx_rendered_page_break(&mut body, indent);
+            }
+            let run_length = run.text.chars().count();
             if !run.field_instruction.is_empty() {
                 body.push_str(indent);
                 body.push_str(&format!(
@@ -10080,6 +10545,7 @@ fn docx_paragraph_xml(paragraph: &DocxParagraph, image_id: &mut usize, indent: &
                     docx_run_properties(run),
                     word_text_xml(&run.text),
                 ));
+                text_offset = text_offset.saturating_add(run_length);
                 continue;
             }
             if let Some(image) = run.image.as_ref() {
@@ -10090,12 +10556,40 @@ fn docx_paragraph_xml(paragraph: &DocxParagraph, image_id: &mut usize, indent: &
                 body.push_str("</w:r>\n");
                 continue;
             }
-            body.push_str(indent);
-            body.push_str("  <w:r>");
-            body.push_str(&docx_run_properties(run));
-            body.push_str(&word_text_xml(&run.text));
-            body.push_str("</w:r>\n");
+            let properties = docx_run_properties(run);
+            let chars = run.text.chars().collect::<Vec<_>>();
+            let mut start = 0usize;
+            while let Some(offset) =
+                break_offsets.next_if(|offset| **offset < text_offset.saturating_add(run_length))
+            {
+                let end = offset
+                    .saturating_sub(text_offset)
+                    .max(start)
+                    .min(chars.len());
+                append_docx_text_run(
+                    &mut body,
+                    indent,
+                    &properties,
+                    &chars[start..end].iter().collect::<String>(),
+                );
+                append_docx_rendered_page_break(&mut body, indent);
+                start = end;
+            }
+            append_docx_text_run(
+                &mut body,
+                indent,
+                &properties,
+                &chars[start..].iter().collect::<String>(),
+            );
+            text_offset = text_offset.saturating_add(run_length);
         }
+    }
+    for _ in break_offsets {
+        append_docx_rendered_page_break(&mut body, indent);
+    }
+    if paragraph.page_break_after {
+        body.push_str(indent);
+        body.push_str("  <w:r><w:br w:type=\"page\"/></w:r>\n");
     }
     body.push_str(indent);
     body.push_str("</w:p>\n");
@@ -12015,6 +12509,159 @@ mod tests {
             "<w:spacing w:before=\"120\" w:after=\"240\" w:line=\"360\" w:lineRule=\"auto\"/><w:keepNext/><w:keepLines/><w:pageBreakBefore/><w:bidi/>"
         ));
         assert!(!document.contains("<w:spacing <w:keepNext"));
+    }
+
+    #[test]
+    fn preserves_legacy_manual_page_breaks() {
+        let document = b"First\x0cSecond\r";
+        let paragraphs = decode_word_binary_paragraphs(
+            document,
+            &[],
+            &[WordBinaryPiece {
+                cp_start: 0,
+                cp_end: document.len() as i32,
+                file_offset: 0,
+                compressed: true,
+                prm: 0,
+            }],
+            &[],
+            &[],
+            &[],
+        );
+        assert_eq!(paragraphs.len(), 2);
+        assert!(paragraphs[0].page_break_after);
+        assert_eq!(
+            docx_document(&paragraphs, DocxSection::default())
+                .matches("<w:br w:type=\"page\"/>")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn reads_legacy_reported_page_count() {
+        let mut dop = vec![0u8; 48];
+        dop[46..48].copy_from_slice(&10u16.to_le_bytes());
+        assert_eq!(
+            parse_word_binary_page_count(
+                &dop,
+                WordBinaryFib {
+                    lcb_dop: dop.len(),
+                    ..Default::default()
+                }
+            ),
+            Some(10)
+        );
+    }
+
+    #[test]
+    fn distributes_legacy_rendered_page_breaks() {
+        let mut paragraphs = (0..12)
+            .map(|index| DocxParagraph {
+                text: format!("Paragraph {index} {}", "content ".repeat(40)),
+                source_cp_start: index * 100,
+                source_cp_end: index * 100 + 99,
+                line_spacing: 240,
+                line_spacing_rule: "auto",
+                ..Default::default()
+            })
+            .collect::<Vec<_>>();
+        let sections = [WordBinarySection {
+            cp_end: i32::MAX,
+            properties: DocxSection::default(),
+        }];
+        apply_word_binary_pagination(&mut paragraphs, &sections, Some(3));
+        assert_eq!(
+            paragraphs
+                .iter()
+                .filter(|paragraph| paragraph.last_rendered_page_break_before)
+                .count(),
+            2
+        );
+        assert_eq!(
+            docx_document_with_sections(&paragraphs, &sections)
+                .matches("<w:lastRenderedPageBreak/>")
+                .count(),
+            2
+        );
+    }
+
+    #[test]
+    fn estimates_legacy_pages_when_document_properties_are_missing() {
+        let mut paragraphs = (0..6)
+            .map(|index| DocxParagraph {
+                text: format!("Paragraph {index} {}", "content ".repeat(300)),
+                source_cp_start: index * 1_000,
+                source_cp_end: index * 1_000 + 999,
+                line_spacing: 240,
+                line_spacing_rule: "auto",
+                ..Default::default()
+            })
+            .collect::<Vec<_>>();
+        let sections = [WordBinarySection {
+            cp_end: i32::MAX,
+            properties: DocxSection::default(),
+        }];
+        apply_word_binary_pagination(&mut paragraphs, &sections, None);
+        assert!(
+            paragraphs
+                .iter()
+                .filter(|paragraph| paragraph.last_rendered_page_break_before)
+                .count()
+                >= 2
+        );
+    }
+
+    #[test]
+    fn paginates_inside_a_long_legacy_paragraph() {
+        let text = "Long paragraph content ".repeat(500);
+        let mut paragraphs = vec![DocxParagraph {
+            text: text.clone(),
+            source_cp_end: text.chars().count() as i32,
+            line_spacing: 240,
+            line_spacing_rule: "auto",
+            runs: vec![DocxRun {
+                text,
+                ..Default::default()
+            }],
+            ..Default::default()
+        }];
+        let sections = [WordBinarySection {
+            cp_end: i32::MAX,
+            properties: DocxSection::default(),
+        }];
+        apply_word_binary_pagination(&mut paragraphs, &sections, Some(3));
+        assert_eq!(paragraphs[0].rendered_page_break_offsets.len(), 2);
+        assert_eq!(
+            docx_document_with_sections(&paragraphs, &sections)
+                .matches("<w:lastRenderedPageBreak/>")
+                .count(),
+            2
+        );
+    }
+
+    #[test]
+    fn splits_legacy_tables_at_rendered_page_breaks() {
+        let document = docx_document(
+            &[
+                DocxParagraph {
+                    text: "Row 1".into(),
+                    table_cell: true,
+                    table_row_end: true,
+                    ..Default::default()
+                },
+                DocxParagraph {
+                    text: "Row 2".into(),
+                    table_cell: true,
+                    table_row_end: true,
+                    last_rendered_page_break_before: true,
+                    ..Default::default()
+                },
+            ],
+            DocxSection::default(),
+        );
+        assert_eq!(document.matches("<w:tbl>").count(), 2);
+        assert_eq!(document.matches("<w:lastRenderedPageBreak/>").count(), 1);
     }
 
     #[test]

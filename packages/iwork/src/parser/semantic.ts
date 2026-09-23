@@ -1120,9 +1120,21 @@ function buildDrawableItem(
   }) ??
     buildKeynotePlaceholderFallbackTextFrame(drawable, options.slide, padding, verticalAlign) ??
     buildKeynoteInstructionalTextFrame(context.archive, drawable, options.slide, padding, verticalAlign);
-  const normalizedTransform = ensureDrawableTextTransform(transform, textFrame);
   const drawableRecord = findRecordByValue(context.archive, drawable);
   const hyperlink = resolveDrawableHyperlink(drawable);
+  const shapeType = resolveShapeType(pathSource);
+  const lineLayout = context.archive.type === 'key' &&
+    shapeType === 'line' &&
+    (transform.width <= 0 || transform.height <= 0) &&
+    !textFrameHasVisibleText(textFrame)
+    ? buildKeynoteLineLayout(transform, line?.width)
+    : undefined;
+  const isAutoSizedTextBox = readFieldInDrawableChain(drawable, ['isTextBox', 'is_text_box']) === true &&
+    Boolean(textFrame) &&
+    (transform.width <= 0 || transform.height <= 0);
+  const normalizedTransform = lineLayout || isAutoSizedTextBox
+    ? transform
+    : ensureDrawableTextTransform(transform, textFrame);
 
   if (readField(drawable, ['tableModel', 'table_model'])) {
     return buildTableItem(context.archive, drawable, normalizedTransform, order);
@@ -1166,6 +1178,41 @@ function buildDrawableItem(
     };
   }
 
+  if (lineLayout) {
+    return {
+      id: `shape-${order}-${lineLayout.transform.x}-${lineLayout.transform.y}`,
+      kind: 'shape',
+      name: String(readField<string>(drawable, ['title']) ?? 'Shape'),
+      order,
+      groupPath: [],
+      transform: lineLayout.transform,
+      fill: { type: 'none' },
+      line,
+      shadow,
+      href: hyperlink,
+      opacity,
+      shapeType: 'line',
+      geometry: lineLayout.geometry
+    };
+  }
+
+  if (isAutoSizedTextBox && textFrame) {
+    return {
+      id: `text-${order}-${transform.x}-${transform.y}`,
+      kind: 'text',
+      name: 'Text',
+      order,
+      groupPath: [],
+      transform,
+      fill: { type: 'none' },
+      line: undefined,
+      shadow: undefined,
+      href: hyperlink,
+      opacity,
+      textFrame
+    };
+  }
+
   if (textFrame && (transform.width <= 0 || transform.height <= 0)) {
     return {
       id: `text-${order}-${normalizedTransform.x}-${normalizedTransform.y}`,
@@ -1204,7 +1251,7 @@ function buildDrawableItem(
       shadow,
       href: hyperlink,
       opacity,
-      shapeType: resolveShapeType(pathSource),
+      shapeType,
       geometry: geometryModel,
       textFrame
     };
@@ -3734,6 +3781,75 @@ function ensureDrawableTextTransform(transform: SlideItem['transform'], textFram
     ...transform,
     width: transform.width > 0 ? transform.width : Number(estimatedWidth.toFixed(2)),
     height: transform.height > 0 ? transform.height : Number(estimatedHeight.toFixed(2))
+  };
+}
+
+function textFrameHasVisibleText(textFrame: TextFrame | undefined): boolean {
+  return Boolean(textFrame?.paragraphs.some((paragraph) =>
+    paragraph.runs.some((run) => run.text.trim().length > 0)
+  ));
+}
+
+function buildKeynoteLineLayout(
+  transform: SlideItem['transform'],
+  strokeWidth: number | undefined
+): {
+  transform: SlideItem['transform'];
+  geometry: Extract<SlideItem, { kind: 'shape' }>['geometry'];
+} | undefined {
+  const lineLength = Math.abs(transform.width) > 0
+    ? Math.abs(transform.width)
+    : Math.abs(transform.height);
+  if (!Number.isFinite(lineLength) || lineLength <= 0) {
+    return undefined;
+  }
+
+  const angle = Math.abs(transform.rotation) > 10
+    ? (transform.rotation * Math.PI) / 180
+    : transform.rotation;
+  const halfLength = lineLength / 2;
+  const centerX = transform.x + halfLength;
+  const centerY = transform.y;
+  const dx = Math.cos(angle) * halfLength;
+  const dy = Math.sin(angle) * halfLength;
+  const x1 = centerX - dx;
+  const y1 = centerY + dy;
+  const x2 = centerX + dx;
+  const y2 = centerY - dy;
+  let minX = Math.min(x1, x2);
+  let maxX = Math.max(x1, x2);
+  let minY = Math.min(y1, y2);
+  let maxY = Math.max(y1, y2);
+  const minExtent = Math.max(strokeWidth ?? 0, 1);
+
+  if (maxX - minX < minExtent) {
+    const padding = (minExtent - (maxX - minX)) / 2;
+    minX -= padding;
+    maxX += padding;
+  }
+  if (maxY - minY < minExtent) {
+    const padding = (minExtent - (maxY - minY)) / 2;
+    minY -= padding;
+    maxY += padding;
+  }
+
+  return {
+    transform: {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY,
+      rotation: 0,
+      flipH: false,
+      flipV: false
+    },
+    geometry: {
+      type: 'line',
+      x1: x1 - minX,
+      y1: y1 - minY,
+      x2: x2 - minX,
+      y2: y2 - minY
+    }
   };
 }
 

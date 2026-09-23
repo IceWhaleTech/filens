@@ -1,4 +1,5 @@
 .archivev-preview {
+  --archivev-summary-height: 44px;
   box-sizing: border-box;
   width: 100%;
   height: 100%;
@@ -13,6 +14,11 @@
   position: sticky;
   top: 0;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box;
+  height: var(--archivev-summary-height);
   padding: 12px 16px;
   border-bottom: 1px solid #d7dee8;
   background: #ffffff;
@@ -22,20 +28,29 @@
 
 .archivev-breadcrumbs {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
   gap: 4px;
-  margin-top: 9px;
+  min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
   white-space: nowrap;
+  scrollbar-width: thin;
 }
 
 .archivev-breadcrumb {
   appearance: none;
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: min(280px, 45vw);
+  overflow: hidden;
   border: 0;
   padding: 2px 4px;
   background: transparent;
   color: #2563eb;
   font: 700 12px/1.2 system-ui, sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -45,19 +60,28 @@
 }
 
 .archivev-breadcrumb-separator {
+  flex: 0 0 auto;
   color: #9aa8b8;
   user-select: none;
 }
 
 .archivev-breadcrumb-current {
+  flex: 0 0 auto;
+  max-width: min(320px, 50vw);
   overflow: hidden;
   color: #1f2937;
   text-overflow: ellipsis;
 }
 
+.archivev-item-count {
+  flex: 0 0 auto;
+  color: #7a8798;
+  white-space: nowrap;
+}
+
 .archivev-toolbar {
   position: sticky;
-  top: 41px;
+  top: var(--archivev-summary-height);
   z-index: 1;
   display: flex;
   gap: 8px;

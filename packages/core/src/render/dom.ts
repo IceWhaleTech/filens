@@ -227,7 +227,12 @@ function createItemBox(
 }
 
 function renderTextItem(item: Extract<SlideItem, { kind: 'text' }>, registry: MediaResolver): HTMLElement {
+  const autoWidth = item.transform.width <= 0;
+  const autoHeight = item.transform.height <= 0;
   const element = createItemBox(item.transform, 'pptxv-item pptxv-item--text', resolveItemOpacity(item));
+  if (autoWidth || autoHeight) {
+    applyAutoTextBoxStyles(element, autoWidth, autoHeight);
+  }
   if (item.placeholder?.type) {
     element.dataset.placeholderType = item.placeholder.type;
   }
@@ -239,9 +244,15 @@ function renderTextItem(item: Extract<SlideItem, { kind: 'text' }>, registry: Me
   applyItemShadowStyles(element, item.shadow);
   const textFrame = renderTextFrame(item.textFrame, primaryFillColor(item.fill) ?? '#111827', {
     omitPlaceholderBulletLabels: shouldOmitPlaceholderBulletLabelsForItem(item),
-    availableWidth: item.transform.width,
-    availableHeight: item.transform.height
+    availableWidth: autoWidth ? undefined : item.transform.width,
+    availableHeight: autoHeight ? undefined : item.transform.height
   });
+  if (autoWidth) {
+    textFrame.style.width = 'auto';
+  }
+  if (autoHeight) {
+    textFrame.style.height = 'auto';
+  }
   if (item.fill.type === 'picture') {
     textFrame.style.position = 'relative';
     textFrame.style.zIndex = '1';
@@ -249,6 +260,22 @@ function renderTextItem(item: Extract<SlideItem, { kind: 'text' }>, registry: Me
   element.appendChild(textFrame);
   appendItemLinkOverlay(element, item, !hasLinkedTextRuns(item.textFrame));
   return element;
+}
+
+function applyAutoTextBoxStyles(element: HTMLElement, autoWidth: boolean, autoHeight: boolean): void {
+  if (autoWidth) {
+    element.style.width = 'auto';
+    element.style.minWidth = 'fit-content';
+  }
+  if (autoHeight) {
+    element.style.height = 'auto';
+  }
+
+  const translateX = autoWidth ? '-50%' : '0';
+  const translateY = autoHeight ? '-50%' : '0';
+  const existingTransform = element.style.transform;
+  element.style.transform = [`translate(${translateX}, ${translateY})`, existingTransform].filter(Boolean).join(' ');
+  element.style.transformOrigin = '0 0';
 }
 
 function renderShapeItem(item: ShapeItem, registry: MediaResolver): HTMLElement {
@@ -2065,10 +2092,11 @@ function createShapeNode(item: ShapeItem, registry: MediaResolver): { node: SVGE
 
   if (item.shapeType === 'line') {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', '0');
-    line.setAttribute('y1', '0');
-    line.setAttribute('x2', String(width));
-    line.setAttribute('y2', String(height));
+    const geometry = item.geometry?.type === 'line' ? item.geometry : undefined;
+    line.setAttribute('x1', String(geometry?.x1 ?? 0));
+    line.setAttribute('y1', String(geometry?.y1 ?? 0));
+    line.setAttribute('x2', String(geometry?.x2 ?? width));
+    line.setAttribute('y2', String(geometry?.y2 ?? height));
     line.setAttribute('stroke', stroke);
     line.setAttribute('stroke-width', String(strokeWidth));
     applySvgLineStyles(line, item.line);
@@ -2941,6 +2969,12 @@ function applySvgLineStyles(
 ): void {
   applySvgDashPattern(node, line);
 
+  if (line?.dashOffset != null && Number.isFinite(line.dashOffset)) {
+    node.setAttribute('stroke-dashoffset', String(Number(line.dashOffset.toFixed(3))));
+  } else {
+    node.removeAttribute('stroke-dashoffset');
+  }
+
   if (line?.lineCap) {
     node.setAttribute('stroke-linecap', line.lineCap);
   } else {
@@ -2995,6 +3029,11 @@ function lineDashToBorderStyle(dash: string | undefined): 'solid' | 'dashed' | '
 }
 
 function lineDashToSvgPattern(line: LineStyle | undefined): string | undefined {
+  const exactPattern = line?.dashPattern?.filter((value) => Number.isFinite(value) && value > 0);
+  if (exactPattern?.length) {
+    return exactPattern.map((value) => String(Number(value.toFixed(3)))).join(' ');
+  }
+
   if (!line?.dash || line.dash === 'solid') {
     return undefined;
   }
