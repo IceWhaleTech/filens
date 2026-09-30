@@ -211,9 +211,9 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
     if (!state.document || state.document.kind === 'numbers' || !pageShells.length) {
       return;
     }
-    const viewport = container.getBoundingClientRect();
+    const viewport = resolveVisibleViewport(container);
     const viewportCenter = (viewport.top + viewport.bottom) / 2;
-    const overscan = Math.max(viewport.height, container.clientHeight, 1);
+    const overscan = Math.max(viewport.height, 1);
     let nearestIndex = state.currentPage;
     let nearestDistance = Number.POSITIVE_INFINITY;
     visiblePages.clear();
@@ -250,6 +250,8 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
   };
 
   container.addEventListener('scroll', handleScroll, { passive: true });
+  container.ownerDocument.addEventListener('scroll', handleScroll, { capture: true, passive: true });
+  container.ownerDocument.defaultView?.addEventListener('scroll', handleScroll, { passive: true });
 
   const scrollToPageCanvas = (index: number) => {
     if (!state.document || state.document.kind === 'numbers') {
@@ -433,6 +435,8 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
       resizeObserver?.disconnect();
       resizeObserver = null;
       container.removeEventListener('scroll', handleScroll);
+      container.ownerDocument.removeEventListener('scroll', handleScroll, true);
+      container.ownerDocument.defaultView?.removeEventListener('scroll', handleScroll);
       if (scrollFrame && typeof cancelAnimationFrame !== 'undefined') {
         cancelAnimationFrame(scrollFrame);
       }
@@ -549,6 +553,35 @@ function extractSourceName(path: string): string | undefined {
   } catch {
     return fileName;
   }
+}
+
+function resolveVisibleViewport(container: HTMLElement): { top: number; bottom: number; height: number } {
+  const ownerWindow = container.ownerDocument.defaultView;
+  const containerRect = container.getBoundingClientRect();
+  let top = ownerWindow ? 0 : containerRect.top;
+  let bottom = ownerWindow ? ownerWindow.innerHeight : containerRect.bottom;
+
+  for (let element: HTMLElement | null = container; element; element = element.parentElement) {
+    const overflowY = ownerWindow?.getComputedStyle(element).overflowY ?? 'visible';
+    if (!/^(auto|scroll|hidden|clip)$/.test(overflowY)) {
+      continue;
+    }
+    const rect = element.getBoundingClientRect();
+    top = Math.max(top, rect.top);
+    bottom = Math.min(bottom, rect.bottom);
+  }
+
+  if (bottom <= top) {
+    const fallbackTop = ownerWindow ? 0 : containerRect.top;
+    const fallbackBottom = ownerWindow ? ownerWindow.innerHeight : containerRect.bottom;
+    return {
+      top: fallbackTop,
+      bottom: fallbackBottom,
+      height: Math.max(fallbackBottom - fallbackTop, 1)
+    };
+  }
+
+  return { top, bottom, height: bottom - top };
 }
 
 function applyCanvasScale(shell: HTMLElement, width: number, height: number, scale: number): void {

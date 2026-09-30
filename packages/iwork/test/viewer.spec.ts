@@ -104,6 +104,7 @@ function createKeynoteDocument(slideCount = 1): ParsedKeynoteDocument {
 
 describe('iWork viewer', () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     parseMock.mockReset();
     parseSheetMock.mockReset();
     document.body.innerHTML = '';
@@ -407,21 +408,24 @@ describe('iWork viewer', () => {
     viewer.destroy();
   });
 
-  it('mounts Pages content when its shell enters the virtual scroll window', async () => {
+  it('mounts Pages content when an outer scroll container reveals its shell', async () => {
     parseMock.mockResolvedValue(createPagesDocument());
     const container = document.body.appendChild(document.createElement('div'));
-    Object.defineProperty(container, 'clientHeight', { configurable: true, value: 900 });
-    container.getBoundingClientRect = () => ({ top: 0, bottom: 900, height: 900 } as DOMRect);
+    Object.defineProperty(container, 'clientHeight', { configurable: true, value: 3000 });
+    container.getBoundingClientRect = () => ({ top: -1000, bottom: 2000, height: 3000 } as DOMRect);
+    vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(900);
 
-    const viewer = createIworkViewer(container);
+    const viewer = createIworkViewer(container, { virtual: true });
     await viewer.preview(new Uint8Array([1, 2, 3]));
     const shells = Array.from(container.querySelectorAll<HTMLElement>('.iworkv-page-shell'));
-    shells[0]!.getBoundingClientRect = () => ({ top: -1100, bottom: -100, height: 1000 } as DOMRect);
+    expect(shells.map((shell) => shell.childElementCount)).toEqual([1, 0, 0]);
+    shells[0]!.getBoundingClientRect = () => ({ top: -2100, bottom: -1100, height: 1000 } as DOMRect);
     shells[1]!.getBoundingClientRect = () => ({ top: 20, bottom: 1020, height: 1000 } as DOMRect);
     shells[2]!.getBoundingClientRect = () => ({ top: 2000, bottom: 3000, height: 1000 } as DOMRect);
 
-    container.dispatchEvent(new Event('scroll'));
+    document.dispatchEvent(new Event('scroll'));
     await vi.waitFor(() => expect(shells[1]!.childElementCount).toBe(1));
+    expect(shells.map((shell) => shell.childElementCount)).toEqual([0, 1, 0]);
 
     viewer.destroy();
   });
