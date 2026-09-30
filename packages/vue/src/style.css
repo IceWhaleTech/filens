@@ -557,6 +557,10 @@
   overflow: hidden;
 }
 
+.pptxv-main-view.iworkv-root {
+  overflow: auto;
+}
+
 .pptxv-button {
   flex: 0 0 auto;
   min-height: 28px;

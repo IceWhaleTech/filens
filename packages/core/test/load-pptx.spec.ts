@@ -163,6 +163,31 @@ describe('loadPptx', () => {
     }
   });
 
+  it('treats an empty root group transform as identity', async () => {
+    const zip = await JSZip.loadAsync(await buildDefaultTextStyleFixture());
+    const slideXml = await zip.file('ppt/slides/slide1.xml')?.async('text');
+    zip.file(
+      'ppt/slides/slide1.xml',
+      slideXml?.replace(
+        '<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>',
+        '<p:grpSpPr><a:xfrm/></p:grpSpPr>'
+      ) ?? ''
+    );
+
+    const presentation = await loadPptx(new Uint8Array(await zip.generateAsync({ type: 'uint8array' })));
+    const textBox = presentation.slides[0].items.find((item) => item.kind === 'text');
+
+    expect(textBox?.transform).toEqual({
+      x: 96,
+      y: 96,
+      width: 384,
+      height: 96,
+      rotation: 0,
+      flipH: false,
+      flipV: false
+    });
+  });
+
   it('does not inherit paragraph alignment or bullet defaults from master otherStyle for ordinary text boxes', async () => {
     const presentation = await loadPptx(await buildDefaultTextStyleFixture());
     const textBox = presentation.slides[0].items.find((item) => item.kind === 'text');

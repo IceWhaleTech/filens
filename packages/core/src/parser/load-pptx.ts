@@ -2309,20 +2309,20 @@ function composeGroupContext(
 
   const offX = emuToPx(toNumber(offNode?.x, 0));
   const offY = emuToPx(toNumber(offNode?.y, 0));
-  const extX = emuToPx(toNumber(extNode?.cx, 0));
-  const extY = emuToPx(toNumber(extNode?.cy, 0));
+  const extX = extNode ? emuToPx(toNumber(extNode.cx, 0)) : undefined;
+  const extY = extNode ? emuToPx(toNumber(extNode.cy, 0)) : undefined;
   const childOffX = childOffNode ? emuToPx(toNumber(childOffNode.x, 0)) : 0;
   const childOffY = childOffNode ? emuToPx(toNumber(childOffNode.y, 0)) : 0;
-  const childExtX = childExtNode ? emuToPx(toNumber(childExtNode.cx, 0)) : extX || 1;
-  const childExtY = childExtNode ? emuToPx(toNumber(childExtNode.cy, 0)) : extY || 1;
+  const childExtX = childExtNode ? emuToPx(toNumber(childExtNode.cx, 0)) : extX;
+  const childExtY = childExtNode ? emuToPx(toNumber(childExtNode.cy, 0)) : extY;
 
-  const scaleX = childExtX === 0 ? 1 : extX / childExtX;
-  const scaleY = childExtY === 0 ? 1 : extY / childExtY;
+  const scaleX = extX === undefined || childExtX === undefined || childExtX === 0 ? 1 : extX / childExtX;
+  const scaleY = extY === undefined || childExtY === undefined || childExtY === 0 ? 1 : extY / childExtY;
   const rotation = angleToDegrees(toNumber(xfrmNode.rot, 0));
   const flipH = xfrmNode.flipH === '1';
   const flipV = xfrmNode.flipV === '1';
-  const centerX = offX + extX / 2;
-  const centerY = offY + extY / 2;
+  const centerX = offX + (extX ?? 0) / 2;
+  const centerY = offY + (extY ?? 0) / 2;
   const localMatrix = multiplyAffineMatrices(
     multiplyAffineMatrices(
       multiplyAffineMatrices(

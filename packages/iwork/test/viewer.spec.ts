@@ -64,17 +64,17 @@ function createPagesDocument(): ParsedPagesDocument {
   };
 }
 
-function createKeynoteDocument(): ParsedKeynoteDocument {
-  const slide = {
-    id: 'key-slide-1',
-    index: 0,
-    title: 'Slide 1',
+function createKeynoteDocument(slideCount = 1): ParsedKeynoteDocument {
+  const slides = Array.from({ length: slideCount }, (_, index) => ({
+    id: `key-slide-${index + 1}`,
+    index,
+    title: `Slide ${index + 1}`,
     background: { type: 'solid' as const, color: '#ffffff', alpha: 1 },
     width: 800,
     height: 450,
     items: [],
     warnings: []
-  };
+  }));
   return {
     kind: 'key',
     archive: {
@@ -86,13 +86,19 @@ function createKeynoteDocument(): ParsedKeynoteDocument {
     },
     warnings: [],
     presentation: {
-      size: { width: slide.width, height: slide.height },
+      size: { width: 800, height: 450 },
       theme: { colors: {}, fonts: {} },
-      slides: [slide],
+      slides,
       media: {},
       warnings: []
     },
-    slides: [{ id: slide.id, index: slide.index, title: slide.title, width: slide.width, height: slide.height, slide }]
+    slides: slides.map((slide) => ({
+      id: slide.id,
+      title: slide.title,
+      width: slide.width,
+      height: slide.height,
+      slide
+    }))
   };
 }
 
@@ -139,6 +145,36 @@ describe('iWork viewer', () => {
     await explicitViewer.preview(new Uint8Array([1, 2, 3]));
     expect(explicitViewer.getState().fit).toBe('contain');
     explicitViewer.destroy();
+  });
+
+  it('renders Keynote slides as a continuous virtualized stack', async () => {
+    parseMock.mockResolvedValue(createKeynoteDocument(3));
+    const container = document.body.appendChild(document.createElement('div'));
+    Object.defineProperty(container, 'clientHeight', { configurable: true, value: 600 });
+    container.getBoundingClientRect = () => ({ top: 0, bottom: 600, height: 600 } as DOMRect);
+    const viewer = createIworkViewer(container, { fit: 'contain' });
+    await viewer.preview(new Uint8Array([1, 2, 3]));
+
+    const shells = Array.from(container.querySelectorAll<HTMLElement>('.iworkv-page-shell'));
+    expect(shells).toHaveLength(3);
+    expect(shells.map((shell) => shell.childElementCount)).toEqual([1, 0, 0]);
+    shells[0]!.getBoundingClientRect = () => ({ top: -1500, bottom: -1050, height: 450 } as DOMRect);
+    shells[1]!.getBoundingClientRect = () => ({ top: 40, bottom: 490, height: 450 } as DOMRect);
+    shells[2]!.getBoundingClientRect = () => ({ top: 1400, bottom: 1850, height: 450 } as DOMRect);
+
+    container.dispatchEvent(new Event('scroll'));
+    await vi.waitFor(() => expect(viewer.getState().currentPage).toBe(1));
+    expect(shells.map((shell) => shell.childElementCount)).toEqual([0, 1, 0]);
+
+    const scrollSpy = vi.fn();
+    shells[2]!.scrollIntoView = scrollSpy;
+
+    viewer.goToPage(2);
+
+    expect(viewer.getState().currentPage).toBe(2);
+    expect(shells.map((shell) => shell.childElementCount)).toEqual([0, 0, 1]);
+    expect(scrollSpy).toHaveBeenCalledTimes(1);
+    viewer.destroy();
   });
 
   it('passes source file name to the worker parser', async () => {

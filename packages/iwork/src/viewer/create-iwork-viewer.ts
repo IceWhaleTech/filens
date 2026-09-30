@@ -78,7 +78,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
       return;
     }
 
-    if (state.document.kind === 'pages') {
+    if (state.document.kind === 'key' || state.document.kind === 'pages') {
       const pages = document.createElement('div');
       pages.className = 'iworkv-pages';
       canvases.forEach((canvas, index) => {
@@ -94,11 +94,6 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
       syncMountedPages();
       return;
     }
-
-    const canvas = canvases[Math.max(0, Math.min(state.currentPage, canvases.length - 1))];
-    const shell = createCanvasElement(document, state.document, canvas, mediaRegistry ?? undefined);
-    applyCanvasScale(shell, canvas.width, canvas.height, resolveScale(canvas.width, canvas.height));
-    stage.appendChild(shell);
   };
 
   const renderNumbers = () => {
@@ -178,10 +173,11 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
   };
 
   const syncMountedPages = () => {
-    if (state.document?.kind !== 'pages') {
+    if (!state.document || state.document.kind === 'numbers') {
       return;
     }
 
+    const canvases = documentCanvases(state.document);
     const targetPages = options.virtual === false
       ? new Set(pageShells.map((_, index) => index))
       : visiblePages;
@@ -196,7 +192,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
         continue;
       }
       const shell = pageShells[index];
-      const canvas = state.document.pages[index]?.canvas;
+      const canvas = canvases[index];
       if (!shell || !canvas) {
         continue;
       }
@@ -211,7 +207,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
 
   const trackVisiblePage = () => {
     scrollFrame = 0;
-    if (state.document?.kind !== 'pages' || !pageShells.length) {
+    if (!state.document || state.document.kind === 'numbers' || !pageShells.length) {
       return;
     }
     const viewport = container.getBoundingClientRect();
@@ -254,8 +250,8 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
 
   container.addEventListener('scroll', handleScroll, { passive: true });
 
-  const scrollToPagesCanvas = (index: number) => {
-    if (state.document?.kind !== 'pages') {
+  const scrollToPageCanvas = (index: number) => {
+    if (!state.document || state.document.kind === 'numbers') {
       return;
     }
     const shell = stage.querySelector<HTMLElement>(`.iworkv-page-shell[data-page-index="${index}"]`);
@@ -449,11 +445,11 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
     fit,
     goToPage(index: number) {
       state.currentPage = Math.max(0, Math.min(index, Math.max(state.pageCount - 1, 0)));
-      if (state.document?.kind === 'pages') {
+      if (state.document && state.document.kind !== 'numbers') {
         visiblePages.clear();
         visiblePages.add(state.currentPage);
         syncMountedPages();
-        scrollToPagesCanvas(state.currentPage);
+        scrollToPageCanvas(state.currentPage);
       } else {
         render();
       }
