@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import type {
   BorderBox,
+  ChartItem,
   FillStyle,
   ImageItem,
   InsetBox,
@@ -218,6 +219,7 @@ interface ParseContext {
   orderedNodeOrders: Map<string, number>;
   diagramDataModels: Record<string, XmlRecord | null>;
   diagramDrawings: Record<string, XmlRecord | null>;
+  chartSpaces: Record<string, XmlRecord | null>;
   inDiagram?: boolean;
   caches: ParseCaches;
   zip: JSZip;
@@ -241,7 +243,8 @@ const REL_TYPES = {
   hyperlink: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink',
   slide: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide',
   diagramData: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/diagramData',
-  diagramDrawing: 'http://schemas.microsoft.com/office/2007/relationships/diagramDrawing'
+  diagramDrawing: 'http://schemas.microsoft.com/office/2007/relationships/diagramDrawing',
+  chart: 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart'
 };
 
 const DEFAULT_THEME: ThemeModel = {
@@ -612,6 +615,7 @@ async function parseMaster(zip: JSZip, masterPath: string, contentTypes: Content
       orderedNodeOrders: buildOrderedNodeOrderMap(orderedXml),
       diagramDataModels: {},
       diagramDrawings: {},
+      chartSpaces: {},
       caches,
       zip
     };
@@ -707,6 +711,7 @@ async function parseLayout(zip: JSZip, layoutPath: string, contentTypes: Content
       orderedNodeOrders: buildOrderedNodeOrderMap(orderedXml),
       diagramDataModels: {},
       diagramDrawings: {},
+      chartSpaces: {},
       caches,
       zip
     };
@@ -788,6 +793,7 @@ async function parseSlide(
   const themeFormatScheme = layout?.themeFormatScheme ?? createEmptyThemeFormatScheme();
   const colorMap = layout?.colorMap ?? { ...DEFAULT_CLR_MAP };
   const diagramParts = await preloadDiagramParts(zip, relationships);
+  const chartSpaces = await preloadChartParts(zip, relationships);
   const slideWarnings = warnings;
   const context: ParseContext = {
     theme,
@@ -807,6 +813,7 @@ async function parseSlide(
     orderedNodeOrders: buildOrderedNodeOrderMap(orderedXml),
     diagramDataModels: diagramParts.dataModels,
     diagramDrawings: diagramParts.drawings,
+    chartSpaces,
     caches,
     zip
   };
@@ -1927,6 +1934,13 @@ function parseGraphicFrameDrafts(node: XmlRecord, context: ParseContext): SlideI
   }
 
   const graphicData = node['a:graphic']?.['a:graphicData'] as XmlRecord | undefined;
+  if (graphicData?.uri === 'http://schemas.openxmlformats.org/drawingml/2006/chart') {
+    const chartDraft = parseChartGraphicFrameDraft(node, graphicData, context);
+    if (chartDraft) {
+      return [chartDraft];
+    }
+  }
+
   if (graphicData?.uri === 'http://schemas.openxmlformats.org/drawingml/2006/diagram') {
     const diagramDrafts = parseDiagramGraphicFrameDrafts(node, graphicData, context);
     if (diagramDrafts.length) {
@@ -1958,6 +1972,184 @@ function parseGraphicFrameDrafts(node: XmlRecord, context: ParseContext): SlideI
       hasLine: false
     }
   ];
+}
+
+function parseChartGraphicFrameDraft(
+  node: XmlRecord,
+  graphicData: XmlRecord,
+  context: ParseContext
+): SlideItemDraft | undefined {
+  const chartRelId = graphicData['c:chart']?.['r:id'];
+  const relationship = typeof chartRelId === 'string' ? context.relationships[chartRelId] : undefined;
+  if (!relationship || relationship.type !== REL_TYPES.chart) {
+    return undefined;
+  }
+
+  const chartSpace = context.chartSpaces[relationship.target];
+  const chartNode = chartSpace?.['c:chart'] as XmlRecord | undefined;
+  const plotArea = chartNode?.['c:plotArea'] as XmlRecord | undefined;
+  const barChart = asArray(plotArea?.['c:barChart'])[0] as XmlRecord | undefined;
+  if (!chartNode || !plotArea || !barChart || String(barChart['c:barDir']?.val ?? 'col') !== 'col') {
+    return undefined;
+  }
+
+  const categories = readChartStrings(asArray(barChart['c:ser'])[0]?.['c:cat']);
+  const series = asArray(barChart['c:ser']).map((seriesNode, index) => {
+    const fill = parseFillInfo(seriesNode['c:spPr'] as XmlRecord | undefined, context.theme, context.colorMap).fill;
+    return {
+      name: readChartText(seriesNode['c:tx']) ?? `Series ${index + 1}`,
+      values: readChartNumbers(seriesNode['c:val']),
+      color: primaryFillColor(fill) ?? resolveThemeColor(`accent${(index % 6) + 1}`, context.theme.colors, context.colorMap),
+      alpha: primaryFillAlpha(fill)
+    };
+  });
+  if (!series.length || !series.some((entry) => entry.values.some((value) => value != null))) {
+    return undefined;
+  }
+
+  const valueAxisNode = asArray(plotArea['c:valAx'])[0] as XmlRecord | undefined;
+  const valueAxis = valueAxisNode
+    ? {
+        min: readFiniteNumber(valueAxisNode['c:scaling']?.['c:min']?.val),
+        max: readFiniteNumber(valueAxisNode['c:scaling']?.['c:max']?.val),
+        majorUnit: readFiniteNumber(valueAxisNode['c:majorUnit']?.val),
+        formatCode: typeof valueAxisNode['c:numFmt']?.formatCode === 'string'
+          ? String(valueAxisNode['c:numFmt'].formatCode)
+          : undefined
+      }
+    : undefined;
+  const transformInfo = parseTransform(node['p:xfrm'], context.group);
+  const hyperlink = parseHyperlink(node['p:nvGraphicFramePr']?.['p:cNvPr']?.['a:hlinkClick'] as XmlRecord | undefined, context);
+  const item: ChartItem = {
+    id: createId('chart'),
+    name: getName(node, ['p:nvGraphicFramePr', 'p:cNvPr']) ?? 'chart',
+    kind: 'chart',
+    chartType: 'column',
+    grouping: normalizeChartGrouping(barChart['c:grouping']?.val),
+    title: readChartText(chartNode['c:title']?.['c:tx']),
+    categories,
+    series,
+    legendPosition: resolveChartLegendPosition(chartNode['c:legend']),
+    valueAxis,
+    transform: transformInfo.transform,
+    fill: { type: 'none' },
+    order: getNodeOrder(node, context.orderedNodeOrders),
+    groupPath: [...context.group.groupPath],
+    ...hyperlink
+  };
+
+  return {
+    item,
+    hasTransform: transformInfo.hasTransform,
+    hasText: Boolean(item.title),
+    hasFill: false,
+    hasLine: false
+  };
+}
+
+function readChartText(node: XmlRecord | undefined): string | undefined {
+  if (!node) {
+    return undefined;
+  }
+
+  const richText = asArray(node['c:rich']?.['a:p'])
+    .flatMap((paragraph) => [
+      ...asArray(paragraph['a:r']).map((run) => String(run?.['a:t'] ?? '')),
+      ...asArray(paragraph['a:fld']).map((field) => String(field?.['a:t'] ?? ''))
+    ])
+    .join('')
+    .trim();
+  if (richText) {
+    return richText;
+  }
+
+  const values = readChartStrings(node);
+  return values.find((value) => value.trim())?.trim();
+}
+
+function readChartStrings(node: XmlRecord | undefined): string[] {
+  const cache = resolveChartCache(node);
+  return readChartCacheValues(cache).map((value) => value ?? '');
+}
+
+function readChartNumbers(node: XmlRecord | undefined): Array<number | null> {
+  const cache = resolveChartCache(node);
+  return readChartCacheValues(cache).map((value) => {
+    if (value == null || value.trim() === '') {
+      return null;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  });
+}
+
+function resolveChartCache(node: XmlRecord | undefined): XmlRecord | undefined {
+  if (!node) {
+    return undefined;
+  }
+
+  return (
+    node['c:strRef']?.['c:strCache'] ??
+    node['c:numRef']?.['c:numCache'] ??
+    node['c:strLit'] ??
+    node['c:numLit']
+  ) as XmlRecord | undefined;
+}
+
+function readChartCacheValues(cache: XmlRecord | undefined): Array<string | null> {
+  if (!cache) {
+    return [];
+  }
+
+  const points = asArray(cache['c:pt']);
+  const pointCount = Math.max(
+    0,
+    toNumber(cache['c:ptCount']?.val, 0),
+    ...points.map((point) => toNumber(point?.idx, -1) + 1)
+  );
+  const values = Array<string | null>(pointCount).fill(null);
+  for (const point of points) {
+    const index = toNumber(point?.idx, -1);
+    if (index >= 0 && index < values.length) {
+      values[index] = point?.['c:v'] == null ? null : String(point['c:v']);
+    }
+  }
+  return values;
+}
+
+function readFiniteNumber(value: unknown): number | undefined {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function normalizeChartGrouping(value: unknown): ChartItem['grouping'] {
+  switch (String(value ?? 'clustered')) {
+    case 'stacked':
+      return 'stacked';
+    case 'percentStacked':
+      return 'percentStacked';
+    default:
+      return 'clustered';
+  }
+}
+
+function resolveChartLegendPosition(node: XmlRecord | undefined): ChartItem['legendPosition'] {
+  if (!node || node['c:delete']?.val === '1') {
+    return 'none';
+  }
+
+  switch (String(node['c:legendPos']?.val ?? 'right')) {
+    case 't':
+      return 'top';
+    case 'b':
+      return 'bottom';
+    case 'l':
+      return 'left';
+    case 'r':
+    case 'tr':
+    default:
+      return 'right';
+  }
 }
 
 function parseTableDraft(node: XmlRecord, context: ParseContext): SlideItemDraft {
@@ -2144,6 +2336,21 @@ async function preloadDiagramParts(
     dataModels,
     drawings
   };
+}
+
+async function preloadChartParts(
+  zip: JSZip,
+  relationships: Record<string, RelationshipEntry>
+): Promise<Record<string, XmlRecord | null>> {
+  const chartSpaces: Record<string, XmlRecord | null> = {};
+  const chartRelationships = Object.values(relationships).filter((entry) => entry.type === REL_TYPES.chart);
+
+  for (const relationship of chartRelationships) {
+    const xml = await parseXmlFile(zip, relationship.target);
+    chartSpaces[relationship.target] = (xml?.['c:chartSpace'] as XmlRecord | undefined) ?? null;
+  }
+
+  return chartSpaces;
 }
 
 function findDiagramDrawingRelId(node: XmlRecord | null | undefined): string | undefined {

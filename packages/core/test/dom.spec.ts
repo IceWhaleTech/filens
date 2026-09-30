@@ -1,5 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ImageItem, MediaItem, ParsedPresentation, ShapeItem, SlideModel, TableItem, TextItem, UnsupportedItem } from '../src/types';
+import type {
+  ChartItem,
+  ImageItem,
+  MediaItem,
+  ParsedPresentation,
+  ShapeItem,
+  SlideModel,
+  TableItem,
+  TextItem,
+  UnsupportedItem
+} from '../src/types';
 import { MediaRegistry, renderSlideToElement } from '../src/render/dom';
 import { loadPptx } from '../src/parser/load-pptx';
 import { fixtureExists, readFixture } from './helpers';
@@ -7100,6 +7110,28 @@ describe('renderSlideToElement', () => {
     expect(placeholder?.textContent).toBe('Unsupported shape');
   });
 
+  it('renders clustered and stacked column charts as SVG bars', () => {
+    const clustered = createChartItem('chart-clustered', 'clustered', 0);
+    const stacked = createChartItem('chart-stacked', 'stacked', 460);
+    const slide = createBaseSlide([clustered, stacked]);
+
+    const rendered = renderSlideToElement(slide, createPresentation(slide));
+    const charts = rendered.querySelectorAll('.pptxv-item--chart');
+    const clusteredBars = charts[0]?.querySelectorAll('.pptxv-chart-bar') ?? [];
+    const stackedBars = charts[1]?.querySelectorAll('.pptxv-chart-bar') ?? [];
+
+    expect(charts).toHaveLength(2);
+    expect(rendered.querySelector('.pptxv-item--unsupported')).toBeNull();
+    expect(clusteredBars).toHaveLength(4);
+    expect(stackedBars).toHaveLength(4);
+    expect(clusteredBars[0]?.getAttribute('x')).not.toBe(clusteredBars[2]?.getAttribute('x'));
+    expect(stackedBars[0]?.getAttribute('x')).toBe(stackedBars[2]?.getAttribute('x'));
+    expect(charts[0]?.querySelector('.pptxv-chart-title')?.textContent).toBe('Quarterly results');
+    expect(charts[0]?.querySelectorAll('.pptxv-chart-legend-item')).toHaveLength(2);
+    expect(clusteredBars[0]?.getAttribute('fill')).toBe('#4472C4');
+    expect(clusteredBars[0]?.getAttribute('data-value')).toBe('4');
+  });
+
   it('renders SVG markers for arrow and endpoint line styles', () => {
     const slide = createBaseSlide([
       {
@@ -7214,6 +7246,35 @@ function createPresentation(slide: SlideModel, media: ParsedPresentation['media'
     slides: [slide],
     media,
     warnings: []
+  };
+}
+
+function createChartItem(id: string, grouping: ChartItem['grouping'], x: number): ChartItem {
+  return {
+    id,
+    kind: 'chart',
+    name: 'Column chart',
+    chartType: 'column',
+    grouping,
+    title: 'Quarterly results',
+    categories: ['Q1', 'Q2'],
+    series: [
+      { name: 'Revenue', values: [4, 2], color: '#4472C4' },
+      { name: 'Costs', values: [2, 3], color: '#ED7D31' }
+    ],
+    legendPosition: 'bottom',
+    transform: {
+      x,
+      y: 40,
+      width: 440,
+      height: 300,
+      rotation: 0,
+      flipH: false,
+      flipV: false
+    },
+    fill: { type: 'none' },
+    order: x === 0 ? 1 : 2,
+    groupPath: []
   };
 }
 

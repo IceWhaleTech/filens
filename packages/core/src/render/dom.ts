@@ -186,6 +186,9 @@ function renderItem(item: SlideItem, registry: MediaResolver): HTMLElement {
   if (item.kind === 'table') {
     return renderTableItem(item, registry);
   }
+  if (item.kind === 'chart') {
+    return renderChartItem(item);
+  }
   return renderUnsupportedItem(item.transform, item.label);
 }
 
@@ -835,6 +838,297 @@ function renderTableCell(cell: TableCell, registry: MediaResolver): HTMLTableCel
   }
   td.appendChild(textFrame);
   return td;
+}
+
+function renderChartItem(item: Extract<SlideItem, { kind: 'chart' }>): HTMLElement {
+  const element = createItemBox(item.transform, 'pptxv-item pptxv-item--chart');
+  const width = Math.max(item.transform.width, 1);
+  const height = Math.max(item.transform.height, 1);
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.classList.add('pptxv-chart-svg');
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.setAttribute('width', String(width));
+  svg.setAttribute('height', String(height));
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', item.title ?? item.name ?? 'Column chart');
+
+  const legendPosition = item.legendPosition ?? 'right';
+  const titleHeight = item.title ? height * 0.13 : height * 0.04;
+  const legendBottomHeight = legendPosition === 'bottom' ? height * 0.15 : 0;
+  const legendTopHeight = legendPosition === 'top' ? height * 0.13 : 0;
+  const legendSideWidth = legendPosition === 'left' || legendPosition === 'right' ? width * 0.2 : 0;
+  const plotLeft = width * 0.125 + (legendPosition === 'left' ? legendSideWidth : 0);
+  const plotRight = width - width * 0.068 - (legendPosition === 'right' ? legendSideWidth : 0);
+  const plotTop = Math.max(height * 0.08, titleHeight + legendTopHeight + height * 0.035);
+  const plotBottom = height - height * 0.08 - legendBottomHeight;
+  const plotWidth = Math.max(plotRight - plotLeft, 1);
+  const plotHeight = Math.max(plotBottom - plotTop, 1);
+  const axis = resolveColumnChartAxis(item);
+  const yForValue = (value: number) => plotBottom - ((value - axis.min) / (axis.max - axis.min)) * plotHeight;
+
+  if (item.title) {
+    const title = createChartSvgNode('text', {
+      x: width / 2,
+      y: height * 0.052,
+      'text-anchor': 'middle',
+      'dominant-baseline': 'middle'
+    });
+    title.classList.add('pptxv-chart-title');
+    title.setAttribute('font-size', String(Math.max(12, height * 0.047)));
+    title.textContent = item.title;
+    svg.appendChild(title);
+  }
+
+  for (let tick = axis.min; tick <= axis.max + axis.majorUnit / 2; tick += axis.majorUnit) {
+    const normalizedTick = Math.abs(tick) < axis.majorUnit / 1000 ? 0 : tick;
+    const y = yForValue(normalizedTick);
+    if (normalizedTick !== 0) {
+      const gridline = createChartSvgNode('line', { x1: plotLeft, y1: y, x2: plotRight, y2: y });
+      gridline.classList.add('pptxv-chart-gridline');
+      svg.appendChild(gridline);
+    }
+
+    const tickMark = createChartSvgNode('line', { x1: plotLeft - 4, y1: y, x2: plotLeft, y2: y });
+    tickMark.classList.add('pptxv-chart-axis');
+    svg.appendChild(tickMark);
+
+    const label = createChartSvgNode('text', {
+      x: plotLeft - 10,
+      y,
+      'text-anchor': 'end',
+      'dominant-baseline': 'middle'
+    });
+    label.classList.add('pptxv-chart-axis-label');
+    label.setAttribute('font-size', String(Math.max(9, height * 0.036)));
+    label.textContent = formatChartAxisValue(normalizedTick, item);
+    svg.appendChild(label);
+  }
+
+  const zeroY = yForValue(Math.min(axis.max, Math.max(axis.min, 0)));
+  const categoryCount = Math.max(item.categories.length, ...item.series.map((series) => series.values.length), 1);
+  const categoryWidth = plotWidth / categoryCount;
+  if (item.grouping === 'clustered') {
+    const groupWidth = categoryWidth * 0.74;
+    const barWidth = groupWidth / Math.max(item.series.length, 1);
+    item.series.forEach((series, seriesIndex) => {
+      series.values.forEach((rawValue, categoryIndex) => {
+        if (rawValue == null || categoryIndex >= categoryCount) {
+          return;
+        }
+
+        const value = normalizeChartValue(rawValue, item, categoryIndex);
+        const valueY = yForValue(value);
+        const rect = createChartSvgNode('rect', {
+          x: plotLeft + categoryIndex * categoryWidth + (categoryWidth - groupWidth) / 2 + seriesIndex * barWidth,
+          y: Math.min(zeroY, valueY),
+          width: Math.max(barWidth, 0.5),
+          height: Math.max(Math.abs(zeroY - valueY), 0)
+        });
+        applyChartBarStyles(rect, item, seriesIndex, categoryIndex, value);
+        svg.appendChild(rect);
+      });
+    });
+  } else {
+    const barWidth = categoryWidth * 0.5;
+    const positiveOffsets = Array<number>(categoryCount).fill(0);
+    const negativeOffsets = Array<number>(categoryCount).fill(0);
+    item.series.forEach((series, seriesIndex) => {
+      series.values.forEach((rawValue, categoryIndex) => {
+        if (rawValue == null || categoryIndex >= categoryCount) {
+          return;
+        }
+
+        const value = normalizeChartValue(rawValue, item, categoryIndex);
+        const start = value >= 0 ? positiveOffsets[categoryIndex] : negativeOffsets[categoryIndex];
+        const end = start + value;
+        if (value >= 0) {
+          positiveOffsets[categoryIndex] = end;
+        } else {
+          negativeOffsets[categoryIndex] = end;
+        }
+
+        const startY = yForValue(start);
+        const endY = yForValue(end);
+        const rect = createChartSvgNode('rect', {
+          x: plotLeft + categoryIndex * categoryWidth + (categoryWidth - barWidth) / 2,
+          y: Math.min(startY, endY),
+          width: Math.max(barWidth, 0.5),
+          height: Math.max(Math.abs(startY - endY), 0)
+        });
+        applyChartBarStyles(rect, item, seriesIndex, categoryIndex, value);
+        svg.appendChild(rect);
+      });
+    });
+  }
+
+  const xAxis = createChartSvgNode('line', { x1: plotLeft, y1: zeroY, x2: plotRight, y2: zeroY });
+  xAxis.classList.add('pptxv-chart-axis');
+  svg.appendChild(xAxis);
+  const yAxis = createChartSvgNode('line', { x1: plotLeft, y1: plotTop, x2: plotLeft, y2: plotBottom });
+  yAxis.classList.add('pptxv-chart-axis');
+  svg.appendChild(yAxis);
+
+  for (let categoryIndex = 0; categoryIndex < categoryCount; categoryIndex += 1) {
+    const x = plotLeft + (categoryIndex + 0.5) * categoryWidth;
+    const tickMark = createChartSvgNode('line', { x1: x, y1: zeroY, x2: x, y2: zeroY + 2 });
+    tickMark.classList.add('pptxv-chart-axis');
+    svg.appendChild(tickMark);
+
+    const label = createChartSvgNode('text', {
+      x,
+      y: plotBottom + height * 0.057,
+      'text-anchor': 'middle',
+      'dominant-baseline': 'middle'
+    });
+    label.classList.add('pptxv-chart-category-label');
+    label.setAttribute('font-size', String(Math.max(10, height * 0.042)));
+    label.textContent = item.categories[categoryIndex] ?? String(categoryIndex + 1);
+    svg.appendChild(label);
+  }
+
+  renderChartLegend(svg, item, { width, height, plotLeft, plotRight, plotTop, plotBottom });
+  element.appendChild(svg);
+  appendItemLinkOverlay(element, item, true);
+  return element;
+}
+
+function createChartSvgNode(name: string, attributes: Record<string, string | number>): SVGElement {
+  const node = document.createElementNS('http://www.w3.org/2000/svg', name);
+  for (const [key, value] of Object.entries(attributes)) {
+    node.setAttribute(key, String(Number.isFinite(value) ? Number(Number(value).toFixed(3)) : value));
+  }
+  return node;
+}
+
+function resolveColumnChartAxis(item: Extract<SlideItem, { kind: 'chart' }>): {
+  min: number;
+  max: number;
+  majorUnit: number;
+} {
+  const normalizedValues = item.series.flatMap((series) =>
+    series.values.flatMap((value, categoryIndex) =>
+      value == null ? [] : [normalizeChartValue(value, item, categoryIndex)]
+    )
+  );
+  const hasNegativeValues = normalizedValues.some((value) => value < 0);
+  const positiveMaximum = item.grouping === 'percentStacked'
+    ? 100
+    : item.grouping === 'stacked'
+      ? normalizedValues.reduce((sum, value) => sum + Math.max(value, 0), 0)
+      : Math.max(0, ...normalizedValues);
+  const negativeMinimum = item.grouping === 'percentStacked'
+    ? hasNegativeValues ? -100 : 0
+    : item.grouping === 'stacked'
+      ? normalizedValues.reduce((sum, value) => sum + Math.min(value, 0), 0)
+      : Math.min(0, ...normalizedValues);
+  const rawMin = item.valueAxis?.min ?? negativeMinimum;
+  const rawMax = item.valueAxis?.max ?? positiveMaximum;
+  const desiredIntervals = 4;
+  const autoStep = niceChartStep(Math.max(rawMax - rawMin, 1) / desiredIntervals);
+  const majorUnit = item.valueAxis?.majorUnit && item.valueAxis.majorUnit > 0 ? item.valueAxis.majorUnit : autoStep;
+  const min = item.valueAxis?.min ?? Math.min(0, Math.floor(rawMin / majorUnit) * majorUnit);
+  let max = item.valueAxis?.max ?? Math.max(
+    min + majorUnit,
+    Math.ceil(rawMax / majorUnit) * majorUnit,
+    min + desiredIntervals * majorUnit
+  );
+  if (max <= min) {
+    max = min + majorUnit;
+  }
+  return { min, max, majorUnit };
+}
+
+function niceChartStep(value: number): number {
+  const magnitude = 10 ** Math.floor(Math.log10(Math.max(value, Number.EPSILON)));
+  const normalized = value / magnitude;
+  const factor = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return factor * magnitude;
+}
+
+function normalizeChartValue(
+  value: number,
+  item: Extract<SlideItem, { kind: 'chart' }>,
+  categoryIndex: number
+): number {
+  if (item.grouping !== 'percentStacked') {
+    return value;
+  }
+
+  const total = item.series.reduce((sum, series) => sum + Math.abs(series.values[categoryIndex] ?? 0), 0);
+  return total > 0 ? (value / total) * 100 : 0;
+}
+
+function formatChartAxisValue(value: number, item: Extract<SlideItem, { kind: 'chart' }>): string {
+  if (item.grouping === 'percentStacked' || item.valueAxis?.formatCode?.includes('%')) {
+    return `${Number(value.toFixed(2))}%`;
+  }
+  return String(Number(value.toFixed(6)));
+}
+
+function applyChartBarStyles(
+  rect: SVGElement,
+  item: Extract<SlideItem, { kind: 'chart' }>,
+  seriesIndex: number,
+  categoryIndex: number,
+  value: number
+): void {
+  const series = item.series[seriesIndex];
+  rect.classList.add('pptxv-chart-bar');
+  rect.setAttribute('fill', colorWithAlpha(series?.color ?? '#4472C4', series?.alpha));
+  rect.setAttribute('data-series-index', String(seriesIndex));
+  rect.setAttribute('data-category-index', String(categoryIndex));
+  rect.setAttribute('data-value', String(value));
+}
+
+function renderChartLegend(
+  svg: SVGSVGElement,
+  item: Extract<SlideItem, { kind: 'chart' }>,
+  bounds: { width: number; height: number; plotLeft: number; plotRight: number; plotTop: number; plotBottom: number }
+): void {
+  const position = item.legendPosition ?? 'right';
+  if (position === 'none' || !item.series.length) {
+    return;
+  }
+
+  const entries = position === 'bottom' || position === 'top' ? [...item.series].reverse() : item.series;
+  const fontSize = Math.max(9, bounds.height * 0.036);
+  const swatchSize = Math.max(8, fontSize * 0.9);
+  const legend = createChartSvgNode('g', {});
+  legend.classList.add('pptxv-chart-legend');
+
+  entries.forEach((series, index) => {
+    let x: number;
+    let y: number;
+    if (position === 'bottom' || position === 'top') {
+      const entryWidth = (bounds.plotRight - bounds.plotLeft) / entries.length;
+      x = bounds.plotLeft + index * entryWidth + entryWidth * 0.03;
+      y = position === 'bottom' ? bounds.height * 0.925 : Math.max(bounds.height * 0.105, bounds.plotTop - fontSize);
+    } else {
+      x = position === 'left' ? bounds.width * 0.025 : bounds.plotRight + bounds.width * 0.04;
+      y = bounds.plotTop + (index + 0.5) * Math.min(fontSize * 2.2, (bounds.plotBottom - bounds.plotTop) / entries.length);
+    }
+
+    const group = createChartSvgNode('g', { 'data-series-index': item.series.indexOf(series) });
+    group.classList.add('pptxv-chart-legend-item');
+    const swatch = createChartSvgNode('rect', {
+      x,
+      y: y - swatchSize * 0.72,
+      width: swatchSize,
+      height: swatchSize
+    });
+    swatch.setAttribute('fill', colorWithAlpha(series.color, series.alpha));
+    const label = createChartSvgNode('text', {
+      x: x + swatchSize * 1.35,
+      y,
+      'dominant-baseline': 'middle'
+    });
+    label.setAttribute('font-size', String(fontSize));
+    label.textContent = series.name;
+    group.append(swatch, label);
+    legend.appendChild(group);
+  });
+
+  svg.appendChild(legend);
 }
 
 function renderUnsupportedItem(transform: SlideItem['transform'], label: string): HTMLElement {

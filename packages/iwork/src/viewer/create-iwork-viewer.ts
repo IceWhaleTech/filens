@@ -178,9 +178,10 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
     }
 
     const canvases = documentCanvases(state.document);
-    const targetPages = options.virtual === false
-      ? new Set(pageShells.map((_, index) => index))
-      : visiblePages;
+    const shouldVirtualize = options.virtual ?? state.document.kind === 'pages';
+    const targetPages = shouldVirtualize
+      ? visiblePages
+      : new Set(pageShells.map((_, index) => index));
     for (const [index, element] of mountedPages) {
       if (!targetPages.has(index)) {
         element.remove();

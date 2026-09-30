@@ -163,6 +163,39 @@ describe('loadPptx', () => {
     }
   });
 
+  it('parses cached clustered and stacked column charts from graphic frames', async () => {
+    const presentation = await loadPptx(await buildColumnChartFixture());
+    const charts = presentation.slides[0].items.filter((item) => item.kind === 'chart');
+
+    expect(charts).toHaveLength(2);
+    expect(charts[0]).toMatchObject({
+      kind: 'chart',
+      chartType: 'column',
+      grouping: 'clustered',
+      title: 'Chart 1',
+      categories: ['Category 1', 'Category 2'],
+      legendPosition: 'bottom',
+      valueAxis: {
+        min: -2,
+        max: 8,
+        majorUnit: 2,
+        formatCode: '0.0'
+      },
+      series: [
+        { name: 'Series 1', values: [4.3, 2.5], color: '#2F6BFF' },
+        { name: 'Series 2', values: [2.4, null], color: '#FF7A59' }
+      ]
+    });
+    expect(charts[1]).toMatchObject({
+      kind: 'chart',
+      grouping: 'stacked',
+      title: 'Chart 2',
+      legendPosition: 'right'
+    });
+    expect(presentation.slides[0].items.some((item) => item.kind === 'unsupported')).toBe(false);
+    expect(presentation.warnings).toEqual([]);
+  });
+
   it('treats an empty root group transform as identity', async () => {
     const zip = await JSZip.loadAsync(await buildDefaultTextStyleFixture());
     const slideXml = await zip.file('ppt/slides/slide1.xml')?.async('text');
@@ -1982,6 +2015,77 @@ async function buildCrossKindPlaceholderTextFixture(): Promise<Uint8Array> {
   );
 
   return new Uint8Array(await zip.generateAsync({ type: 'uint8array' }));
+}
+
+async function buildColumnChartFixture(): Promise<Uint8Array> {
+  const zip = await JSZip.loadAsync(await buildDefaultTextStyleFixture());
+  const slideXml = await zip.file('ppt/slides/slide1.xml')?.async('text');
+  zip.file(
+    'ppt/slides/slide1.xml',
+    slideXml?.replace(
+      '</p:spTree>',
+      `<p:graphicFrame>
+        <p:nvGraphicFramePr><p:cNvPr id="4" name="Clustered chart"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr>
+        <p:xfrm><a:off x="4572000" y="457200"/><a:ext cx="4114800" cy="2057400"/></p:xfrm>
+        <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rId2"/></a:graphicData></a:graphic>
+      </p:graphicFrame>
+      <p:graphicFrame>
+        <p:nvGraphicFramePr><p:cNvPr id="5" name="Stacked chart"/><p:cNvGraphicFramePr/><p:nvPr/></p:nvGraphicFramePr>
+        <p:xfrm><a:off x="4572000" y="2743200"/><a:ext cx="4114800" cy="2057400"/></p:xfrm>
+        <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" r:id="rId3"/></a:graphicData></a:graphic>
+      </p:graphicFrame>
+    </p:spTree>`
+    ) ?? ''
+  );
+
+  const relationshipsXml = await zip.file('ppt/slides/_rels/slide1.xml.rels')?.async('text');
+  zip.file(
+    'ppt/slides/_rels/slide1.xml.rels',
+    relationshipsXml?.replace(
+      '</Relationships>',
+      `  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart2.xml"/>
+</Relationships>`
+    ) ?? ''
+  );
+
+  zip.file('ppt/charts/chart1.xml', buildColumnChartXml('clustered', 'Chart 1', 'b', true));
+  zip.file('ppt/charts/chart2.xml', buildColumnChartXml('stacked', 'Chart 2', 'r', false));
+  return new Uint8Array(await zip.generateAsync({ type: 'uint8array' }));
+}
+
+function buildColumnChartXml(grouping: 'clustered' | 'stacked', title: string, legendPosition: string, axisBounds: boolean): string {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <c:chart>
+    <c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>${title}</a:t></a:r></a:p></c:rich></c:tx></c:title>
+    <c:plotArea>
+      <c:barChart>
+        <c:barDir val="col"/><c:grouping val="${grouping}"/>
+        <c:ser>
+          <c:idx val="0"/><c:order val="0"/>
+          <c:tx><c:strRef><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>Series 1</c:v></c:pt></c:strCache></c:strRef></c:tx>
+          <c:spPr><a:solidFill><a:schemeClr val="accent1"/></a:solidFill></c:spPr>
+          <c:cat><c:strRef><c:strCache><c:ptCount val="2"/><c:pt idx="0"><c:v>Category 1</c:v></c:pt><c:pt idx="1"><c:v>Category 2</c:v></c:pt></c:strCache></c:strRef></c:cat>
+          <c:val><c:numRef><c:numCache><c:ptCount val="2"/><c:pt idx="0"><c:v>4.3</c:v></c:pt><c:pt idx="1"><c:v>2.5</c:v></c:pt></c:numCache></c:numRef></c:val>
+        </c:ser>
+        <c:ser>
+          <c:idx val="1"/><c:order val="1"/>
+          <c:tx><c:strRef><c:strCache><c:ptCount val="1"/><c:pt idx="0"><c:v>Series 2</c:v></c:pt></c:strCache></c:strRef></c:tx>
+          <c:spPr><a:solidFill><a:schemeClr val="accent2"/></a:solidFill></c:spPr>
+          <c:cat><c:strRef><c:strCache><c:ptCount val="2"/><c:pt idx="0"><c:v>Category 1</c:v></c:pt><c:pt idx="1"><c:v>Category 2</c:v></c:pt></c:strCache></c:strRef></c:cat>
+          <c:val><c:numRef><c:numCache><c:ptCount val="2"/><c:pt idx="0"><c:v>2.4</c:v></c:pt></c:numCache></c:numRef></c:val>
+        </c:ser>
+      </c:barChart>
+      <c:valAx>
+        <c:scaling>${axisBounds ? '<c:min val="-2"/><c:max val="8"/>' : ''}</c:scaling>
+        <c:numFmt formatCode="0.0" sourceLinked="0"/>
+        ${axisBounds ? '<c:majorUnit val="2"/>' : ''}
+      </c:valAx>
+    </c:plotArea>
+    <c:legend><c:legendPos val="${legendPosition}"/></c:legend>
+  </c:chart>
+</c:chartSpace>`;
 }
 
 async function buildDefaultTextStyleFixture(): Promise<Uint8Array> {

@@ -244,7 +244,7 @@ export interface TextFrame {
 export interface BaseSlideItem {
   id: string;
   name?: string;
-  kind: 'text' | 'shape' | 'image' | 'media' | 'table' | 'unsupported';
+  kind: 'text' | 'shape' | 'image' | 'media' | 'table' | 'chart' | 'unsupported';
   transform: ItemTransform;
   fill: FillStyle;
   line?: LineStyle;
@@ -443,13 +443,36 @@ export interface TableItem extends BaseSlideItem {
   cells: TableCell[];
 }
 
+export interface ChartSeries {
+  name: string;
+  values: Array<number | null>;
+  color: string;
+  alpha?: number;
+}
+
+export interface ChartItem extends BaseSlideItem {
+  kind: 'chart';
+  chartType: 'column';
+  grouping: 'clustered' | 'stacked' | 'percentStacked';
+  title?: string;
+  categories: string[];
+  series: ChartSeries[];
+  legendPosition?: 'top' | 'right' | 'bottom' | 'left' | 'none';
+  valueAxis?: {
+    min?: number;
+    max?: number;
+    majorUnit?: number;
+    formatCode?: string;
+  };
+}
+
 export interface UnsupportedItem extends BaseSlideItem {
   kind: 'unsupported';
   unsupportedType: string;
   label: string;
 }
 
-export type SlideItem = TextItem | ShapeItem | ImageItem | MediaItem | TableItem | UnsupportedItem;
+export type SlideItem = TextItem | ShapeItem | ImageItem | MediaItem | TableItem | ChartItem | UnsupportedItem;
 
 export type SlideBackground = FillStyle;
 

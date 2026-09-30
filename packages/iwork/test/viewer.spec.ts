@@ -147,7 +147,7 @@ describe('iWork viewer', () => {
     explicitViewer.destroy();
   });
 
-  it('renders Keynote slides as a continuous virtualized stack', async () => {
+  it('renders every Keynote slide in a continuous stack', async () => {
     parseMock.mockResolvedValue(createKeynoteDocument(3));
     const container = document.body.appendChild(document.createElement('div'));
     Object.defineProperty(container, 'clientHeight', { configurable: true, value: 600 });
@@ -157,14 +157,14 @@ describe('iWork viewer', () => {
 
     const shells = Array.from(container.querySelectorAll<HTMLElement>('.iworkv-page-shell'));
     expect(shells).toHaveLength(3);
-    expect(shells.map((shell) => shell.childElementCount)).toEqual([1, 0, 0]);
+    expect(shells.map((shell) => shell.childElementCount)).toEqual([1, 1, 1]);
     shells[0]!.getBoundingClientRect = () => ({ top: -1500, bottom: -1050, height: 450 } as DOMRect);
     shells[1]!.getBoundingClientRect = () => ({ top: 40, bottom: 490, height: 450 } as DOMRect);
     shells[2]!.getBoundingClientRect = () => ({ top: 1400, bottom: 1850, height: 450 } as DOMRect);
 
     container.dispatchEvent(new Event('scroll'));
     await vi.waitFor(() => expect(viewer.getState().currentPage).toBe(1));
-    expect(shells.map((shell) => shell.childElementCount)).toEqual([0, 1, 0]);
+    expect(shells.map((shell) => shell.childElementCount)).toEqual([1, 1, 1]);
 
     const scrollSpy = vi.fn();
     shells[2]!.scrollIntoView = scrollSpy;
@@ -172,7 +172,7 @@ describe('iWork viewer', () => {
     viewer.goToPage(2);
 
     expect(viewer.getState().currentPage).toBe(2);
-    expect(shells.map((shell) => shell.childElementCount)).toEqual([0, 0, 1]);
+    expect(shells.map((shell) => shell.childElementCount)).toEqual([1, 1, 1]);
     expect(scrollSpy).toHaveBeenCalledTimes(1);
     viewer.destroy();
   });
