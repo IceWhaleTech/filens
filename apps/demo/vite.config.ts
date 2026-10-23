@@ -152,7 +152,7 @@ async function writeBuildInfo(outputDir: string): Promise<void> {
       brotliBytes: compressedSize(imageWasm.path, '.br')
     } : undefined,
     typicalPerformance: {
-      source: 'README.zh-CN.md 本机性能快照（Windows 10 / Xeon E5-2696 v4 / Node.js 20.20 / Go 1.24）',
+      source: 'docs/project-overview.zh-CN.md 本机小样例性能快照',
       smallDocToDocxMs: 1,
       smallXlsToXlsxMs: 1,
       smallPptToPptxMs: 1,
@@ -246,7 +246,7 @@ const externalSampleProxy = {
 };
 
 export default defineConfig({
-  base: '/modules/filens/',
+  base: process.env.VITE_BASE_PATH || '/modules/filens/',
   plugins: [vue(), externalConverterWasms(), precompressAssets()],
   server: { proxy: externalSampleProxy },
   preview: { proxy: externalSampleProxy },

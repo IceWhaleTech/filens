@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('groups formats by business family on desktop and mobile', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
 
   await expect(page.locator('.wb-tabs .wb-tab')).toHaveText(['Office', 'Design', 'Media', 'Archive', 'Text']);
   await expect(page.getByRole('button', { name: 'CSV', exact: true })).toHaveCount(1);
@@ -23,7 +23,7 @@ test('groups formats by business family on desktop and mobile', async ({ page })
 });
 
 test('offers representative samples for text, markup, config, and source formats', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Text', exact: true }).click();
 
   for (const [format, name] of [
@@ -46,7 +46,7 @@ test('offers representative samples for text, markup, config, and source formats
 });
 
 test('offers polished samples across the supported Office families', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
 
   for (const format of [
     'DOCM', 'DOT', 'DOTX', 'DOTM', 'WPT',
@@ -60,15 +60,15 @@ test('offers polished samples across the supported Office families', async ({ pa
   }
 
   for (const [format, name, text] of [
-    ['DOCM', 'office-showcase.docm', 'File Preview Regression Report'],
-    ['DOTM', 'office-showcase.dotm', 'File Preview Regression Report'],
+    ['DOCM', 'office-showcase.docm', 'Weekend Field Guide'],
+    ['DOTM', 'office-showcase.dotm', 'Weekend Field Guide'],
     ['WPT', 'project-brief.wpt', 'The Lifecycle of a Project'],
-    ['XLTX', 'finance-dashboard.xltx', 'FY2026 Preview Dashboard'],
-    ['XLTM', 'finance-dashboard.xltm', 'FY2026 Preview Dashboard'],
+    ['XLTX', 'finance-dashboard.xltx', 'Fictional Sample Dashboard'],
+    ['XLTM', 'finance-dashboard.xltm', 'Fictional Sample Dashboard'],
     ['PPTM', 'visual-story.pptm', 'Smart Art'],
-    ['ODT', 'product-brief.odt', 'Product Launch Brief'],
+    ['ODT', 'product-brief.odt', 'Weekend Trip Brief'],
     ['ODP', 'quarterly-review.odp', 'Quarterly Review'],
-    ['SXW', 'openoffice-project.sxw', 'Product Launch Brief'],
+    ['SXW', 'openoffice-project.sxw', 'Weekend Trip Brief'],
     ['SXC', 'openoffice-dashboard.sxc', 'Dashboard'],
     ['SXI', 'openoffice-review.sxi', 'Quarterly Review'],
     ['ODG', 'design-boards.odg', 'Brand System'],
@@ -81,16 +81,17 @@ test('offers polished samples across the supported Office families', async ({ pa
   }
 
   await page.getByRole('button', { name: 'DOCX', exact: true }).click();
-  await page.getByRole('button', { name: '样例', exact: true }).click();
-  await page.locator('button.wb-variant').filter({ hasText: 'generated.docx' }).click();
-  await expect(page.locator('.wb-preview-stage')).toContainText('Product brief');
-  await expect(page.locator('.wb-preview-stage')).toContainText('Milestones and decisions');
-  await expect(page.locator('.wb-preview-stage')).toContainText('Success measures');
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('generated.docx');
+  await expect(page.locator('.wb-preview-stage')).toContainText('Trip overview');
+  await expect(page.locator('.wb-preview-stage')).toContainText('Route and activities');
+  await expect(page.locator('.wb-preview-stage')).toContainText('All places, groups, dates, and figures in this guide are fictional.');
+  await expect(page.locator('.wb-preview-stage')).not.toContainText(/technical decisions|release candidate|WASM smoke test|conversion core/i);
+  await expect(page.locator('.wb-preview-stage')).toContainText('Packing checklist');
   await expect(page.locator('.wb-note.is-error')).toHaveCount(0);
 });
 
 test('offers read-only TAR, TGZ, and GZIP samples', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Archive', exact: true }).click();
 
   for (const [format, name, entry] of [
@@ -117,7 +118,7 @@ test('offers read-only TAR, TGZ, and GZIP samples', async ({ page }) => {
 });
 
 test('offers playable samples for more audio and video formats', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Media', exact: true }).click();
 
   for (const format of ['MP3', 'OGG']) {
@@ -160,7 +161,7 @@ test('offers samples for browser-native images and panorama aliases', async ({ p
     path: 'apps/demo/public/samples/panorama/insta360-oners-tallinn.jpg',
     contentType: 'image/jpeg'
   }));
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Media', exact: true }).click();
 
   const imageCategory = page.locator('.wb-format-category').filter({
@@ -264,7 +265,7 @@ test('lists only locally bundled real-device live photo samples', async ({ page 
       };`
     });
   });
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Media', exact: true }).click();
 
   const livePhotoCategory = page.locator('.wb-format-category').filter({
@@ -286,11 +287,11 @@ test('lists only locally bundled real-device live photo samples', async ({ page 
   expect(await page.evaluate(() => (window as typeof window & {
     __livePhotoOptions?: { photoSrc?: string; videoSrc?: string };
   }).__livePhotoOptions)).toMatchObject({
-    photoSrc: '/samples/live-photo/apple-iphone-15-live-photo.jpg',
-    videoSrc: '/samples/live-photo/apple-iphone-15-live-photo.mp4'
+    photoSrc: new URL('samples/live-photo/apple-iphone-15-live-photo.jpg', page.url()).pathname,
+    videoSrc: new URL('samples/live-photo/apple-iphone-15-live-photo.mp4', page.url()).pathname
   });
-  await expect(page.getByRole('link', { name: '原始 HEIC' })).toHaveAttribute('href', '/samples/live-photo/apple-iphone-15-live-photo.HEIC');
-  await expect(page.getByRole('link', { name: '原始 MOV' })).toHaveAttribute('href', '/samples/live-photo/apple-iphone-15-live-photo.MOV');
+  await expect(page.getByRole('link', { name: '原始 HEIC' })).toHaveAttribute('href', new URL('samples/live-photo/apple-iphone-15-live-photo.HEIC', page.url()).pathname);
+  await expect(page.getByRole('link', { name: '原始 MOV' })).toHaveAttribute('href', new URL('samples/live-photo/apple-iphone-15-live-photo.MOV', page.url()).pathname);
 
   await livePhotoCategory.getByRole('button', { name: 'Google · Pixel 9 Pro XL', exact: true }).click();
   await expect(page.locator('.wb-preview-title strong')).toHaveText('pixel-9-pro-xl-ultra-hdr-motion-photo.jpg');

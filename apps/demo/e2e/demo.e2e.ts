@@ -23,7 +23,7 @@ async function goToSlide(page: Page, index: number): Promise<void> {
 }
 
 test('switches the redesigned preview layouts and formats', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
 
   await expect(page.getByRole('heading', { name: '文件预览台' })).toBeVisible();
   await page.getByRole('button', { name: '演示', exact: true }).click();
@@ -38,7 +38,7 @@ test('switches the redesigned preview layouts and formats', async ({ page }) => 
 });
 
 test('loads converter-backed built-in samples from asset URLs', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'DOC', exact: true }).click();
 
   await expect(page.locator('.wb-preview-title strong')).toHaveText('legacy-project-workflow.doc');
@@ -48,13 +48,13 @@ test('loads converter-backed built-in samples from asset URLs', async ({ page })
 });
 
 test('renders rich built-in document, workbook, and presentation samples', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
 
   await page.getByRole('button', { name: 'DOCX', exact: true }).click();
   await expect(page.locator('.wb-preview-title strong')).toHaveText('generated.docx');
-  await expect(page.locator('.wb-preview-stage')).toContainText('Product brief');
-  await expect(page.locator('.wb-preview-stage')).toContainText('Success measures');
-  await expect(page.locator('.wb-preview-stage')).toContainText('Milestones and decisions');
+  await expect(page.locator('.wb-preview-stage')).toContainText('Trip overview');
+  await expect(page.locator('.wb-preview-stage')).toContainText('Packing checklist');
+  await expect(page.locator('.wb-preview-stage')).toContainText('Route and activities');
 
   await page.getByRole('button', { name: 'XLSX', exact: true }).click();
   await expect(page.locator('.wb-preview-title strong')).toHaveText('rich-xlsx-many-columns.xlsx');
@@ -73,14 +73,14 @@ test('renders rich built-in document, workbook, and presentation samples', async
 });
 
 test('loads a polished presentation sample by default', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await expect(page.locator('.pptxv-shell')).toBeVisible();
   await expect(page.locator('.wb-preview-title strong')).toHaveText('rich-pptx-shapes.pptx');
   await expect(page.locator('.pptxv-slide-stage').first()).toBeVisible();
 });
 
 test('keeps rendering the regression deck when navigating past slide 5', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await selectVueOfficeRegressionDeck(page);
   const status = page.locator('.pptxv-status').first();
   await expect(status).toContainText('1 / 13', {
@@ -93,7 +93,7 @@ test('keeps rendering the regression deck when navigating past slide 5', async (
 
 test('renders remote bullets, shape text, and table styles on key slides', async ({ page }) => {
   test.setTimeout(45000);
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await selectVueOfficeRegressionDeck(page);
   const status = page.locator('.pptxv-status').first();
 
@@ -918,7 +918,7 @@ test('renders remote bullets, shape text, and table styles on key slides', async
 });
 
 test('renders remote 3d preset shapes with reference-like svg primitives on slide 3', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await selectVueOfficeRegressionDeck(page);
   const status = page.locator('.pptxv-status').first();
 
@@ -954,7 +954,7 @@ test('renders remote 3d preset shapes with reference-like svg primitives on slid
 });
 
 test('keeps toolbar state in sync while navigating the built-in sample deck', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Preview built-in sample' }).click();
   const status = page.locator('.pptxv-status').first();
 
@@ -968,7 +968,7 @@ test('keeps toolbar state in sync while navigating the built-in sample deck', as
 });
 
 test('supports keyboard navigation after the preview shell is focused', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Preview built-in sample' }).click();
   const shell = page.locator('.pptxv-shell');
   const status = page.locator('.pptxv-status').first();
@@ -986,7 +986,7 @@ test('supports keyboard navigation after the preview shell is focused', async ({
 });
 
 test('supports slide links and action links inside the presentation content', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Preview built-in sample' }).click();
   const status = page.locator('.pptxv-status').first();
   const main = page.locator('.pptxv-main');
@@ -999,7 +999,7 @@ test('supports slide links and action links inside the presentation content', as
 });
 
 test('supports image links inside the presentation content', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Preview built-in sample' }).click();
   const status = page.locator('.pptxv-status').first();
 
@@ -1011,7 +1011,7 @@ test('supports image links inside the presentation content', async ({ page }) =>
 });
 
 test('exposes external item links with accessible attributes', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Preview built-in sample' }).click();
   await page.getByRole('button', { name: 'Next' }).click();
 
@@ -1028,7 +1028,7 @@ test('exposes external item links with accessible attributes', async ({ page }) 
 });
 
 test('renders local qrpc sdk links with reference-like blue underlines', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.locator('input[type="file"]').setInputFiles(path.resolve('tmp/qrpc-local.pptx'));
   await expect(page.locator('.pptxv-status').first()).toContainText('1 / 39', {
     timeout: 20000
@@ -1045,7 +1045,7 @@ test('renders local qrpc sdk links with reference-like blue underlines', async (
 });
 
 test('renders local qrpc slide 20 code screenshot instead of a blank page', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('./?view=preview');
   await page.locator('input[type="file"]').setInputFiles(path.resolve('tmp/qrpc-local.pptx'));
   await expect(page.locator('.pptxv-status').first()).toContainText('1 / 39', {
     timeout: 20000

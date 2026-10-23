@@ -1,0 +1,175 @@
+{
+  "unit": "bytes",
+  "rows": [
+    {
+      "name": "converter-core",
+      "files": [
+        "externals/converter-core.wasm"
+      ],
+      "raw": 848284,
+      "gzip": 385835,
+      "brotli": 313100
+    },
+    {
+      "name": "converter-image",
+      "files": [
+        "externals/converter-image.wasm"
+      ],
+      "raw": 671128,
+      "gzip": 209529,
+      "brotli": 167021
+    },
+    {
+      "name": "index",
+      "files": [
+        "assets/index-DuLOtp37.js",
+        "assets/index-FX4im7Zp.css"
+      ],
+      "raw": 163721,
+      "gzip": 45834,
+      "brotli": 38544
+    },
+    {
+      "name": "vendor",
+      "files": [
+        "assets/vendor-xzEE2xf_.js"
+      ],
+      "raw": 1881703,
+      "gzip": 536421,
+      "brotli": 443767
+    },
+    {
+      "name": "core",
+      "files": [
+        "assets/core-BkZx5BN_.js",
+        "assets/core-XuGWIYd0.css"
+      ],
+      "raw": 281616,
+      "gzip": 73042,
+      "brotli": 62711
+    },
+    {
+      "name": "preview",
+      "files": [
+        "assets/preview-Bgzv3Cf8.js",
+        "assets/preview-CSZTxYjU.css"
+      ],
+      "raw": 70231,
+      "gzip": 16198,
+      "brotli": 14334
+    },
+    {
+      "name": "office",
+      "files": [
+        "assets/office-DOXSS8Ry.js",
+        "assets/office-QYGK17mJ.css"
+      ],
+      "raw": 21438,
+      "gzip": 6696,
+      "brotli": 5915
+    },
+    {
+      "name": "iwork",
+      "files": [
+        "assets/iwork-CcME2Rjs.js",
+        "assets/iwork-CrXQuUv3.css"
+      ],
+      "raw": 24334,
+      "gzip": 8092,
+      "brotli": 7153
+    },
+    {
+      "name": "design",
+      "files": [
+        "assets/design-CFRUgAE8.js",
+        "assets/design-D5kn6Zx-.css"
+      ],
+      "raw": 85057,
+      "gzip": 23985,
+      "brotli": 20421
+    },
+    {
+      "name": "model3d",
+      "files": [
+        "assets/model3d-B1myDZRM.css",
+        "assets/model3d-fBGnAklW.js"
+      ],
+      "raw": 108361,
+      "gzip": 28883,
+      "brotli": 25149
+    },
+    {
+      "name": "media",
+      "files": [
+        "assets/media-BviReceC.css",
+        "assets/media-CrqLplps.js"
+      ],
+      "raw": 97055,
+      "gzip": 26939,
+      "brotli": 23575
+    },
+    {
+      "name": "archive",
+      "files": [
+        "assets/archive-CI_CU7We.js",
+        "assets/archive-CeCayQ4R.css"
+      ],
+      "raw": 20691,
+      "gzip": 6660,
+      "brotli": 5858
+    },
+    {
+      "name": "text",
+      "files": [
+        "assets/text-B6iHEIXU.js",
+        "assets/text-orIMSXs1.css"
+      ],
+      "raw": 18392,
+      "gzip": 6382,
+      "brotli": 5552
+    },
+    {
+      "name": "iwork-worker",
+      "files": [
+        "assets/iwork-worker-CV4NWQeq.js"
+      ],
+      "raw": 903393,
+      "gzip": 185866,
+      "brotli": 155552
+    },
+    {
+      "name": "pdf.worker.min",
+      "files": [
+        "assets/pdf.worker.min-wgc6bjNh.mjs"
+      ],
+      "raw": 1078612,
+      "gzip": 298067,
+      "brotli": 238652
+    },
+    {
+      "name": "occt-import-js",
+      "files": [
+        "assets/occt-import-js-BhHfLpto.wasm"
+      ],
+      "raw": 7604031,
+      "gzip": 3110912,
+      "brotli": 2315009
+    }
+  ],
+  "initial": {
+    "raw": 2532456,
+    "gzip": 711119,
+    "brotli": 593746,
+    "files": [
+      "assets/index-DuLOtp37.js",
+      "assets/vendor-xzEE2xf_.js",
+      "assets/core-BkZx5BN_.js",
+      "assets/model3d-fBGnAklW.js",
+      "assets/media-CrqLplps.js",
+      "assets/core-XuGWIYd0.css",
+      "assets/model3d-B1myDZRM.css",
+      "assets/media-BviReceC.css",
+      "assets/index-FX4im7Zp.css"
+    ]
+  }
+}

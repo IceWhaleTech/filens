@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import JSZip from 'jszip';
-import { computed, defineAsyncComponent, onMounted, ref, shallowRef, watch } from 'vue';
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import AppleLivePhotoPreview from './components/AppleLivePhotoPreview.vue';
+import LandingPage from './components/LandingPage.vue';
 import { zimaAuth } from './zimaAuth';
 import { createWasmConverterClient } from '@filens/converter-client';
 import { createWasmPanoramaProcessor } from '@filens/panorama';
@@ -50,7 +51,7 @@ type DemoKind =
 type SourceMode = 'sample' | 'url' | 'upload' | 'generated';
 
 const zimaFilePrefix = 'zima-file:';
-const zimaSampleRoot = '/media/Main-Storage1/filens-raw-samples';
+const zimaSampleRoot = import.meta.env.VITE_ZIMA_SAMPLE_ROOT || '/media/filens-samples';
 
 function zimaFileSource(relativePath: string): string {
   return `${zimaFilePrefix}${zimaSampleRoot}/${relativePath.replace(/^\/+/, '')}`;
@@ -107,6 +108,12 @@ const converterImageWasmUrl = `${import.meta.env.BASE_URL}externals/converter-im
 const staticSamples: DemoSource[] = [
   {
     kind: 'pptx',
+    label: 'Field Notes',
+    name: 'filens-field-notes.pptx',
+    source: '/samples/filens-field-notes.pptx'
+  },
+  {
+    kind: 'pptx',
     label: 'PPTX',
     name: 'vue-office-test.pptx',
     source: '/samples/vue-office-test.pptx'
@@ -126,8 +133,8 @@ const staticSamples: DemoSource[] = [
   {
     kind: 'key',
     label: 'Keynote',
-    name: 'a.key',
-    source: '/samples/a.key'
+    name: 'filens-weekend.key',
+    source: '/samples/filens-weekend.key'
   },
   {
     kind: 'pages',
@@ -633,9 +640,9 @@ const staticSamples: DemoSource[] = [
   },
   {
     kind: 'cad',
-    label: 'Neon City DXF',
-    name: 'neon-city.dxf',
-    source: createNeonCityDxfFixture(),
+    label: 'Cafe floor plan',
+    name: 'filens-cafe.dxf',
+    source: '/samples/filens-cafe.dxf',
     contentType: 'image/vnd.dxf',
     mode: 'generated'
   },
@@ -1335,13 +1342,15 @@ const demoRoutes = shallowRef(DEFAULT_FORMAT_ROUTES);
 const uploadAccept = computed(() => createPreviewAcceptAttribute({ routes: demoRoutes.value }));
 const supportedFormats = computed(() => listPreviewFormats({ routes: demoRoutes.value }));
 const formatSupportByExtension = computed(() => new Map(supportedFormats.value.map((format) => [format.extension, format])));
-// Format buttons use the last catalog entry by default, with DOCX explicitly
-// pinned to the richer generated report instead of the table-only fixture.
+// Format buttons use the last catalog entry by default. Office showcase
+// buttons use the generated guide and dashboard rather than edge-case fixtures.
 const sampleByExtension = new Map(
   staticSamples.map((sample) => [sample.catalogId ?? inferExtensionFromName(sample.name) ?? '', sample])
 );
 const generatedDocxSample = staticSamples.find((sample) => sample.name === 'generated.docx');
 if (generatedDocxSample) sampleByExtension.set('docx', generatedDocxSample);
+const generatedXlsxSample = staticSamples.find((sample) => sample.name === 'generated.xlsx');
+if (generatedXlsxSample) sampleByExtension.set('xlsx', generatedXlsxSample);
 const catalogOnlyFormats: Array<[string, PreviewFamily]> = [
   ...['dwg', 'dgn'].map((extension) => [extension, 'cad'] as [string, PreviewFamily]),
   ['fcstd', 'model3d'],
@@ -1534,6 +1543,52 @@ const sourceMode = ref<SourceMode>('sample');
 const remoteUrl = ref(defaultRemoteUrl);
 const renderedState = ref<PreviewItemState | null>(null);
 const lastError = ref<string | null>(null);
+const showWorkbench = ref(new URLSearchParams(window.location.search).get('view') === 'preview');
+const showPreviewToolbar = ref(false);
+
+function syncPageFromUrl(): void {
+  const params = new URLSearchParams(window.location.search);
+  showWorkbench.value = params.get('view') === 'preview';
+  if (showWorkbench.value && params.has('format')) selectLandingSample(params.get('format')!);
+  if (showWorkbench.value) document.title = 'filens · 文件预览台';
+}
+
+function selectLandingSample(extension: string): void {
+  if (extension === 'showcase') {
+    void useSample(staticSamples[0]!);
+  } else {
+    useFormatSample(extension);
+  }
+}
+
+function openWorkbench(extension?: string): void {
+  const url = new URL(window.location.href);
+  url.searchParams.set('view', 'preview');
+  if (extension) url.searchParams.set('format', extension);
+  else url.searchParams.delete('format');
+  url.hash = '';
+  window.history.pushState({}, '', url);
+  syncPageFromUrl();
+  window.scrollTo(0, 0);
+}
+
+function uploadFromLanding(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  if (!input.files?.length) return;
+  // Read the FileList before navigation unmounts the landing-page input.
+  void onFileChange(event);
+  openWorkbench();
+}
+
+function returnHome(): void {
+  const url = new URL(window.location.href);
+  url.searchParams.delete('view');
+  url.searchParams.delete('format');
+  url.hash = '';
+  window.history.pushState({}, '', url);
+  syncPageFromUrl();
+  window.scrollTo(0, 0);
+}
 const uploadResourceResolver = shallowRef<PreviewResourceResolver | undefined>(undefined);
 const renderStartedAt = shallowRef<number | null>(null);
 const renderTimeMs = shallowRef<number | null>(null);
@@ -1561,8 +1616,10 @@ const converter: ConverterClient = {
 const panoramaProcessor = createWasmPanoramaProcessor({ wasm: converterCoreWasmUrl });
 
 onMounted(() => {
-  if (zimaAuth.isZimaRuntime() && !zimaAuth.isAuthenticated()) zimaAuth.goToLogin();
+  syncPageFromUrl();
+  window.addEventListener('popstate', syncPageFromUrl);
 });
+onUnmounted(() => window.removeEventListener('popstate', syncPageFromUrl));
 
 function demoKindForConversionTarget(targetFormat: string): DemoKind {
   switch (targetFormat) {
@@ -1579,9 +1636,12 @@ function demoKindForConversionTarget(targetFormat: string): DemoKind {
       return 'ppt';
   }
 }
-void import('@filens/vue').then(({ createVueDefaultPreviewRoutes }) => {
-  demoRoutes.value = createVueDefaultPreviewRoutes();
-});
+watch(showWorkbench, (enabled) => {
+  if (!enabled) return;
+  void import('@filens/vue').then(({ createVueDefaultPreviewRoutes }) => {
+    demoRoutes.value = createVueDefaultPreviewRoutes();
+  });
+}, { immediate: true });
 
 const familyLabel = computed(() => renderedState.value?.family ?? detectKind(current.value.name) ?? current.value.kind);
 const warningCount = computed(() => renderedState.value?.warnings.length ?? 0);
@@ -1695,6 +1755,14 @@ const fontResolver: PreviewFontResolver = ({ family, fontFile }) => {
 };
 
 async function useSample(sample: DemoSource): Promise<void> {
+  const needsHostFile = [sample.source, sample.previewSource]
+    .some((source) => typeof source === 'string' && source.startsWith(zimaFilePrefix));
+  // The homepage, bundled samples, and local files also work outside ZimaOS.
+  // Ask the host to authenticate only when opening one of its protected files.
+  if (needsHostFile && zimaAuth.isZimaRuntime() && !zimaAuth.isAuthenticated()) {
+    zimaAuth.goToLogin();
+    return;
+  }
   renderedState.value = null;
   lastError.value = null;
   downloadTimeMs.value = null;
@@ -3100,291 +3168,6 @@ ENDSEC
 EOF`);
 }
 
-function createNeonCityDxfFixture(): Uint8Array {
-  return new TextEncoder().encode(`0
-SECTION
-2
-TABLES
-0
-TABLE
-2
-LAYER
-0
-LAYER
-2
-SKYLINE
-62
-4
-0
-LAYER
-2
-ENERGY
-62
-6
-0
-LAYER
-2
-ORBIT
-62
-5
-0
-LAYER
-2
-BEACONS
-62
-2
-0
-LAYER
-2
-LABELS
-62
-3
-0
-ENDTAB
-0
-ENDSEC
-0
-SECTION
-2
-ENTITIES
-0
-LWPOLYLINE
-8
-SKYLINE
-70
-1
-10
--140
-20
--70
-10
--140
-20
-10
-10
--112
-20
-10
-10
--112
-20
-62
-10
--82
-20
-62
-10
--82
-20
-22
-10
--54
-20
-22
-10
--54
-20
-92
-10
--20
-20
-92
-10
--20
-20
-30
-10
-18
-20
-30
-10
-18
-20
-118
-10
-48
-20
-118
-10
-48
-20
-48
-10
-78
-20
-48
-10
-78
-20
-78
-10
-108
-20
-78
-10
-108
-20
-18
-10
-140
-20
-18
-10
-140
-20
--70
-0
-LINE
-8
-ENERGY
-10
--140
-20
--45
-11
-140
-21
-45
-0
-LINE
-8
-ENERGY
-10
--140
-20
-45
-11
-140
-21
--45
-0
-LINE
-8
-ENERGY
-10
-0
-20
--70
-11
-0
-21
-138
-0
-CIRCLE
-8
-ORBIT
-10
-0
-20
-30
-40
-72
-0
-CIRCLE
-8
-ORBIT
-10
-0
-20
-30
-40
-52
-0
-CIRCLE
-8
-ORBIT
-10
-0
-20
-30
-40
-30
-0
-ARC
-8
-BEACONS
-10
-0
-20
-30
-40
-88
-50
-18
-51
-162
-0
-ARC
-8
-BEACONS
-10
-0
-20
-30
-40
-96
-50
-198
-51
-342
-0
-CIRCLE
-8
-BEACONS
-10
-0
-20
-30
-40
-7
-0
-CIRCLE
-8
-BEACONS
-10
--112
-20
-74
-40
-5
-0
-CIRCLE
-8
-BEACONS
-10
-48
-20
-130
-40
-5
-0
-CIRCLE
-8
-BEACONS
-10
-108
-20
-90
-40
-5
-0
-TEXT
-8
-LABELS
-10
--62
-20
--96
-40
-12
-1
-NEON CITY  //  2099
-0
-ENDSEC
-0
-EOF`);
-}
-
 function createVectorPosterDataUrl(title: string, subtitle: string, accent: string): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
   <defs>
@@ -3521,13 +3304,13 @@ function createOdfTextContent(): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:table="urn:oasis:names:tc:opendocument:xmlns:table:1.0" office:version="1.3">
   <office:body><office:text>
-    <text:h text:outline-level="1">Product Launch Brief</text:h>
-    <text:p>Prepared for the September launch review. This sample exercises headings, paragraphs, lists, tables, dates, percentages, and multilingual text.</text:p>
+    <text:h text:outline-level="1">Weekend Trip Brief</text:h>
+    <text:p>A fictional weekend itinerary. All names, dates, groups, and amounts are made up for this public sample.</text:p>
     <text:h text:outline-level="2">Executive summary</text:h>
     <text:p>Revenue target: 128,400 USD. Forecast margin: 42.5%. Risk reserve: -7.2%.</text:p>
-    <text:list><text:list-item><text:p>Finalize onboarding and accessibility review</text:p></text:list-item><text:list-item><text:p>Validate Office conversion in browser WASM</text:p></text:list-item><text:list-item><text:p>Publish support and fallback notes</text:p></text:list-item></text:list>
+    <text:list><text:list-item><text:p>Choose a marked walking route</text:p></text:list-item><text:list-item><text:p>Pack a picnic and a reusable bottle</text:p></text:list-item><text:list-item><text:p>Check the weather before departure</text:p></text:list-item></text:list>
     <text:h text:outline-level="2">Delivery matrix</text:h>
-    <table:table table:name="Milestones"><table:table-row><table:table-cell><text:p>Milestone</text:p></table:table-cell><table:table-cell><text:p>Owner</text:p></table:table-cell><table:table-cell><text:p>Status</text:p></table:table-cell></table:table-row><table:table-row><table:table-cell><text:p>Design freeze</text:p></table:table-cell><table:table-cell><text:p>Mia</text:p></table:table-cell><table:table-cell><text:p>Done</text:p></table:table-cell></table:table-row><table:table-row><table:table-cell><text:p>Release candidate</text:p></table:table-cell><table:table-cell><text:p>Noah</text:p></table:table-cell><table:table-cell><text:p>Active</text:p></table:table-cell></table:table-row></table:table>
+    <table:table table:name="Milestones"><table:table-row><table:table-cell><text:p>Milestone</text:p></table:table-cell><table:table-cell><text:p>Owner</text:p></table:table-cell><table:table-cell><text:p>Status</text:p></table:table-cell></table:table-row><table:table-row><table:table-cell><text:p>Choose a trail</text:p></table:table-cell><table:table-cell><text:p>Sample group A</text:p></table:table-cell><table:table-cell><text:p>Done</text:p></table:table-cell></table:table-row><table:table-row><table:table-cell><text:p>Pack a picnic</text:p></table:table-cell><table:table-cell><text:p>Sample group B</text:p></table:table-cell><table:table-cell><text:p>Active</text:p></table:table-cell></table:table-row></table:table>
     <text:h text:outline-level="2">International readiness</text:h>
     <text:p>English, Chinese: \u6587\u4ef6\u9884\u89c8, Arabic: \u0645\u0639\u0627\u064a\u0646\u0629 \u0627\u0644\u0645\u0644\u0641\u0627\u062a, emoji: \ud83d\ude80.</text:p>
   </office:text></office:body>
@@ -3539,9 +3322,9 @@ function createOdfPresentationContent(): string {
 <office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" office:version="1.3">
   <office:body><office:presentation>
     <draw:page draw:name="Quarterly Review"><text:p>Quarterly Review</text:p><text:p>Growth, quality, and delivery confidence</text:p><text:p>FY2026 / Q3</text:p></draw:page>
-    <draw:page draw:name="Scorecard"><text:p>Executive Scorecard</text:p><text:p>Revenue 128.4K / Margin 42.5%</text:p><text:p>Conversion coverage 256 formats</text:p><text:p>Browser-first Rust WASM core</text:p></draw:page>
-    <draw:page draw:name="Roadmap"><text:p>Delivery Roadmap</text:p><text:p>1. Improve document fidelity</text:p><text:p>2. Expand realistic regression samples</text:p><text:p>3. Keep bundle size visible</text:p></draw:page>
-    <draw:page draw:name="Closing"><text:p>Ready for Review</text:p><text:p>Questions, risks, and next decisions</text:p><text:p>filens</text:p></draw:page>
+    <draw:page draw:name="Scorecard"><text:p>Executive Scorecard</text:p><text:p>Revenue 128.4K / Margin 42.5%</text:p><text:p>Twelve fictional walking routes</text:p><text:p>Lakes, woodland, and village walks</text:p></draw:page>
+    <draw:page draw:name="Roadmap"><text:p>Delivery Roadmap</text:p><text:p>1. Choose a lakeside route</text:p><text:p>2. Pack a picnic basket</text:p><text:p>3. Explore the village market</text:p></draw:page>
+    <draw:page draw:name="Closing"><text:p>Ready for Review</text:p><text:p>Fictional places, dates, and figures for this public sample</text:p><text:p>filens</text:p></draw:page>
   </office:presentation></office:body>
 </office:document-content>`;
 }
@@ -3561,8 +3344,8 @@ function createOdfDrawingContent(): string {
 <office:document-content xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" office:version="1.3">
   <office:body><office:drawing>
     <draw:page draw:name="Brand System"><text:p>Brand System</text:p><text:p>Color, typography, spacing, and component foundations</text:p><text:p>Primary: Ocean Blue / Accent: Signal Orange</text:p></draw:page>
-    <draw:page draw:name="User Journey"><text:p>User Journey</text:p><text:p>Import -> Convert in Rust WASM -> Preview -> Review</text:p><text:p>Designed for fast browser-first document workflows</text:p></draw:page>
-    <draw:page draw:name="Delivery Board"><text:p>Delivery Board</text:p><text:p>Ready: Office samples and conversion routes</text:p><text:p>Next: richer vector geometry and embedded media</text:p></draw:page>
+    <draw:page draw:name="User Journey"><text:p>User Journey</text:p><text:p>Arrive -> Explore the trail -> Picnic -> Return</text:p><text:p>A fictional walking route for a relaxed afternoon</text:p></draw:page>
+    <draw:page draw:name="Delivery Board"><text:p>Delivery Board</text:p><text:p>Ready: trail maps and picnic baskets</text:p><text:p>Next: a lakeside walk and a village market</text:p></draw:page>
   </office:drawing></office:body>
 </office:document-content>`;
 }
@@ -3570,7 +3353,7 @@ function createOdfDrawingContent(): string {
 async function createWorkbookFixture(): Promise<Uint8Array> {
   const zip = new JSZip();
   const inline = (ref: string, value: string, style = 0) => `<c r="${ref}" t="inlineStr"${style ? ` s="${style}"` : ''}><is><t>${escapeHtml(value)}</t></is></c>`;
-  const customers = ['Alice & Co.', 'Bob Industries', 'Café 中文', 'Delta Labs', 'Echo Retail', 'Foxtrot Studio'];
+  const customers = ['Sample cafe A', 'Sample cafe B', 'Café 中文', 'Sample shop D', 'Sample shop E', 'Sample studio F'];
   const categories = ['Software', 'Services', 'Hardware'];
   const transactionRows = Array.from({ length: 24 }, (_, index) => {
     const row = index + 2;
@@ -3611,12 +3394,12 @@ async function createWorkbookFixture(): Promise<Uint8Array> {
 </styleSheet>`);
   zip.file('xl/worksheets/sheet1.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="3" topLeftCell="A4" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="1" width="24" customWidth="1"/><col min="2" max="6" width="16" customWidth="1"/></cols><sheetData>
-  <row r="1" ht="34" customHeight="1">${inline('A1', 'FY2026 Preview Dashboard', 1)}</row>
+  <row r="1" ht="34" customHeight="1">${inline('A1', 'Fictional Sample Dashboard', 1)}</row>
   <row r="3">${inline('A3', 'Metric', 2)}${inline('B3', 'Q1', 2)}${inline('C3', 'Q2', 2)}${inline('D3', 'Q3', 2)}${inline('E3', 'Q4', 2)}${inline('F3', 'Total', 2)}</row>
   <row r="4">${inline('A4', 'Revenue')}<c r="B4" s="3"><v>42500</v></c><c r="C4" s="3"><v>58750.5</v></c><c r="D4" s="3"><v>49300</v></c><c r="E4" s="3"><v>68120.75</v></c><c r="F4" s="3"><f>SUM(B4:E4)</f><v>218671.25</v></c></row>
   <row r="5">${inline('A5', 'Growth')}<c r="B5" s="4"><v>0.125</v></c><c r="C5" s="4"><v>-0.0725</v></c><c r="D5" s="4"><v>0</v></c><c r="E5" s="4"><v>0.314</v></c><c r="F5" s="4"><f>AVERAGE(B5:E5)</f><v>0.091625</v></c></row>
   <row r="6">${inline('A6', 'Orders')}<c r="B6"><v>128</v></c><c r="C6"><v>164</v></c><c r="D6"><v>151</v></c><c r="E6"><v>203</v></c><c r="F6"><f>SUM(B6:E6)</f><v>646</v></c></row>
-  <row r="8">${inline('A8', 'Status note', 6)}${inline('B8', 'Mixed formulas, dates, percentages, negative currency, Unicode, merged cells, and sparse ranges.', 7)}</row>
+  <row r="8">${inline('A8', 'Status note', 6)}${inline('B8', 'Fictional sample data only. Names, dates, and amounts do not represent real customers or business results.', 7)}</row>
 </sheetData><mergeCells count="2"><mergeCell ref="A1:F1"/><mergeCell ref="B8:F9"/></mergeCells></worksheet>`);
   zip.file('xl/worksheets/sheet2.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols><col min="1" max="1" width="13" customWidth="1"/><col min="2" max="3" width="22" customWidth="1"/><col min="4" max="7" width="14" customWidth="1"/><col min="8" max="8" width="42" customWidth="1"/></cols><sheetData><row r="1">${inline('A1', 'Date', 2)}${inline('B1', 'Customer', 2)}${inline('C1', 'Category', 2)}${inline('D1', 'Units', 2)}${inline('E1', 'Unit Price', 2)}${inline('F1', 'Total', 2)}${inline('G1', 'Active', 2)}${inline('H1', 'Note', 2)}</row>${transactionRows}<row r="27">${inline('E27', 'Grand total', 2)}<c r="F27" s="3"><f>SUM(F2:F25)</f><v>4200.1</v></c></row></sheetData><autoFilter ref="A1:H25"/></worksheet>`);
@@ -3685,50 +3468,50 @@ async function createDocxFixture(): Promise<Uint8Array> {
     `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <w:body>
-    <w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:t>File Preview Regression Report</w:t></w:r></w:p>
-    <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:color w:val="64748B"/><w:sz w:val="24"/></w:rPr><w:t>Browser-first document workflow · September 2026 review brief</w:t></w:r></w:p>
-    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Product brief</w:t></w:r></w:p>
-    <w:p><w:r><w:t>Filens turns a mixed folder of office files, media, archives, and design assets into a searchable preview workspace. The browser owns the rendering surface, while the shared WASM core keeps conversion behavior consistent across the demo and backend shell.</w:t></w:r></w:p>
-    <w:p><w:r><w:rPr><w:b/><w:color w:val="17324D"/></w:rPr><w:t>Review question:</w:t></w:r><w:r><w:t xml:space="preserve"> Can a first-time reviewer understand the file, its confidence level, and the next action without opening a desktop editor?</w:t></w:r></w:p>
-    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Executive summary</w:t></w:r></w:p>
-    <w:p><w:r><w:t>The Atlas launch stream brings document preview, media compatibility, and structured extraction into one browser-first workflow. The September checkpoint is focused on predictable fallbacks, clear warnings, and content that remains useful when a source format is only partially supported.</w:t></w:r></w:p>
-    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Project snapshot</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:t>Weekend Field Guide</w:t></w:r></w:p>
+    <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:color w:val="64748B"/><w:sz w:val="24"/></w:rPr><w:t>Fictional lakeside itinerary · Public sample edition</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Trip overview</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Spend a quiet weekend exploring a fictional lakeside village, woodland paths, and a small outdoor market. This made-up travel guide demonstrates headings, tables, lists, and multilingual text.</w:t></w:r></w:p>
+    <w:p><w:r><w:rPr><w:b/><w:color w:val="17324D"/></w:rPr><w:t>Before you go:</w:t></w:r><w:r><w:t xml:space="preserve"> Check the weather, choose a marked trail, and pack a reusable water bottle. All places, groups, dates, and figures in this guide are fictional.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>At a glance</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Start with a gentle walk by the lake, pause for a picnic, and finish with a visit to the village market. Leave plenty of time for photographs, sketching, and discovering a different view.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Weekend itinerary</w:t></w:r></w:p>
     <w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="CBD5E1"/><w:left w:val="single" w:sz="8" w:color="CBD5E1"/><w:bottom w:val="single" w:sz="8" w:color="CBD5E1"/><w:right w:val="single" w:sz="8" w:color="CBD5E1"/><w:insideH w:val="single" w:sz="4" w:color="E2E8F0"/><w:insideV w:val="single" w:sz="4" w:color="E2E8F0"/></w:tblBorders></w:tblPr>
-      <w:tr><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Workstream</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Owner</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Milestone</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Status</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>Preview runtime</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Lin Chen</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Codec validation</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:rPr><w:color w:val="15803D"/><w:b/></w:rPr><w:t>On track</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>Conversion core</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Mei Zhang</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>WASM smoke test</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:rPr><w:color w:val="B45309"/><w:b/></w:rPr><w:t>Review</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>Demo experience</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Ravi Patel</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Release candidate</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:rPr><w:color w:val="2563EB"/><w:b/></w:rPr><w:t>Scheduled</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Route</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Group</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Activity</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="E0F2FE"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Status</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Lakeside loop</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Sample group A</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Photo stop</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:rPr><w:color w:val="15803D"/><w:b/></w:rPr><w:t>On track</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Woodland path</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Sample group B</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Picnic</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:rPr><w:color w:val="B45309"/><w:b/></w:rPr><w:t>Review</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Village walk</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Sample group C</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Sketching</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:rPr><w:color w:val="2563EB"/><w:b/></w:rPr><w:t>Scheduled</w:t></w:r></w:p></w:tc></w:tr>
     </w:tbl>
-    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Success measures</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Packing checklist</w:t></w:r></w:p>
     <w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="CBD5E1"/><w:left w:val="single" w:sz="8" w:color="CBD5E1"/><w:bottom w:val="single" w:sz="8" w:color="CBD5E1"/><w:right w:val="single" w:sz="8" w:color="CBD5E1"/><w:insideH w:val="single" w:sz="4" w:color="E2E8F0"/><w:insideV w:val="single" w:sz="4" w:color="E2E8F0"/></w:tblBorders></w:tblPr>
-      <w:tr><w:tc><w:tcPr><w:shd w:fill="F8FAFC"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Measure</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="F8FAFC"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Target</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="F8FAFC"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Evidence in this sample</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>Time to first useful preview</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>&lt; 2 seconds</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Loading state, fallback note, and stable page layout</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>Content confidence</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Visible warnings</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Codec, resource, and conversion status are surfaced next to the file</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>Review hand-off</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>One clear next action</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Decision log and release checklist below</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:tcPr><w:shd w:fill="F8FAFC"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Item</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="F8FAFC"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Quantity</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="F8FAFC"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Notes</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Water bottle</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>1 per visitor</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Refill at marked points along the route</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Route map</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>1 map</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Keep an offline copy for the woodland path</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Picnic basket</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>1 per group</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Pack reusable containers and take litter home</w:t></w:r></w:p></w:tc></w:tr>
     </w:tbl>
     <w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Rich text:</w:t></w:r><w:r><w:t xml:space="preserve"> bold, </w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>italic</w:t></w:r><w:r><w:t xml:space="preserve">, </w:t></w:r><w:r><w:rPr><w:u w:val="single"/></w:rPr><w:t>underline</w:t></w:r><w:r><w:t xml:space="preserve">, </w:t></w:r><w:r><w:rPr><w:highlight w:val="yellow"/></w:rPr><w:t>highlight</w:t></w:r><w:r><w:t xml:space="preserve">, and </w:t></w:r><w:r><w:rPr><w:color w:val="C75B12"/></w:rPr><w:t>colored text</w:t></w:r><w:r><w:t>.</w:t></w:r></w:p>
-    <w:p><w:pPr><w:pStyle w:val="Quote"/></w:pPr><w:r><w:t>A realistic sample should make layout failures obvious before users find them.</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Quote"/></w:pPr><w:r><w:t>Take only photographs, leave only footprints.</w:t></w:r></w:p>
     <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Multiple paragraphs and explicit spacing</w:t></w:r></w:p>
     <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Mixed Unicode: café, 中文, العربية, emoji 😀</w:t></w:r></w:p>
     <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Numbers: -42, 3.14159, 6.02E23, 50%</w:t></w:r></w:p>
-    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr></w:pPr><w:r><w:t>Confirm source bytes and content type before loading</w:t></w:r></w:p>
-    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr></w:pPr><w:r><w:t>Render the happy path and expose a useful fallback</w:t></w:r></w:p>
-    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr></w:pPr><w:r><w:t>Record warnings without hiding the document</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr></w:pPr><w:r><w:t>Check the forecast before departure</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr></w:pPr><w:r><w:t>Choose a marked walking route</w:t></w:r></w:p>
+    <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr></w:pPr><w:r><w:t>Bring a reusable bottle and comfortable shoes</w:t></w:r></w:p>
     <w:p><w:r><w:br w:type="page"/></w:r></w:p>
     <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Structured table</w:t></w:r></w:p>
     <w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="64748B"/><w:left w:val="single" w:sz="8" w:color="64748B"/><w:bottom w:val="single" w:sz="8" w:color="64748B"/><w:right w:val="single" w:sz="8" w:color="64748B"/><w:insideH w:val="single" w:sz="4" w:color="CBD5E1"/><w:insideV w:val="single" w:sz="4" w:color="CBD5E1"/></w:tblBorders></w:tblPr>
       <w:tr><w:tc><w:tcPr><w:shd w:fill="17324D"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/></w:rPr><w:t>Date</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="17324D"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/></w:rPr><w:t>Customer</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="17324D"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/></w:rPr><w:t>Status</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="17324D"/></w:tcPr><w:p><w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/></w:rPr><w:t>Amount</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>2026-08-01</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Alice &amp; Co.</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Paid</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>42,500.00</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>2026-08-02</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Bob Industries</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Pending</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>-725.50</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>2026-08-01</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Sample cafe A</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Paid</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>42,500.00</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>2026-08-02</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Sample cafe B</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Pending</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>-725.50</w:t></w:r></w:p></w:tc></w:tr>
       <w:tr><w:tc><w:p><w:r><w:t>2026-08-03</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Café 中文</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Review</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>3.14159</w:t></w:r></w:p></w:tc></w:tr>
       <w:tr><w:tc><w:tcPr><w:gridSpan w:val="3"/><w:shd w:fill="FFF4E8"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Formula-style total</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="FFF4E8"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>41,777.64159</w:t></w:r></w:p></w:tc></w:tr>
     </w:tbl>
-    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Milestones and decisions</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Route and activities</w:t></w:r></w:p>
     <w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="8" w:color="CBD5E1"/><w:left w:val="single" w:sz="8" w:color="CBD5E1"/><w:bottom w:val="single" w:sz="8" w:color="CBD5E1"/><w:right w:val="single" w:sz="8" w:color="CBD5E1"/><w:insideH w:val="single" w:sz="4" w:color="E2E8F0"/><w:insideV w:val="single" w:sz="4" w:color="E2E8F0"/></w:tblBorders></w:tblPr>
-      <w:tr><w:tc><w:tcPr><w:shd w:fill="FFF7ED"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Date</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="FFF7ED"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Decision</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="FFF7ED"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Next action</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>Sep 08</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Keep unsupported media visible with a browser-compatible preview path.</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Document codec and source provenance.</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>Sep 15</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Prefer one conversion core for browser and backend callers.</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Run WASM smoke tests before release.</w:t></w:r></w:p></w:tc></w:tr>
-      <w:tr><w:tc><w:p><w:r><w:t>Sep 22</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Ship a content-rich DOCX sample rather than a lorem-ipsum document.</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Collect reviewer feedback on hierarchy and density.</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:tcPr><w:shd w:fill="FFF7ED"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Date</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="FFF7ED"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Activity</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:shd w:fill="FFF7ED"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Notes</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Sep 08</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Meet at the lakeside trail entrance.</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Follow the marked path and enjoy the view.</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Sep 15</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Pause at the woodland lookout for a photograph.</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Keep to the marked trail.</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Sep 22</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Stop for a picnic beside the village square.</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Use reusable containers and take litter home.</w:t></w:r></w:p></w:tc></w:tr>
     </w:tbl>
     <w:p><w:r><w:br w:type="page"/></w:r></w:p>
     <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Multilingual and directionality</w:t></w:r></w:p>
@@ -3736,9 +3519,9 @@ async function createDocxFixture(): Promise<Uint8Array> {
     <w:p><w:r><w:rPr><w:rFonts w:eastAsia="Microsoft YaHei"/></w:rPr><w:t>中文：文件预览需要正确处理字体、换行、标点和表格。</w:t></w:r></w:p>
     <w:p><w:pPr><w:bidi/></w:pPr><w:r><w:rPr><w:rtl/></w:rPr><w:t>العربية: معاينة المستندات تحتاج إلى اتجاه صحيح للنص.</w:t></w:r></w:p>
     <w:p><w:r><w:t>Emoji and symbols: 😀 🚀 ✓ ★ → © ™ € ¥</w:t></w:r></w:p>
-    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Reviewer notes</w:t></w:r></w:p>
-    <w:p><w:r><w:rPr><w:rFonts w:eastAsia="Microsoft YaHei"/><w:b/></w:rPr><w:t>本轮评审重点：</w:t></w:r><w:r><w:t xml:space="preserve">页面层级清晰、表格信息可扫描、异常状态有解释，并且在浏览器不支持原始编码时仍然给出可用的预览路径。</w:t></w:r></w:p>
-    <w:p><w:pPr><w:pStyle w:val="Quote"/></w:pPr><w:r><w:t>结论：先让用户看到有意义的内容，再把技术细节放在可追溯的警告和决策记录中。</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Travel notes</w:t></w:r></w:p>
+    <w:p><w:r><w:rPr><w:rFonts w:eastAsia="Microsoft YaHei"/><w:b/></w:rPr><w:t>虚构行程提示：</w:t></w:r><w:r><w:t xml:space="preserve">沿湖散步、林间野餐、集市闲逛。文中的地点、分组、日期与数字均为演示虚构，不对应真实人员或业务信息。</w:t></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Quote"/></w:pPr><w:r><w:t>旅行小记：慢一点，看看身边的风景，也为下一位来访者留下一片整洁。</w:t></w:r></w:p>
     <w:p><w:r><w:br w:type="page"/></w:r></w:p>
     <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Layout edge cases</w:t></w:r></w:p>
     <w:p><w:r><w:t>Before tab</w:t></w:r><w:r><w:tab/><w:t>after tab</w:t></w:r><w:r><w:br/><w:t>after line break</w:t></w:r></w:p>
@@ -3837,11 +3620,12 @@ const genericSnippet = `<Preview
 />`;
 
 const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fit="contain" />
-<IworkPreview :src="'/samples/a.key'" type="key" />`;
+<IworkPreview :src="'/samples/filens-weekend.key'" type="key" />`;
 </script>
 
 <template>
-  <main class="workbench">
+  <LandingPage v-if="!showWorkbench" :upload-accept="uploadAccept" @preview="openWorkbench" @upload="uploadFromLanding" />
+  <main v-else class="workbench">
     <header class="wb-header">
       <div class="wb-brand">
         <span class="wb-brand-mark" aria-hidden="true">
@@ -3856,6 +3640,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
           </svg>
         </span>
         <div>
+          <button class="wb-home-link" type="button" @click="returnHome">← filens 首页</button>
           <p class="wb-eyebrow">REAL FILE PREVIEW</p>
           <h1 class="wb-title">文件预览台</h1>
         </div>
@@ -3991,9 +3776,25 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
               <strong>{{ timing.value }}</strong>
             </span>
           </div>
+          <button
+            v-if="!current.livePhoto"
+            type="button"
+            class="wb-toolbar-toggle"
+            :class="{ 'is-active': showPreviewToolbar }"
+            :aria-label="showPreviewToolbar ? '隐藏工具栏' : '显示工具栏'"
+            :aria-expanded="showPreviewToolbar"
+            aria-controls="wb-preview-content"
+            @click="showPreviewToolbar = !showPreviewToolbar"
+          >
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <path d="M3 5h14M3 10h14M3 15h14" />
+              <path d="M7 3v4m6 1v4m-6 1v4" stroke-width="3" />
+            </svg>
+            工具栏
+          </button>
         </header>
 
-        <div class="wb-preview-stage">
+        <div id="wb-preview-content" class="wb-preview-stage">
           <AppleLivePhotoPreview
             v-if="current.livePhoto"
             :photo-src="current.livePhoto.photoSrc"
@@ -4014,7 +3815,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
             :font-resolver="fontResolver"
             :resource-resolver="uploadResourceResolver"
             :fit="previewFit"
-            :toolbar="true"
+            :toolbar="showPreviewToolbar"
             style="height: 100%;"
             @rendered="onRendered"
             @state-change="renderedState = $event"
@@ -4061,8 +3862,27 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
     linear-gradient(135deg, #efeee7 0%, #e4e4dc 54%, #edede6 100%);
   font-family: "Bahnschrift", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   isolation: isolate;
+}
+
+.wb-home-link {
+  padding: 0;
+  margin-bottom: 8px;
+  border: 0;
+  background: transparent;
+  color: #52594a;
+  font-size: 11px !important;
+  cursor: pointer;
+}
+
+@media (min-width: 781px) {
+  .workbench { height: 100dvh; }
+  .workbench .wb-body { min-height: 0; align-items: stretch; grid-template-rows: minmax(0, 1fr); overflow: hidden; }
+  .workbench .wb-sidebar { min-height: 0; overflow-y: auto; }
+  .workbench .wb-preview { min-height: 0; }
+  .workbench .wb-brand { flex-shrink: 0; }
+  .workbench .wb-title { font-size: 28px; white-space: nowrap; }
 }
 
 .workbench::before {
@@ -4610,7 +4430,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 .wb-preview-head {
   min-width: 0;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 14px;
   padding: 0 16px;
@@ -4664,6 +4484,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 }
 
 .wb-runtime-timings {
+  grid-column: 3;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -4693,6 +4514,41 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   font-family: Consolas, "SFMono-Regular", monospace;
   font-size: 9px;
   font-variant-numeric: tabular-nums;
+}
+
+.wb-toolbar-toggle {
+  grid-column: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9px;
+  background: transparent;
+  color: #d7dbd1;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.wb-toolbar-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
+.wb-toolbar-toggle:hover,
+.wb-toolbar-toggle.is-active {
+  border-color: var(--lime);
+  color: var(--lime);
+}
+
+.wb-toolbar-toggle:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
 }
 
 .wb-preview-stage {
@@ -4898,16 +4754,22 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   }
 
   .wb-preview-head {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     row-gap: 8px;
     padding-block: 10px;
   }
 
   .wb-runtime-timings {
     grid-column: 1 / -1;
+    grid-row: 2;
     justify-content: flex-start;
     max-width: 100%;
     overflow-x: auto;
+  }
+
+  .wb-toolbar-toggle {
+    grid-column: 3;
+    grid-row: 1;
   }
 }
 

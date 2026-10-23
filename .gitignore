@@ -6,6 +6,7 @@ coverage/
 playwright-report/
 test-results/
 .vite/
+.vercel/
 .gocache/
 tmp/
 tmp-screens/

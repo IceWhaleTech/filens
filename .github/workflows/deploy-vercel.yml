@@ -1,0 +1,56 @@
+name: Deploy to Vercel
+
+# Vercel's Git integration already deploys pushes. Keep this workflow manual
+# so enabling it does not publish each commit twice.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Check Vercel configuration
+        shell: bash
+        run: |
+          for secret in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [[ -z "${!secret}" ]]; then
+              echo "::error::Set the $secret repository secret. See docs/deploy-vercel.md."
+              exit 1
+            fi
+          done
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Pull Vercel project settings
+        run: npx --yes vercel@65.1.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build production output
+        run: npx --yes vercel@65.1.0 build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy production output
+        shell: bash
+        run: |
+          deployment_url="$(npx --yes vercel@65.1.0 deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN")"
+          printf 'Deployment: %s\n' "$deployment_url" >> "$GITHUB_STEP_SUMMARY"

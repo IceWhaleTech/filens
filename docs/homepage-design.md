@@ -1,0 +1,48 @@
+# filens homepage
+
+The product homepage introduces filens before visitors enter the existing file preview workbench. The workbench remains at `?view=preview`; sample links can add `&format=docx`, `&format=pano`, or `&format=showcase`.
+
+The workbench preview toolbar starts hidden. Use the toolbar button in the preview header to show or hide it; keyboard navigation and zoom shortcuts also work while it is hidden.
+
+The homepage, bundled examples, and local-file preview do not require ZimaOS authentication. Authentication is requested when selecting a sample that reads protected host storage. This also lets the production build run at its configured base path on a standalone static host without redirecting into a nonexistent ZimaOS login route.
+
+For a root-domain deployment, see [Deploy to Vercel / 部署到 Vercel](deploy-vercel.md). `npm run build:vercel` builds the WASM modules and sets the frontend base path to `/`; other builds keep the NAS base path.
+
+## References and content structure
+
+The following project pages were reviewed for their presentation patterns:
+
+| Reference | Useful pattern | Applied to filens |
+| --- | --- | --- |
+| [vue-files-preview](https://github.com/VueFilesPreview/vue-files-preview) | Format-specific screenshots and direct examples | One main preview with six format tabs and links into working samples |
+| [vue-office](https://github.com/501351981/vue-office) | An immediate demo | A local-file CTA and an actual recorded demo |
+| [JitViewer](https://github.com/jitOffice/jit-viewer-sdk), [product page](https://jitword.com/jit-viewer.html) | Clear SDK entry points | A compact integration link and a separate interactive workbench |
+
+The page has two main sections: a visual introduction with switchable preview captures, followed by a compact video walkthrough. Format support and developer documentation remain one click away. Repeated format cards, separate privacy and use-case sections, the code block, FAQ, and the closing promotion have been removed to keep attention on the file preview itself.
+
+## Chinese and English
+
+- `?lang=zh` opens Chinese; `?lang=en` opens English.
+- The navigation and footer both offer a language switch. Selection is remembered in local storage; an explicit URL parameter takes priority.
+- Navigation, headings, content, labels, accessibility descriptions, metadata, and video captions have both versions.
+- Existing workbench controls keep their existing language. This change translates the product homepage.
+
+## Visuals and maintenance
+
+The homepage uses the existing filens logo, locally drawn format badges in the preview tabs, actual preview captures, and a three-slide sample presentation. The recording loads after the visitor asks to play it. Photo credits are available in a footer disclosure; detailed sources and regeneration instructions are in [home/SOURCES.md](../apps/demo/public/home/SOURCES.md).
+
+To regenerate captures and the recording:
+
+```sh
+npm run dev --workspace @filens/demo -- --host 127.0.0.1 --port 4173
+# In another terminal, with Playwright Chromium and FFmpeg available:
+node scripts/capture-homepage-demo.mjs
+```
+
+The capture script also regenerates `filens-field-notes.pptx`. Format parsing and conversion remain in the shared frontend core; no backend conversion code is changed.
+
+The public Keynote sample is a new three-slide fictional travel presentation. On macOS with Keynote installed, regenerate it with `osascript scripts/generate-keynote-sample.applescript /tmp/filens-weekend.key /absolute/path/to/photo-alpine-lake.jpg`, then copy the result to `apps/demo/public/samples/filens-weekend.key`. Regenerate the fictional cafe floor plan with `node scripts/generate-showcase-cad.mjs`. The document and workbook generators use invented travel, group, and shop data; they contain no internal project or personnel details.
+
+After recapturing, run `node scripts/generate-readme-assets.mjs` to refresh the README overview and animated preview. Run `npm run build:vercel && npm run report:bundle-sizes` to refresh the measured size tables in both README versions.
+
+Run the homepage interaction checks with `npx playwright test apps/demo/e2e/landing.e2e.ts` and build with `npm run build:demo`.

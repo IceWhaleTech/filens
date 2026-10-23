@@ -1,198 +1,102 @@
-# filens
+<div align="center">
+  <img src="apps/demo/public/brand/filens-icon.svg" alt="filens 标志" width="72" height="72" />
+  <h1>filens</h1>
+  <p><strong>文件的精彩，打开就看见。</strong></p>
+  <p>从 Office、iWork 到 CAD 和全景照片，在浏览器里轻松预览。</p>
+  <p><a href="README.md">English</a> · 简体中文</p>
+  <p>
+    <a href="#演示">观看演示</a> ·
+    <a href="#快速开始">本地体验</a> ·
+    <a href="docs/support-matrix.md">支持格式</a>
+  </p>
+</div>
 
-[English](README.md) | 简体中文
+[![filens 的六种实际预览：演示文稿、文档、表格、Keynote、CAD 和全景照片](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
 
-**面向人的 File Lens，面向应用与 Agent 的 File Native Services。**
+<p align="center"><strong>本地优先 · 开源 · WebAssembly 驱动</strong></p>
 
-`filens` 有两层互补的含义：
+## 换个角度，看见文件
 
-- **File Lens**：无需先把文件上传到服务器，就能看见、检查和理解文件。
-- **File Native Services**：为预览、提取、转换、搜索和 Agent 工作流提供可复用的格式原生能力。
+- **文件就地打开。** 本地文件直接在浏览器中预览，无需先上传到转换服务。
+- **从办公文件到专业格式。** 原生预览 PPTX 与 iWork，也能查看文档、表格、CAD、3D、RAW、全景、压缩包和电子书。
+- **把同一套能力带进应用。** 用 Vue 组件接入界面，也能在 CLI、桌面应用或后端中托管同一个 WASM 转换核心。
 
-filens 是一个以 WebAssembly 为核心的开源、本地优先文件理解运行时。它可以把大量现代、传统和专业文件格式能力带到浏览器、桌面与移动客户端、CLI、边缘节点、后端服务和 AI Agent 工作流中；只要能够集成兼容的 WASM/WASI 运行时，就能复用同一套核心能力。
+不同格式的支持范围与保真程度有所区别，详见[格式支持矩阵](docs/support-matrix.md)。
 
-## 三个核心目标
+## 小核心，按格式分包
 
-### 1. 纯端侧原生预览
+<!-- bundle-sizes:zh:start -->
+| 分包 / 核心 | 原始 | gzip | Brotli |
+| --- | ---: | ---: | ---: |
+| 转换核心 WASM | 828.4 KiB | 376.8 KiB | **305.8 KiB** |
+| 图像 / RAW 核心 WASM | 655.4 KiB | 204.6 KiB | **163.1 KiB** |
+| 媒体 / 全景预览 | 94.8 KiB | 26.3 KiB | **23.0 KiB** |
 
-在条件允许时，直接在用户设备上解析和渲染文件。这样可以降低预览延迟、按需加载小体积模块、支持 Serverless 部署、保护私密文件，并让原生支持的预览链路不消耗服务端算力。端侧原生是首选预览路径，但不是运行环境限制：桌面应用、移动应用、CLI、边缘节点和后端服务也可以根据产品架构托管同一个 WASM 核心。
+两个 WASM 核心独立加载；媒体预览模块与图像转换核心分别计量。JS 分包已包含对应 CSS，共享依赖和 Worker 单列。
 
-目前覆盖的预览类别包括：
+<details>
+<summary>展开查看全部分包及首屏成本</summary>
 
-- **文档**：PPTX、DOCX、XLSX/CSV、PDF、Keynote、Pages、Numbers，以及通过可选标准化链路处理的 WPS 和传统 Office 格式
-- **媒体**：常见图片、音视频、实况照片、360° 全景、相机 RAW 和图标格式
-- **归档与电子书**：ZIP/TAR/GZIP 软件包、EPUB 和 CBZ
-- **设计与结构化文件**：DXF、STEP/STP、大量 3D/模型格式、思维导图和流程图
-- **文本与代码**：纯文本、源代码、标记语言、配置、日志及其他可提取内容
+| 分包 / 核心 | 原始 | gzip | Brotli |
+| --- | ---: | ---: | ---: |
+| 演示站入口 | 159.9 KiB | 44.8 KiB | **37.6 KiB** |
+| 共享第三方依赖 | 1837.6 KiB | 523.8 KiB | **433.4 KiB** |
+| PPTX / 核心运行时 | 275.0 KiB | 71.3 KiB | **61.2 KiB** |
+| Vue 预览容器 | 68.6 KiB | 15.8 KiB | **14.0 KiB** |
+| DOCX / XLSX / PDF | 20.9 KiB | 6.5 KiB | **5.8 KiB** |
+| iWork 预览 | 23.8 KiB | 7.9 KiB | **7.0 KiB** |
+| CAD / 思维导图 / 流程图 | 83.1 KiB | 23.4 KiB | **19.9 KiB** |
+| 3D 预览 | 105.8 KiB | 28.2 KiB | **24.6 KiB** |
+| 压缩包预览 | 20.2 KiB | 6.5 KiB | **5.7 KiB** |
+| 文本 / 电子书 | 18.0 KiB | 6.2 KiB | **5.4 KiB** |
+| iWork Worker | 882.2 KiB | 181.5 KiB | **151.9 KiB** |
+| PDF Worker | 1053.3 KiB | 291.1 KiB | **233.1 KiB** |
+| STEP / IGES 可选 WASM | 7425.8 KiB | 3038.0 KiB | **2260.8 KiB** |
 
-各格式当前的实际支持程度和保真限制见[支持矩阵](docs/support-matrix.md)。
+本次构建的入口、预加载 JS 与 CSS 合计 **579.8 KiB Brotli**（原始 2473.1 KiB / gzip 694.5 KiB），另计图片、视频和示例文件。模块会共享依赖；上述体积不代表每种格式的独立总下载量。
 
-### 2. 以 WASM 为核心的聚焦型格式转换
+</details>
 
-同一套转换核心可以运行在浏览器、桌面或移动客户端、CLI、边缘节点与后端服务中，只需要兼容的 WASM/WASI 宿主。filens 不打算成为一套通用的办公格式互转工具：
+数据来自实际演示站构建。压缩列是产物体积，实际传输取决于托管配置。[完整报告与复现方式](docs/bundle-sizes.md)。
+<!-- bundle-sizes:zh:end -->
 
-- 除内部预览标准化外，对外通用转换目标只保留**文本**和**图片/图标**，服务于文件预览、缩略图展示和全文检索内容提取；
-- OCR 作为可选的应用侧组件接入，使扫描件可搜索，同时不把核心绑定到某一个 OCR 供应商；
-- 传统 Office/WPS 到 OpenXML 是一条范围受控、面向预览的标准化链路，不代表对完整办公文档重建保真的承诺。
+## 演示
 
-所有文件解析和转换算法都位于前端 WebAssembly 转换核心。Go 包装层只负责 CLI/HTTP 接入、请求校验、临时文件、结果映射、输出校验和 WASM 调用。因此，浏览器、桌面/移动客户端、CLI、边缘节点与后端宿主实际复用的是同一套转换实现，不再分别维护格式转换引擎。
+**[▶ 观看 30 秒实录](apps/demo/public/home/filens-demo.mp4)**：演示文稿、文档、表格、Keynote、CAD 与 360° 全景，在同一个工作台轻松切换。
 
-### 3. 面向 Agent 的 CLI
+<details>
+<summary>展开查看动图预览</summary>
 
-第三个方向是提供统一 CLI，让 Agent 通过稳定命令和结构化结果检查、提取并理解文件。仓库已经包含基于 Go/wazero 的转换 CLI 示例；更完整的 Agent 接口将围绕以下操作逐步成形：
+![filens 切换不同文件格式的真实预览录屏](docs/assets/readme/demo.gif)
 
-```bash
-filens inspect document.docx
-filens extract archive.zip --format text
-filens render drawing.dxf --page 1 --output preview.png
-filens thumbnail camera.raw --output thumbnail.jpg
-filens understand report.pages --json
-```
+完整视频见上方链接。[中文字幕](apps/demo/public/home/demo-zh.vtt) · [English captions](apps/demo/public/home/demo-en.vtt)
 
-filens 的目标不是让每个应用或 Agent 分别理解数百种格式，而是提供统一的文件理解层。
+</details>
 
-## filens 的独特能力
+## 快速开始
 
-- **超小的传统 Office/WPS 标准化核心**：DOC/WPS 及相关传统格式可以通过面向预览的 WASM 核心标准化为 OpenXML。当前 `converter-core.wasm` 原始体积为 **837.3 KB**，Brotli 后为 **308.9 KB**。
-- **PPTX 原生预览**：直接解析 PPTX，并通过 HTML/SVG 渲染，不需要先在服务器转换为图片或 HTML。据我们所知，filens 是目前唯一以这一覆盖范围为目标的开源 PPTX 原生预览实现，并在同类浏览器原生渲染方案中保持领先的兼容性。
-- **iWork 原生解析与预览**：在端侧直接解码 Keynote、Pages 和 Numbers，包括当前版本的 iWork 协议结构。早期协议研究与代码基础来自 [`dunhamsteve/iwork`](https://github.com/dunhamsteve/iwork)，当前实现明确保留这项贡献说明，并在其部分工作之上继续扩展。
-- **有开源传承的浏览器原生 CAD**：CAD 转换部分来源于 [`orcastor/cad2x-converter`](https://github.com/orcastor/cad2x-converter)，它是一个紧凑的 DXF/DWG 到 DXF/PDF/PNG/SVG 转换工具。filens 在此基础上增加了 DXF 纯浏览器解析与 SVG 渲染路径，让常见图纸无需启动原生进程或转换服务器即可预览。
-- **大量长尾视觉格式**：同一预览容器可处理带相机标定信息的全景格式、广泛的相机 RAW，以及 STEP/STP 和大量网格、场景、点云、体素、分子、动作骨骼、体数据格式。
-- **统一且可移植的本地优先架构**：原生渲染器与按需加载的 WASM 模块共享同一运行时，既可以完全留在用户设备上，也可以部署到受控的 CLI、边缘或后端宿主中，而不需要另写一套转换引擎。
+需要 Node.js 20+ 和通过 [rustup](https://rustup.rs/) 安装的 Rust。仓库已锁定编译器与 WASI 目标版本。
 
-## 架构
-
-```text
-                              filens
-                                 |
-              +------------------+------------------+
-              |                                     |
-          原生预览适配/渲染                    WASM 转换核心
-                                                标准化/提取/渲染
-              |                                     |
-              +------------------+------------------+
-                                 |
-                      文本 / 图片 / 元数据 / 场景
-                                 |
-          +--------------+-------------+-------------+
-          |              |             |             |
-        Web/桌面        移动端/CLI     服务端/边缘      AI Agent
-```
-
-各模块只在对应格式需要时加载。例如，独立的 `converter-image.wasm` 仅用于 RAW/ICNS 转换，不会进入 Office 处理链路。
-
-交互式预览适配器会按需使用宿主提供的 Web 或 UI 能力，可移植的解析与转换则统一留在共享的 WASM/WASI 核心中。后端宿主不需要浏览器，也可以直接从同一个核心获取文本、图片、图标、元数据或面向预览的标准化结果。
-
-## 文档类预览方案对比
-
-> 以下对比**仅限 filens 的文档预览及面向预览的文档标准化部分**，不涉及全景、RAW、归档、CAD、3D/模型、图表或 Agent 等能力。
-
-目前没有任何文档引擎能同时做到最小体积、最高 Office 保真、浏览器直接运行和完整格式覆盖。实际部署需要根据保真度、启动成本、隐私和运行环境选择不同路径。
-
-### 架构与运行成本对比
-
-下表中的内存和时间是典型架构特征，不是厂商跑分。实际消耗会受到文件复杂度、字体、工作进程池、缓存、浏览器和硬件影响。对于 SaaS 服务，外部无法观察厂商服务端内存，因此“时间”主要描述首次预览需要经过的链路；只有后面的本机性能快照使用了直接测量的数据。
-
-| 方案 | 执行位置与数据路径 | 隐私 | 服务端 / 客户端内存 | 首次预览效率与耗时链路 | 典型场景 |
-| --- | --- | --- | --- | --- | --- |
-| **filens 本地/客户端 WASM** | 浏览器、桌面应用、移动应用、WebView 或本地 CLI 在设备上读取、解析、标准化并渲染文件 | 默认不离开设备，无需为预览上传文件 | 服务端**接近零**；客户端仅加载所需解析器/WASM 和当前文档模型 | 本地读取 -> 解析 -> 渲染；没有上传、远程排队和结果下载。固定链路通常最短，时间主要取决于文件复杂度和用户设备 | 隐私敏感预览、桌面/移动产品、NAS、离线与 Serverless 产品 |
-| **filens 服务端/边缘 WASM** | 后端、边缘节点、函数或私有服务通过轻量宿主调用同一个 WASM 核心 | 取决于部署方式：文件会进入所选服务边界，但不必交给第三方转换厂商 | 服务端**低到中等并随任务变化**；无需常驻完整 Office 套件，模块可以按需加载 | 上传/请求 -> WASM 执行 -> 返回结果；仍有网络链路，但转换工作进程更紧凑，可部署为 CLI、函数、边缘或常规服务 | 集中 API、批量提取、索引、缩略图、Agent，以及无法在本地运行 WASM 的客户端 |
-| [LibreOffice](https://www.libreoffice.org/) headless | 应用服务器把文件交给 `soffice --headless` 工作进程，通常转为 PDF/HTML/图片 | 可留在自建基础设施内，但文件仍需离开浏览器/用户设备 | 服务端**中到高**：常驻 Office 进程加单文档内存；并发通常需要隔离工作进程。客户端较低 | 上传 -> 排队 -> 启动/复用进程 -> 转换 -> 下载预览。冷启动、字体、大文件和进程回收都会增加耗时；热进程池与结果缓存可改善重复访问 | 通用自建 Office/PDF 转换，格式覆盖较广 |
-| [Apache OpenOffice](https://www.openoffice.org/) headless/UNO | 类似的服务端 Office 进程，通常由 CLI 或常驻 UNO listener 控制 | 可私有化，但服务器必须读取源文件 | 服务端每进程**中到高**；并行任务需要队列或工作进程隔离。客户端较低 | 与 LibreOffice 一样需要网络和转换多阶段链路；常驻 listener 可减少启动时间，但会增加常驻内存和运维复杂度 | 已有的传统系统和受控文档集合 |
-| ONLYOFFICE x2t 原生版 / 裁剪服务 | 文件上传至原生转换服务，再返回标准化文档或渲染结果 | 私有化部署可让数据留在自有基础设施内，但不是纯端侧 | 服务端**中到高**：转换器、字体、资源和并发任务均占用内存。客户端较低 | 上传 -> 排队 -> 原生转换 -> 下载结果；热服务效率可以较高，但网络、队列和转换仍处于关键链路 | 高保真 Office 转换、集中批处理 |
-| [`onlyoffice-x2t-wasm`](https://github.com/cryptpad/onlyoffice-x2t-wasm) | 浏览器下载并初始化较大的 Emscripten WASM，再在本地转换 | 文件可以不离开设备 | 服务端**接近零**；客户端内存较高。下方本机快照测得初始化后 RSS 增加约 **121-124 MiB** | 无上传队列，但运行时下载和冷初始化成本明显；缓存后续转换会更快 | 更重视 Office 转换保真、可以接受较大端侧开销的本地转换 |
-| [Microsoft 365 网页版](https://www.microsoft.com/zh-cn/microsoft-365/free-office-online-for-the-web) | 文档通过 OneDrive 或 SharePoint 保存/共享，由微软云端渲染 | 数据进入 Microsoft 365 租户/云边界，需要评估账号、合规策略和网络 | 本地服务端为**零**；厂商侧内存不可见；浏览器内存中等 | 登录鉴权 + 网络 + 云文件访问/上传 + 服务渲染；使用方便且 Office 保真通常较高，但首次预览依赖联网质量和云端响应 | 微软生态、协作和 Office 保真 |
-| [永中 Office / DCS](https://www.yozodcs.com/) 在线预览 | 公有云通过远程接口转换为 HTML/图片；私有化版在企业服务器运行同类服务 | 公有云会把文件发送给厂商；私有化版可留在企业内部，但仍需服务端转换 | 公有云内存不可见；私有化部署需要转换容量、集群和单任务内存。客户端较低 | 公有云包含上传/API/转换/下载耗时；私有化版减少公网链路，但仍有排队与转换时间 | 国内 Office/WPS 生态、国产化私有部署、HTML/图片预览集成 |
-
-实际隐私差异并不能简单归纳为“云端”或“开源”：LibreOffice、OpenOffice、x2t、服务端 filens 和永中 DCS 私有化版都可以让文件留在自有基础设施内，但仍存在服务端边界。filens 本地/客户端路径与 x2t-wasm 可以把完整预览/转换链路留在最终用户设备上；由于 filens 的 WASM 核心可跨宿主运行，也可以根据产品需要选择服务端或边缘部署。
-
-架构说明参考：[LibreOffice 命令行参数](https://help.libreoffice.org/latest/zh-CN/text/shared/guide/start_parameters.html)记录了 headless 转换；[Gotenberg 的 LibreOffice 配置](https://gotenberg.dev/docs/configuration#libreoffice)说明了单实例锁与请求队列；微软说明 Microsoft 365 网页版文件通过 OneDrive 保存和共享；永中 DCS 官方说明了公有云、私有化版本及 HTML/图片输出路径。
-
-### 10 MB PPTX 首次预览时间估算
-
-下表用于容量规划，不是通用厂商跑分。工作负载使用仓库中的 `vue-office-test.pptx` 作为近似样例：**11,122,759 字节、13 页、8 个媒体文件**。“首次预览”假设查看器已经打开，从选择文件开始计时；filens 在第 1 页可见时结束，服务端转换器通常需要先完成标准化文档、PDF、HTML 或图片结果的生成。
-
-| 方案 | 首页/首张幻灯片可见时间估算 | 内存规划参考 | 依据与可信度 |
-| --- | ---: | --- | --- |
-| **filens 原生 PPTX** | Apple M4 Pro **实测中位数 91.7 ms**；4 倍 CPU 降速时为 **347.9 ms**；现代桌面设备可先按 **0.1-0.8 秒**规划 | 此文件**实测 JS Heap 增加约 25 MiB**；浏览器总 RSS 会更高且因浏览器而异 | Chromium 147 的 7 个全新上下文为 90.3-99.3 ms；CPU 降速 2/4/6 倍的中位数为 173.4/347.9/510.4 ms。对该样例可信度高，不代表所有 PPTX |
-| **内部/原生 x2t 服务** | 核心转换**内部预估约 3 秒**；热服务加局域网/API 可先按 **3-5 秒**规划，不含排队 | 应在目标镜像中实测 RSS/PSS；在此之前按重型服务端工作进程规划，不假设低于 100 MiB | 当前原生 x2t 路径的项目经验值；在使用同一 10 MB 样例完成端到端测试前为中等可信度 |
-| **LibreOffice headless** | 典型服务器可先按**热进程 2-8 秒**、**冷进程 5-15 秒**规划；高并发排队会继续增加 | 初期容量预算可按**每个活动工作进程 200-600 MiB**，再使用生产字体和真实文件校准 | 执行架构明确，但没有统一的 10 MB PPTX 标准跑分。[Gotenberg](https://gotenberg.dev/docs/configuration#libreoffice)明确说明单个有状态 LibreOffice 实例不能并行转换，请求会进入队列。中低可信度 |
-| **Apache OpenOffice headless/UNO** | 可先按**热进程 3-10 秒**、**冷进程 6-20 秒**规划 | 初期容量预算可按**每个活动工作进程 200-600 MiB** | 与 LibreOffice 类似，需要完整 Office 进程，通常运行常驻 UNO listener。可信度低；如果进入候选方案应单独实测 |
-| **x2t-wasm** | 模块已加载后可先按 **1-5 秒**规划；首次使用还要增加模块下载时间 | 初始化后 RSS **实测增加约 121-124 MiB**，另加输入、输出和文档状态 | 仓库小文件实测为初始化中位数 292.3 ms、转换 51.8-145.7 ms；10 MB 区间是外推，不是直接结果。中低可信度 |
-| **Microsoft 365 网页版** | 文件已在 OneDrive/SharePoint：可按 **1-5 秒**；新上传 10 MB 文件：100 Mbps 下约 **2-7 秒**，20 Mbps 下约 **7-20 秒**，10 Mbps 下约 **12-30 秒** | 厂商侧内存不可见；浏览器内存中等 | 网络、鉴权和云渲染规划值。国内家宽更应以常见的 **10-20 Mbps 上行**作为参考。微软说明网页版文件通过 OneDrive 保存和共享；服务负载与租户地域不可控，因此可信度低 |
-| **永中 DCS 公有云** | 100 Mbps 下可按 **3-10 秒**，20 Mbps 下按 **7-22 秒**，10 Mbps 下按 **12-32 秒** | 厂商侧内存不可见 | 根据官方公有云架构估算上传、API、转换和结果获取时间；较低上行速率更接近国内家宽用户的实际规划场景，使用同一文件实测前可信度低 |
-| **永中 DCS 私有化版** | 热服务、局域网、无排队时可按 **2-8 秒** | 作为服务端转换进程规划；**每活动进程 200-600 MiB**仅作为初始容量占位值 | 去除了公网链路，但仍有上传、排队、完整转换和结果下发；需要在采购部署环境中实测 |
-
-对于一个刚从本地选择的 10 MiB 文件，仅上传时间就约为 `84 / 实际上行 Mbps` 秒。考虑协议和实际吞吐后，100 Mbps 约 **1.0-1.3 秒**，20 Mbps 约 **5-6 秒**，10 Mbps 约 **10-12 秒**。国内家宽通常宣传的是下载带宽，上行普遍只有约 **10-20 Mbps**，因此面向普通家庭用户时，更现实的规划基线是**仅上传就需要 5-12 秒**。只要文件尚未进入服务边界，这段上传时间同样适用于服务端 filens、x2t、LibreOffice/OpenOffice、Microsoft 365 和公有云 DCS；如果文件已经存储并缓存在云端，可以去掉上传时间。如果服务端已经缓存生成的预览结果，无论原始转换器多慢，重复访问都可能低于 1 秒。
-
-filens 数据来自 macOS/Darwin arm64、Apple M4 Pro、24 GiB 内存、Node.js 20.20、无头 Chromium 147 的本机测试。其他区间综合了公开执行架构、公开运维说明、网络传输公式和上述内部 x2t 经验值；在采购、容量承诺或对外宣传前，应使用相同文件和同一硬件补充实测。
-
-### 代表性交付体积
-
-以下体积仅比较有明确数据的代表性转换产物或安装包，不代表格式范围和保真能力完全等价。
-
-| 方案 | 交付体积 | 实现侧重 | 更适合 |
-| --- | ---: | --- | --- |
-| ONLYOFFICE x2t 原生完整版（含字体） | 约 **560+ MB** 压缩包 | 原生进程，Office 转换覆盖和排版保真更完整；字体、资源和部署成本也最高 | 服务端高保真转换、批处理 |
-| ZimaOS x2t 裁剪版 | 约 **138 MB** | 保留原生 x2t 路径，移除受控工作负载不需要的字体和组件 | NAS、私有化设备和受控格式集 |
-| [`onlyoffice-x2t-wasm`](https://github.com/cryptpad/onlyoffice-x2t-wasm/releases/tag/v9.3.0%2B0) `v9.3.0+0` | 发布 ZIP **15.79 MiB**；`x2t.wasm` **34.32 MiB**，Brotli **6.49 MiB** | 使用 Emscripten glue 的浏览器侧高保真候选，初始化和内存成本高于轻量 WASI core | 浏览器内 Office 转换、无需服务端的高保真场景 |
-| **filens converter-core** | `converter-core.wasm` **837.3 KB**；gzip **381.2 KB**；Brotli **308.9 KB** | 纯 WASI，可由浏览器或 wazero 执行；优先预览标准化、结构化提取和安全降级 | 本地预览、索引、Agent 文件理解和边缘设备 |
-| **filens converter-image** | 可选 `converter-image.wasm` **671.1 KB**；gzip **209.5 KB**；Brotli **167.0 KB** | 仅在 RAW/ICNS 图片转换时加载 | 相机 RAW 缩略图和 ICNS 预览 |
-
-以当前核心产物计算，filens 原始 WASM 比 x2t-wasm 小约 **43 倍**，Brotli 传输体积小约 **22 倍**。这些数字用于说明部署成本，不代表功能完全等价：filens 有意处理更轻量的预览与提取任务，x2t 则追求更广泛的 Office 重建保真。
-
-iWork 是文档生态中的另一处空白。传统方案通常只能调用 macOS/iOS 原生文档组件，或依赖 iCloud 在线转换。ONLYOFFICE 最近也加入了 iWork 转换，但对当前 iWork 文件的兼容性和渲染保真仍然有限。filens 选择直接在端侧解析和渲染现代 Keynote、Pages 和 Numbers 文件。
-
-### 本机性能快照
-
-以下结果来自同一台 Windows 10 / Xeon E5-2696 v4 / Node.js 20.20 / Go 1.24 机器，对仓库内同一组小型 DOC、XLS、PPT 样例运行 5 次。x2t-wasm 测试未加载额外字体；数字只用于观察启动和执行量级，不代表复杂文档或跨设备的通用成绩。
-
-| 指标 | filens WASI core | x2t-wasm `v9.3.0+0` |
-| --- | ---: | ---: |
-| DOC -> DOCX 核心转换 | **1 ms** | 中位数 **145.7 ms** |
-| XLS -> XLSX 核心转换 | **1 ms** | 中位数 **51.8 ms** |
-| PPT -> PPTX 核心转换 | **1 ms** | 中位数 **103.9 ms** |
-| 冷初始化 | 未单独隔离；由 wazero 缓存编译模块 | 中位数 **292.3 ms** |
-| 初始化后 RSS 增量 | 未单独测量 | 约 **121-124 MiB** |
-
-filens 不承诺完整重建 Office 排版、图表、动画、嵌入对象或公式计算。它适合作为预览、索引和提取的轻量本地路径；当生产级 Office 转换保真是首要要求时，应按需加载或部署更重的转换引擎。
-
-体积数据可通过 `npm run report:wasm-sizes` 复现；当前 WASM smoke suite 为 **295/295**，转换策略检查为 **1,637** 项。审计方法和接入边界见 [x2t-wasm 评估](docs/x2t-wasm-evaluation.md)。
-
-## 路线图
-
-- **从搜索结果定位原文**：从文本或语义搜索结果跳转到准确的页、幻灯片、工作表、场景节点或文档元素。
-- **高级视频预览**：支持 HLS 等流媒体输入、可选转码、更完整的时间轴元数据和更强的全景视频处理。
-- **加密文档支持**：在共享 WASM 核心中识别并解密受密码保护的 Office/WPS 和 PDF，无论核心运行在本地客户端、CLI、边缘节点还是受控后端。密码必须来自安全的宿主界面、隐藏式提示或密钥提供器，不能泄露到参数、URL、日志、分析数据或结果中；本地部署可以让密码和源文件都不离开设备，服务端部署则将它们限制在所选服务边界内。DRM 和企业权限管理文件属于另一类问题。
-- **按需字体支持**：补充常用拉丁、CJK、Emoji、数学符号和 CAD SHX 字体覆盖，完善字体检测、替换提示、子集化、缓存和应用侧字体解析，同时避免把完整字体包塞进核心产物。
-- **Agent CLI**：稳定文件检查、内容提取、渲染、缩略图、OCR 回调和结构化文件理解命令。
-- **预览保真度**：继续提升 PPTX 和新一代 iWork 格式兼容性，并通过明确警告暴露暂不支持的内容。
-
-实现层面的详细计划见[项目路线图](docs/roadmap.md)。
-
-## 欢迎试用和帮助测试
-
-真实工作文件是最有价值的兼容性测试。欢迎使用日常遇到的文档、演示文稿、iWork 文件、CAD 图纸、全景照片、RAW、压缩包和 3D 模型进行测试，并记录任何缺失、错位、卡顿或无法打开的问题。
-
-- 普通同事可以先阅读[通俗介绍与测试指南](docs/filens-introduction.zh-CN.md)。
-- 可复现问题请提交到 [GitHub Issues](https://github.com/IceWhaleTech/filens/issues/new/choose)。
-- 上传前请移除敏感内容；如果文件不能分享，请记录格式、生成软件及版本、系统与浏览器、截图、警告信息和最小复现步骤。
-
-## 本地开发
-
-```bash
-npm install
-npm run build
+```sh
+npm ci
+npm run build:wasm
 npm run dev --workspace @filens/demo
 ```
 
-相关文档：
+打开[本地演示](http://localhost:5173/modules/filens/?lang=zh)，选择示例或拖入自己的文件。网站首页支持中英文切换。
 
-- [格式支持矩阵](docs/support-matrix.md)
-- [PPTX 核心运行时](packages/core/README.md)
-- [iWork 原生运行时](packages/iwork/README.md)
-- [浏览器原生 CAD 运行时与来源说明](packages/cad/README.md)
-- [Go/wazero WASM 宿主示例](examples/go-wazero-converter/README.md)
-- [架构路线图](docs/roadmap.md)
+发布演示站可直接[将仓库导入 Vercel](docs/deploy-vercel.md)，绑定后推送代码会自动部署；仓库也提供可选的 GitHub Actions 手动发布流程。
 
-**看见文件，理解文件，使用文件。**
+## 接入你的应用
+
+| 想了解… | 从这里开始 |
+| --- | --- |
+| Vue 预览组件 | [Vue 接入说明](packages/vue/README.md) |
+| 格式覆盖与限制 | [格式支持矩阵](docs/support-matrix.md) |
+| 架构、方案对比和性能说明 | [项目详细介绍](docs/project-overview.zh-CN.md) |
+| CLI / 后端接入 | [Go + wazero 示例](examples/go-wazero-converter/README.md) |
+| 部署 | [Vercel 部署指南](docs/deploy-vercel.md) |
+
+欢迎用日常工作文件试一试，[反馈可复现的问题](https://github.com/IceWhaleTech/filens/issues/new/choose)。后续计划见[路线图](docs/roadmap.md)。
+
+<sub>预览截图均来自 filens。照片：Ricardo Gomez Angel / Unsplash、SimonWaldherr / CC BY-SA 4.0；全景衍生图、演示视频和动图采用 CC BY-SA 4.0。<a href="docs/assets/readme/SOURCES.md">素材来源与署名</a>。iWork 研究基础：<a href="https://github.com/dunhamsteve/iwork">dunhamsteve/iwork</a>；CAD 技术来源：<a href="https://github.com/orcastor/cad2x-converter">orcastor/cad2x-converter</a>。</sub>
