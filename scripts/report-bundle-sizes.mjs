@@ -20,7 +20,8 @@ const labels = {
   text: ['文本 / 电子书', 'Text / ebooks'],
   'iwork-worker': ['iWork Worker', 'iWork worker'],
   'pdf.worker.min': ['PDF Worker', 'PDF worker'],
-  'occt-import-js': ['STEP / IGES 可选 WASM', 'Optional STEP / IGES WASM']
+  'occt-import-js': ['STEP 可选 WASM', 'Optional STEP WASM'],
+  'occt-runtime': ['STEP 加载器', 'STEP loader']
 };
 const order = Object.keys(labels);
 const groups = new Map();
@@ -64,6 +65,6 @@ for (const lang of ['en', 'zh']) {
   if (!marker.test(source)) throw new Error(`Missing size markers in ${file}`);
   await writeFile(file, source.replace(marker, `<!-- bundle-sizes:${lang}:start -->\n${section}\n<!-- bundle-sizes:${lang}:end -->`));
 }
-const report = `# Bundle sizes / 分包体积\n\nGenerated from the production demo by \`npm run report:bundle-sizes\`. Units are KiB (1 KiB = 1024 bytes). JavaScript and its matching CSS are grouped; WASM and workers are separate.\n\n${table(rows, 'en')}\n\nInitial entry, preload, and CSS: **${size(initial.raw)} raw / ${size(initial.gzip)} gzip / ${size(initial.brotli)} Brotli**. This excludes HTML, imagery, video, sample files, and later requests. Shared vendor dependencies are included here and must be considered when reading individual module sizes. Optional STEP/IGES uses its separate WASM asset; PDF and iWork have separate workers.\n\n[Exact byte counts and file names](assets/bundle-sizes.json). Compression measurements use the actual build's gzip and Brotli artifacts; server negotiation and caching determine real network transfer. This is a build snapshot, not the size of a published npm tarball.\n\n## Reproduce / 复现\n\n\`\`\`sh\nnpm ci\nnpm run build:vercel\nnpm run report:bundle-sizes\n\`\`\`\n\nThe report updates the tables in both README files. The normal NAS build can also be measured with \`npm run build:wasm && npm run build:demo\`; asset URLs may change the entry size slightly.\n\n本报告对应实际演示站产物，单位为 KiB。JS 与各自 CSS 合并计量，WASM、Worker 和共享第三方依赖独立列出。单个分包体积不等于该格式的全部下载成本；完整首屏还包括 HTML、图片、视频、样例及按需请求。压缩列为构建产物体积，实际网络传输取决于托管配置。\n`;
+const report = `# Bundle sizes / 分包体积\n\nGenerated from the production demo by \`npm run report:bundle-sizes\`. Units are KiB (1 KiB = 1024 bytes). JavaScript and its matching CSS are grouped; WASM and workers are separate.\n\n${table(rows, 'en')}\n\nInitial entry, preload, and CSS: **${size(initial.raw)} raw / ${size(initial.gzip)} gzip / ${size(initial.brotli)} Brotli**. This excludes HTML, imagery, video, sample files, and later requests. Shared vendor dependencies are included here and must be considered when reading individual module sizes. Optional STEP uses its separate WASM asset; PDF and iWork have separate workers.\n\n[Exact byte counts and file names](assets/bundle-sizes.json). Compression measurements use the actual build's gzip and Brotli artifacts; server negotiation and caching determine real network transfer. This is a build snapshot, not the size of a published npm tarball.\n\n## Reproduce / 复现\n\n\`\`\`sh\nnpm ci\nnpm run build:vercel\nnpm run report:bundle-sizes\n\`\`\`\n\nThe report updates the tables in both README files. The normal NAS build can also be measured with \`npm run build:wasm && npm run build:demo\`; asset URLs may change the entry size slightly.\n\n本报告对应实际演示站产物，单位为 KiB。JS 与各自 CSS 合并计量，WASM、Worker 和共享第三方依赖独立列出。单个分包体积不等于该格式的全部下载成本；完整首屏还包括 HTML、图片、视频、样例及按需请求。压缩列为构建产物体积，实际网络传输取决于托管配置。\n`;
 await writeFile(path.join(root, 'docs/bundle-sizes.md'), report);
 console.log(table(rows, 'en'));

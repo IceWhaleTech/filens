@@ -20,6 +20,14 @@ test('keeps the homepage and bundled preview public while protecting ZimaOS samp
   await expect
     .poll(() => page.evaluate(() => (window as Window & { loginPaths: string[] }).loginPaths.length))
     .toBe(0);
+  await page.getByRole('button', { name: '← filens 首页', exact: true }).click();
+  await page.getByRole('button', { name: '打开视频样例', exact: true }).click();
+  await expect(page).toHaveURL(/view=preview&format=mp4/);
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('sample-video.mp4');
+  await expect
+    .poll(() => page.locator('video.pptxv-native-media').evaluate((video: HTMLVideoElement) => video.readyState))
+    .toBeGreaterThan(0);
+  expect(await page.evaluate(() => (window as Window & { loginPaths: string[] }).loginPaths.length)).toBe(0);
   await page.getByRole('button', { name: 'Media', exact: true }).click();
   await page.getByRole('button', { name: 'MP3', exact: true }).click();
   await expect
@@ -30,12 +38,17 @@ test('keeps the homepage and bundled preview public while protecting ZimaOS samp
 test('switches between complete Chinese and English homepages and remembers the choice', async ({ page }) => {
   await page.goto('./');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('文件的精彩，打开就看见。');
+  await expect(page.getByRole('button', { name: '打开全景视频样例', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: '查看完整支持矩阵' })).toHaveAttribute('href', /support-matrix\.zh-CN\.md$/);
   await page.getByRole('button', { name: 'Switch to English', exact: true }).click();
   await expect(page).toHaveURL(/lang=en/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await expect(page).toHaveTitle('filens · Every file has a story. Open it.');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Every file has a story.Open it.');
   await expect(page.getByRole('tab', { name: 'Docs', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'More files. More possibilities.', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open live photos sample', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'View the full support matrix' })).toHaveAttribute('href', /support-matrix\.md$/);
   await expect(page.locator('#demo')).toContainText('Add filens to your app');
   await expect(page.getByRole('link', { name: 'Documentation', exact: true })).toBeVisible();
   await page.goto('./');
@@ -94,7 +107,7 @@ test('plays the actual demo video on request with translated captions', async ({
 test('opens the showcase through a shareable link and renders all three slides', async ({ page }) => {
   await page.goto('./?view=preview&format=showcase');
   await expect(page.locator('.wb-preview-title strong')).toHaveText('filens-field-notes.pptx');
-  await expect(page.locator('.wb-preview-stage')).toContainText('FIELD');
+  await expect(page.locator('.wb-preview-stage')).toContainText('BEYOND');
   await expect(page.locator('.wb-preview-stage')).not.toContainText('Master Title');
   await expect(page.locator('.pptxv-slide-shell')).toHaveCount(3);
   await expect(page.locator('.pptxv-toolbar')).toHaveCount(0);
@@ -109,13 +122,13 @@ test('opens the showcase through a shareable link and renders all three slides',
   await expect(page.locator('.pptxv-status').first()).toHaveText('1 / 3');
 });
 
-test('opens the public Keynote travel sample with three fictional slides', async ({ page }) => {
+test('opens the public Keynote night-sky sample with three slides', async ({ page }) => {
   await page.goto('./?view=preview&format=key');
   await expect(page.locator('.wb-preview-title strong')).toHaveText('filens-weekend.key');
   const stage = page.locator('.wb-preview-stage');
-  await expect(stage).toContainText('A weekend');
-  await expect(stage).toContainText('THREE FICTIONAL STOPS');
-  await expect(stage).toContainText('LEAVE ONLY FOOTPRINTS.');
+  await expect(stage).toContainText('BEYOND');
+  await expect(stage).toContainText('CHASE THE LIGHT.');
+  await expect(stage).toContainText('THE COSMIC ATLAS');
   await expect(page.locator('.pptxv-toolbar')).toHaveCount(0);
   await page.getByRole('button', { name: '显示工具栏', exact: true }).click();
   await expect(stage).toContainText('1 / 3');
@@ -143,6 +156,11 @@ for (const lang of ['zh', 'en']) {
           )
       )
       .toBe(true);
+    await expect(page.locator('.format-family-card')).toHaveCount(12);
+    expect(await page.locator('.format-family-card').evaluateAll((cards) => cards.every((card) => {
+      const bounds = card.getBoundingClientRect();
+      return bounds.left >= 0 && bounds.right <= window.innerWidth && card.scrollWidth <= card.clientWidth;
+    }))).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 }

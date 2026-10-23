@@ -491,8 +491,8 @@ async function recreatePreviewer(): Promise<void> {
     return;
   }
 
-  const drivers = props.drivers ?? createVueDefaultPreviewDrivers(props.panoramaProcessor);
-  const routes = props.routes ?? createVueDefaultPreviewRoutes();
+  const drivers = props.drivers ?? createVueDefaultPreviewDrivers(props.panoramaProcessor, props.converter);
+  const routes = props.routes ?? createVueDefaultPreviewRoutes({ rawPreview: Boolean(props.panoramaProcessor && props.converter) });
   const createNestedPreviewer = (host: HTMLElement, childOptions: PreviewOptions = {}) => createPreviewer(host, {
     fit: childOptions.fit ?? props.fit,
     initialScale: childOptions.initialScale ?? props.initialScale,
@@ -1153,11 +1153,11 @@ onUnmounted(() => {
   previewer.value?.destroy();
 });
 
-function createVueDefaultPreviewDrivers(panoramaProcessor?: MediaPreviewDriverOptions['panoramaProcessor']): PreviewDriver[] {
+function createVueDefaultPreviewDrivers(panoramaProcessor?: MediaPreviewDriverOptions['panoramaProcessor'], converter?: MediaPreviewDriverOptions['converter']): PreviewDriver[] {
   return [
     ...createOfficePreviewDrivers(),
     ...createDesignPreviewDrivers(),
-    ...createMediaPreviewDrivers({ panoramaProcessor }),
+    ...createMediaPreviewDrivers({ panoramaProcessor, converter }),
     createArchivePreviewDriver(),
     ...createTextPreviewDrivers()
   ];

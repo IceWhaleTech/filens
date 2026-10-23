@@ -20,6 +20,9 @@ const isEnglish = computed(() => locale.value === 'en');
 const t = (zh: string, en: string) => (isEnglish.value ? en : zh);
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`;
 const repo = 'https://github.com/IceWhaleTech/filens';
+const supportMatrixUrl = computed(
+  () => `${repo}/blob/main/docs/support-matrix${isEnglish.value ? '' : '.zh-CN'}.md`
+);
 const activePreview = ref(0);
 const video = ref<HTMLVideoElement>();
 const videoStarted = ref(false);
@@ -83,10 +86,84 @@ const previews = [
     color: '#ba8850',
     image: 'panorama.webp',
     sample: 'pano',
-    file: 'kochelsee-16k.pano'
+    file: 'milky-way-360.pano'
   }
 ];
 const selectedPreview = computed(() => previews[activePreview.value]!);
+const formatFamilies = [
+  {
+    zh: '常规图片', en: 'Images', icon: 'IMG', color: '#b28644',
+    descriptionZh: '照片、透明图片与动图。',
+    descriptionEn: 'Photos, transparent images, and animation.',
+    formats: 'JPG · PNG · GIF · WebP · AVIF', sample: 'jpg'
+  },
+  {
+    zh: '视频', en: 'Video', icon: 'VID', color: '#647fba',
+    descriptionZh: '打开视频，直接播放。',
+    descriptionEn: 'Open a video and press play.',
+    formats: 'MP4 · WebM · MOV', sample: 'mp4'
+  },
+  {
+    zh: '全景视频', en: '360° video', icon: '360', color: '#a47b45',
+    descriptionZh: '边播放，边自由环顾四周。',
+    descriptionEn: 'Look around as the scene plays.',
+    formats: '360V · VR360', sample: '360v'
+  },
+  {
+    zh: '实况照片', en: 'Live photos', icon: 'LIVE', color: '#ae6a8c',
+    descriptionZh: 'iPhone 实况播放，Android 静态预览。',
+    descriptionEn: 'iPhone sample playback and Android stills.',
+    formats: 'Live Photo · Motion Photo', sample: 'apple-live-photo'
+  },
+  {
+    zh: '压缩包', en: 'Archives', icon: 'ZIP', color: '#a48646',
+    descriptionZh: '浏览目录，查看包内文件。',
+    descriptionEn: 'Browse folders and preview files inside.',
+    formats: 'ZIP · TAR · TGZ · GZIP', sample: 'zip'
+  },
+  {
+    zh: '3D 模型', en: '3D models', icon: '3D', color: '#8572b6',
+    descriptionZh: '旋转、缩放，换个角度看细节。',
+    descriptionEn: 'Orbit, zoom, and explore the details.',
+    formats: 'GLB · glTF · OBJ · STL · 3MF', sample: 'obj'
+  },
+  {
+    zh: '思维导图', en: 'Mind maps', icon: 'MAP', color: '#6d9560',
+    descriptionZh: '展开想法，梳理每一层关系。',
+    descriptionEn: 'Follow ideas and explore their connections.',
+    formats: 'XMind · MM · OPML · MMAP', sample: 'mm'
+  },
+  {
+    zh: '代码与配置', en: 'Code & config', icon: '</>', color: '#597f9a',
+    descriptionZh: '查看源码、配置与行号。',
+    descriptionEn: 'Read source and configuration with line numbers.',
+    formats: 'TS · JS · Python · JSON · YAML', sample: 'ts'
+  },
+  {
+    zh: '电子书', en: 'Ebooks', icon: 'BOOK', color: '#9b7958',
+    descriptionZh: '阅读章节，翻看漫画。',
+    descriptionEn: 'Read chapters and browse comic pages.',
+    formats: 'EPUB · CBZ', sample: 'epub'
+  },
+  {
+    zh: '音频', en: 'Audio', icon: '♫', color: '#a66f58',
+    descriptionZh: '音乐与声音，打开就能听。',
+    descriptionEn: 'Music and sound, ready to listen.',
+    formats: 'MP3 · WAV · FLAC · OGG', sample: 'wav'
+  },
+  {
+    zh: 'PDF', en: 'PDF', icon: 'PDF', color: '#b96d60',
+    descriptionZh: '报告、画册，逐页查看。',
+    descriptionEn: 'Explore reports and visual atlases page by page.',
+    formats: 'PDF', sample: 'pdf'
+  },
+  {
+    zh: '流程图', en: 'Diagrams', icon: 'FLOW', color: '#618e8d',
+    descriptionZh: '查看流程、架构与连接关系。',
+    descriptionEn: 'Explore flows, structures, and connections.',
+    formats: 'DRAWIO · VSDX · VDX', sample: 'drawio'
+  }
+];
 function applyLocale(): void {
   document.documentElement.lang = isEnglish.value ? 'en' : 'zh-CN';
   document.title = t('filens · 文件的精彩，打开就看见', 'filens · Every file has a story. Open it.');
@@ -95,8 +172,8 @@ function applyLocale(): void {
     ?.setAttribute(
       'content',
       t(
-        '从 Office、iWork 到全景照片、CAD 和 3D 模型，在浏览器里轻松预览文件。本地优先，开源，为你的应用而生。',
-        'From Office and iWork to panoramas, CAD, and 3D models. Preview your files in the browser with filens. Local-first, open source, and ready for your app.'
+        'filens 是高性能、极致小巧的纯前端文件预览项目，本地文件无需上传。浏览器与后端转换工具共用同一个 WASM 转换核心，支持 Office、iWork、CAD、3D、全景等格式。',
+        'filens is a fast, compact, pure frontend file viewer. Local files stay on your device. Browser and backend converters share one WASM conversion core. Preview Office, iWork, CAD, 3D, panoramas, and more.'
       )
     );
 }
@@ -147,6 +224,7 @@ async function playDemo(): Promise<void> {
       </a>
       <nav class="site-nav" :aria-label="t('主导航', 'Main navigation')">
         <a href="#formats">{{ t('预览效果', 'Previews') }}</a>
+        <a href="#more-formats">{{ t('常见格式', 'Formats') }}</a>
         <a href="#demo">{{ t('视频演示', 'Watch demo') }}</a>
       </nav>
       <div class="nav-actions">
@@ -172,6 +250,7 @@ async function playDemo(): Promise<void> {
 
     <main id="main-content">
       <section class="hero section-width" :aria-labelledby="'hero-title'">
+        <p class="hero-kicker">{{ t('纯前端预览 · 高性能 · 极致小巧', 'PURE FRONTEND · FAST · TINY') }}</p>
         <h1 id="hero-title">
           <template v-if="!isEnglish">文件的精彩，<br /><span>打开就看见。</span></template
           ><template v-else>Every file has a story.<br /><span>Open it.</span></template>
@@ -179,11 +258,11 @@ async function playDemo(): Promise<void> {
         <p class="hero-description">
           {{
             t(
-              '在浏览器中预览文档、图片与专业文件。',
-              'Documents, images, and specialist formats. Right in your browser.'
+              '纯前端多格式预览，本地文件无需上传。',
+              'Preview files entirely in your browser. Your local files stay on your device.'
             )
           }}<br />
-          {{ t('本地文件，无需上传。', 'Your local files stay on your device.') }}
+          {{ t('需要后端转换时，也能复用同一个 WASM 转换核心。', 'Optional backend converters reuse the same WASM conversion core.') }}
         </p>
         <div class="hero-actions">
           <label class="button button-dark upload-button"
@@ -257,12 +336,73 @@ async function playDemo(): Promise<void> {
         </div>
         <a
           class="support-link"
-          :href="`${repo}/blob/main/docs/support-matrix.md`"
-          target="_blank"
-          rel="noopener noreferrer"
+          href="#more-formats"
         >
-          {{ t('更多格式与兼容性', 'More formats and compatibility') }} <span aria-hidden="true">→</span>
+          {{ t('探索更多格式', 'Explore more formats') }} <span aria-hidden="true">↓</span>
         </a>
+      </section>
+
+      <section class="principles-section section-width" :aria-label="t('项目特点', 'Why filens')">
+        <div class="principle-grid">
+          <article class="principle">
+            <p class="principle-proof"><strong>0</strong><span>{{ t('本地文件上传', 'local file uploads') }}</span></p>
+            <h2>{{ t('纯前端预览', 'Pure frontend preview') }}</h2>
+            <p>{{ t('文件在浏览器中解析与渲染，本地预览无需上传，也无需部署转换服务。', 'Parse and render files in the browser. Preview local files without uploads or a conversion server.') }}</p>
+          </article>
+          <article class="principle">
+            <p class="principle-proof"><strong>1</strong><span>{{ t('共用的 WASM 转换核心', 'shared WASM conversion core') }}</span></p>
+            <h2>{{ t('同一个核心，前后端复用', 'One core, browser and backend') }}</h2>
+            <p>{{ t('浏览器与后端 CLI / HTTP 转换工具共用同一个 WASM 转换核心。后端只负责调用与服务接入，转换逻辑集中在核心中。', 'The browser and backend CLI / HTTP converters run the same WASM conversion core. The backend handles hosting and requests; conversion logic stays in the core.') }}</p>
+            <a :href="`${repo}/tree/main/examples/go-wazero-converter`" target="_blank" rel="noopener noreferrer">
+              {{ t('查看后端转换工具', 'Explore the backend converter') }} <span aria-hidden="true">↗</span>
+            </a>
+          </article>
+          <article class="principle">
+            <p class="principle-proof"><strong>≈306<span class="proof-unit"> KiB</span></strong><span>{{ t('文档转换 WASM · Brotli', 'document conversion WASM · Brotli') }}</span></p>
+            <h2>{{ t('高性能，极致小巧', 'Fast, tiny, loaded on demand') }}</h2>
+            <p>{{ t('按格式分包、按需加载，配合 Worker 解析与页面虚拟化，减少下载与渲染负担。', 'Format-based bundles and lazy loading, with worker parsing and page virtualization to reduce download and rendering work.') }}</p>
+            <a :href="`${repo}/blob/main/docs/bundle-sizes.md`" target="_blank" rel="noopener noreferrer">
+              {{ t('查看体积实测', 'See measured bundle sizes') }} <span aria-hidden="true">↗</span>
+            </a>
+          </article>
+        </div>
+        <p class="principles-note">{{ t('体积为文档转换核心的单个 Brotli 压缩产物；预览界面、共享依赖、图像 / RAW 等其他模块另计。', 'Size refers to the document conversion core’s Brotli artifact. Preview UI, shared dependencies, and other modules such as image / RAW are measured separately.') }}</p>
+      </section>
+
+      <section id="more-formats" class="formats-section section-width" aria-labelledby="formats-title">
+        <div class="formats-heading">
+          <div>
+            <p class="eyebrow">{{ t('常见格式', 'MORE TO EXPLORE') }}</p>
+            <h2 id="formats-title">{{ t('更多文件，也能打开。', 'More files. More possibilities.') }}</h2>
+          </div>
+          <p>
+            {{ t('从日常照片到 3D 模型，选一类，打开真实样例。', 'From everyday photos to 3D models. Pick a category to try a real sample.') }}
+          </p>
+        </div>
+        <ul class="format-family-grid">
+          <li v-for="family in formatFamilies" :key="family.sample">
+            <button
+              class="format-family-card"
+              type="button"
+              :aria-label="t(`打开${family.zh}样例`, `Open ${family.en.toLowerCase()} sample`)"
+              @click="emit('preview', family.sample)"
+            >
+              <span class="format-family-title">
+                <FileFormatIcon :label="family.icon" :color="family.color" small />
+                <strong>{{ t(family.zh, family.en) }}</strong>
+                <span class="format-family-arrow" aria-hidden="true">↗</span>
+              </span>
+              <span class="format-family-description">{{ t(family.descriptionZh, family.descriptionEn) }}</span>
+              <span class="format-family-extensions">{{ family.formats }}</span>
+            </button>
+          </li>
+        </ul>
+        <div class="formats-footer">
+          <p>{{ t('以上为代表格式，具体支持范围与限制请查看兼容性说明。', 'Representative formats shown. See the support matrix for coverage and limits.') }}</p>
+          <a :href="supportMatrixUrl" target="_blank" rel="noopener noreferrer">
+            {{ t('查看完整支持矩阵', 'View the full support matrix') }} <span aria-hidden="true">↗</span>
+          </a>
+        </div>
       </section>
 
       <section id="demo" class="demo-section section-width">
@@ -332,11 +472,11 @@ async function playDemo(): Promise<void> {
             >filens<span class="brand-period">.</span></span
           ></a
         >
-        <p>{{ t('开源的文件预览工具。', 'An open-source file viewer.') }}</p>
+        <p>{{ t('纯前端文件预览。开源、高性能、极致小巧。', 'Pure frontend file previews. Open source, fast, and compact.') }}</p>
       </div>
       <nav :aria-label="t('页脚导航', 'Footer navigation')">
         <a :href="repo" target="_blank" rel="noopener noreferrer">GitHub ↗</a
-        ><a :href="`${repo}/blob/main/docs/support-matrix.md`" target="_blank" rel="noopener noreferrer">{{
+        ><a :href="supportMatrixUrl" target="_blank" rel="noopener noreferrer">{{
           t('格式支持', 'Format support')
         }}</a
         ><a :href="`${repo}/tree/main/packages/vue`" target="_blank" rel="noopener noreferrer">{{
@@ -348,21 +488,21 @@ async function playDemo(): Promise<void> {
         <summary>{{ t('图片鸣谢', 'Image credits') }}</summary>
         <p>
           <a
-            href="https://unsplash.com/photos/brown-wooden-house-near-lake-and-mountain-pR5uo2ED_hg"
+            href="https://commons.wikimedia.org/wiki/File:Aurora_Borealis_Norway_2013.jpg"
             target="_blank"
             rel="noopener noreferrer"
-            >Ricardo Gomez Angel / Unsplash</a
+            >Carsten / CC BY 2.0</a
           >
           ·
           <a
-            href="https://commons.wikimedia.org/wiki/File:Kochelsee_Panorama.jpg"
+            href="https://polyhaven.com/a/rogland_clear_night"
             target="_blank"
             rel="noopener noreferrer"
-            >SimonWaldherr</a
+            >Greg Zaal / Poly Haven / CC0</a
           >
-          /
-          <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener noreferrer"
-            >CC BY-SA 4.0</a
+          ·
+          <a :href="`${repo}/blob/main/apps/demo/public/samples/SOURCES.md`" target="_blank" rel="noopener noreferrer"
+            >{{ t('裁剪、淡蓝调色与完整署名', 'Crops, pale-blue grading, and full credits') }}</a
           >
         </p>
       </details>

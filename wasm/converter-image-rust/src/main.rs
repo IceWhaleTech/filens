@@ -1,6 +1,6 @@
 use jpeg_encoder::{ColorType, Encoder};
 use rawloader::{RawImage, RawImageData};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
 use std::io::Cursor;
@@ -15,6 +15,14 @@ const ICNS_PREVIEW_BACKEND: &str = "icns-preview";
 const ICNS_PREVIEW_WARNING: &str = "Image converter extracted the largest embedded PNG icon; legacy raw icon planes and JPEG 2000 icon chunks are not decoded.";
 const MAX_INPUT_BYTES: u64 = 256 << 20;
 const RAW_FALLBACK_MAX_DIMENSION: usize = 2048;
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PreviewOptions {
+    /// Calibrated stitching must retain the complete, unrotated sensor raster.
+    #[serde(default)]
+    preserve_sensor_geometry: bool,
+}
 
 #[derive(Default)]
 struct Request {
@@ -78,7 +86,14 @@ fn main() {
             (
                 RAW_PREVIEW_BACKEND,
                 RAW_PREVIEW_WARNING,
-                convert_raw_preview(&request.input, &request.output, &request.target),
+                read_preview_options(&request.options).and_then(|options| {
+                    convert_raw_preview_with_options(
+                        &request.input,
+                        &request.output,
+                        &request.target,
+                        &options,
+                    )
+                }),
             )
         } else {
             (
@@ -257,7 +272,21 @@ fn is_raw_source(source: &str) -> bool {
     )
 }
 
-fn convert_raw_preview(input: &str, output: &str, target: &str) -> Result<(), ConvertError> {
+fn read_preview_options(path: &str) -> Result<PreviewOptions, ConvertError> {
+    if path.is_empty() {
+        return Ok(PreviewOptions::default());
+    }
+    let bytes = fs::read(path).map_err(|error| io_error(format!("read image options: {error}")))?;
+    serde_json::from_slice(&bytes)
+        .map_err(|error| parse_error(format!("parse image options: {error}")))
+}
+
+fn convert_raw_preview_with_options(
+    input: &str,
+    output: &str,
+    target: &str,
+    options: &PreviewOptions,
+) -> Result<(), ConvertError> {
     if target != "jpg" {
         return Err(ConvertError {
             code: "unsupported_format",
@@ -265,11 +294,12 @@ fn convert_raw_preview(input: &str, output: &str, target: &str) -> Result<(), Co
         });
     }
     let bytes = fs::read(input).map_err(|error| io_error(format!("read RAW input: {error}")))?;
-    if let Some(preview) = best_embedded_jpeg(&bytes) {
+    if let Some(preview) = best_embedded_jpeg(&bytes).filter(|_| !options.preserve_sensor_geometry)
+    {
         return fs::write(output, preview)
             .map_err(|error| io_error(format!("write RAW JPEG preview: {error}")));
     }
-    let developed = develop_raw_sensor_preview(&bytes).map_err(|error| {
+    let developed = develop_raw_sensor_preview_with_options(&bytes, options).map_err(|error| {
         parse_error(format!(
             "RAW sensor preview could not be developed: {error}"
         ))
@@ -278,35 +308,85 @@ fn convert_raw_preview(input: &str, output: &str, target: &str) -> Result<(), Co
         .map_err(|error| io_error(format!("write developed RAW JPEG preview: {error}")))
 }
 
+#[cfg(test)]
 fn develop_raw_sensor_preview(bytes: &[u8]) -> Result<Vec<u8>, String> {
-    let mut reader = Cursor::new(bytes);
-    let raw = rawloader::decode(&mut reader).map_err(|error| error.to_string())?;
-    encode_raw_sensor_preview(&raw)
+    develop_raw_sensor_preview_with_options(bytes, &PreviewOptions::default())
 }
 
-fn encode_raw_sensor_preview(raw: &RawImage) -> Result<Vec<u8>, String> {
-    let top = raw.crops[0].min(raw.height);
-    let right = raw.crops[1].min(raw.width.saturating_sub(1));
-    let bottom = raw.crops[2].min(raw.height.saturating_sub(top + 1));
-    let left = raw.crops[3].min(raw.width.saturating_sub(right + 1));
+fn develop_raw_sensor_preview_with_options(
+    bytes: &[u8],
+    options: &PreviewOptions,
+) -> Result<Vec<u8>, String> {
+    let mut reader = Cursor::new(bytes);
+    let raw = rawloader::decode(&mut reader).map_err(|error| error.to_string())?;
+    encode_raw_sensor_preview(&raw, options)
+}
+
+fn encode_raw_sensor_preview(raw: &RawImage, options: &PreviewOptions) -> Result<Vec<u8>, String> {
+    if raw.width == 0
+        || raw.height == 0
+        || raw
+            .width
+            .checked_mul(raw.height)
+            .is_none_or(|pixels| pixels > 150_000_000)
+    {
+        return Err("RAW sensor dimensions exceed the preview limit".into());
+    }
+    let crops = if options.preserve_sensor_geometry {
+        [0; 4]
+    } else {
+        raw.crops
+    };
+    let top = crops[0].min(raw.height.saturating_sub(1));
+    let right = crops[1].min(raw.width.saturating_sub(1));
+    let bottom = crops[2].min(raw.height.saturating_sub(top + 1));
+    let left = crops[3].min(raw.width.saturating_sub(right + 1));
     let width = raw.width.saturating_sub(left + right).max(1);
     let height = raw.height.saturating_sub(top + bottom).max(1);
     let scale = width
         .max(height)
-        .div_ceil(RAW_FALLBACK_MAX_DIMENSION)
+        .div_ceil(if options.preserve_sensor_geometry {
+            4096
+        } else {
+            RAW_FALLBACK_MAX_DIMENSION
+        })
         .max(1);
-    let output_width = width.div_ceil(scale).min(usize::from(u16::MAX));
-    let output_height = height.div_ceil(scale).min(usize::from(u16::MAX));
+    let sampled_width = width.div_ceil(scale).min(usize::from(u16::MAX));
+    let sampled_height = height.div_ceil(scale).min(usize::from(u16::MAX));
+    let (transpose, flip_x, flip_y) = if options.preserve_sensor_geometry {
+        (false, false, false)
+    } else {
+        raw.orientation.to_flips()
+    };
+    let (output_width, output_height) = if transpose {
+        (sampled_height, sampled_width)
+    } else {
+        (sampled_width, sampled_height)
+    };
+    let color_matrix = camera_to_srgb(raw);
     let mut pixels =
         Vec::with_capacity(output_width.saturating_mul(output_height).saturating_mul(3));
 
     for output_y in 0..output_height {
-        let source_y = top + (output_y * scale + scale / 2).min(height - 1);
         for output_x in 0..output_width {
-            let source_x = left + (output_x * scale + scale / 2).min(width - 1);
+            let (x, y) = if transpose {
+                (output_y, output_x)
+            } else {
+                (output_x, output_y)
+            };
+            let x = if flip_x { sampled_width - 1 - x } else { x };
+            let y = if flip_y { sampled_height - 1 - y } else { y };
+            let source_x = left + (x * scale + scale / 2).min(width - 1);
+            let source_y = top + (y * scale + scale / 2).min(height - 1);
             let rgb = raw_sensor_rgb(raw, source_x, source_y);
+            let rgb = color_matrix.map(|row| row.iter().zip(rgb).map(|(a, b)| a * b).sum::<f32>());
             pixels.extend(rgb.map(|value| {
-                let value = value.clamp(0.0, 1.0).powf(1.0 / 2.2);
+                let value = value.clamp(0.0, 1.0);
+                let value = if value <= 0.0031308 {
+                    value * 12.92
+                } else {
+                    1.055 * value.powf(1.0 / 2.4) - 0.055
+                };
                 (value * 255.0 + 0.5) as u8
             }));
         }
@@ -322,6 +402,32 @@ fn encode_raw_sensor_preview(raw: &RawImage) -> Result<Vec<u8>, String> {
         )
         .map_err(|error| error.to_string())?;
     Ok(output)
+}
+
+fn camera_to_srgb(raw: &RawImage) -> [[f32; 3]; 3] {
+    let xyz = raw.cam_to_xyz_normalized();
+    let srgb = [
+        [3.2404542, -1.5371385, -0.4985314],
+        [-0.969266, 1.8760108, 0.041556],
+        [0.0556434, -0.2040259, 1.0572252],
+    ];
+    let mut matrix = [[0.0; 3]; 3];
+    for i in 0..3 {
+        for j in 0..3 {
+            matrix[i][j] = (0..3).map(|k| srgb[i][k] * xyz[k][j]).sum();
+        }
+    }
+    // Keep neutral white neutral after white balance, as in a small RAW developer.
+    for row in &mut matrix {
+        let sum: f32 = row.iter().sum();
+        if !sum.is_finite() || sum.abs() < 1e-6 {
+            return [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+        }
+        for value in row {
+            *value /= sum;
+        }
+    }
+    matrix
 }
 
 fn raw_sensor_rgb(raw: &RawImage, x: usize, y: usize) -> [f32; 3] {
@@ -732,5 +838,44 @@ mod tests {
         assert!(best_embedded_jpeg(&raw).is_none());
         let preview = develop_raw_sensor_preview(&raw).expect("sensor preview should decode");
         assert!(best_embedded_jpeg(&preview).is_some_and(|jpeg| jpeg.len() == preview.len()));
+    }
+
+    #[test]
+    fn calibrated_preview_keeps_full_sensor_and_normal_preview_applies_crop_and_orientation() {
+        let raw = RawImage {
+            make: "Synthetic".into(),
+            model: "Synthetic".into(),
+            clean_make: "Synthetic".into(),
+            clean_model: "Synthetic".into(),
+            width: 8,
+            height: 4,
+            cpp: 1,
+            wb_coeffs: [1.0; 4],
+            whitelevels: [65535; 4],
+            blacklevels: [0; 4],
+            xyz_to_cam: [
+                [0.412453, 0.357580, 0.180423],
+                [0.212671, 0.715160, 0.072169],
+                [0.019334, 0.119193, 0.950227],
+                [0.0; 3],
+            ],
+            cfa: rawloader::CFA::new("RGGB"),
+            crops: [1, 1, 1, 1],
+            blackareas: vec![],
+            orientation: rawloader::Orientation::Rotate90,
+            data: RawImageData::Integer(vec![30000; 32]),
+        };
+        let ordinary = encode_raw_sensor_preview(&raw, &PreviewOptions::default()).unwrap();
+        let sensor = encode_raw_sensor_preview(
+            &raw,
+            &PreviewOptions {
+                preserve_sensor_geometry: true,
+            },
+        )
+        .unwrap();
+        let (_, width, height) = jpeg_bounds(&ordinary, 0).unwrap();
+        assert_eq!((width, height), (2, 6));
+        let (_, width, height) = jpeg_bounds(&sensor, 0).unwrap();
+        assert_eq!((width, height), (8, 4));
     }
 }

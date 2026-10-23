@@ -5,11 +5,11 @@ import { createMediaPreviewRoutes } from '@filens/media';
 import { createOfficePreviewRoutes } from '@filens/office';
 import { createTextPreviewRoutes } from '@filens/text';
 
-export function createVueDefaultPreviewRoutes(): FormatDefinition[] {
+export function createVueDefaultPreviewRoutes(options: { rawPreview?: boolean } = {}): FormatDefinition[] {
   return createOfficePreviewRoutes(
     createArchivePreviewRoutes(
       createDesignPreviewRoutes(
-        createTextPreviewRoutes(createMediaPreviewRoutes(createDefaultPreviewRoutes()))
+        createTextPreviewRoutes(createMediaPreviewRoutes(createDefaultPreviewRoutes(), options))
       )
     )
   );

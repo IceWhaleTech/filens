@@ -10,7 +10,7 @@ describe('WASM panorama processor', () => {
     const wasm = wasmFile.buffer.slice(wasmFile.byteOffset, wasmFile.byteOffset + wasmFile.byteLength);
     const processor = createWasmPanoramaProcessor({ wasm });
     const source = jpeg(4000, 2000);
-    const manifest = await processor.open(source.buffer, { format: 'insp' });
+    const manifest = await processor.open(source, { format: 'insp' });
 
     expect(manifest).toMatchObject({
       vendor: 'insta360',
@@ -26,7 +26,7 @@ describe('WASM panorama processor', () => {
     const wasmFile = readFileSync(resolve(process.cwd(), '../../wasm/converter-core/dist/converter-core.wasm'));
     const wasm = wasmFile.buffer.slice(wasmFile.byteOffset, wasmFile.byteOffset + wasmFile.byteLength);
     const processor = createWasmPanoramaProcessor({ wasm });
-    const manifest = await processor.open(calibratedInsp().buffer, { format: 'insp' });
+    const manifest = await processor.open(calibratedInsp(), { format: 'insp' });
 
     expect(manifest).toMatchObject({
       cameraModel: 'Insta360 OneRS',

@@ -25,7 +25,7 @@ filens 是一个以 WebAssembly 为核心的开源、本地优先文件理解运
 - **设计与结构化文件**：DXF、STEP/STP、大量 3D/模型格式、思维导图和流程图
 - **文本与代码**：纯文本、源代码、标记语言、配置、日志及其他可提取内容
 
-各格式当前的实际支持程度和保真限制见[支持矩阵](support-matrix.md)。
+各格式当前的实际支持程度和保真限制见[支持矩阵](support-matrix.zh-CN.md)。
 
 ### 2. 以 WASM 为核心的聚焦型格式转换
 
@@ -187,7 +187,7 @@ npm run dev --workspace @filens/demo
 相关文档：
 
 - [部署到 Vercel](deploy-vercel.md)
-- [格式支持矩阵](support-matrix.md)
+- [格式支持矩阵](support-matrix.zh-CN.md)
 - [PPTX 核心运行时](../packages/core/README.md)
 - [iWork 原生运行时](../packages/iwork/README.md)
 - [浏览器原生 CAD 运行时与来源说明](../packages/cad/README.md)

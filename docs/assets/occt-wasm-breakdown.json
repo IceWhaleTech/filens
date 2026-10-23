@@ -1,0 +1,473 @@
+{
+  "unit": "bytes",
+  "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982",
+  "wasm": {
+    "raw": 2688776,
+    "gzip": 1044639,
+    "brotli": 816177
+  },
+  "loader": {
+    "raw": 45276,
+    "gzip": 13407,
+    "brotli": 12094
+  },
+  "functionCount": 8072,
+  "rows": [
+    {
+      "name": "曲面、曲线、拓扑与数值计算",
+      "bytes": 980651,
+      "percent": 36.47
+    },
+    {
+      "name": "形状修复与几何检查",
+      "bytes": 408324,
+      "percent": 15.19
+    },
+    {
+      "name": "STEP 解析、协议与几何转换",
+      "bytes": 404284,
+      "percent": 15.04
+    },
+    {
+      "name": "其他静态数据（字符串、虚表等）",
+      "bytes": 203895,
+      "percent": 7.58
+    },
+    {
+      "name": "C/C++ 与 Emscripten 运行时",
+      "bytes": 180926,
+      "percent": 6.73
+    },
+    {
+      "name": "其他函数（未按符号归类）",
+      "bytes": 146479,
+      "percent": 5.45
+    },
+    {
+      "name": "三角网格生成",
+      "bytes": 104271,
+      "percent": 3.88
+    },
+    {
+      "name": "OCCT 基础设施、容器与类型系统",
+      "bytes": 93187,
+      "percent": 3.47
+    },
+    {
+      "name": "几何计算的预计算数值表",
+      "bytes": 78291,
+      "percent": 2.91
+    },
+    {
+      "name": "导入会话、实体图与传递框架",
+      "bytes": 50806,
+      "percent": 1.89
+    },
+    {
+      "name": "WASM 结构与段开销",
+      "bytes": 28558,
+      "percent": 1.06
+    },
+    {
+      "name": "预览适配与 JS 绑定",
+      "bytes": 9104,
+      "percent": 0.34
+    }
+  ],
+  "sections": [
+    {
+      "id": 1,
+      "name": "type",
+      "bytes": 2824
+    },
+    {
+      "id": 2,
+      "name": "import",
+      "bytes": 239
+    },
+    {
+      "id": 3,
+      "name": "function",
+      "bytes": 8263
+    },
+    {
+      "id": 4,
+      "name": "table",
+      "bytes": 9
+    },
+    {
+      "id": 5,
+      "name": "memory",
+      "bytes": 9
+    },
+    {
+      "id": 13,
+      "name": "tag",
+      "bytes": 5
+    },
+    {
+      "id": 6,
+      "name": "global",
+      "bytes": 11
+    },
+    {
+      "id": 7,
+      "name": "export",
+      "bytes": 60
+    },
+    {
+      "id": 9,
+      "name": "element",
+      "bytes": 8723
+    },
+    {
+      "id": 12,
+      "name": "data count",
+      "bytes": 4
+    },
+    {
+      "id": 10,
+      "name": "code",
+      "bytes": 2378039
+    },
+    {
+      "id": 11,
+      "name": "data",
+      "bytes": 290582
+    }
+  ],
+  "tables": [
+    {
+      "name": "IBP",
+      "module": "AppCont",
+      "size": 39176,
+      "memoryBytes": 39176
+    },
+    {
+      "name": "FilensPackedIMatrix",
+      "module": "AppCont",
+      "size": 13818,
+      "memoryBytes": 13824
+    },
+    {
+      "name": "FilensPackedIBT",
+      "module": "AppCont",
+      "size": 8624,
+      "memoryBytes": 8624
+    },
+    {
+      "name": "Weight",
+      "module": "math",
+      "size": 7681,
+      "memoryBytes": 7696
+    },
+    {
+      "name": "Point",
+      "module": "math",
+      "size": 7672,
+      "memoryBytes": 7696
+    },
+    {
+      "name": "MaxValuesDB_C0",
+      "module": "PLib",
+      "size": 456,
+      "memoryBytes": 456
+    },
+    {
+      "name": "MaxValuesDB_C1",
+      "module": "PLib",
+      "size": 440,
+      "memoryBytes": 440
+    },
+    {
+      "name": "MaxValuesDB_C2",
+      "module": "PLib",
+      "size": 424,
+      "memoryBytes": 424
+    }
+  ],
+  "bernsteinReplacement": {
+    "removedTable": "VBMatrix",
+    "originalMemoryBytes": 840000,
+    "strategy": "Runtime de Casteljau recurrence at existing OCCT Gauss points; all degrees 1..25 and rules 1..24 retained.",
+    "validation": {
+      "compared": 105000,
+      "maximumAbsoluteError": 5.218048215738236e-15,
+      "maximumRelativeError": 1.7789675614565069e-12
+    },
+    "previousTableBuild": {
+      "raw": 3911653,
+      "gzip": 1781978,
+      "brotli": 1471439
+    }
+  },
+  "numericReplacements": {
+    "previousBuild": {
+      "raw": 3058441,
+      "gzip": 1251337,
+      "brotli": 1002588
+    },
+    "symmetricTables": [
+      {
+        "name": "IMatrix",
+        "originalValues": 6200,
+        "packedValues": 1728,
+        "originalBytes": 49600,
+        "packedBytes": 13824
+      },
+      {
+        "name": "IBT",
+        "originalValues": 3795,
+        "packedValues": 1078,
+        "originalBytes": 30360,
+        "packedBytes": 8624
+      }
+    ],
+    "coefficientValidation": {
+      "gram": {
+        "compared": 6200,
+        "maximumAbsoluteError": 0,
+        "maximumRelativeError": 0
+      },
+      "packed": {
+        "compared": 9995,
+        "bitExact": true
+      },
+      "jacobi": {
+        "compared": 13653,
+        "maximumAbsoluteError": 1.5102502581854083e-14,
+        "maximumRelativeError": 2.4023616131048776e-10
+      },
+      "transform": {
+        "compared": 2976,
+        "maximumRelativeError": 9.214688850973097e-16
+      }
+    },
+    "strtodValidation": {
+      "compared": 20043,
+      "bitExact": true,
+      "endPointersExact": true,
+      "reference": "Pinned OCCT Strtod plus JavaScript nearest-double conversion for decimal inputs"
+    },
+    "removedNativeMessageBytes": 36190
+  },
+  "ioPruning": {
+    "previousWasm": {
+      "raw": 2757687,
+      "gzip": 1063137,
+      "brotli": 827075
+    },
+    "previousLoader": {
+      "raw": 95402,
+      "gzip": 26132,
+      "brotli": 23054
+    },
+    "resultWasm": {
+      "raw": 2733713,
+      "gzip": 1050550,
+      "brotli": 818303
+    },
+    "resultLoader": {
+      "raw": 45276,
+      "gzip": 13407,
+      "brotli": 12094
+    },
+    "virtualFilesystem": false,
+    "externalResourceFiles": false,
+    "nativeDiagnosticFormatting": false,
+    "strategy": "Memory-stream STEP input, programmatic resource defaults, no native diagnostic printer, lazy compatibility stream, and Emscripten FILESYSTEM=0. Checks, exceptions and status flags retained."
+  },
+  "keywordReplacement": {
+    "previousWasm": {
+      "raw": 2733713,
+      "gzip": 1050550,
+      "brotli": 818303
+    },
+    "layout": {
+      "globalStringObjects": 684,
+      "cachedTypeNames": 321,
+      "fullNameBindings": 320,
+      "shortNameBindings": 274,
+      "fullNameEntries": 320,
+      "shortNameEntries": 273,
+      "typeCases": 320,
+      "typeIndexEntries": 800,
+      "complexNames": 62,
+      "complexComparisons": 347,
+      "complexAlternatives": 145,
+      "complexRules": 45
+    },
+    "validation": {
+      "compared": 28316,
+      "namesCompared": 856,
+      "complexCompared": 16579,
+      "complexAccepted": 1800,
+      "fullNames": 320,
+      "shortNames": 273,
+      "lastAliasBinding": 483,
+      "exact": true,
+      "reference": "Compiled pinned registration bodies, original StepType switch and original complex recognizer/reverse recipes"
+    },
+    "strategy": "Immutable sorted full-name/alias tables, lazy canonical-name cache, and compact exact complex-entity rules over sorted spelling ranks. Original last-alias-binding and first-complex-match behavior retained."
+  },
+  "linkedSystemArchives": [
+    "libc.a",
+    "libc_optz.a",
+    "libcompiler_rt-wasm-sjlj.a",
+    "libemmalloc.a",
+    "libunwind-except.a"
+  ],
+  "largestFunctions": [
+    {
+      "name": "RWStepAP214_ReadWriteModule::ReadStep(int, opencascade::handle<StepData_StepReaderData> const&, int, opencascade::handle<Interface_Check>&, opencascade::handle<Standard_Transient> const&) const",
+      "bytes": 131659,
+      "category": "STEP 解析、协议与几何转换"
+    },
+    {
+      "name": "RWStepAP214_GeneralModule::FillSharedCase(int, opencascade::handle<Standard_Transient> const&, Interface_EntityIterator&) const",
+      "bytes": 43499,
+      "category": "STEP 解析、协议与几何转换"
+    },
+    {
+      "name": "ProjLib_ProjectedCurve::Perform(opencascade::handle<Adaptor3d_Curve> const&)",
+      "bytes": 24246,
+      "category": "曲面、曲线、拓扑与数值计算"
+    },
+    {
+      "name": "ShapeFix_Face::Perform()",
+      "bytes": 22585,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "STEPControl_ActorRead::TransferShape(opencascade::handle<Standard_Transient> const&, opencascade::handle<Transfer_TransientProcess> const&, bool, bool, Message_ProgressRange const&)",
+      "bytes": 21595,
+      "category": "STEP 解析、协议与几何转换"
+    },
+    {
+      "name": "IntCurveSurface_HInter::Perform(opencascade::handle<Adaptor3d_Curve> const&, opencascade::handle<Adaptor3d_Surface> const&, double, double, double, double)",
+      "bytes": 17857,
+      "category": "曲面、曲线、拓扑与数值计算"
+    },
+    {
+      "name": "BRepLib::SameParameter(TopoDS_Edge const&, double, double&, bool)",
+      "bytes": 15804,
+      "category": "曲面、曲线、拓扑与数值计算"
+    },
+    {
+      "name": "Extrema_ExtCS::Perform(Adaptor3d_Curve const&, double, double)",
+      "bytes": 14942,
+      "category": "曲面、曲线、拓扑与数值计算"
+    },
+    {
+      "name": "ShapeFix_ComposeShell::DispatchWires(NCollection_Sequence<TopoDS_Shape>&, NCollection_Sequence<ShapeFix_WireSegment>&) const",
+      "bytes": 14530,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "ShapeFix_ComposeShell::SplitByLine(ShapeFix_WireSegment&, gp_Lin2d const&, bool, int, NCollection_Sequence<double>&, NCollection_Sequence<int>&, NCollection_Sequence<TopoDS_Shape>&)",
+      "bytes": 14106,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "StepToTopoDS_TranslateEdgeLoop::Init(opencascade::handle<StepShape_FaceBound> const&, TopoDS_Face const&, opencascade::handle<Geom_Surface> const&, opencascade::handle<StepGeom_Surface> const&, bool, StepToTopoDS_Tool&, StepToTopoDS_NMTool&)",
+      "bytes": 13825,
+      "category": "STEP 解析、协议与几何转换"
+    },
+    {
+      "name": "ShapeFix_Solid::Perform(Message_ProgressRange const&) (.llvm.merged)",
+      "bytes": 13337,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "AdvApprox_ApproxAFunction::Perform(int, int, int, AdvApprox_Cutting const&)",
+      "bytes": 13259,
+      "category": "曲面、曲线、拓扑与数值计算"
+    },
+    {
+      "name": "ProjLib_ComputeApprox::Perform(opencascade::handle<Adaptor3d_Curve> const&, opencascade::handle<Adaptor3d_Surface> const&)",
+      "bytes": 12975,
+      "category": "曲面、曲线、拓扑与数值计算"
+    },
+    {
+      "name": "ShapeFix_Wire::Perform()",
+      "bytes": 12846,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "RWStepAP214_GeneralModule::NewVoid(int, opencascade::handle<Standard_Transient>&) const",
+      "bytes": 12773,
+      "category": "STEP 解析、协议与几何转换"
+    },
+    {
+      "name": "Extrema_GenExtCS::Perform(Adaptor3d_Curve const&, int, double, double, double)",
+      "bytes": 12442,
+      "category": "曲面、曲线、拓扑与数值计算"
+    },
+    {
+      "name": "Geom2dInt_GInter::InternalPerform(Adaptor2d_Curve2d const&, IntRes2d_Domain const&, Adaptor2d_Curve2d const&, IntRes2d_Domain const&, double, double, bool)",
+      "bytes": 12428,
+      "category": "曲面、曲线、拓扑与数值计算"
+    },
+    {
+      "name": "ShapeConstruct_ProjectCurveOnSurface::ApproxPCurve(int, opencascade::handle<Geom_Curve> const&, double, double, NCollection_Sequence<gp_Pnt>&, NCollection_Sequence<double>&, NCollection_Sequence<gp_Pnt2d>&, opencascade::handle<Geom2d_Curve>&)",
+      "bytes": 12301,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "ShapeUpgrade_WireDivide::Perform() (.llvm.merged)",
+      "bytes": 12136,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "ShapeFix_ComposeShell::Perform()",
+      "bytes": 11960,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "ShapeFix_Shell::FixFaceOrientation(TopoDS_Shell const&, bool, bool)",
+      "bytes": 10763,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "ShapeFix_Shape::Perform(Message_ProgressRange const&)",
+      "bytes": 10481,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "StepToGeom::MakeSurface(opencascade::handle<StepGeom_Surface> const&)",
+      "bytes": 10259,
+      "category": "STEP 解析、协议与几何转换"
+    },
+    {
+      "name": "ShapeFix_Wire::FixSelfIntersectingEdge(int)",
+      "bytes": 9888,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "Extrema_ExtPC2d::Perform(gp_Pnt2d const&)",
+      "bytes": 9660,
+      "category": "曲面、曲线、拓扑与数值计算"
+    },
+    {
+      "name": "ProjLib_ComputeApproxOnPolarSurface::BuildInitialCurve2d(opencascade::handle<Adaptor3d_Curve> const&, opencascade::handle<Adaptor3d_Surface> const&)",
+      "bytes": 9576,
+      "category": "曲面、曲线、拓扑与数值计算"
+    },
+    {
+      "name": "StepFile_Read(char const*, std::__2::basic_istream<char, std::__2::char_traits<char>>*, opencascade::handle<StepData_StepModel> const&, opencascade::handle<StepData_Protocol> const&)",
+      "bytes": 9186,
+      "category": "STEP 解析、协议与几何转换"
+    },
+    {
+      "name": "ShapeFix_IntersectionTool::FixIntersectingWires(TopoDS_Face&) const",
+      "bytes": 9126,
+      "category": "形状修复与几何检查"
+    },
+    {
+      "name": "IntCurvesFace_Intersector::Perform(gp_Lin const&, double, double)",
+      "bytes": 9025,
+      "category": "曲面、曲线、拓扑与数值计算"
+    }
+  ],
+  "method": "Exact optimized function-body bytes and static data; symbols classified by owning OCCT module. Inlined code belongs to its enclosing function. Code/data sections match the shipped WASM byte for byte. gzip/Brotli ratios are not additive by module."
+}

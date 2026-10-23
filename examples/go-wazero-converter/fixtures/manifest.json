@@ -1772,6 +1772,12 @@
       "outputPath": "./tmp/sample.icns.png",
       "sourceFormat": "icns",
       "targetFormat": "png"
+    },
+    {
+      "inputPath": "./fixtures/image/sample.ppm",
+      "outputPath": "./tmp/sample.ppm.png",
+      "sourceFormat": "ppm",
+      "targetFormat": "png"
     }
   ]
 }

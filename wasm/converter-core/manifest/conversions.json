@@ -293,5 +293,6 @@
   { "sourceFormat": "mrw", "targetFormat": "jpg" },
   { "sourceFormat": "3fr", "targetFormat": "jpg" },
   { "sourceFormat": "iiq", "targetFormat": "jpg" },
-  { "sourceFormat": "icns", "targetFormat": "png" }
+  { "sourceFormat": "icns", "targetFormat": "png" },
+  { "sourceFormat": "ppm", "targetFormat": "png" }
 ]

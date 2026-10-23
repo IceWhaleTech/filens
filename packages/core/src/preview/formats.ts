@@ -757,7 +757,9 @@ function createConversionRoutes(
         contentTypes: legacyContentTypesForSource(sourceFormat),
         conversion: {
           required: true,
-          reason: targetFormat === 'png'
+          reason: sourceFormat === 'ppm'
+            ? 'PPM images are decoded to PNG in the WASM conversion core'
+            : targetFormat === 'png'
             ? 'ICNS files use their embedded PNG icon preview'
             : 'camera RAW files use their embedded JPEG preview'
         }
@@ -799,6 +801,8 @@ function openXMLConversionReason(targetFormat: string): string {
 
 function legacyContentTypesForSource(sourceFormat: string): string[] {
   switch (sourceFormat) {
+    case 'ppm':
+      return ['image/x-portable-pixmap'];
     case 'icns':
       return ['image/icns', 'image/x-icns', 'application/x-icns'];
     case 'ppt':

@@ -78,7 +78,7 @@ import { VOXLoader, VOXMesh } from 'three/examples/jsm/loaders/VOXLoader.js';
 import { VRMLLoader } from 'three/examples/jsm/loaders/VRMLLoader.js';
 import { XYZLoader } from 'three/examples/jsm/loaders/XYZLoader.js';
 import JSZip from 'jszip';
-import type { OcctImporter } from 'occt-import-js';
+import type { OcctImporter } from '../vendor/occt-import-js/occt-import-js.js';
 
 type PreviewListenerMap = {
   [K in PreviewEventName]: Set<(payload: PreviewEventMap[K]) => void>;
@@ -3446,8 +3446,8 @@ export async function loadUsdzObject(source: ArrayBuffer): Promise<Object3D> {
 
 export async function loadStepObject(source: ArrayBuffer): Promise<Object3D> {
   occtImporterPromise ??= Promise.all([
-    import('occt-import-js'),
-    import('occt-import-js/dist/occt-import-js.wasm?url')
+    import('../vendor/occt-import-js/occt-import-js.js'),
+    import('../vendor/occt-import-js/occt-import-js.wasm?url')
   ]).then(([{ default: createOcctImporter }, { default: wasmUrl }]) =>
     createOcctImporter({ locateFile: () => wasmUrl })
   );
@@ -3457,33 +3457,21 @@ export async function loadStepObject(source: ArrayBuffer): Promise<Object3D> {
     throw new Error('OpenCascade could not read this STEP file.');
   }
 
-  const createNode = (sourceNode: NonNullable<typeof result.root>): Object3D => {
-    const node = new Group();
-    node.name = sourceNode.name ?? '';
-    for (const meshIndex of sourceNode.meshes ?? []) {
-      const sourceMesh = result.meshes?.[meshIndex];
-      if (!sourceMesh) continue;
-      const geometry = new BufferGeometry();
-      geometry.setAttribute('position', new Float32BufferAttribute(sourceMesh.attributes.position.array, 3));
-      if (sourceMesh.attributes.normal) {
-        geometry.setAttribute('normal', new Float32BufferAttribute(sourceMesh.attributes.normal.array, 3));
-      } else {
-        geometry.computeVertexNormals();
-      }
-      geometry.setIndex(sourceMesh.index.array);
-      // ponytail: STEP face colors collapse to the mesh color; add geometry groups when face-level inspection matters.
-      const color = sourceMesh.color ?? [0.72, 0.76, 0.82];
-      const mesh = new Mesh(geometry, new MeshStandardMaterial({ color: new Color(...color), side: DoubleSide }));
-      mesh.name = sourceMesh.name ?? '';
-      node.add(mesh);
+  const object = new Group();
+  for (const meshIndex of result.root.meshes) {
+    const sourceMesh = result.meshes[meshIndex];
+    if (!sourceMesh) continue;
+    const geometry = new BufferGeometry();
+    geometry.setAttribute('position', new Float32BufferAttribute(sourceMesh.attributes.position.array, 3));
+    if (sourceMesh.attributes.normal) {
+      geometry.setAttribute('normal', new Float32BufferAttribute(sourceMesh.attributes.normal.array, 3));
+    } else {
+      geometry.computeVertexNormals();
     }
-    for (const child of sourceNode.children ?? []) {
-      node.add(createNode(child));
-    }
-    return node;
-  };
-
-  return createNode(result.root);
+    geometry.setIndex(sourceMesh.index.array);
+    object.add(new Mesh(geometry, new MeshStandardMaterial({ color: new Color(0.72, 0.76, 0.82), side: DoubleSide })));
+  }
+  return object;
 }
 
 export function loadGCodeObject(source: string): Object3D {

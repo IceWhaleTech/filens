@@ -4,24 +4,25 @@ Generated from the production demo by `npm run report:bundle-sizes`. Units are K
 
 | Module / core | Raw | gzip | Brotli |
 | --- | ---: | ---: | ---: |
-| Conversion core WASM | 828.4 KiB | 376.8 KiB | **305.8 KiB** |
-| Image / RAW core WASM | 655.4 KiB | 204.6 KiB | **163.1 KiB** |
-| Demo entry | 159.9 KiB | 44.8 KiB | **37.6 KiB** |
-| Shared vendor dependencies | 1837.6 KiB | 523.8 KiB | **433.4 KiB** |
-| PPTX / core runtime | 275.0 KiB | 71.3 KiB | **61.2 KiB** |
-| Vue preview host | 68.6 KiB | 15.8 KiB | **14.0 KiB** |
+| Conversion core WASM | 870.9 KiB | 395.0 KiB | **317.9 KiB** |
+| Image / RAW core WASM | 678.5 KiB | 217.5 KiB | **172.2 KiB** |
+| Demo entry | 171.7 KiB | 48.4 KiB | **40.5 KiB** |
+| Shared vendor dependencies | 1775.2 KiB | 502.1 KiB | **414.8 KiB** |
+| PPTX / core runtime | 275.2 KiB | 71.4 KiB | **61.3 KiB** |
+| Vue preview host | 68.7 KiB | 15.8 KiB | **14.0 KiB** |
 | DOCX / XLSX / PDF | 20.9 KiB | 6.5 KiB | **5.8 KiB** |
 | iWork preview | 23.8 KiB | 7.9 KiB | **7.0 KiB** |
 | CAD / mind maps / diagrams | 83.1 KiB | 23.4 KiB | **19.9 KiB** |
-| 3D preview | 105.8 KiB | 28.2 KiB | **24.6 KiB** |
-| Media / panorama preview | 94.8 KiB | 26.3 KiB | **23.0 KiB** |
+| 3D preview | 105.7 KiB | 28.1 KiB | **24.5 KiB** |
+| Media / panorama preview | 208.2 KiB | 61.6 KiB | **52.4 KiB** |
 | Archive preview | 20.2 KiB | 6.5 KiB | **5.7 KiB** |
 | Text / ebooks | 18.0 KiB | 6.2 KiB | **5.4 KiB** |
 | iWork worker | 882.2 KiB | 181.5 KiB | **151.9 KiB** |
 | PDF worker | 1053.3 KiB | 291.1 KiB | **233.1 KiB** |
-| Optional STEP / IGES WASM | 7425.8 KiB | 3038.0 KiB | **2260.8 KiB** |
+| Optional STEP WASM | 2625.8 KiB | 1020.2 KiB | **797.0 KiB** |
+| STEP loader | 23.0 KiB | 9.5 KiB | **8.7 KiB** |
 
-Initial entry, preload, and CSS: **2473.1 KiB raw / 694.5 KiB gzip / 579.8 KiB Brotli**. This excludes HTML, imagery, video, sample files, and later requests. Shared vendor dependencies are included here and must be considered when reading individual module sizes. Optional STEP/IGES uses its separate WASM asset; PDF and iWork have separate workers.
+Initial entry, preload, and CSS: **2535.9 KiB raw / 711.6 KiB gzip / 593.5 KiB Brotli**. This excludes HTML, imagery, video, sample files, and later requests. Shared vendor dependencies are included here and must be considered when reading individual module sizes. Optional STEP uses its separate WASM asset; PDF and iWork have separate workers.
 
 [Exact byte counts and file names](assets/bundle-sizes.json). Compression measurements use the actual build's gzip and Brotli artifacts; server negotiation and caching determine real network transfer. This is a build snapshot, not the size of a published npm tarball.
 

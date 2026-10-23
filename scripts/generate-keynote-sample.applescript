@@ -1,5 +1,5 @@
--- Regenerate the public sample on macOS with Keynote installed:
--- osascript scripts/generate-keynote-sample.applescript /tmp/filens-weekend.key /absolute/path/to/photo-alpine-lake.jpg
+-- Regenerate on macOS with Keynote installed:
+-- osascript scripts/generate-keynote-sample.applescript /tmp/filens-weekend.key /absolute/path/to/samples/showcase
 on putText(targetSlide, copyText, px, py, pw, ph, fontSize, rgbColor)
   tell application "Keynote"
     tell targetSlide
@@ -13,11 +13,18 @@ on putText(targetSlide, copyText, px, py, pw, ph, fontSize, rgbColor)
   end tell
 end putText
 
+on putImage(targetSlide, imagePath, px, py, pw, ph)
+  set imageFile to POSIX file imagePath
+  tell application "Keynote" to tell targetSlide to make new image with properties {file:imageFile, position:{px, py}, width:pw, height:ph}
+end putImage
+
 on run argv
   set outputFile to POSIX file (item 1 of argv)
-  set photoFile to POSIX file (item 2 of argv)
-  set forest to {12336, 19018, 13364}
-  set sage to {31611, 35466, 27756}
+  set assetRoot to item 2 of argv
+  set white to {65535, 65535, 65535}
+  set blue to {4626, 36237, 65535}
+  set ice to {54998, 61166, 65535}
+  set muted to {32639, 44461, 56026}
   tell application "Keynote"
     set docRef to make new document with properties {document theme:theme 1, width:1200, height:675}
     tell docRef
@@ -33,32 +40,31 @@ on run argv
       set s2 to make new slide with properties {base slide:emptyLayout}
       set s3 to make new slide with properties {base slide:emptyLayout}
       repeat with s in {s1, s2, s3}
-        set presenter notes of s to "Fictional public travel sample. All routes, groups, and numbers are invented."
+        set presenter notes of s to "Original public showcase. Photo sources and color grading are documented in samples/SOURCES.md."
       end repeat
     end tell
   end tell
-  my putText(s1, "FIELD NOTES / A WEEKEND GUIDE", 52, 48, 600, 30, 14, sage)
-  my putText(s1, "A weekend" & return & "outside.", 48, 180, 480, 190, 66, forest)
-  my putText(s1, "Slow down. Find a new perspective.", 52, 410, 430, 60, 24, sage)
-  my putText(s1, "Fictional routes. A little room to explore.", 52, 485, 430, 45, 16, sage)
-  tell application "Keynote" to tell s1 to make new image with properties {file:photoFile, position:{560, 100}, width:590, height:480}
-  my putText(s1, "01 / 03     PUBLIC SAMPLE", 52, 620, 700, 30, 12, sage)
-  my putText(s2, "A little room to wander.", 52, 55, 1100, 85, 48, forest)
-  my putText(s2, "THREE FICTIONAL STOPS / ONE UNHURRIED DAY", 55, 155, 1100, 35, 15, sage)
-  my putText(s2, "01", 55, 245, 300, 100, 82, forest)
-  my putText(s2, "02", 435, 245, 300, 100, 82, forest)
-  my putText(s2, "03", 815, 245, 300, 100, 82, forest)
-  my putText(s2, "LAKESIDE", 55, 375, 310, 50, 28, forest)
-  my putText(s2, "WOODLAND", 435, 375, 310, 50, 28, forest)
-  my putText(s2, "VILLAGE", 815, 375, 310, 50, 28, forest)
-  my putText(s2, "Follow the water." & return & "Pause for a photograph.", 55, 450, 310, 100, 22, sage)
-  my putText(s2, "Find a shaded trail." & return & "Enjoy a quiet picnic.", 435, 450, 310, 100, 22, sage)
-  my putText(s2, "Browse the market." & return & "Try a local cafe.", 815, 450, 310, 100, 22, sage)
-  my putText(s2, "02 / 03     ALL PLACES AND FIGURES ARE FICTIONAL", 52, 620, 1000, 30, 12, sage)
-  my putText(s3, "Pack light." & return & "Look closer.", 52, 65, 550, 180, 60, forest)
-  my putText(s3, "A reusable bottle" & return & "A map for the trail" & return & "A small picnic basket" & return & "Time to enjoy the view", 55, 310, 500, 230, 28, sage)
-  tell application "Keynote" to tell s3 to make new image with properties {file:photoFile, position:{650, 100}, width:500, height:480}
-  my putText(s3, "03 / 03     TAKE ONLY PHOTOGRAPHS. LEAVE ONLY FOOTPRINTS.", 52, 620, 1100, 30, 12, sage)
+  repeat with s in {s1, s2, s3}
+    my putImage(s, assetRoot & "/midnight.png", 0, 0, 1200, 675)
+  end repeat
+  my putImage(s1, assetRoot & "/aurora-portrait.jpg", 480, 0, 720, 675)
+  my putText(s1, "FIELD NOTES / THE NIGHT ISSUE", 48, 46, 700, 30, 13, blue)
+  my putText(s1, "BEYOND", 43, 174, 800, 115, 91, white)
+  my putText(s1, "THE VISIBLE.", 45, 282, 850, 100, 68, white)
+  my putText(s1, "Follow the light.", 50, 455, 420, 45, 25, ice)
+  my putText(s1, "A journey into the extraordinary.", 50, 505, 420, 45, 17, muted)
+  my putText(s1, "POLAR SKIES / DEEP SPACE / NEW PERSPECTIVES", 50, 605, 1000, 30, 11, muted)
+  my putText(s1, "filens / 01", 50, 641, 400, 25, 11, muted)
+  my putImage(s2, assetRoot & "/aurora-banner.jpg", 0, 0, 1200, 540)
+  my putText(s2, "02 / AT THE EDGE OF NIGHT", 48, 40, 1000, 35, 13, ice)
+  my putText(s2, "CHASE THE LIGHT.", 48, 555, 1100, 72, 49, white)
+  my putText(s2, "Photograph: Carsten / CC BY 2.0 / pale-blue color grade", 50, 640, 1100, 25, 11, muted)
+  my putImage(s3, assetRoot & "/cosmic-cliffs-square.jpg", 600, 0, 600, 675)
+  my putText(s3, "03 / THE COSMIC ATLAS", 48, 46, 700, 30, 13, blue)
+  my putText(s3, "A universe" & return & "of detail.", 45, 170, 750, 210, 61, white)
+  my putText(s3, "Discover a new perspective" & return & "in every file.", 50, 455, 550, 100, 24, ice)
+  my putText(s3, "CARINA NEBULA / NASA, ESA, CSA, STScI", 50, 605, 1100, 30, 11, muted)
+  my putText(s3, "filens / 03", 50, 641, 400, 25, 11, muted)
   tell application "Keynote"
     save docRef in outputFile
     close docRef saving no

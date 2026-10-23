@@ -935,6 +935,32 @@ describe('converter client adapters', () => {
     30000
   );
 
+  it('converts P3, P6 and 16-bit PPM to PNG through the shared WASM core', async () => {
+    const wasm = new Uint8Array(await readFile(path.join(repoRoot, 'wasm/converter-core/dist/converter-core.wasm')));
+    const client = createWasmConverterClient({ wasm });
+    const inputs = [
+      new TextEncoder().encode('P3\n# RGB\n2 1\n255\n255 0 0 0 255 0\n'),
+      new Uint8Array([...new TextEncoder().encode('P6\n2 1\n255\n'), 255, 0, 0, 0, 255, 0]),
+      new Uint8Array([...new TextEncoder().encode('P6\n2 1\n65535\n'), 255, 255, 0, 0, 0, 0, 0, 0, 255, 255, 0, 0])
+    ];
+    for (const [index, source] of inputs.entries()) {
+      const result = await client.convert(
+        { source, name: 'image.ppm', sourceFormat: 'ppm', targetFormat: 'png' },
+        { descriptor: { source, name: 'image.ppm', extension: 'ppm' } }
+      );
+      expect(result).toMatchObject({ format: 'png', contentType: 'image/png', warnings: [] });
+      const output = result.source as Uint8Array;
+      expect(Array.from(output.subarray(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+      const view = new DataView(output.buffer, output.byteOffset, output.byteLength);
+      expect([view.getUint32(16), view.getUint32(20), output[24], output[25]]).toEqual([2, 1, index === 2 ? 16 : 8, 2]);
+    }
+    const source = new TextEncoder().encode('P6\n2 1\n255\n');
+    await expect(client.convert(
+      { source, name: 'broken.ppm', sourceFormat: 'ppm', targetFormat: 'png' },
+      { descriptor: { source, name: 'broken.ppm', extension: 'ppm' } }
+    )).rejects.toMatchObject({ result: { errorCode: 'conversion_failed' } });
+  });
+
   it(
     'loads converter-image.wasm only for image conversion routes',
     async () => {

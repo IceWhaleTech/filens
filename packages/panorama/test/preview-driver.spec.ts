@@ -114,7 +114,7 @@ describe('Panorama preview driver', () => {
     };
     const internal = session as unknown as {
       calibratedRenderer: typeof renderer;
-      createCalibratedControls(renderer: typeof renderer): void;
+      createCalibratedControls(value: typeof renderer): void;
     };
     internal.calibratedRenderer = renderer;
     internal.createCalibratedControls(renderer);

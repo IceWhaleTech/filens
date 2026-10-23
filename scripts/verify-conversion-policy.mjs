@@ -78,7 +78,8 @@ const expectedConversions = [
   ...['csv', 'tsv', 'tab', 'psv', 'json', 'jsonl', 'ndjson', 'jsonlines', 'ldjson'].map((sourceFormat) => [sourceFormat, 'xlsx']),
   ...['dng', 'cr2', 'cr3', 'nef', 'nrw', 'arw', 'sr2', 'srf', 'orf', 'rw2', 'rwl', 'raf', 'kdc', 'x3f', 'pef', 'srw', 'erf', 'mef', 'mos', 'mrw', '3fr', 'iiq']
     .map((sourceFormat) => [sourceFormat, 'jpg']),
-  ['icns', 'png']
+  ['icns', 'png'],
+  ['ppm', 'png']
 ];
 
 const expectedErrorCodes = [
@@ -349,7 +350,9 @@ async function verifyManifest() {
   const normalizedImage = normalizePairs(imageManifest);
   const fixturePairs = normalizePairs(fixtureManifest.jobs ?? []);
   const expected = expectedConversions.map(([sourceFormat, targetFormat]) => ({ sourceFormat, targetFormat }));
-  const expectedImage = expected.filter(({ targetFormat }) => targetFormat === 'jpg' || targetFormat === 'png');
+  const expectedImage = expected.filter(({ sourceFormat, targetFormat }) =>
+    targetFormat === 'jpg' || (targetFormat === 'png' && sourceFormat === 'icns')
+  );
 
   check(
     JSON.stringify(normalized) === JSON.stringify(expected),

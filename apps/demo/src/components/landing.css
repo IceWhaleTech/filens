@@ -181,6 +181,13 @@
 .landing .hero h1 span {
   color: var(--home-green);
 }
+.landing .hero-kicker {
+  margin-bottom: 18px;
+  color: var(--home-green);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
 .landing .hero-description {
   margin: 22px auto 0;
   max-width: 630px;
@@ -311,6 +318,176 @@
 }
 .landing .support-link:hover {
   color: #477149;
+}
+.landing .principles-section {
+  padding-bottom: 64px;
+}
+.landing .principle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-block: 1px solid var(--home-line);
+}
+.landing .principle {
+  min-width: 0;
+  padding: 28px;
+}
+.landing .principle:first-child {
+  padding-left: 0;
+}
+.landing .principle:last-child {
+  padding-right: 0;
+}
+.landing .principle + .principle {
+  border-left: 1px solid var(--home-line);
+}
+.landing .principle-proof {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--home-green);
+}
+.landing .principle-proof strong {
+  font-size: 36px;
+  font-weight: 550;
+  letter-spacing: -0.045em;
+  line-height: 1.2;
+}
+.landing .principle-proof .proof-unit {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.landing .principle-proof > span {
+  font-size: 10px;
+}
+.landing .principle h2 {
+  margin: 21px 0 10px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: -0.03em;
+}
+.landing .principle > p:not(.principle-proof) {
+  color: var(--home-muted);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.landing .principle > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 15px;
+  color: var(--home-green);
+  font-size: 11px;
+}
+.landing .principle > a:hover {
+  text-decoration: underline;
+}
+.landing .principles-note {
+  margin-top: 13px;
+  color: var(--home-muted);
+  font-size: 10px;
+  line-height: 1.8;
+}
+.landing .formats-section {
+  padding-bottom: 64px;
+}
+.landing .formats-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 36px;
+  margin-bottom: 26px;
+}
+.landing .formats-heading h2 {
+  font-size: clamp(25px, 3vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.35;
+}
+.landing .formats-heading > p {
+  max-width: 360px;
+  color: var(--home-muted);
+  font-size: 12px;
+  line-height: 1.9;
+}
+.landing .format-family-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.landing .format-family-grid > li {
+  min-width: 0;
+}
+.landing .format-family-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  min-height: 155px;
+  padding: 18px;
+  border: 1px solid var(--home-line);
+  border-radius: 10px;
+  background: #fff;
+  text-align: left;
+  transition: background 0.2s, border-color 0.2s;
+}
+.landing .format-family-card:hover {
+  border-color: #b9c9af;
+  background: #f1f5ec;
+}
+.landing .format-family-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.landing .format-family-title .format-icon {
+  width: 30px;
+  height: 35px;
+}
+.landing .format-family-title strong {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.landing .format-family-arrow {
+  margin-left: auto;
+  color: #8c9a81;
+  font-size: 15px;
+}
+.landing .format-family-description {
+  flex: 1;
+  color: var(--home-muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.landing .format-family-extensions {
+  color: #87937c;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 10px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.landing .formats-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 20px;
+  color: var(--home-muted);
+  font-size: 11px;
+}
+.landing .formats-footer a {
+  flex-shrink: 0;
+  color: var(--home-green);
+}
+.landing .formats-footer a:hover {
+  text-decoration: underline;
 }
 .landing .demo-section {
   display: grid;
@@ -534,6 +711,27 @@
     padding-inline: 10px;
     font-size: 11px;
   }
+  .landing .principle {
+    padding: 24px 20px;
+  }
+  .landing .principle h2 {
+    font-size: 16px;
+  }
+  .landing .formats-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .landing .formats-heading > p {
+    max-width: none;
+  }
+  .landing .format-family-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .landing .formats-footer {
+    flex-wrap: wrap;
+    gap: 9px;
+  }
   .landing .demo-section {
     grid-template-columns: 1fr 1.25fr;
     padding: 27px;
@@ -657,6 +855,66 @@
   }
   .landing .support-link {
     margin-top: 17px;
+    font-size: 10px;
+  }
+  .landing .principles-section {
+    padding-bottom: 38px;
+  }
+  .landing .principle-grid {
+    grid-template-columns: 1fr;
+  }
+  .landing .principle,
+  .landing .principle:first-child,
+  .landing .principle:last-child {
+    padding: 24px 0;
+  }
+  .landing .principle + .principle {
+    border-left: 0;
+    border-top: 1px solid var(--home-line);
+  }
+  .landing .principle-proof {
+    flex-direction: row;
+    align-items: baseline;
+    flex-wrap: wrap;
+    column-gap: 12px;
+  }
+  .landing .principle-proof strong {
+    font-size: 30px;
+  }
+  .landing .principle h2 {
+    margin-top: 13px;
+  }
+  .landing .formats-section {
+    padding-bottom: 38px;
+  }
+  .landing .formats-heading {
+    margin-bottom: 20px;
+  }
+  .landing .format-family-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .landing .format-family-card {
+    min-height: 160px;
+    padding: 14px;
+  }
+  .landing .format-family-title {
+    gap: 8px;
+  }
+  .landing .format-family-title .format-icon {
+    width: 26px;
+    height: 31px;
+  }
+  .landing .format-family-title strong {
+    font-size: 13px;
+  }
+  .landing .format-family-description {
+    font-size: 11px;
+  }
+  .landing .format-family-extensions {
+    font-size: 9px;
+  }
+  .landing .formats-footer {
     font-size: 10px;
   }
   .landing .demo-section {

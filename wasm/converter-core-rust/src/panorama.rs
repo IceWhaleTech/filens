@@ -3,6 +3,9 @@ use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::fs;
 
+#[path = "panorama_dng.rs"]
+mod dng;
+
 const MAX_RANGE_BYTES: u64 = 64 << 20;
 const MAX_TRACKS: usize = 32;
 const MAX_SAMPLES: usize = 200_000;
@@ -246,6 +249,9 @@ pub fn inspect(source: &str, options: &Value) -> Result<InspectOutcome, InspectE
     }
     let sidecar_path = options.sidecar_path.clone();
     let sparse = SparseFile::load(options)?;
+    if source == "dng" {
+        return dng::inspect(&sparse);
+    }
     if source == "insp" {
         return inspect_insp(&sparse);
     }
@@ -1015,13 +1021,6 @@ fn decode_insta_x5_values(
         let start = 1 + lens_index * 27;
         let (sensor_width, sensor_height) = insta_x5_sensor_size(values, start)?;
         let cx_sensor = insta_local_principal_x(values[start + 3], sensor_width)?;
-        let yaw = values[start + 5].to_radians()
-            + if lens_index == 1 {
-                std::f64::consts::PI
-            } else {
-                0.0
-            };
-        let pitch = values[start + 6].to_radians();
         let coefficients = &values[start + 11..start + 24];
         lenses.push(json!({
             "width": image_size.0, "height": image_size.1,
@@ -1031,12 +1030,14 @@ fn decode_insta_x5_values(
             "cy": values[start + 4] * image_size.1 as f64 / sensor_height,
             "xi": values[start],
             "distortion": coefficients,
+            "distortionModel": "radtan_pro",
+            "distortionCoeffs": coefficients,
             "radial": [coefficients[0], coefficients[1], coefficients[2], coefficients[3]],
-            "tangential": [coefficients[5], coefficients[6]],
-            "thinPrism": [coefficients[7], coefficients[8], coefficients[9], coefficients[10]],
-            "sensorTilt": [coefficients[11], coefficients[12]],
+            "tangential": [0.0, 0.0],
+            "thinPrism": [0.0, 0.0, 0.0, 0.0],
+            "sensorTilt": [0.0, 0.0],
             "translation": [values[start + 8], values[start + 9], values[start + 10]],
-            "extrinsicQuaternion": euler_yx_quaternion(yaw, pitch),
+            "extrinsicQuaternion": insta_x5_rotation_quaternion(values[start + 5], values[start + 6], values[start + 7], lens_index),
             "projection": { "kind": "mei-extended", "xi": values[start] }
         }));
     }
@@ -1123,6 +1124,36 @@ fn euler_yx_quaternion(yaw: f64, pitch: f64) -> [f64; 4] {
     let (sy, cy) = (yaw * 0.5).sin_cos();
     let (sx, cx) = (pitch * 0.5).sin_cos();
     [cy * cx, cy * sx, sy * cx, -sy * sx]
+}
+
+// Migrated from Photos: X5 world-to-camera is Ry(pitch+90) Rz(yaw)
+// Rx(roll), with a Z half-turn on lens 0. Express each pose relative to the
+// nominal front camera so the rendering core receives an upright +Z rig.
+fn insta_x5_rotation_quaternion(yaw: f64, pitch: f64, roll: f64, index: usize) -> [f64; 4] {
+    fn multiply(a: [f64; 4], b: [f64; 4]) -> [f64; 4] {
+        [
+            a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3],
+            a[0] * b[1] + a[1] * b[0] + a[2] * b[3] - a[3] * b[2],
+            a[0] * b[2] - a[1] * b[3] + a[2] * b[0] + a[3] * b[1],
+            a[0] * b[3] + a[1] * b[2] - a[2] * b[1] + a[3] * b[0],
+        ]
+    }
+    fn vendor(yaw: f64, pitch: f64, roll: f64, index: usize) -> [f64; 4] {
+        let (sy, cy) = ((pitch + 90.0).to_radians() * 0.5).sin_cos();
+        let (sz, cz) = (yaw.to_radians() * 0.5).sin_cos();
+        let (sx, cx) = (roll.to_radians() * 0.5).sin_cos();
+        let q = multiply(
+            multiply([cy, 0.0, sy, 0.0], [cz, 0.0, 0.0, sz]),
+            [cx, sx, 0.0, 0.0],
+        );
+        if index == 0 {
+            multiply(q, [0.0, 0.0, 0.0, 1.0])
+        } else {
+            q
+        }
+    }
+    let q = vendor(yaw, pitch, roll, index);
+    multiply(vendor(0.0, 0.0, 90.0, 0), [q[0], -q[1], -q[2], -q[3]])
 }
 
 fn parse_tracks(moov: &[u8]) -> Result<Vec<Track>, InspectError> {
@@ -1948,8 +1979,36 @@ mod tests {
             (calibration["lenses"][0]["fx"].as_f64().unwrap() - 4200.0 * 2880.0 / 5312.0).abs()
                 < 1e-9
         );
-        assert_eq!(calibration["lenses"][0]["thinPrism"][0], 0.01);
-        assert_eq!(calibration["lenses"][0]["sensorTilt"][0], 0.02);
+        assert_eq!(calibration["lenses"][0]["distortionCoeffs"][7], 0.01);
+        assert_eq!(calibration["lenses"][0]["distortionCoeffs"][11], 0.02);
+        assert_eq!(calibration["lenses"][0]["thinPrism"][0], 0.0);
+        assert_eq!(calibration["lenses"][0]["sensorTilt"][0], 0.0);
+        assert_eq!(calibration["lenses"][0]["distortionModel"], "radtan_pro");
+        assert_eq!(
+            calibration["lenses"][0]["distortionCoeffs"]
+                .as_array()
+                .unwrap()
+                .len(),
+            13
+        );
+    }
+
+    #[test]
+    fn x5_rotation_retains_vendor_roll_and_nominal_camera_axes() {
+        let front = insta_x5_rotation_quaternion(0.0, 0.0, 90.0, 0);
+        let back = insta_x5_rotation_quaternion(0.0, 0.0, 90.0, 1);
+        for (actual, expected) in front.iter().zip([1.0, 0.0, 0.0, 0.0]) {
+            assert!((actual - expected).abs() < 1e-12);
+        }
+        for (actual, expected) in back.iter().zip([0.0, 0.0, -1.0, 0.0]) {
+            assert!((actual - expected).abs() < 1e-12);
+        }
+        // A two-degree residual roll becomes a two-degree Z rotation in the
+        // upright rig. It must not disappear into the nominal 90-degree pose.
+        let rolled = insta_x5_rotation_quaternion(0.0, 0.0, 92.0, 0);
+        assert!((rolled[0] - 1.0f64.to_radians().cos()).abs() < 1e-12);
+        assert!((rolled[3] - 1.0f64.to_radians().sin()).abs() < 1e-12);
+        assert!(rolled[1].abs() < 1e-12 && rolled[2].abs() < 1e-12);
     }
 
     #[test]

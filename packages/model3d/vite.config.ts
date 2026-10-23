@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import dts from 'vite-plugin-dts';
+import { occtWasmAsset } from '../../scripts/occt-wasm-plugin';
 
 export default defineConfig({
   base: './',
@@ -17,8 +18,6 @@ export default defineConfig({
     rollupOptions: {
       external: [
         '@filens/core',
-        'occt-import-js',
-        'occt-import-js/dist/occt-import-js.wasm?url',
         'three'
       ]
     }
@@ -28,6 +27,7 @@ export default defineConfig({
     globals: true
   },
   plugins: [
+    occtWasmAsset(),
     dts({
       include: ['src/**/*.ts'],
       outDir: 'dist',

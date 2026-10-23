@@ -108,7 +108,7 @@ const converterImageWasmUrl = `${import.meta.env.BASE_URL}externals/converter-im
 const staticSamples: DemoSource[] = [
   {
     kind: 'pptx',
-    label: 'Field Notes',
+    label: 'Beyond the Visible',
     name: 'filens-field-notes.pptx',
     source: '/samples/filens-field-notes.pptx'
   },
@@ -152,9 +152,9 @@ const staticSamples: DemoSource[] = [
     kind: 'pdf',
     label: 'PDF',
     name: 'generated.pdf',
-    source: new Uint8Array(),
+    source: '/samples/filens-cosmic-atlas.pdf',
     contentType: 'application/pdf',
-    mode: 'generated'
+    mode: 'sample'
   },
   {
     kind: 'image',
@@ -196,9 +196,9 @@ const staticSamples: DemoSource[] = [
     kind: 'docx',
     label: 'DOCX',
     name: 'generated.docx',
-    source: new Uint8Array(),
+    source: '/samples/filens-aurora-guide.docx',
     contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    mode: 'generated'
+    mode: 'sample'
   },
   {
     kind: 'docx',
@@ -320,9 +320,9 @@ const staticSamples: DemoSource[] = [
     kind: 'xlsx',
     label: 'XLSX',
     name: 'generated.xlsx',
-    source: new Uint8Array(),
+    source: '/samples/filens-observatory.xlsx',
     contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    mode: 'generated'
+    mode: 'sample'
   },
   {
     kind: 'xlsx',
@@ -856,6 +856,14 @@ const staticSamples: DemoSource[] = [
   },
   {
     kind: 'image',
+    label: 'PPM · Alpine Lake',
+    name: 'photo-alpine-lake.ppm',
+    source: '/samples/photo-alpine-lake.ppm',
+    contentType: 'image/x-portable-pixmap',
+    mode: 'sample'
+  },
+  {
+    kind: 'image',
     label: 'BMP · Camera Sample',
     name: 'photo-sample.bmp',
     source: '/samples/photo-sample.bmp',
@@ -912,9 +920,9 @@ const staticSamples: DemoSource[] = [
   },
   {
     kind: 'panorama',
-    label: 'Panorama',
-    name: 'kochelsee-16k.panorama',
-    source: '/samples/kochelsee-panorama.jpg',
+    label: 'Milky Way · 360° Night Sky',
+    name: 'milky-way-360.panorama',
+    source: '/samples/showcase/milky-way-360.jpg',
     contentType: 'image/jpeg',
     mode: 'sample'
   },
@@ -951,16 +959,16 @@ const staticSamples: DemoSource[] = [
   {
     kind: 'panorama',
     label: 'Pano',
-    name: 'kochelsee-16k.pano',
-    source: '/samples/kochelsee-panorama.jpg',
+    name: 'milky-way-360.pano',
+    source: '/samples/showcase/milky-way-360.jpg',
     contentType: 'image/jpeg',
     mode: 'sample'
   },
   {
     kind: 'panorama',
     label: '360',
-    name: 'kochelsee-16k.360',
-    source: '/samples/kochelsee-panorama.jpg',
+    name: 'milky-way-360.360',
+    source: '/samples/showcase/milky-way-360.jpg',
     contentType: 'image/jpeg',
     mode: 'sample'
   },
@@ -1210,11 +1218,11 @@ const staticSamples: DemoSource[] = [
   },
   {
     kind: 'video',
-    label: 'Video URL',
+    label: 'Video · Flower',
     name: 'sample-video.mp4',
-    source: zimaFileSource('video/flower.mp4'),
+    source: '/samples/sample-video.mp4',
     contentType: 'video/mp4',
-    mode: 'url'
+    mode: 'sample'
   },
   {
     kind: 'video',
@@ -1342,8 +1350,8 @@ const demoRoutes = shallowRef(DEFAULT_FORMAT_ROUTES);
 const uploadAccept = computed(() => createPreviewAcceptAttribute({ routes: demoRoutes.value }));
 const supportedFormats = computed(() => listPreviewFormats({ routes: demoRoutes.value }));
 const formatSupportByExtension = computed(() => new Map(supportedFormats.value.map((format) => [format.extension, format])));
-// Format buttons use the last catalog entry by default. Office showcase
-// buttons use the generated guide and dashboard rather than edge-case fixtures.
+// Format buttons use the last catalog entry by default.
+// Office buttons select the curated public showcase files.
 const sampleByExtension = new Map(
   staticSamples.map((sample) => [sample.catalogId ?? inferExtensionFromName(sample.name) ?? '', sample])
 );
@@ -1351,6 +1359,8 @@ const generatedDocxSample = staticSamples.find((sample) => sample.name === 'gene
 if (generatedDocxSample) sampleByExtension.set('docx', generatedDocxSample);
 const generatedXlsxSample = staticSamples.find((sample) => sample.name === 'generated.xlsx');
 if (generatedXlsxSample) sampleByExtension.set('xlsx', generatedXlsxSample);
+const presentationSample = staticSamples.find((sample) => sample.name === 'filens-field-notes.pptx');
+if (presentationSample) sampleByExtension.set('pptx', presentationSample);
 const catalogOnlyFormats: Array<[string, PreviewFamily]> = [
   ...['dwg', 'dgn'].map((extension) => [extension, 'cad'] as [string, PreviewFamily]),
   ['fcstd', 'model3d'],
@@ -1531,7 +1541,7 @@ const formatCatalog = computed(() => [
     sampleOnly: false
   }))
 ]);
-const initialSample = staticSamples.find((sample) => sample.name === 'rich-pptx-shapes.pptx') ?? staticSamples[0]!;
+const initialSample = presentationSample ?? staticSamples[0]!;
 const current = shallowRef<DemoSource>({
   ...initialSample,
   source: resolveZimaFileSource(initialSample.source)
@@ -1613,7 +1623,7 @@ const converter: ConverterClient = {
     }
   }
 };
-const panoramaProcessor = createWasmPanoramaProcessor({ wasm: converterCoreWasmUrl });
+const panoramaProcessor = createWasmPanoramaProcessor({ wasm: converterCoreWasmUrl, imageWasm: converterImageWasmUrl });
 
 onMounted(() => {
   syncPageFromUrl();

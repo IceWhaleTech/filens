@@ -259,6 +259,10 @@ describe('preview format routing', () => {
         driverId: 'image'
       });
     }
+    expect(resolveFormatRoute({ name: 'photo.PPM' })).toMatchObject({
+      sourceFormat: 'ppm', targetFormat: 'png', family: 'image', driverId: 'image',
+      conversion: { required: true }
+    });
     expect(resolveFormatRoute({ name: 'photo.icns' })).toMatchObject({
       sourceFormat: 'icns',
       targetFormat: 'png',
@@ -617,6 +621,10 @@ describe('preview format routing', () => {
     expect(resolveFormatRoute({ contentType: 'image/avif' })).toMatchObject({ sourceFormat: 'avif', family: 'image' });
     expect(resolveFormatRoute({ contentType: 'image/apng' })).toMatchObject({ sourceFormat: 'apng', family: 'image' });
     expect(resolveFormatRoute({ contentType: 'image/x-icon' })).toMatchObject({ sourceFormat: 'ico', family: 'image' });
+    expect(resolveFormatRoute({ contentType: 'image/x-portable-pixmap' })).toMatchObject({
+      sourceFormat: 'ppm', targetFormat: 'png', family: 'image', driverId: 'image',
+      conversion: { required: true }
+    });
     expect(resolveFormatRoute({ contentType: 'application/x-icns' })).toMatchObject({
       sourceFormat: 'icns',
       targetFormat: 'png',

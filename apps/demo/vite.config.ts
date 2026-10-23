@@ -3,6 +3,7 @@ import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 import path from 'node:path';
 import vue from '@vitejs/plugin-vue';
+import { occtWasmAsset } from '../../scripts/occt-wasm-plugin';
 
 const compressibleAssets = /\.(?:css|html|js|json|mjs|wasm)$/;
 
@@ -169,6 +170,7 @@ async function writeBuildInfo(outputDir: string): Promise<void> {
 
 function manualChunkForModule(id: string): string | undefined {
   const normalized = id.replaceAll(path.sep, '/');
+  if (normalized === '\0filens:occt-wasm-url' || normalized.includes('/packages/model3d/vendor/occt-import-js/')) return 'occt-runtime';
   if (normalized.includes('/node_modules/')) return 'vendor';
   if (normalized.includes('/packages/iwork/')) return 'iwork';
   if (normalized.includes('/packages/model3d/')) return 'model3d';
@@ -247,7 +249,7 @@ const externalSampleProxy = {
 
 export default defineConfig({
   base: process.env.VITE_BASE_PATH || '/modules/filens/',
-  plugins: [vue(), externalConverterWasms(), precompressAssets()],
+  plugins: [vue(), occtWasmAsset(), externalConverterWasms(), precompressAssets()],
   server: { proxy: externalSampleProxy },
   preview: { proxy: externalSampleProxy },
   resolve: {

@@ -271,6 +271,7 @@ async function buildFixtureEntries() {
     ...TABULAR_BACKEND_FIXTURES,
     ...RAW_SOURCE_FORMATS.map((sourceFormat) => [`raw/sample.${sourceFormat}`, rawFixtureBytes()]),
     ...ICNS_FIXTURES,
+    ['image/sample.ppm', utf8Bytes('P3\n# RGB test image\n2 1\n255\n255 0 0 0 255 0\n')],
     ...PPT_FIXTURES.map(([relativePath, title, bullet]) => [relativePath, buildPPTBinaryCompoundFile(title, bullet)])
   ]) {
     entries.set(relativePath, bytes);
@@ -373,6 +374,8 @@ function fixturePathForSource(sourceFormat) {
       return `ppt/sample.${sourceFormat}`;
     case 'icns':
       return 'image/sample.icns';
+    case 'ppm':
+      return 'image/sample.ppm';
     default:
       throw new Error(`no controlled converter fixture for ${sourceFormat}`);
   }

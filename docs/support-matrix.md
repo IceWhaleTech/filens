@@ -1,184 +1,411 @@
 # Support Matrix
 
-This file tracks the practical support level of the current implementation across PPTX, native iWork, PDF, DOCX, XLSX/CSV, EPUB/CBZ, ZIP archives, browser-native DXF CAD preview, STEP/STP CAD solids through front-end OpenCascade WASM, STL/OBJ/PLY/glTF/GLB/3MF/AMF/DAE/FBX/3DS/USDZ/G-code/VRML/PCD/XYZ/VTK/VOX/LDraw/KMZ/MD2/LWO/BVH/PDB/NRRD/NHDR model, toolpath, point-cloud, molecule, motion skeleton, volume voxel, and voxel preview, FreeMind/OPML/XMind mind-map preview, draw.io/VDX/VSDX diagram preview, panorama images, generic file preview families, and the intentionally narrow default conversion boundary for manifest-backed OpenXML normalization.
+English | [简体中文](support-matrix.zh-CN.md)
 
-## Sources
+filens provides read-only file previews in modern browsers. Format support does not imply full compatibility with its authoring application.
 
-- `string` URL: supported
-- `ArrayBuffer`: supported
-- `Uint8Array`: supported
-- `Blob`: supported
-- `File`: supported
+| Find | Go to |
+| --- | --- |
+| Formats, extensions, and preview paths | [Format overview](#format-overview) |
+| Conversion sources, targets, and runtime requirements | [Conversion support](#conversion-support) |
+| PPM encodings, bit depth, limits, and verification | [PPM conversion](#ppm-conversion) |
+| Camera RAW extensions and decode limits | [Camera RAW conversion](#camera-raw-conversion) |
+| Individual features and fidelity limits | [Fidelity and feature details](#fidelity-and-feature-details) |
+| APIs, Vue components, fonts, and sidecar files | [Integration support](#integration-support) |
+| Formats and workflows without a shipped preview path | [Unsupported formats and workflows](#unsupported-formats-and-workflows) |
 
-## PPTX Viewer Runtime
+Long feature tables can be expanded using their disclosure headings. These tables work in GitHub Markdown; use the page's find command to locate an extension or feature.
 
-- `init()` / `createViewer()`: supported
-- `preview()`: supported
-- `destroy()`: supported
-- zoom and fit controls: supported
-- slide navigation: supported
-- keyboard navigation: supported
-- virtualized main viewport: supported
+## How to read this matrix
 
-## iWork Runtime
+<details>
+<summary>Expand preview paths, feature statuses, and integration requirements</summary>
 
-- `detectIworkType()`: supported
-- `loadIwork()`: supported
-- `createIworkViewer()`: supported
-- Worker-based parsing: supported
-- Keynote page navigation: supported
-- Numbers sheet navigation: supported
-- Pages continuous page rendering: supported
-- iWork warning and error events: supported
+| Preview path | Meaning |
+| --- | --- |
+| **Direct** | A browser preview driver opens the source without the converter adapter. Some drivers load their own WASM dependencies, such as STEP import. |
+| **Convert** | A converter adapter first produces a previewable file. The browser WASM client runs locally; an HTTP adapter uses the configured service. |
 
-## Generic Preview Runtime
+| Feature status | Meaning |
+| --- | --- |
+| **Supported** | Common content or operations are implemented within the limits described here. |
+| **Partial** | A useful subset is implemented; some content, formatting, or behavior is simplified or omitted. |
+| **Experimental** | Support depends on specific files, camera metadata, codecs, or fallback paths. |
+| **Unavailable** | The listed feature has no shipped implementation. |
 
-- `createPreviewer()`: supported
-- package-provided drivers and routes: supported
-- route-backed format introspection helpers: supported
-- upload `accept` attribute generation from the route table: supported
-- font resolver hook: supported as preview options and Vue `Preview` prop; currently consumed by the CAD/DXF driver
-- resource resolver hook: supported as preview options and Vue `Preview` prop; currently consumed by the CAD/DXF driver for unresolved `IMAGE`/`IMAGEDEF` raster paths, the model3d/glTF driver for uploaded sidecar buffers/textures, and the EPUB driver for missing chapter assets; core includes a file-set resolver helper for multi-file uploads, and ZIP-backed resolver helpers are available from `@filens/archive` for uploaded compound bundles
-- optional converter adapter boundary: supported
-- HTTP converter client adapter: supported; non-2xx JSON or `X-Preview-*` header responses are surfaced as `HttpConversionError` with stable converter metadata
-- mock converter client adapter: supported
-- image preview: supported for PNG, JPEG, GIF, WebP, AVIF, APNG, ICO, SVG, and BMP with zoom, fit width/height, pan, rotation, and fullscreen controls; the demo photo catalog omits SVG because it is vector artwork rather than a photo sample
-- ICNS preview: supported through the optional `converter-image.wasm` module by extracting the largest embedded PNG icon and handing it to the standard image preview driver; raw icon planes and JPEG 2000 chunks are not decoded
-- text preview: supported for UTF-8 text sources
-- code preview: supported as plain text with language detection metadata, line numbers, and non-wrapping code layout
-- audio preview: supported through native browser audio controls
-- video preview: supported through native browser video controls
-- HTML preview: supported through a sandboxed iframe
-- PDF preview: supported through browser PDF embedding
-- DOCX preview: supported through `docx-preview`
-- XLSX preview: supported for lightweight read-only workbook tables
-- CSV preview: supported as lightweight read-only workbook tables for UTF-8/browser-readable sources
-- EPUB preview: supported for spine-based XHTML chapters with package-local asset rewriting and app-resolved missing chapter assets
-- CBZ preview: supported for ZIP-based image page sequences
-- ZIP/JAR/WAR/EAR/APK, TAR, TGZ/TAR.GZ, and single-file GZIP archive preview: supported for read-only listings and file extraction; package helpers can expose entries as `resourceResolver` sources, with ZIP-compatible helper aliases retained
-- ZIP bundle preview in the demo: supported for uploaded ZIPs with an identifiable browser-native primary file such as glTF/GLB/3MF, DXF, XMind/MM/OPML, draw.io/dio, HTML/XHTML, PNG, or common text files
-- manifest-backed conversion: supported through the optional converter boundary for `ppt`/`pps`/`pot`/`ppsx`/`potx`/`dps`/`dpt`/`odp`/`otp`/`fodp` -> `pptx`, `doc`/`docm`/`dot`/`dotx`/`wps`/`wpt`/`rtf`/`odt`/`ott`/`fodt` plus lightweight text/markup/config/template/source-code formats -> `docx`, `xls`/`xlsm`/`xlt`/`xltx`/`et`/`ett`/`ods`/`ots`/`fods` plus DBF/SYLK/DIF and CSV/TSV/TAB/PSV/JSON/JSON Lines table-like inputs -> `xlsx`, and `icns` -> `png`; `docm`/`xlsm` macros are stripped for preview, while other macro-enabled OpenXML, OpenXML add-ins, ODF drawings, legacy OpenOffice XML, CAD/3D/media/iWork/archive/ebook/diagram/mind-map, and other standalone image conversions are not default routes
-- RAW image conversion: supported for `dng`/`cr2`/`cr3`/`nef`/`nrw`/`arw`/`sr2`/`srf`/`orf`/`rw2`/`rwl`/`raf`/`kdc`/`x3f`/`pef`/`srw`/`erf`/`mef`/`mos`/`mrw`/`3fr`/`iiq` -> `jpg`; the optional `converter-image.wasm` module copies the largest standard 8-bit camera-embedded JPEG when present and otherwise uses a lightweight sensor decode/downsample fallback, with full-resolution development, custom picture profiles, and camera edits not preserved
-- pure WASI conversion modules: `wasm/converter-core` handles the default document/panorama path while `wasm/converter-image` is loaded only for image conversion routes; `createWasmConverterClient()` routes between them in the browser, and the Go/wazero host remains a thin shell around WASI conversion code
-- DXF CAD preview: supported for browser-native SVG rendering of common `POINT`, `LINE`, `XLINE`, `RAY`, `LEADER`, `CIRCLE`, `ARC`, `ELLIPSE`, `SPLINE`, `LWPOLYLINE`, classic `POLYLINE`/`VERTEX`, polyline bulge arcs and common polyline widths, `SOLID`, `TRACE`, `3DFACE`, solid `HATCH` polyline, line-edge, arc-edge, elliptical-arc-edge, and spline-edge boundaries including multi-loop even-odd fill for holes, `IMAGE`/`IMAGEDEF` raster references with clipping boundaries for browser-loadable or app-resolved sources and placeholders/warnings for unresolved local paths, `TEXT`, `MTEXT`, `ATTRIB`, and `ATTDEF` entities, with nested `BLOCK`/`INSERT` expansion, `MINSERT` block arrays, `DIMENSION` geometry-block expansion for reusable geometry built from those primitives, and a lightweight linear/aligned dimension fallback when geometry blocks are unavailable
-- DXF drawing bounds/header metadata: partial; uses entity geometry plus `HEADER` `$EXTMIN`/`$EXTMAX` or `$LIMMIN`/`$LIMMAX` as bounds hints for sparse drawings and construction geometry, and exposes `$INSUNITS`/`$MEASUREMENT` unit metadata plus `$LTSCALE` line-type scaling in the drawing model
-- DXF layer/color/line-style metadata: partial; parses `LAYER` table names, basic ACI colors, true color, transparency, hidden/off/frozen/locked layer flags, entity invisible flags, entity color overrides, `LTYPE` dash patterns, global and entity (`48`) line-type scale, entity and layer `LINEWEIGHT`, writes SVG layer/color/style attributes, and exposes generic Vue layer toggles
-- DXF text layout: partial; supports text style, height, rotation, width factor, oblique angle, `TEXT` alignment points, MTEXT attachment/direction metadata, inline formatting cleanup, and multiline rendering for simple `TEXT`/`MTEXT`/`ATTRIB`/`ATTDEF`
-- DXF text style metadata: partial; TrueType/OpenType-style font references are mapped to CSS font-family fallbacks, while SHX font references emit warnings and fall back to browser fonts
-- panorama image and video preview: supported through Three.js for equirectangular `pano`/`panorama`/`360` images, embedded-calibration Insta360 One RS dual-fisheye `.INSP` photos, and browser-decodable `360v`/`vr360` videos; calibrated `.INSP`/`.INSV` and `.OSV` rendering uses content-aware feathered seams when raw lens sources are available, with calibrated `.INSV` falling back to browser media decoding when WebCodecs is unavailable. DJI Osmo `.OSV` can still fall back to the matching camera-generated `.LRF` as an experimental low-resolution proxy; seams baked into that proxy cannot be reconstructed, so accurate fallback playback requires a DJI Studio stitched 2:1 export. Unsupported unstitched dual-fisheye video is rejected instead of being incorrectly mapped onto the sphere
-- live photo catalog samples: the demo bundles only verified real-device files: an Apple iPhone 15 HEIC/MOV pair, a Google Pixel 9 Pro XL Motion Photo, and Samsung Galaxy A34, S20 FE, and Tab S9 Motion Photos; Apple's official LivePhotosKit JS uses JPEG/H.264 derivatives generated from the original pair for Chromium compatibility while keeping the original HEIC/MOV available, and Android files currently show their still image because embedded video extraction is not yet implemented in the WASM conversion core
-- STEP/STP/STL/OBJ/PLY/glTF/GLB/3MF/AMF/DAE/FBX/3DS/USDZ/G-code/VRML/PCD/XYZ/VTK/VOX/LDraw/KMZ/MD2/LWO/BVH/PDB/NRRD/NHDR model preview: supported for STEP/STP CAD solids triangulated by a lazily loaded front-end OpenCascade WASM importer, browser-native ASCII/binary STL, OBJ geometry with common inline vertex colors plus app-resolved MTL libraries and texture maps when `resourceResolver` is available, ASCII/binary-little-endian PLY with common vertex colors, embedded/data-URI glTF, URL-loaded or app-resolved glTF sidecar resources, single-file GLB, core 3MF mesh/build/component items with basic base-material and color-group object/triangle vertex colors, AMF objects, Collada DAE scenes with synchronous app-resolved texture sidecars, KMZ zipped Collada scenes, FBX objects with synchronous app-resolved texture sidecars, 3DS objects with synchronous app-resolved texture sidecars, USDA-backed USDZ objects, G-code/GCO/NC toolpaths, VRML/WRL scenes with synchronous app-resolved texture sidecars, PCD/XYZ point clouds, VTK polydata meshes, VOX voxel scenes, LDraw `.ldr`/`.mpd` models with uploaded sidecar part resolution, MD2 meshes, LWO LightWave Object meshes with synchronous app-resolved texture sidecars, BVH motion skeletons, PDB molecular structures, NRRD voxel volumes, and NHDR detached headers with app-resolved single external raw data files through the Three.js-backed model3d driver with orbit, zoom, fit, and fullscreen controls
-- model3d resource warnings: supported; `resourceResolver` warnings for glTF/OBJ sidecars are exposed through preview state and warning events
-- model3d metadata state: supported; preview state can expose format, bounds, mesh/line/point/material counts, material names, animation counts, and basic triangle/vertex/color metadata for direct front-end inspection UIs
-- model3d model tree state: supported; object-based previews expose a front-end model tree with stable node ids, selection state, and node-selection highlighting hooks for inspection UIs
-- model3d node inspection metadata: supported; model-tree nodes expose subtree mesh/line/point/material/triangle/vertex/color and bounds metadata so front-end inspectors can summarize the selected branch without re-traversing the Three.js scene
-- model3d node focus controls: supported; re-selecting a model-tree node can refocus the camera on the selected subtree while preserving a front-end-driven inspection workflow
-- model3d exploded view control: supported; object-based previews can expose front-end explode amount controls for multi-part assemblies
-- model3d point-to-point measurement control: supported; object-based previews can enter a front-end measurement mode, hover preview the next pick, pick two surface points, switch between surface and nearest-vertex snapping, apply free/X/Y/Z axis locks for the second pick, and expose start/end coordinates, XYZ deltas, preview deltas, and total distance through preview state
-- model3d section control: supported; object-based and direct-geometry previews can expose a front-end clipping section with single-plane and box modes, X/Y/Z axis switching, offset and per-axis range limits derived from model bounds, and preview state for active mode/axis/offset/ranges
-- model3d material inspection metadata: supported; aggregate and per-node state include structured material summaries such as type, color/emissive swatches, opacity/alpha-test flags, depth/write-test flags, wireframe/vertex-color flags, sidedness, roughness/metalness/shininess/size values, and texture-map presence
-- model3d material isolation control: supported; object-based previews can isolate a single material key across the visible scene while preserving node-selection overlays and recoverable base material state
-- model3d camera controls: supported; preview state can expose perspective/orthographic projection mode plus front/right/top/isometric and free-orbit camera presets for front-end inspection UIs
-- model3d snapshot export: supported; object-based and direct-geometry previews can export the current rendered view as a front-end PNG snapshot
-- Vue model3d inspector UI: supported; the default `Preview` host includes model-tree search/filtering, per-node visibility toggles, subtree summaries, explode control, point-to-point measurement with hover/snap/axis controls, plane/box section controls, projection and view-preset controls, PNG snapshot export, material isolation, and material cards for model-wide or selected-node inspection
-- OBJ material/texture fallback diagnostics: supported; unresolved `.mtl` libraries or texture maps emit explicit warnings instead of silently dropping material context
-- 3MF material fallback diagnostics: supported for unsupported texture2d/texture2dgroup resources, composite materials, multi-properties, and referenced non-color-palette resources; these emit warnings while the mesh falls back to supported/default vertex colors
-- FreeMind MM, OPML, and XMind mind-map preview: supported for browser-native XML/ZIP tree rendering through the mindmap driver with zoom, fit, SVG node selection, and outline/search capability flags; XMind reads common `content.json` and `content.xml` topic trees
-- draw.io and Visio VDX/VSDX diagram preview: supported for browser-native XML/mxGraph rendering of compressed and uncompressed diagrams.net pages plus XML/ZIP parsing of basic Visio pages, `pages.xml` page manifests, shapes, labels, and connectors; includes common fill/stroke/text colors, rounded/ellipse/rhombus shapes, dashed lines, arrow markers, selection, and zoom controls
+| Applies to | Requirement or boundary |
+| --- | --- |
+| Format overview below | Describes the routes assembled by the Vue `Preview` host. |
+| Core-only integrations | Register the relevant package drivers and routes. |
+| Conversion routes | Configure a converter adapter. |
+| Rendering and playback | Browser decoding, available fonts, and external resources affect the result. |
 
-## Vue Wrapper
+</details>
 
-- direct `src` prop preview: supported
-- built-in toolbar: supported
-- built-in thumbnails: supported
-- source switching: supported
-- warning and error emits: supported
-- `PptxPreview`: supported
-- `IworkPreview`: supported
-- `Preview`: supported for generic driver-backed formats
+## Format overview
 
-## PPTX Presentation Content
+### Office and documents
 
-- text boxes: supported
-- placeholder text inheritance: supported
-- images: supported
-- grouped shapes: supported
-- basic diagram-backed SmartArt shapes: partial
-- tables: supported
-- links and slide navigation actions: supported
-- common OOXML shape adjustment formulas in preset `a:avLst`: supported
-- common preset shapes: partially supported to good
-- shape text bounds: partial to good
-- table text style matrix: partial
-- `bodyPr` behavior: partial
-- long-tail preset shapes: partial
-- unsupported content placeholders: supported
+| Format | Extensions | Path | Preview coverage | Limits |
+| --- | --- | --- | --- | --- |
+| PowerPoint | `pptx` | Direct | Slides, text, images, tables, and common shapes. | SmartArt and styling are partial; [feature matrix](#pptx). |
+| Word | `docx` | Direct | Document rendering through `docx-preview`. | Layout and font fidelity vary. |
+| Excel / CSV | `xlsx`, `csv` | Direct | Read-only sheets, basic formulas, incremental row loading. | Partial calculation and styling; [workbook matrix](#pdf-docx-and-workbooks). |
+| PDF | `pdf` | Direct | PDF.js canvas pages and page-count state. | Advanced navigation and large-document handling are limited. |
+| Apple iWork | `key`, `pages`, `numbers` | Direct | Native parsing and slide/page/sheet views. | Partial layout and content fidelity; [iWork matrix](#native-iwork). |
+| Other Office, WPS, and OpenDocument | [Conversion extensions](#conversion-support) | Convert | Normalize to `pptx`, `docx`, or `xlsx`. | Fidelity depends on the source; macros are stripped. |
 
-## PPTX Styling
+### Images, audio, video, and panoramas
 
-- theme colors: supported
-- theme fonts: supported
-- solid fills: supported
-- gradients: supported
-- pattern fills: partial
-- picture fills: partial
-- line caps / joins / ends: supported for common cases
-- shadows: partial
-- browser font fallback stacks: supported
-- exact source-font parity: partial; depends on browser availability, embedded font support, app-provided webfonts, and format-specific font metadata
+| Format | Extensions | Path | Preview coverage | Limits |
+| --- | --- | --- | --- | --- |
+| Browser images | `png`, `jpg`, `jpeg`, `gif`, `webp`, `avif`, `apng`, `ico`, `svg`, `bmp` | Direct | Zoom, fit width/height, pan, rotation, fullscreen. | Browser decoding determines availability. |
+| Apple icons | `icns` | Convert → `png` | Largest embedded PNG icon. | Raw icon planes and JPEG 2000 chunks are not decoded. |
+| Portable pixmaps | `ppm` | Convert → `png` | P3 text and P6 binary; comments, arbitrary maxval, 8/16-bit RGB. | First image in a stream; [decode, runtime, and verification limits](#ppm-conversion). |
+| Camera RAW | `dng`, `cr2`, `cr3`, `nef`, and [more](#camera-raw-conversion) | Convert → `jpg` | Embedded JPEG or lightweight sensor preview. | Full RAW development is unavailable. |
+| Audio | `mp3`, `wav`, `aac`, `m4a`, `flac`, `ogg`, `oga`, `opus` | Direct | Native browser playback and controls. | Codec support varies. |
+| Video | `mp4`, `webm`, `mov`, `m4v`, `ogv`, `mkv`, `avi`, `mpeg`, `mpg`, `3gp` | Direct | Native browser playback and controls. | A recognized extension does not guarantee a decodable codec. |
+| Equirectangular panoramas | `pano`, `panorama`, `360`; video: `360v`, `vr360` | Direct | Three.js spherical rendering. | Videos require browser-decodable media. |
+| Camera panoramas | `insp`, `insv`, `osv` | Direct; WASM processing where needed | Experimental calibrated lens rendering or a supported fallback. | Camera metadata, codecs, and companion files; [requirements](#panoramas-and-live-photo-samples). |
 
-## Native iWork Content
+### CAD, 3D, mind maps, and diagrams
 
-- `.key` detection and parsing: supported
-- `.pages` detection and parsing: supported
-- `.numbers` detection and parsing: supported
-- Keynote slide canvases: supported
-- Pages multi-page body extraction: supported
-- Pages floating attachments: partial
-- Pages section/page template background: supported
-- Pages template header/footer text: supported
-- Pages section page-number start: supported
-- Numbers sheet canvases: supported
-- Numbers tables: partial to good
-- Numbers merged cells: supported
-- iWork text runs and paragraph extraction: partial
-- iWork images and media asset lookup: partial
-- iWork basic shapes and lines: partial
-- iWork warnings for unsupported records: supported
+| Format | Extensions | Path | Preview coverage | Limits |
+| --- | --- | --- | --- | --- |
+| 2D CAD | `dxf` | Direct | SVG geometry, text, layers, blocks, raster references. | Partial entity and text fidelity; [DXF matrix](#dxf-cad). |
+| CAD solids | `step`, `stp` | Direct + OpenCascade WASM | Lazy-loaded triangulation for viewing. | CAD editing is unavailable. |
+| 3D models and scenes | `stl`, `obj`, `ply`, `gltf`, `glb`, `3mf`, and [more](#3d-models-and-inspection) | Direct | Three.js meshes, materials, and scenes. | Format-specific material and resource limits. |
+| Toolpaths, point clouds, voxels, motion, molecules | `gcode`, `gco`, `nc`, `pcd`, `xyz`, `vtk`, `vox`, `bvh`, `pdb`, `nrrd`, `nhdr` | Direct | Supported data subsets. | [Import and inspection matrix](#3d-models-and-inspection). |
+| Mind maps | `mm`, `opml`, `xmind`, `mmap` | Direct | FreeMind, OPML, XMind, MindManager topic trees. | Partial layout fidelity; read-only interaction. |
+| Diagrams | `drawio`, `dio`, `vdx`, `vsdx` | Direct | diagrams.net and basic Visio pages, shapes, labels, connectors. | Partial Visio fidelity; editing is unavailable. |
 
-## Not Yet Implemented
+### Text, ebooks, and archives
 
-- animations
-- transitions
-- charts
-- full SmartArt parity
-- audio / video
-- OLE objects
-- embedded fonts
-- exact CAD SHX font rendering without fallback
-- comments / notes / review metadata
-- full custom geometry text rect coverage
-- browser-side exact autofit parity
-- long-tail OOXML shape formula coverage
-- exact Pages pagination parity
-- exact Numbers calculation engine semantics
-- full Keynote master/template parity
-- iWork chart support
-- iWork comment/collaboration metadata
-- rich PDF navigation and page-count extraction
-- rich XLSX/CSV workbook preview with formulas, charts, merged cells, style fidelity, type inference, and large-sheet virtualization
-- syntax highlighting, search, and richer editor-style controls for code preview
-- advanced video streaming such as HLS/DASH
-- panorama video preview
-- advanced ebook navigation, themes, and non-EPUB/non-CBZ ebook formats without conversion
-- extraction UI and archive formats beyond ZIP-compatible containers, TAR, and GZIP
-- native DWG/DGN/Revit-style CAD drawing preview without conversion
-- native Gerber/Excellon and KiCad PCB layered ECAD preview
-- high-fidelity DXF coverage for every entity type, advanced block attributes, patterned/nested hatches, advanced dimension semantics, xrefs, and layouts
-- exact DXF text metrics, SHX glyph shapes, advanced MTEXT formatting, annotative text scaling, and layout-space text behavior
-- native 3D/model preview beyond STEP/STP/STL/OBJ/PLY/glTF/GLB/3MF/AMF/DAE/FBX/3DS/USDZ/G-code/VRML/PCD/XYZ/VTK/VOX/LDraw/KMZ/MD2/LWO/BVH/PDB/NRRD/NHDR, plus advanced controls such as multi-plane sectioning and true layer-aware isolation
-- native complex mind-map and diagram editing-style interactions beyond direct MM/OPML/XMind/draw.io/basic VDX/VSDX preview
+| Format | Extensions | Path | Preview coverage | Limits |
+| --- | --- | --- | --- | --- |
+| Plain text | `txt`, `text`, `log` | Direct | UTF-8 text display. | Read-only. |
+| Code, markup, configuration | Examples: `js`, `ts`, `py`, `go`, `json`, `xml`, `yaml`, `toml`, `ini`, `md`, `tex` | Direct | Language metadata, line numbers, non-wrapping source text. | Markdown, LaTeX, Mermaid, and similar sources are displayed as source. |
+| HTML / XHTML | `html`, `htm`, `shtml`, `xhtml`, `xht`, `xhtm` | Direct | Sandboxed iframe. | Subject to the iframe sandbox. |
+| EPUB | `epub` | Direct | Spine-based XHTML chapters and local/app-resolved assets. | Advanced ebook navigation and themes are unavailable. |
+| Comic books | `cbz` | Direct | ZIP-based image page sequences. | Additional native comic formats are unavailable. |
+| ZIP-compatible archives | `zip`, `jar`, `war`, `ear`, `apk` | Direct | Listings, directory/nested browsing, entry preview, extraction helpers. | Read-only; no bulk extraction UI. |
+| TAR / GZIP | `tar`, `tgz`, `tar.gz`, `gz` | Direct | TAR/TGZ listings; single-file GZIP extraction. | Read-only. |
+| Additional readable inputs | Examples: `fb2`, `eml`, `msg`, `ics`, `vcf` | Convert → `docx` | Content extraction for preview. | Exact pairs follow the conversion manifest. |
 
-## Notes
+| Extension lists | Source of truth |
+| --- | --- |
+| Code and readable-input examples | Illustrative, not exhaustive. Use the [route introspection helpers](#routes-and-source-loading) for formats enabled in an application. |
+| Allowed conversion pairs | The [shared manifest](../wasm/converter-core/manifest/conversions.json) and optional [image manifest](../wasm/converter-image/manifest/conversions.json). |
 
-The goal for the first release line is common business presentation and document usability in modern browsers, not complete PowerPoint, Keynote, Pages, or Numbers feature parity.
+## Conversion support
+
+Listed pairs normalize files for preview; they do not promise to preserve every source feature. Exact pairs come from the manifests linked above.
+
+| Source family | Source extensions | Target |
+| --- | --- | --- |
+| PowerPoint binary / WPS presentations | `ppt`, `pps`, `pot`, `dps`, `dpt` | `pptx` |
+| PowerPoint shows, templates, macro-enabled packages | `pptm`, `ppsx`, `ppsm`, `potx`, `potm` | `pptx` |
+| OpenDocument / legacy OpenOffice presentations and drawings | `odp`, `otp`, `fodp`, `sxi`, `sti`, `odg`, `otg`, `fodg`, `sxd`, `std` | `pptx` |
+| Word binary / WPS / RTF | `doc`, `dot`, `wps`, `wpt`, `rtf` | `docx` |
+| Word templates and macro-enabled packages | `docm`, `dotx`, `dotm` | `docx` |
+| OpenDocument / legacy OpenOffice text | `odt`, `ott`, `fodt`, `sxw`, `stw` | `docx` |
+| Text, markup, configuration, templates, code, ebooks, messages, and other readable content | Examples: `txt`, `md`, `html`, `xml`, `yaml`, `js`, `py`, `epub`, `fb2`, `eml`, `mbox`, `msg`, `oft`, `mht`, `mhtml` | `docx` |
+| Excel binary / WPS spreadsheets | `xls`, `xlt`, `et`, `ett` | `xlsx` |
+| Excel templates and macro-enabled packages | `xlsm`, `xltx`, `xltm` | `xlsx` |
+| OpenDocument / legacy OpenOffice spreadsheets | `ods`, `ots`, `fods`, `sxc`, `stc` | `xlsx` |
+| Table-like inputs | `dbf`, `slk`, `dif`, `csv`, `tsv`, `tab`, `psv`, `json`, `jsonl`, `ndjson`, `jsonlines`, `ldjson` | `xlsx` |
+| Camera RAW | [Complete RAW list](#camera-raw-conversion) | `jpg` |
+| Apple icons | `icns` | `png` |
+| Portable pixmaps | `ppm` | `png` |
+
+### Default routing
+
+| Input | Default preview | Optional conversion target |
+| --- | --- | --- |
+| `csv` | Direct workbook | `xlsx` |
+| `json` | Direct source text | `docx` or `xlsx` |
+| `html` | Direct sandboxed iframe | `docx` |
+| `epub` | Direct ebook driver | `docx` |
+| `ppm` / `image/x-portable-pixmap` | Convert to PNG, then use the image driver | `png` |
+
+| Rule | Behavior |
+| --- | --- |
+| Default precedence | Direct routes take precedence over conversion routes. |
+| Host override | Supply custom routes to select conversion instead. |
+
+### Conversion fidelity
+
+| Source or result | Current boundary |
+| --- | --- |
+| Macro-enabled OpenXML | Macro parts are removed before normalization. |
+| Legacy binary, ODF, and table-like inputs | Layout, styles, media, charts, formulas, and embedded objects may be simplified or omitted. |
+| PPM | Dimensions and RGB samples are retained at 8/16-bit depth; nonstandard maxval values are scaled to the PNG range with rounding. Comments are not copied to PNG metadata. |
+| Conversion warnings | Describe the fallback actually used for the input. |
+| Valid OpenXML output | Confirms output structure; does not establish visual fidelity. |
+
+### Conversion runtime
+
+| Component | Role | Reference |
+| --- | --- | --- |
+| Browser WASM client | `createWasmConverterClient({ wasm, imageWasm })`; runs the document/panorama core and optional image module locally. | [Converter client API](../packages/converter-client/src/index.ts) |
+| Document / panorama / PPM core | Production conversion WASM built from Rust; includes PPM → PNG without the optional image module. | [Rust core](../wasm/converter-core-rust/README.md) |
+| Optional image core | Separate image/RAW WASM module built from Rust. | [Rust image module](../wasm/converter-image-rust/README.md) |
+| HTTP adapter | Invokes the configured conversion service. | [Adapter APIs](#routes-and-source-loading) |
+| Go/wazero host | Thin shell around the same WASM core: CLI/HTTP, validation, temporary files, result/error mapping, OpenXML output validation. | [Go/wazero example](../examples/go-wazero-converter/README.md) |
+
+### PPM conversion
+
+| Capability | Coverage and boundary |
+| --- | --- |
+| Input recognition | `.ppm` (case-insensitive) or `image/x-portable-pixmap` routes to PNG conversion. Other Netpbm extensions have no default route. |
+| P3 / P6 | P3 decimal text and P6 binary RGB; P6 samples above 255 use two bytes in big-endian order. |
+| Header and text raster | ASCII whitespace, LF/CRLF headers, header comments, and comments between P3 samples. Binary whitespace and `#` bytes remain pixel data. |
+| Sample values | `maxval` 1–255 produces 8-bit PNG; 256–65535 produces 16-bit PNG. Values are normalized to 255/65535 with rounding. |
+| Preview operations | Converted PNG uses the image driver's zoom, fit, pan, rotation, and fullscreen controls. Browser display may reduce 16-bit precision. |
+| Runtime | Browser `createWasmConverterClient({ wasm })` and Go/wazero use the same `converter-core.wasm` implementation. HTTP integrations must provide a service with this conversion pair. |
+| Resource limits | Input ≤256 MiB; decoded RGB ≤128 MiB (3 bytes/pixel at 8-bit, 6 at 16-bit). These are buffer limits, not a total peak-memory guarantee. |
+| Stream and metadata | Only the first image is converted. No animation, alpha channel, comment metadata export, or additional color-profile conversion. |
+| Decoder verification | [Rust tests](../wasm/converter-core-rust/src/ppm.rs) cover comments, maxval scaling, 16-bit samples, binary delimiter bytes, malformed inputs, and oversized dimensions. |
+| Integration verification | [WASM client tests](../packages/converter-client/test/converter-client.spec.ts) cover P3/P6, PNG dimensions/depth, and invalid input; [browser regression](../apps/demo/e2e/ppm.e2e.ts) checks the built-in sample and uploaded P3/P6/16-bit image pixels. The [batch fixture](../examples/go-wazero-converter/fixtures/image/sample.ppm) covers the Go/wazero host. |
+
+### Camera RAW conversion
+
+| RAW family | Source extensions | Target |
+| --- | --- | --- |
+| Digital Negative | `dng` | `jpg` |
+| Canon | `cr2`, `cr3` | `jpg` |
+| Nikon | `nef`, `nrw` | `jpg` |
+| Sony | `arw`, `sr2`, `srf` | `jpg` |
+| Olympus | `orf` | `jpg` |
+| Panasonic / Leica | `rw2`, `rwl` | `jpg` |
+| Fujifilm / Kodak / Sigma | `raf`, `kdc`, `x3f` | `jpg` |
+| Pentax / Samsung | `pef`, `srw` | `jpg` |
+| Epson / Mamiya / Minolta | `erf`, `mef`, `mrw` | `jpg` |
+| Leaf / Hasselblad / Phase One | `mos`, `3fr`, `iiq` | `jpg` |
+
+| Decode path | Coverage | Limits |
+| --- | --- | --- |
+| Embedded preview | Core copies the largest standard 8-bit embedded JPEG. | Requires a suitable embedded JPEG. |
+| Sensor fallback | Optional `converter-image.wasm` performs lightweight sensor decoding and downsampling. | Used when no suitable embedded JPEG is present; camera/file variants affect decoding. |
+| Calibrated panorama DNG | One RS and X5 metadata can select static spherical stitching before ordinary conversion. Uses full-sensor development, exposure matching and content-aware seams. | Requires both panorama WASM modules; preview up to 4096 px, experimental calibration and camera-dependent decoding. Unsupported calibration stays flat. |
+| Full RAW development | Unavailable. | Full-resolution development, custom picture profiles, and camera edits are not preserved. |
+
+The Vue preview enables calibrated DNG inspection when `converter` and
+`panoramaProcessor` are supplied. See [RAW panorama integration](../packages/panorama/README.md).
+
+## Fidelity and feature details
+
+### PPTX
+
+<details>
+<summary>Expand PPTX content, geometry, styling, and unsupported features</summary>
+
+| Feature | Status | Details |
+| --- | --- | --- |
+| Text boxes and placeholder inheritance | Supported | Source-font availability and browser layout affect fidelity. |
+| Images, groups, and tables | Supported | Table text style matrix coverage is partial. |
+| Links and slide navigation actions | Supported | Common link/action cases. |
+| Basic diagram-backed SmartArt | Partial | Full SmartArt parity is unavailable. |
+| Preset shapes and adjustment formulas | Partial | Common `a:avLst` adjustments are supported; long-tail presets and OOXML formulas remain incomplete. |
+| Shape text bounds and `bodyPr` behavior | Partial | Custom geometry text rectangles and exact autofit parity remain incomplete. |
+| Theme colors and fonts | Supported | Browser font fallback stacks are available. |
+| Solid and gradient fills | Supported | Pattern and picture fills are partial. |
+| Line caps, joins, and ends | Supported | Common cases. |
+| Shadows | Partial | Some source effects are simplified. |
+| Unsupported content placeholders | Supported | Unsupported content can be represented by placeholders. |
+| Exact source-font parity | Partial | Depends on installed fonts, app-provided webfonts, and format metadata. Embedded Office/iWork font loading is not implemented. |
+| Animations and transitions | Unavailable | Not implemented in the PPTX renderer. |
+| Charts | Unavailable | Chart rendering is not implemented. |
+| Embedded audio/video | Unavailable | Standalone media playback does not imply playback inside slides. |
+| OLE objects | Unavailable | Embedded object rendering is not implemented. |
+| Comments, notes, and review metadata | Unavailable | Not exposed by the PPTX renderer. |
+
+</details>
+
+### Native iWork
+
+| Runtime | Coverage |
+| --- | --- |
+| Detection and parsing | Native `.key`, `.pages`, and `.numbers` parsing through a worker. |
+| Navigation | Keynote slides, Pages continuous pages, Numbers sheets. |
+| Diagnostics | Warning and error events. |
+
+<details>
+<summary>Expand iWork content and fidelity matrix</summary>
+
+| Feature | Status | Details |
+| --- | --- | --- |
+| Keynote slide canvases | Supported | Full master/template fidelity is incomplete. |
+| Pages multi-page body extraction | Supported | Exact source pagination is incomplete. |
+| Pages floating attachments | Partial | Some placement and content are simplified. |
+| Pages section/page backgrounds and template headers/footers | Supported | Includes section page-number start values. |
+| Numbers sheet canvases and merged cells | Supported | Table fidelity remains partial. |
+| Numbers tables | Partial | A full Numbers calculation engine is unavailable. |
+| Text runs and paragraphs | Partial | Some formatting is simplified. |
+| Images, media asset lookup, basic shapes, and lines | Partial | Unsupported records produce warnings. |
+| Charts | Unavailable | Chart rendering is outside current coverage. |
+| Collaboration metadata | Unavailable | Not exposed by the native viewers. |
+
+</details>
+
+### PDF, DOCX, and workbooks
+
+| Driver | Implemented | Current limits |
+| --- | --- | --- |
+| PDF | PDF.js renders pages to canvases and exposes page count. | Pages render eagerly; rich navigation, text search/selection layers, and large-document virtualization are not implemented by this driver. |
+| DOCX | Rendering through `docx-preview`. | Fidelity depends on renderer coverage, fonts, and source layout. |
+| XLSX | Sheet switching, cell values, cached formula values, and basic arithmetic / `SUM` evaluation when cached values are absent. | Unsupported formulas remain visible as formula text. Charts, merged-cell layout, full style fidelity, and a full calculation engine are unavailable. |
+| CSV | Read-only tables for UTF-8/browser-readable sources. | Rich type inference and workbook styling are unavailable. |
+| Workbook row loading | Rows are appended in batches on scroll. | Loaded rows remain mounted; large-sheet virtualization is unavailable. |
+
+### DXF CAD
+
+<details>
+<summary>Expand DXF SVG rendering, entities, metadata, and known gaps</summary>
+
+| Area | Preview coverage | Limits |
+| --- | --- | --- |
+| Renderer | Supported entities render as browser SVG. | Geometry, layers, styles, and text are partial. |
+| Common geometry | `POINT`, `LINE`, `XLINE`, `RAY`, `LEADER`, `CIRCLE`, `ARC`, `ELLIPSE`, `SPLINE`, `LWPOLYLINE`, classic `POLYLINE`/`VERTEX`, bulge arcs, common polyline widths, `SOLID`, `TRACE`, `3DFACE`. | Full DXF entity coverage is unavailable. |
+| Solid hatches | Polyline, line-edge, arc-edge, elliptical-arc-edge, spline-edge boundaries; multi-loop even-odd fill for holes. | Patterned/nested hatches remain incomplete. |
+| Blocks and dimensions | Nested `BLOCK`/`INSERT`, `MINSERT` arrays, `DIMENSION` geometry-block expansion; lightweight linear/aligned fallback without geometry blocks. | Advanced block attributes and dimensions remain incomplete. |
+| Raster references | `IMAGE`/`IMAGEDEF` references and clipping for browser-loadable or app-resolved images. | Unresolved local paths produce placeholders and warnings. |
+| Text entities | Simple `TEXT`, `MTEXT`, `ATTRIB`, `ATTDEF`: height, rotation, width factor, oblique angle, alignment points, MTEXT attachment/direction, inline formatting cleanup, multiline rendering. | Exact text metrics, advanced MTEXT, annotative scaling, and layout-space text behavior remain incomplete. |
+| Bounds and units | Entity geometry; `$EXTMIN`/`$EXTMAX` or `$LIMMIN`/`$LIMMAX` bounds hints; `$INSUNITS`, `$MEASUREMENT`, `$LTSCALE` metadata. | Layout and xref coverage remain incomplete. |
+| Layers and colors | Names, basic ACI colors, true color, transparency, hidden/off/frozen/locked flags, entity invisibility/color overrides, SVG attributes, Vue layer toggles. | Coverage remains partial. |
+| Line styles | `LTYPE` dash patterns, global/entity (`48`) line-type scale, entity/layer `LINEWEIGHT`. | Exact source styling is not guaranteed. |
+| Fonts | TrueType/OpenType-style references map to CSS fallbacks. | Exact SHX glyph rendering is unavailable; SHX references warn and use browser fonts. |
+| Native DWG / DGN | Unavailable. | No native preview route. |
+
+</details>
+
+### 3D models and inspection
+
+| Runtime area | Coverage | Requirement or limit |
+| --- | --- | --- |
+| Three.js viewer | Orbit, zoom, fit, fullscreen. | Import coverage varies by format. |
+| External materials and data | Sidecar resource loading. | May require `resourceResolver`; some loaders require synchronous resolution. |
+| Inspection controls | Model inspection where supported by the driver. | Object-based previews expose richer controls than some direct-geometry previews. |
+
+<details>
+<summary>Expand the complete 3D/model format list and import limits</summary>
+
+| Formats | Import coverage | Requirements and limits |
+| --- | --- | --- |
+| `step`, `stp` | Triangulated CAD solids. | Lazy-loaded front-end OpenCascade WASM importer; viewing only. |
+| `stl`, `obj`, `ply` | ASCII/binary STL; OBJ geometry and common inline vertex colors; ASCII/binary-little-endian PLY with common vertex colors. | OBJ MTL libraries/textures can use app-resolved sidecars. |
+| `gltf`, `glb` | Embedded/data-URI glTF, URL-loaded buffers/textures, single-file GLB. | External buffers/textures can use app resolution. |
+| `3mf`, `amf` | Core 3MF meshes, build/component items, base materials, color-group object/triangle vertex colors; AMF objects. | Unsupported 3MF textures, composite materials, multi-properties, and non-color-palette references emit fallback warnings. |
+| `dae`, `kmz`, `fbx`, `3ds`, `usdz` | Collada, KMZ zipped Collada, FBX, 3DS, USDA-backed USDZ. | DAE/FBX/3DS texture sidecars require synchronous app resolution. |
+| `wrl`, `vrml`, `ldr`, `mpd` | VRML scenes and LDraw models. | VRML textures require synchronous app resolution; LDraw uses uploaded sidecar parts. |
+| `md2`, `lwo` | MD2 and LightWave Object meshes. | LWO textures require synchronous app resolution. |
+| `gcode`, `gco`, `nc` | Toolpaths. | Supported toolpath subset. |
+| `pcd`, `xyz`, `vtk`, `vox` | Point clouds, VTK polydata meshes, VOX voxel scenes. | Supported data subsets. |
+| `bvh`, `pdb`, `nrrd`, `nhdr` | Motion skeletons, molecular structures, voxel volumes. | Detached NHDR requires one app-resolved external raw file. |
+
+</details>
+
+<details>
+<summary>Expand 3D inspection capabilities and Vue UI</summary>
+
+| Capability | Coverage | Scope or limits |
+| --- | --- | --- |
+| Model metadata | Format, bounds, mesh/line/point/material counts, material names, animation counts, basic triangle/vertex/color metadata. | Available fields depend on the importer. |
+| Model tree | Stable node IDs, search/filter, visibility, selection/highlighting, subtree summaries, camera refocus on re-selection. | Object-based previews. |
+| Assemblies | Exploded view controls. | Object-based multi-part assemblies. |
+| Measurement | Point-to-point surface picks, hover preview, surface/nearest-vertex snapping, free/X/Y/Z axis locks, coordinates, XYZ deltas, preview deltas, total distance. | Available where the driver exposes measurement. |
+| Sections | Single-plane and box clipping; X/Y/Z controls and bounds-derived offsets/ranges. | Object-based and direct-geometry previews; arbitrary multi-plane sectioning is unavailable. |
+| Materials | Aggregate/per-node summaries: type, color/emissive, opacity, alpha test, depth flags, wireframe, vertex colors, sidedness, roughness/metalness/shininess/size, texture presence. | Material isolation requires an object-based preview. |
+| Camera and export | Perspective/orthographic projection, front/right/top/isometric/free-orbit presets, PNG snapshots. | Controls depend on driver capabilities. |
+| Diagnostics | Resource warnings in state/events. | glTF/OBJ resources, missing OBJ materials/textures, unsupported 3MF materials. |
+| Vue inspector | Tree, summaries, explode, measurement, sections, camera controls, snapshots, material isolation, material cards. | Exposed by the default `Preview` host where the driver supports them. |
+| Layer-aware isolation | Unavailable. | Material isolation is supported for object-based previews. |
+| Other native formats | Unavailable. | Import coverage is limited to the list above. |
+
+</details>
+
+### Panoramas and live photo samples
+
+| Source | Preview coverage | Requirements and limits |
+| --- | --- | --- |
+| Equirectangular images | Spherical image preview. | Requires equirectangular source imagery. |
+| Equirectangular videos | Spherical video playback. | Requires browser-decodable media. |
+| Insta360 `insp` | Experimental calibrated One RS dual-fisheye photos with content-aware feathered seams. | Requires embedded lens calibration and a panorama processor. |
+| Insta360 `insv` | Calibrated raw-lens rendering where supported; browser media decoding fallback without WebCodecs. | Calibration, codecs, and projection determine whether a file can open. |
+| DJI Osmo `osv` | Calibrated rendering with raw lens sources where available; experimental proxy fallback. | Fallback requires matching camera-generated `.LRF` via `resourceResolver`. Baked-in seams cannot be reconstructed; use a DJI Studio stitched 2:1 export for accurate fallback playback. |
+| Unsupported unstitched dual-fisheye video | Rejected. | Not mapped onto a sphere without a supported calibration or fallback path. |
+| Apple Live Photo demo | Real iPhone 15 HEIC/MOV pair; Apple's LivePhotosKit JS plays JPEG/H.264 derivatives for Chromium compatibility. Originals remain available. | Demo integration only; no general HEIC/MOV pair decoding. |
+| Android Motion Photo demo | Verified Pixel 9 Pro XL and Samsung Galaxy A34 / S20 FE / Tab S9 samples show still images. | Embedded video extraction is not implemented in the WASM conversion core. |
+
+| Integration | Configuration |
+| --- | --- |
+| Calibrated camera processing | Pass a `panoramaProcessor` to the driver or Vue `Preview`, such as `createWasmPanoramaProcessor({ wasm })` from `@filens/panorama`. |
+| Companion lens streams and proxies | Resolve sidecars through `resourceResolver`. |
+
+### Ebooks, archives, mind maps, and diagrams
+
+| Family | Preview coverage | Limits or integration notes |
+| --- | --- | --- |
+| EPUB / CBZ | EPUB spine-based chapters and asset rewriting; CBZ ZIP image sequences. | Advanced navigation, themes, and additional native ebook formats are unavailable. Other readable formats may have conversion routes. |
+| Archives | Read-only browsing, nested archives, entry preview, extraction through package helpers. | Entry previews use the host's previewer factory when provided; helpers expose entries as `resourceResolver` sources. ZIP-compatible aliases are available; bulk extraction UI is unavailable. |
+| Demo ZIP bundles | Primary-file detection with sidecars from the bundle. | Recognized primary files include glTF/GLB/3MF, DXF, mind maps, draw.io/dio, HTML/XHTML, PNG, and common text. |
+| Mind maps | XML/ZIP trees, zoom, fit, SVG node selection, outline/search capability flags. | XMind reads `content.json` / `content.xml`; MindManager reads `Document.xml`. Complex editing and full layout fidelity are unavailable. |
+| Diagrams | Compressed/uncompressed diagrams.net mxGraph and basic Visio XML/ZIP pages; `pages.xml` manifests, common colors, rounded/ellipse/rhombus shapes, dashed lines, arrows, selection, zoom. | Full Visio fidelity and editing are unavailable. |
+| Code / text | UTF-8 display, language metadata, line numbers. | Syntax highlighting, search, and richer editor controls are unavailable. |
+| Audio / video | Browser-native playback. | HLS/DASH streaming and general transcoding are unavailable. Standalone playback does not imply embedded media support in Office/iWork. |
+
+## Integration support
+
+### Routes and source loading
+
+| Capability | Support |
+| --- | --- |
+| Input sources | URL `string`, `ArrayBuffer`, `Uint8Array`, `Blob`, and `File`. |
+| Generic preview runtime | `createPreviewer()`, package drivers/routes, lifecycle, state, warning/error events, and source switching. |
+| Format introspection | `listPreviewFormats()`, `listPreviewFormatGroups()`, `listPreviewExtensions()`, and `createPreviewAcceptAttribute()`. Pass the application's composed routes to reflect enabled packages and overrides. |
+| PPTX runtime | `init()` / `createViewer()`, `preview()`, `destroy()`, zoom/fit, slide/keyboard navigation, and a virtualized main viewport. |
+| iWork runtime | `detectIworkType()`, `loadIwork()`, `createIworkViewer()`, worker parsing, and page/sheet navigation. |
+| Vue wrappers | `PptxPreview`, `IworkPreview`, and generic `Preview`; direct `src`, toolbar, thumbnails where applicable, source switching, and warning/error emits. Controls depend on driver capabilities. |
+| Converter adapters | Optional WASM, HTTP, and mock adapters. HTTP non-2xx JSON or `X-Preview-*` responses surface as `HttpConversionError` with stable converter metadata. |
+
+| Routing reference | Scope |
+| --- | --- |
+| [Core route definitions](../packages/core/src/preview/formats.ts) | Format definitions and default routing helpers. |
+| [Vue route composition](../packages/vue/src/defaults.ts) | Routes assembled for the Vue `Preview` host. |
+
+### Fonts and external resources
+
+| Hook / helper | Current consumers | Limits or integration notes |
+| --- | --- | --- |
+| `fontResolver` | Currently consumed by DXF. | Available in preview options and Vue `Preview`; not universal font loading across drivers. |
+| `resourceResolver` | DXF raster references, glTF buffers/textures, OBJ materials/textures, supported 3D sidecars, missing EPUB assets, camera panorama companions. | Available in preview options and Vue `Preview`; supported resource types depend on the driver. |
+| File-set resolver | Core helper for multi-file uploads and sidecar resolution. | Resolves resources from the provided file set. |
+| Archive resolvers | `@filens/archive` helpers expose entries as resources. | Includes ZIP-backed compound bundles. |
+
+| Font source | Current behavior |
+| --- | --- |
+| Browser fonts and app-provided webfonts | Affect layout; exact source-font rendering is not guaranteed. |
+| SHX references | Use browser font fallbacks and emit warnings. |
+| Embedded Office/iWork fonts | Loading is not implemented. |
+
+## Unsupported formats and workflows
+
+Gaps below apply to shipped preview paths. Hosts can supply custom drivers or converter routes.
+
+| Area | Formats or workflow | Current boundary |
+| --- | --- | --- |
+| Native CAD | DWG, DGN, FreeCAD projects, IGES/BREP | No native preview route; STEP/STP and DXF are covered above. |
+| BIM | Revit, IFC | No native preview route. |
+| ECAD / fabrication | Gerber/Excellon, layered KiCad PCB | No native preview route. |
+| Other images | TIFF, HEIC/HEIF, PSD | No default standalone route. Demo-derived assets do not establish general support. |
+| Other Netpbm extensions | `pbm`, `pgm`, `pnm`, `pam`, `pfm` | No default preview/conversion routes for these extensions. PPM support covers P3/P6 RGB only. |
+| Other archives | RAR, 7z | No default standalone route. |
+| Office add-ins | Add-ins and embedded application behavior | Outside the default conversion policy. |
+| Unlisted conversion pairs | Any pair absent from the manifests | Outside the default conversion policy; macro stripping applies to listed macro-enabled OpenXML sources. |
+| Editing | Office/iWork/CAD/diagram authoring | No full editor. |
+| Application parity | Exact layout and calculation behavior | Not guaranteed; consult each family's feature table. |
+
+| Further reading | Contents |
+| --- | --- |
+| [Roadmap](roadmap.md) | Planned work. |
+| [Project overview](project-overview.md) | Architecture and integration context. |

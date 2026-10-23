@@ -13,6 +13,7 @@ use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 mod panorama;
+mod ppm;
 
 const OPENXML_BACKEND: &str = "openxml-package";
 const TEXT_BACKEND: &str = "text";
@@ -473,6 +474,8 @@ fn main() {
                 RAW_PREVIEW_WARNING,
                 convert_raw_preview(&request.input, &request.output, &request.target),
             )
+        } else if request.source == "ppm" {
+            ("ppm", "", ppm::convert(&request.input, &request.output))
         } else if is_icns_source(&request.source) {
             (
                 "icns-preview",
@@ -668,6 +671,9 @@ fn validate_input(request: &Request, input_size: u64) -> Result<(), ConvertError
             "RAW input is too large for embedded preview extraction".into(),
         ));
     }
+    if request.source == "ppm" && input_size > MAX_RAW_BYTES {
+        return Err(io_error("PPM input is too large for conversion".into()));
+    }
     let pairs: Vec<ConversionPair> =
         serde_json::from_str(CONVERSIONS).map_err(|error| ConvertError {
             code: "conversion_failed",
@@ -748,7 +754,11 @@ fn success(request: &Request, input_size: u64, backend: &str, warning: &str) -> 
         backend: backend.into(),
         fidelity: FIDELITY.into(),
         content_type: content_type(&request.target).into(),
-        warnings: vec![warning.into()],
+        warnings: if warning.is_empty() {
+            Vec::new()
+        } else {
+            vec![warning.into()]
+        },
         metrics: Metrics {
             elapsed_ms: 0,
             input_size,

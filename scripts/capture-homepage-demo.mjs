@@ -5,7 +5,6 @@ import path from 'node:path';
 import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import JSZip from 'jszip';
 import { chromium } from 'playwright';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -15,93 +14,8 @@ const temp = await mkdtemp(path.join(os.tmpdir(), 'filens-home-'));
 const origin = process.env.FILENS_DEMO_URL ?? 'http://127.0.0.1:4173/modules/filens/';
 await mkdir(output, { recursive: true });
 
-const emu = (n) => Math.round(n * 7620);
-const xml = (value) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-let shapeId = 1;
-function rect(x, y, width, height, color) {
-  const id = ++shapeId;
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Shape ${id}"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(width)}" cy="${emu(height)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:ln><a:noFill/></a:ln></p:spPr></p:sp>`;
-}
-function text(value, x, y, width, height, size, color, bold = false) {
-  const id = ++shapeId;
-  return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(width)}" cy="${emu(height)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="none" lIns="0" tIns="0" rIns="0" bIns="0"/><a:lstStyle/><a:p><a:pPr><a:lnSpc><a:spcPct val="100000"/></a:lnSpc></a:pPr><a:r><a:rPr lang="en-US" sz="${Math.round(size * 75)}" b="${bold ? 1 : 0}"><a:solidFill><a:srgbClr val="${color}"/></a:solidFill><a:latin typeface="Arial"/></a:rPr><a:t>${xml(value)}</a:t></a:r><a:endParaRPr/></a:p></p:txBody></p:sp>`;
-}
-function photo(x, y, width, height) {
-  const id = ++shapeId;
-  return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Alpine lake photograph"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="rIdPhoto"/><a:srcRect l="14000" r="14000"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${emu(x)}" y="${emu(y)}"/><a:ext cx="${emu(width)}" cy="${emu(height)}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
-}
-function slide(content, background) {
-  return `<?xml version="1.0" encoding="UTF-8"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="${background}"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>${content}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;
-}
-const deck = await JSZip.loadAsync(await readFile(path.join(publicDir, 'samples/sample-deck.pptx')));
-const emptyShapeTree =
-  '<p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr></p:spTree>';
-for (const name of ['ppt/slideMasters/slideMaster1.xml', 'ppt/slideLayouts/slideLayout1.xml']) {
-  const original = await deck.file(name).async('string');
-  deck.file(name, original.replace(/<p:spTree>[\s\S]*?<\/p:spTree>/, emptyShapeTree));
-}
-deck.file('ppt/media/alpine-lake.jpg', await readFile(path.join(publicDir, 'samples/photo-alpine-lake.jpg')));
-deck.file('docProps/core.xml', `<?xml version="1.0" encoding="UTF-8"?>
-<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/">
-  <dc:title>Field Notes — fictional public sample</dc:title>
-  <dc:creator>filens samples</dc:creator>
-  <dc:description>A fictional outdoor journal. No company, personnel, or business data.</dc:description>
-</cp:coreProperties>`);
-const contentTypes = await deck.file('[Content_Types].xml').async('string');
-deck.file(
-  '[Content_Types].xml',
-  contentTypes.replace('</Types>', '<Default Extension="jpg" ContentType="image/jpeg"/></Types>')
-);
-const relationship = `<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rIdPhoto" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/alpine-lake.jpg"/></Relationships>`;
-const slides = [
-  slide(
-    photo(454, 0, 746, 675) +
-      text('THE EVERYDAY EXPLORER / VOL. 01', 48, 47, 370, 24, 13, 'C8E7A1') +
-      text('FIELD', 43, 170, 420, 100, 88, 'F4F5E9', true) +
-      text('NOTES.', 43, 265, 420, 110, 88, 'F4F5E9', true) +
-      rect(48, 400, 50, 3, 'C8E7A1') +
-      text('A little closer to the outside.', 48, 427, 370, 35, 18, 'C6D1BB') +
-      text('FIND A DIFFERENT PERSPECTIVE.', 48, 595, 370, 25, 11, 'C8E7A1') +
-      text('filens / 01', 48, 625, 370, 20, 11, '95AD87'),
-    '2F4634'
-  ),
-  slide(
-    text('A little perspective.', 50, 45, 1080, 75, 56, '304A32', true) +
-      photo(50, 150, 610, 460) +
-      text('SLOW DOWN.', 720, 190, 430, 25, 14, '8B9D75') +
-      text('Look a little closer.', 720, 235, 430, 45, 31, '304A32', true) +
-      text('Good things are waiting outside.', 720, 310, 430, 40, 18, '78826C') +
-      text('A trail. A lake. A new point of view.', 720, 350, 430, 40, 18, '78826C') +
-      rect(720, 450, 350, 2, 'D9E0CE') +
-      text('MORE TO SEE. MORE TO DISCOVER.', 720, 480, 430, 25, 12, '8B9D75') +
-      text('FIELD NOTES / 02', 50, 636, 500, 20, 11, '8B9D75'),
-    'F5F6ED'
-  ),
-  slide(
-    text('Room to explore.', 50, 45, 1100, 80, 56, '304A32', true) +
-      text('A SAMPLE JOURNEY / SMALL MOMENTS, DIFFERENT VIEWS', 50, 140, 1100, 30, 14, '879873') +
-      rect(60, 240, 320, 330, 'E3EBD7') +
-      rect(440, 240, 320, 330, 'EBDCCB') +
-      rect(820, 240, 320, 330, 'DFE6D9') +
-      text('03', 85, 270, 270, 110, 85, '496A40', true) +
-      text('routes to wander', 85, 440, 270, 40, 22, '496A40') +
-      text('12', 465, 270, 270, 110, 85, 'A9744F', true) +
-      text('moments to keep', 465, 440, 270, 40, 22, 'A9744F') +
-      text('01', 845, 270, 270, 110, 85, '496A40', true) +
-      text('fresh perspective', 845, 440, 270, 40, 22, '496A40') +
-      text('FIELD NOTES / 03', 50, 636, 500, 20, 11, '8B9D75'),
-    'F5F6ED'
-  )
-];
-for (const [index, content] of slides.entries()) {
-  deck.file(`ppt/slides/slide${index + 1}.xml`, content);
-  deck.file(`ppt/slides/_rels/slide${index + 1}.xml.rels`, relationship);
-}
-await writeFile(
-  path.join(publicDir, 'samples/filens-field-notes.pptx'),
-  await deck.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
-);
-console.log('Generated Field Notes sample deck.');
+// Keep the captured previews and downloadable showcase files in sync.
+await import('./generate-showcase-documents.mjs');
 
 const ffmpeg = (args) =>
   execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...args], { stdio: 'inherit' });
@@ -138,7 +52,7 @@ try {
     );
     await writeFile(target, Buffer.from(data, 'base64'));
   }
-  await webp(path.join(publicDir, 'samples/photo-alpine-lake.jpg'), path.join(output, 'landscape.webp'), 900);
+  await webp(path.join(publicDir, 'samples/showcase/aurora.jpg'), path.join(output, 'landscape.webp'), 900);
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     reducedMotion: 'reduce',
@@ -188,12 +102,12 @@ try {
   await videoPage.locator('.pptxv-shell').first().press('PageDown');
   await chapter('翻页、缩放，探索每一页', 'Turn the page. Explore the details.');
   await videoPage.getByRole('button', { name: 'DOCX', exact: true }).click();
-  await videoPage.locator('.wb-preview-stage').getByText('Trip overview', { exact: false }).first().waitFor();
+  await videoPage.locator('.wb-preview-stage').getByText('Chasing the light', { exact: false }).first().waitFor();
   await chapter('文档，留在同一个预览台', 'Documents, in the same workspace');
   await videoPage.getByRole('button', { name: 'XLSX', exact: true }).click();
   await chapter('表格与工作表，轻松切换', 'Explore spreadsheets and worksheets');
   await videoPage.getByRole('button', { name: 'KEY', exact: true }).click();
-  await videoPage.locator('.wb-preview-stage').getByText('A weekend', { exact: false }).first().waitFor();
+  await videoPage.locator('.wb-preview-stage').getByText('BEYOND', { exact: false }).first().waitFor();
   await videoPage.locator('.pptxv-shell').first().press('0');
   await chapter('Keynote，也可以在浏览器打开', 'Keynote, right in your browser');
   await videoPage.getByRole('button', { name: 'Design', exact: true }).click();

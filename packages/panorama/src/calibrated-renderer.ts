@@ -26,7 +26,11 @@ import {
 export type PanoramaStabilizationMode = 'off' | 'camera' | 'horizon-lock';
 
 export interface CalibratedPanoramaRenderer {
-  mesh: Mesh<SphereGeometry, ShaderMaterial>;
+  mesh?: Mesh<SphereGeometry, ShaderMaterial>;
+  canvas?: HTMLCanvasElement;
+  dragDirectionSign?: number;
+  setView?(yaw: number, pitch: number, roll: number, fov: number): void;
+  requestRender?(): void;
   update(): void;
   play(): void;
   pause(): void;
@@ -72,6 +76,7 @@ export async function createCalibratedPanoramaImageRenderer(processor: PanoramaP
   seamTexture.needsUpdate = true;
   seamTexture.minFilter = LinearFilter;
   const material = createStillCalibratedMaterial(manifest, lensSources, texture, seamTexture);
+  applyVendorDistortion(material, manifest.lenses);
   const geometry = new SphereGeometry(500, 96, 64);
   geometry.scale(-1, 1, 1);
   const mesh = new Mesh(geometry, material);
@@ -456,6 +461,7 @@ export async function createCalibratedPanoramaRenderer(processor: PanoramaProces
       }
     `
   });
+  applyVendorDistortion(material, manifest.lenses);
   const geometry = new SphereGeometry(500, 96, 64);
   geometry.scale(-1, 1, 1);
   const mesh = new Mesh(geometry, material);
@@ -550,6 +556,7 @@ export async function createBrowserCalibratedPanoramaRenderer(
   const lenses = manifest.lenses.slice(0, 2);
   const lensTextures = lensSources.map((item) => textures[tracks.indexOf(item.track)]);
   const material = createBrowserCalibratedMaterial(manifest, lenses as [PanoramaLens, PanoramaLens], lensSources, lensTextures as unknown as [Texture, Texture], seamTexture);
+  applyVendorDistortion(material, manifest.lenses);
   const geometry = new SphereGeometry(500, 96, 64);
   geometry.scale(-1, 1, 1);
   const mesh = new Mesh(geometry, material);
@@ -854,7 +861,9 @@ export function hasAccuratePanoramaCalibration(manifest: PanoramaAssetManifest):
   if (lenses.length < 2 || !lenses.every((lens) => hasAccurateLensCalibration(lens, manifest.projection.kind))) return false;
   const model = (manifest.cameraModel || '').replace(/^Insta360\s+/i, '').trim().toUpperCase();
   if (model === 'X5' && (!['embedded', 'sidecar'].includes(manifest.calibrationSource)
-    || !lenses.every((lens) => validNumbers(lens.thinPrism, 4) && validNumbers(lens.sensorTilt, 2)))) return false;
+    || !lenses.every((lens) => lens.distortionModel === 'radtan_pro'
+      ? validNumbers(lens.distortionCoeffs, 13)
+      : validNumbers(lens.thinPrism, 4) && validNumbers(lens.sensorTilt, 2)))) return false;
   const first = normalizeQuaternion(lenses[0].extrinsicQuaternion as number[]);
   const second = normalizeQuaternion(lenses[1].extrinsicQuaternion as number[]);
   if (Math.abs(first.reduce((sum, value, index) => sum + value * second[index], 0)) >= 0.999) return false;
@@ -916,6 +925,7 @@ function hasAccurateLensCalibration(lens: PanoramaLens, projection: PanoramaAsse
   if (projection === 'dji-fisheye-lut') {
     return validNumbers(lens.distortion, 4) && validNumbers(lens.radialLut1, 14) && validNumbers(lens.radialLut2, 14);
   }
+  if (lens.distortionModel === 'radtan_pro' && !validNumbers(lens.distortionCoeffs, 13)) return false;
   return projection === 'mei-extended' && Number.isFinite(lens.xi) && Number(lens.xi) > 0
     && validNumbers(lens.radial, 4) && validNumbers(lens.tangential, 2);
 }
@@ -924,7 +934,7 @@ function validNumbers(values: Array<number | null> | undefined, count: number): 
   return Boolean(values && values.length >= count && values.slice(0, count).every((value) => typeof value === 'number' && Number.isFinite(value)));
 }
 
-class DualTrackPlayback {
+export class DualTrackPlayback {
   private readonly decoders: VideoDecoder[];
   private readonly queues: VideoFrame[][];
   private readonly indexes: number[];
@@ -943,20 +953,30 @@ class DualTrackPlayback {
   private readonly seekEnd: number;
   streamSyncMs = 0;
 
-  constructor(private readonly processor: PanoramaProcessor, private readonly tracks: PanoramaVideoTrack[], private readonly textures: VideoFrameTexture[], private readonly configs: VideoDecoderConfig[], private readonly onPair: (first: VideoFrame, second: VideoFrame) => void, private readonly prepareImu: (seconds: number) => Promise<void>, private readonly onSeek: () => void) {
+  constructor(private readonly processor: PanoramaProcessor, private readonly tracks: PanoramaVideoTrack[], private readonly textures: Pick<VideoFrameTexture, 'setFrame'>[], private readonly configs: VideoDecoderConfig[], private readonly onPair: (first: VideoFrame, second: VideoFrame) => void, private readonly prepareImu: (seconds: number) => Promise<void>, private readonly onSeek: () => void) {
     this.queues = tracks.map(() => []);
     this.indexes = tracks.map(() => 0);
     this.currentFrames = tracks.map(() => undefined);
     this.duration = Math.min(...tracks.map(panoramaTrackDuration));
     this.seekEnd = Math.min(...tracks.map((track) => track.samples.at(-1)!.pts / track.timescale));
-    this.decoders = configs.map((config, index) => {
-      const decoder = new VideoDecoder({
-        output: (frame) => { this.queues[index].push(frame); this.pairFrames(); },
-        error: (error) => this.fail(error)
+    this.decoders = [];
+    try {
+      configs.forEach((config, index) => {
+        const decoder = new VideoDecoder({
+          output: (frame) => {
+            if (this.closed) { frame.close(); return; }
+            this.queues[index].push(frame);
+            try { this.pairFrames(); } catch (error) { this.fail(error); }
+          },
+          error: (error) => this.fail(error)
+        });
+        this.decoders.push(decoder);
+        decoder.configure(config);
       });
-      decoder.configure(config);
-      return decoder;
-    });
+    } catch (error) {
+      this.close();
+      throw error;
+    }
   }
 
   start() {
@@ -965,7 +985,9 @@ class DualTrackPlayback {
   }
 
   update() {
-    if (this.closed || this.feeding || this.isPaused) return;
+    if (this.closed || this.isPaused) return;
+    this.pairFrames();
+    if (this.feeding || this.isPaused) return;
     if (this.duration > 0 && this.currentTime >= this.duration) { this.seek(0); return; }
     this.feeding = true;
     const generation = this.generation;
@@ -1016,7 +1038,7 @@ class DualTrackPlayback {
   close() {
     if (this.closed) return;
     this.closed = true;
-    this.decoders.forEach((decoder) => decoder.close());
+    this.decoders.forEach((decoder) => { if (decoder.state !== 'closed') decoder.close(); });
     this.queues.flat().forEach((frame) => frame.close());
     this.currentFrames.forEach((frame) => frame?.close());
   }
@@ -1047,8 +1069,10 @@ class DualTrackPlayback {
   }
 
   private pairFrames() {
+    if (this.closed || this.isPaused) return;
     if (this.tracks.length === 1) {
       while (this.queues[0].length) {
+        if (!this.frameDue(this.queues[0][0])) break;
         const frame = this.queues[0].shift()!;
         if (frame.timestamp < this.seekTargetUs) { frame.close(); continue; }
         this.seekTargetUs = 0;
@@ -1063,6 +1087,7 @@ class DualTrackPlayback {
     while (this.queues[0].length && this.queues[1].length) {
       const first = this.queues[0][0];
       const second = this.queues[1][0];
+      if (!this.frameDue(first) || !this.frameDue(second)) break;
       const difference = first.timestamp - second.timestamp;
       const halfFrame = Math.max(first.duration || 0, second.duration || 0, 16_667) / 2;
       if (Math.abs(difference) <= halfFrame) {
@@ -1087,6 +1112,10 @@ class DualTrackPlayback {
     }
   }
 
+  private frameDue(frame: VideoFrame): boolean {
+    return !this.clockRunning || frame.timestamp <= this.currentTime * 1_000_000;
+  }
+
   private startClock(frame: VideoFrame) {
     if (this.clockRunning) return;
     this.clockTime = frame.timestamp / 1_000_000;
@@ -1104,7 +1133,7 @@ class DualTrackPlayback {
   private setFrame(index: number, frame: VideoFrame) {
     this.currentFrames[index]?.close();
     this.currentFrames[index] = frame;
-    this.textures[index].setFrame(frame);
+    this.textures[index]?.setFrame(frame);
   }
 }
 
@@ -1469,7 +1498,9 @@ export function projectLensCpu(body: Vec3, lens: PanoramaLens, projection: Panor
     const factor = 1 + radial[0]*r2 + radial[1]*r4 + radial[2]*r2*r4 + radial[3]*r4*r4;
     const xd = x*factor + 2*tangential[0]*x*y + tangential[1]*(r2 + 2*x*x) + thin[0]*r2 + thin[1]*r4;
     const yd = y*factor + tangential[0]*(r2 + 2*y*y) + 2*tangential[1]*x*y + thin[2]*r2 + thin[3]*r4;
-    const tilted = applySensorTilt([xd, yd], lensPair(lens.sensorTilt));
+    const tilted = lens.distortionModel === 'radtan_pro'
+      ? applyRadtanPro([x, y], lens.distortionCoeffs!)
+      : applySensorTilt([xd, yd], lensPair(lens.sensorTilt));
     pixelX = (lens.cx || 0) + (lens.fx || 1) * tilted[0];
     pixelY = (lens.cy || 0) + (lens.fy || lens.fx || 1) * tilted[1];
   } else {
@@ -1488,6 +1519,54 @@ export function projectLensCpu(body: Vec3, lens: PanoramaLens, projection: Panor
   const edgeDepth = 0.475 * Math.min(width, height) - Math.hypot(pixelX - (lens.cx || 0), pixelY - (lens.cy || 0));
   if (projection === 'mei-extended' && edgeDepth <= 0) return undefined;
   return [u, v, projection === 'mei-extended' ? edgeDepth : djiOverlapWeight(theta)];
+}
+
+/** X5 offset_v6 stores RadtanPro coefficients, not OpenCV sensor tilt. */
+export function applyRadtanPro([x, y]: [number, number], k: number[]): [number, number] {
+  const r2 = x*x + y*y;
+  const r4 = r2*r2;
+  const radial = 1 + k[0]*r2 + k[1]*r4 + k[2]*r2*r4 + k[3]*r4*r4 + k[4]*r4*r4*r2;
+  const a = k[5] + k[7]*r2;
+  const b = k[6] + k[8]*r2;
+  return [
+    x*radial + (r2 + 2*x*x)*a + 2*x*y*b + k[9]*r2 + k[11]*r4,
+    y*radial + (r2 + 2*y*y)*b + 2*x*y*a + k[10]*r2 + k[12]*r4
+  ];
+}
+
+// Keep the retained image, IMU and HTML-media paths on the same X5 model as
+// the Photos renderer. Generic MEI calibration continues to use sensor tilt.
+function applyVendorDistortion(material: ShaderMaterial, lenses: PanoramaLens[]): void {
+  if (!lenses.some((lens) => lens.distortionModel === 'radtan_pro')) return;
+  const declarations = lenses.slice(0, 2).map((lens, index) => {
+    const k = Array.from({ length: 13 }, (_, offset) => lens.distortionCoeffs?.[offset] ?? 0);
+    for (let block = 0; block < 3; block += 1) material.uniforms[`pro${index}_${block}`] = { value: k.slice(block * 4, block * 4 + 4) };
+    material.uniforms[`pro${index}_last`] = { value: k[12] };
+    material.uniforms[`usePro${index}`] = { value: lens.distortionModel === 'radtan_pro' ? 1 : 0 };
+    return `uniform vec4 pro${index}_0, pro${index}_1, pro${index}_2;
+      uniform float pro${index}_last;
+      uniform int usePro${index};`;
+  }).join('\n');
+  const helper = `${declarations}
+    vec2 radtanPro(vec2 p, vec4 a, vec4 b, vec4 c, float last) {
+      float r2 = dot(p, p), r4 = r2*r2;
+      float radial = 1.0+a.x*r2+a.y*r4+a.z*r2*r4+a.w*r4*r4+b.x*r4*r4*r2;
+      float u = b.y+b.w*r2, v = b.z+c.x*r2;
+      return vec2(p.x*radial+(r2+2.0*p.x*p.x)*u+2.0*p.x*p.y*v+c.y*r2+c.w*r4,
+        p.y*radial+(r2+2.0*p.y*p.y)*v+2.0*p.x*p.y*u+c.z*r2+last*r4);
+    }
+    vec2 calibratedDistortion(vec2 point, vec2 fallback, int lensIndex) {
+      if (lensIndex == 0 && usePro0 == 1) return radtanPro(point, pro0_0, pro0_1, pro0_2, pro0_last);
+      if (lensIndex == 1 && usePro1 == 1) return radtanPro(point, pro1_0, pro1_1, pro1_2, pro1_last);
+      return fallback;
+    }
+  `;
+  material.fragmentShader = material.fragmentShader
+    .replace('precision highp float;', `precision highp float;\n${helper}`)
+    .replace('sampler2D image) {', 'sampler2D image, int lensIndex) {')
+    .replace('intrinsics.xy * applySensorTilt(distorted, sensorTilt)', 'intrinsics.xy * calibratedDistortion(normalized, applySensorTilt(distorted, sensorTilt), lensIndex)')
+    .replace('sensorTilt0, lens0);', 'sensorTilt0, lens0, 0);')
+    .replace('sensorTilt1, lens1);', 'sensorTilt1, lens1, 1);');
 }
 
 export function djiOverlapWeight(theta: number): number {

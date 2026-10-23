@@ -4,6 +4,17 @@ import { createVueDefaultPreviewRoutes } from '../src/defaults';
 import conversionManifest from '../../../wasm/converter-core/manifest/conversions.json';
 
 describe('createVueDefaultPreviewRoutes', () => {
+  it('preserves DNG calibration before conversion when RAW panorama preview is enabled', () => {
+    expect(resolveFormatRoute({ name: 'camera.dng' }, { routes: createVueDefaultPreviewRoutes({ rawPreview: true }) })).toMatchObject({
+      driverId: 'raw-image', family: 'image', sourceFormat: 'dng', targetFormat: 'jpg'
+    });
+    expect(resolveFormatRoute({ name: 'camera.dng' }, { routes: createVueDefaultPreviewRoutes() })).toMatchObject({
+      driverId: 'image', conversion: { required: true }
+    });
+    expect(resolveFormatRoute({ name: 'camera.cr2' }, { routes: createVueDefaultPreviewRoutes({ rawPreview: true }) })).toMatchObject({
+      driverId: 'image', conversion: { required: true }
+    });
+  });
   it('keeps Vue default conversions limited to legacy and compatible documents normalized to OpenXML', () => {
     const routes = createVueDefaultPreviewRoutes();
     const conversionFormats = listPreviewFormats({ routes, includeDirect: false, includeConversion: true });

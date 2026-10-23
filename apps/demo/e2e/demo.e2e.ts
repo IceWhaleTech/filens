@@ -57,12 +57,14 @@ test('renders rich built-in document, workbook, and presentation samples', async
   await expect(page.locator('.wb-preview-stage')).toContainText('Route and activities');
 
   await page.getByRole('button', { name: 'XLSX', exact: true }).click();
-  await expect(page.locator('.wb-preview-title strong')).toHaveText('rich-xlsx-many-columns.xlsx');
-  await expect(page.locator('.wb-preview-stage')).toContainText('columns');
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('generated.xlsx');
+  await expect(page.locator('.wb-preview-stage')).toContainText('AURORA LAB');
+  await page.getByRole('button', { name: 'Night log', exact: true }).click();
+  await expect(page.locator('.wb-preview-stage')).toContainText('TRACKING');
 
   await page.getByRole('button', { name: 'PPTX', exact: true }).click();
-  await expect(page.locator('.wb-preview-title strong')).toHaveText('rich-pptx-pictures.pptx');
-  await expect(page.locator('.wb-preview-stage img')).toHaveCount(4);
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('filens-field-notes.pptx');
+  await expect(page.locator('.wb-preview-stage')).toContainText('BEYOND');
   await expect(page.locator('.wb-note.is-error')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'PPS', exact: true }).click();
@@ -75,7 +77,7 @@ test('renders rich built-in document, workbook, and presentation samples', async
 test('loads a polished presentation sample by default', async ({ page }) => {
   await page.goto('./?view=preview');
   await expect(page.locator('.pptxv-shell')).toBeVisible();
-  await expect(page.locator('.wb-preview-title strong')).toHaveText('rich-pptx-shapes.pptx');
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('filens-field-notes.pptx');
   await expect(page.locator('.pptxv-slide-stage').first()).toBeVisible();
 });
 

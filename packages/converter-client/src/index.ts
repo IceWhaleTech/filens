@@ -338,6 +338,8 @@ function inferContentType(name: string | undefined, fallbackFormat?: string): st
       return 'application/octet-stream';
     case 'icns':
       return 'application/x-icns';
+    case 'ppm':
+      return 'image/x-portable-pixmap';
     case 'doc':
     case 'dot':
       return 'application/msword';
