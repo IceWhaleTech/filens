@@ -1,6 +1,6 @@
 # README visuals
 
-- `overview.webp` combines six actual filens preview captures and locally drawn file badges. It includes cropped, pale-blue aurora photography by **Carsten** (CC BY 2.0) and a perspective view of **Greg Zaal / Poly Haven**'s Rogland Clear Night (CC0). The composite is distributed under CC BY-SA 4.0.
+- `overview.webp` combines eight actual filens preview captures (PPTX, DOCX, XLSX, PDF, Keynote, DXF, OBJ, and panorama) and locally drawn file badges. It includes cropped, pale-blue aurora photography by **Carsten** (CC BY 2.0) and a perspective view of **Greg Zaal / Poly Haven**'s Rogland Clear Night (CC0). The composite is distributed under CC BY-SA 4.0.
 - `demo.gif` is a resized, accelerated derivative of the project's actual screen recording, distributed under CC BY-SA 4.0. Both READMEs link to the full-speed MP4 with translated captions.
 - The document is a fictional polar field guide; the workbook contains fictional observation data. The aurora is artistically color-graded, while the 360° source is a complete equirectangular Milky Way panorama.
 

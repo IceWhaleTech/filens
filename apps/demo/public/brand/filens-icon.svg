@@ -1,11 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
   <title id="title">filens</title>
-  <desc id="desc">A lime document page with a coral inspection lens on a dark background.</desc>
+  <desc id="desc">A bright lime document page with a coral magnifying glass on a dark background.</desc>
   <rect width="128" height="128" rx="30" fill="#151713"/>
-  <path d="M28 20h36l18 18v51a9 9 0 0 1-9 9H28a9 9 0 0 1-9-9V29a9 9 0 0 1 9-9Z" fill="#c8ff3d"/>
-  <path d="M64 20v18h18" fill="#a8d92d"/>
-  <path d="M36 51h29M36 64h19" fill="none" stroke="#151713" stroke-linecap="round" stroke-width="7"/>
-  <circle cx="83" cy="78" r="21" fill="#ff6847" stroke="#151713" stroke-width="6"/>
-  <circle cx="83" cy="78" r="10" fill="#f4f2e9"/>
-  <path d="m98 93 13 13" fill="none" stroke="#151713" stroke-linecap="round" stroke-width="8"/>
+  <path d="M31 23h33l19 19v49a10 10 0 0 1-10 10H31a10 10 0 0 1-10-10V33a10 10 0 0 1 10-10Z" fill="#c8ff3d"/>
+  <path d="M64 23v19h19" fill="none" stroke="#151713" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M37 53h24M37 67h14" fill="none" stroke="#151713" stroke-linecap="round" stroke-width="7"/>
+  <path d="m98 94 12 12" fill="none" stroke="#151713" stroke-width="16" stroke-linecap="round"/>
+  <circle cx="83" cy="79" r="23" fill="#151713" stroke="#151713" stroke-width="7"/>
+  <path d="m98 94 12 12" fill="none" stroke="#ff6847" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="83" cy="79" r="17" fill="none" stroke="#ff6847" stroke-width="8"/>
 </svg>

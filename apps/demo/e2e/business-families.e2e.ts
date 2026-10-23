@@ -81,7 +81,7 @@ test('offers polished samples across the supported Office families', async ({ pa
   }
 
   await page.getByRole('button', { name: 'DOCX', exact: true }).click();
-  await expect(page.locator('.wb-preview-title strong')).toHaveText('generated.docx');
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('filens-aurora-guide.docx');
   await expect(page.locator('.wb-preview-stage')).toContainText('Trip overview');
   await expect(page.locator('.wb-preview-stage')).toContainText('Route and activities');
   await expect(page.locator('.wb-preview-stage')).toContainText('All places, groups, dates, and figures in this guide are fictional.');

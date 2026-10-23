@@ -13,8 +13,10 @@ const previews = [
   ['PPTX', 'presentation', '#db6946', 'P'],
   ['DOCX', 'document', '#4277c6', 'W'],
   ['XLSX', 'spreadsheet', '#328460', 'X'],
+  ['PDF', 'pdf', '#b96d60', 'F'],
   ['KEYNOTE', 'iwork', '#478dca', 'K'],
   ['CAD', 'cad', '#9173b8', 'D'],
+  ['3D', 'model', '#8572b6', '3'],
   ['360°', 'panorama', '#ba8850', '°']
 ];
 const assets = await Promise.all(previews.map(async ([label, file, color, icon]) => ({
@@ -28,13 +30,13 @@ try {
   const overview = await page.evaluate(async (assets) => {
     const canvas = document.createElement('canvas');
     canvas.width = 1680;
-    canvas.height = 844;
+    canvas.height = 656;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#f4f3ed';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     for (const [index, asset] of assets.entries()) {
-      const x = 28 + (index % 3) * 548;
-      const y = 24 + Math.floor(index / 3) * 410;
+      const x = 24 + (index % 4) * 414;
+      const y = 24 + Math.floor(index / 4) * 316;
       const image = new Image();
       image.src = asset.src;
       await image.decode();
@@ -44,7 +46,7 @@ try {
       ctx.shadowOffsetY = 4;
       ctx.fillStyle = '#fff';
       ctx.beginPath();
-      ctx.roundRect(x, y, 528, 386, 18);
+      ctx.roundRect(x, y, 390, 292, 14);
       ctx.fill();
       ctx.restore();
       ctx.fillStyle = asset.color;
@@ -61,9 +63,9 @@ try {
       ctx.fillText(asset.label, x + 60, y + 37);
       ctx.save();
       ctx.beginPath();
-      ctx.roundRect(x + 10, y + 60, 508, 316, 10);
+      ctx.roundRect(x + 10, y + 60, 370, 222, 8);
       ctx.clip();
-      ctx.drawImage(image, x + 10, y + 60, 508, 316);
+      ctx.drawImage(image, x + 10, y + 60, 370, 222);
       ctx.restore();
     }
     return canvas.toDataURL('image/webp', 0.9).split(',')[1];

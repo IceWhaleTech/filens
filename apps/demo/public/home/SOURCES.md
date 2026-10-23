@@ -4,8 +4,9 @@ All preview screenshots and the walkthrough were captured from this project's ru
 
 - `presentation.webp`: the project-created, editable `samples/filens-field-notes.pptx` presentation, “Beyond the Visible”. The cover uses a cropped, pale-blue color grade of **Carsten**'s “Aurora Borealis Norway 2013”, [Wikimedia source](https://commons.wikimedia.org/wiki/File:Aurora_Borealis_Norway_2013.jpg), [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). The original image is green; the artistic blue grade is not a scientific color record.
 - `landscape.webp`: resized derivative of that pale-blue aurora photograph.
-- `document.webp`: the project-authored `filens-aurora-guide.docx`, shown by the DOCX demo button as `generated.docx`. Its fictional polar itinerary includes the same credited aurora and a NASA Webb image.
-- `spreadsheet.webp`: the project-authored `filens-observatory.xlsx`, shown as `generated.xlsx`. Stations, observations, scores, and exposure plans are fictional. The file contains native cell values and formulas; preview styling follows the workbook driver's current capabilities.
+- `document.webp`: the project-authored `filens-aurora-guide.docx`. Its fictional polar itinerary includes the same credited aurora and a NASA Webb image.
+- `spreadsheet.webp`: the project-authored `filens-observatory.xlsx`. Stations, observations, scores, and exposure plans are fictional. The file contains native cell values and formulas; preview styling follows the workbook driver's current capabilities.
+- `pdf.webp`: the project-authored, three-page `filens-cosmic-atlas.pdf`, with native PDF text and vectors alongside the credited aurora and NASA Webb images.
 - `iwork.webp`: the native Keynote version of “Beyond the Visible”, `filens-weekend.key`, rendered by filens. It contains the credited aurora and NASA Webb imagery.
 - `cad.webp`: the project-generated `filens-cafe.dxf` fictional cafe floor plan.
 - `model.webp`: the project-generated Crystal Crown OBJ sample.

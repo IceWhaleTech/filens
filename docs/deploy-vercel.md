@@ -10,7 +10,7 @@
 
 构建会先用仓库锁定的 Rust 工具链生成两个 WASM 转换模块，再构建前端。首次构建需要下载工具链和依赖。文件预览和转换在浏览器内运行，不需要额外部署服务端。
 
-首页的六种示例、本地文件上传和演示视频可独立使用。工作台中从 ZimaOS 主机存储读取的扩展示例需要对应的 NAS 环境，在 Vercel 上可改用本地文件。原有 NAS 构建仍默认使用 `/modules/filens/`。
+首页的八种示例、本地文件上传和演示视频可独立使用。工作台中从 ZimaOS 主机存储读取的扩展示例需要对应的 NAS 环境，在 Vercel 上可改用本地文件。原有 NAS 构建仍默认使用 `/modules/filens/`。
 
 本地验证 Vercel 构建：
 
@@ -36,7 +36,7 @@ The product homepage lives at `/`. Share `/?lang=zh` for Chinese or `/?lang=en` 
 
 The build generates both WASM converters from source using the repository's pinned Rust toolchain, then builds the frontend. The first build downloads the toolchain and dependencies. Preview and conversion run in the browser, so a separate application server is unnecessary.
 
-All six homepage examples, local uploads, and the walkthrough work independently. Additional workbench samples that read ZimaOS host storage require the corresponding NAS environment; use local files on Vercel. Existing NAS builds continue to default to `/modules/filens/`.
+All eight homepage examples, local uploads, and the walkthrough work independently. Additional workbench samples that read ZimaOS host storage require the corresponding NAS environment; use local files on Vercel. Existing NAS builds continue to default to `/modules/filens/`.
 
 Use the commands above to validate the Vercel build locally and run the homepage checks against the production output.
 

@@ -43,8 +43,8 @@ test('switches between complete Chinese and English homepages and remembers the 
   await page.getByRole('button', { name: 'Switch to English', exact: true }).click();
   await expect(page).toHaveURL(/lang=en/);
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page).toHaveTitle('filens · Every file has a story. Open it.');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Every file has a story.Open it.');
+  await expect(page).toHaveTitle('filens · Files shine bright. Dreams take flight.');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Files shine bright.Dreams take flight.');
   await expect(page.getByRole('tab', { name: 'Docs', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'More files. More possibilities.', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Open live photos sample', exact: true })).toBeVisible();
@@ -69,7 +69,7 @@ test('lets visitors select a preview with the keyboard and open the correspondin
   await expect(page.locator('#preview-panel img')).toHaveAttribute('src', /document.webp$/);
   await page.getByRole('button', { name: '亲自打开看看' }).click();
   await expect(page).toHaveURL(/view=preview&format=docx/);
-  await expect(page.locator('.wb-preview-title strong')).toHaveText('generated.docx');
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('filens-aurora-guide.docx');
   await expect(page.locator('.wb-preview-stage')).toContainText('Trip overview');
   await page.getByRole('button', { name: '← filens 首页' }).click();
   await expect(page.locator('.landing')).toBeVisible();
@@ -90,6 +90,44 @@ test('opens a locally selected file using the existing previewer', async ({ page
   await expect(page.locator('.wb-preview-stage')).toContainText('A local file, ready to explore.');
   await expect(page.locator('.wb-note.is-error')).toHaveCount(0);
 });
+
+test('opens the 3D showcase from its matching preview tab', async ({ page }) => {
+  await page.goto('./?lang=en');
+  await page.getByRole('tab', { name: '3D', exact: true }).click();
+  await expect(page.locator('#preview-panel img')).toHaveAttribute('src', /model.webp$/);
+  await expect(page.locator('.preview-window-bar')).toContainText('crystal-crown.obj');
+  await page.getByRole('button', { name: 'Explore this file', exact: true }).click();
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('crystal-crown.obj');
+  await expect(page.locator('canvas.model3dv-canvas')).toBeVisible();
+});
+
+test('opens the bundled Milky Way panorama from its matching preview tab', async ({ page }) => {
+  await page.goto('./?lang=en');
+  await page.getByRole('tab', { name: '360°', exact: true }).click();
+  await expect(page.locator('.preview-window-bar')).toContainText('milky-way-360.pano');
+  const source = page.waitForResponse(response => response.url().endsWith('/samples/showcase/milky-way-360.jpg'));
+  await page.getByRole('button', { name: 'Explore this file', exact: true }).click();
+  expect((await source).ok()).toBe(true);
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('milky-way-360.pano');
+  await expect(page.locator('.wb-preview-stage canvas')).toBeVisible();
+  await expect(page.locator('.wb-note.is-error')).toHaveCount(0);
+});
+
+for (const [label, format, file, preview] of [
+  ['STEP solids', 'step', 'rounded-cube.step', 'canvas.model3dv-canvas'],
+  ['camera RAW', 'dng', 'pentax-k-r.dng', 'img.pptxv-native-image'],
+  ['PPM images', 'ppm', 'photo-alpine-lake.ppm', 'img.pptxv-native-image'],
+  ['legacy Office / WPS', 'doc', 'legacy-project-workflow.doc', '.docx'],
+] as const) {
+  test(`opens the public ${label} sample from the homepage`, async ({ page }) => {
+    await page.goto('./?lang=en');
+    await page.getByRole('button', { name: `Open ${label.toLowerCase()} sample`, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`view=preview&format=${format}`));
+    await expect(page.locator('.wb-preview-title strong')).toHaveText(file);
+    await expect(page.locator('.wb-preview-stage').locator(preview).first()).toBeVisible();
+    await expect(page.locator('.wb-note.is-error')).toHaveCount(0);
+  });
+}
 
 test('plays the actual demo video on request with translated captions', async ({ page }) => {
   await page.goto('./?lang=en#demo');
@@ -156,7 +194,8 @@ for (const lang of ['zh', 'en']) {
           )
       )
       .toBe(true);
-    await expect(page.locator('.format-family-card')).toHaveCount(12);
+    await expect(page.getByRole('tab')).toHaveCount(8);
+    await expect(page.locator('.format-family-card')).toHaveCount(16);
     expect(await page.locator('.format-family-card').evaluateAll((cards) => cards.every((card) => {
       const bounds = card.getBoundingClientRect();
       return bounds.left >= 0 && bounds.right <= window.innerWidth && card.scrollWidth <= card.clientWidth;

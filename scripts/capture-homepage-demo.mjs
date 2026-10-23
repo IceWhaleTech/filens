@@ -63,6 +63,7 @@ try {
     ['presentation', 'showcase'],
     ['document', 'docx'],
     ['spreadsheet', 'xlsx'],
+    ['pdf', 'pdf'],
     ['iwork', 'key'],
     ['cad', 'dxf'],
     ['panorama', 'pano'],

@@ -46,7 +46,7 @@ const previews = [
     color: '#4277c6',
     image: 'document.webp',
     sample: 'docx',
-    file: 'generated.docx'
+    file: 'filens-aurora-guide.docx'
   },
   {
     zh: '表格',
@@ -56,7 +56,17 @@ const previews = [
     color: '#328460',
     image: 'spreadsheet.webp',
     sample: 'xlsx',
-    file: 'generated.xlsx'
+    file: 'filens-observatory.xlsx'
+  },
+  {
+    zh: 'PDF',
+    en: 'PDF',
+    format: 'PDF',
+    icon: 'PDF',
+    color: '#b96d60',
+    image: 'pdf.webp',
+    sample: 'pdf',
+    file: 'filens-cosmic-atlas.pdf'
   },
   {
     zh: 'iWork',
@@ -79,6 +89,16 @@ const previews = [
     file: 'filens-cafe.dxf'
   },
   {
+    zh: '3D',
+    en: '3D',
+    format: 'OBJ',
+    icon: '3D',
+    color: '#8572b6',
+    image: 'model.webp',
+    sample: 'obj',
+    file: 'crystal-crown.obj'
+  },
+  {
     zh: '全景',
     en: '360°',
     format: '360°',
@@ -91,6 +111,30 @@ const previews = [
 ];
 const selectedPreview = computed(() => previews[activePreview.value]!);
 const formatFamilies = [
+  {
+    zh: 'STEP 实体', en: 'STEP solids', icon: 'CAD', color: '#9173b8',
+    descriptionZh: '打开 CAD 实体，旋转查看曲面细节。',
+    descriptionEn: 'Open CAD solids and orbit around curved surfaces.',
+    formats: 'STEP · STP', sample: 'step'
+  },
+  {
+    zh: '相机 RAW', en: 'Camera RAW', icon: 'RAW', color: '#b28644',
+    descriptionZh: '快速查看原片，提供轻量预览。',
+    descriptionEn: 'A lightweight preview of your camera originals.',
+    formats: 'DNG · CR2 · CR3 · NEF · ORF', sample: 'dng'
+  },
+  {
+    zh: 'PPM 图片', en: 'PPM images', icon: 'IMG', color: '#6d9560',
+    descriptionZh: '查看文本或二进制编码的 RGB 图片。',
+    descriptionEn: 'View text or binary RGB images, including 16-bit input.',
+    formats: 'PPM · P3 / P6 · 8 / 16-bit', sample: 'ppm'
+  },
+  {
+    zh: '传统 Office / WPS', en: 'Legacy Office / WPS', icon: 'W', color: '#4277c6',
+    descriptionZh: '在本地转换后预览，保真度因文件而异。',
+    descriptionEn: 'Convert locally for preview; fidelity varies by file.',
+    formats: 'DOC · XLS · PPT · WPS · ET · DPS', sample: 'doc'
+  },
   {
     zh: '常规图片', en: 'Images', icon: 'IMG', color: '#b28644',
     descriptionZh: '照片、透明图片与动图。',
@@ -105,9 +149,9 @@ const formatFamilies = [
   },
   {
     zh: '全景视频', en: '360° video', icon: '360', color: '#a47b45',
-    descriptionZh: '边播放，边自由环顾四周。',
-    descriptionEn: 'Look around as the scene plays.',
-    formats: '360V · VR360', sample: '360v'
+    descriptionZh: '边播放边环顾，部分相机原片可实时拼接。',
+    descriptionEn: 'Look around during playback; stitch supported camera originals in real time.',
+    formats: '360V · VR360 · INSV · OSV', sample: '360v'
   },
   {
     zh: '实况照片', en: 'Live photos', icon: 'LIVE', color: '#ae6a8c',
@@ -166,14 +210,14 @@ const formatFamilies = [
 ];
 function applyLocale(): void {
   document.documentElement.lang = isEnglish.value ? 'en' : 'zh-CN';
-  document.title = t('filens · 文件的精彩，打开就看见', 'filens · Every file has a story. Open it.');
+  document.title = t('filens · 文件的精彩，打开就看见', 'filens · Files shine bright. Dreams take flight.');
   document
     .querySelector('meta[name="description"]')
     ?.setAttribute(
       'content',
       t(
-        'filens 是高性能、极致小巧的纯前端文件预览项目，本地文件无需上传。浏览器与后端转换工具共用同一个 WASM 转换核心，支持 Office、iWork、CAD、3D、全景等格式。',
-        'filens is a fast, compact, pure frontend file viewer. Local files stay on your device. Browser and backend converters share one WASM conversion core. Preview Office, iWork, CAD, 3D, panoramas, and more.'
+        'filens 在浏览器中预览 Office、iWork、PDF、CAD / STEP、3D、RAW 和全景，本地文件无需上传。按需加载，浏览器与后端共用 WASM 转换核心。',
+        'Preview Office, iWork, PDF, CAD / STEP, 3D, RAW, and panoramas in your browser. Local files stay on your device. On-demand modules share a WASM conversion core with backend tools.'
       )
     );
 }
@@ -253,13 +297,13 @@ async function playDemo(): Promise<void> {
         <p class="hero-kicker">{{ t('纯前端预览 · 高性能 · 极致小巧', 'PURE FRONTEND · FAST · TINY') }}</p>
         <h1 id="hero-title">
           <template v-if="!isEnglish">文件的精彩，<br /><span>打开就看见。</span></template
-          ><template v-else>Every file has a story.<br /><span>Open it.</span></template>
+          ><template v-else>Files shine bright.<br /><span>Dreams take flight.</span></template>
         </h1>
         <p class="hero-description">
           {{
             t(
-              '纯前端多格式预览，本地文件无需上传。',
-              'Preview files entirely in your browser. Your local files stay on your device.'
+              '从 Office、iWork 到 CAD、3D、RAW 与全景，本地文件无需上传。',
+              'From Office and iWork to CAD, 3D, RAW, and panoramas. Your local files stay on your device.'
             )
           }}<br />
           {{ t('需要后端转换时，也能复用同一个 WASM 转换核心。', 'Optional backend converters reuse the same WASM conversion core.') }}
@@ -358,7 +402,7 @@ async function playDemo(): Promise<void> {
             </a>
           </article>
           <article class="principle">
-            <p class="principle-proof"><strong>≈306<span class="proof-unit"> KiB</span></strong><span>{{ t('文档转换 WASM · Brotli', 'document conversion WASM · Brotli') }}</span></p>
+            <p class="principle-proof"><strong>≈<!-- bundle-size:converter-core -->317.6<!-- /bundle-size --><span class="proof-unit"> KiB</span></strong><span>{{ t('文档转换 WASM · Brotli', 'document conversion WASM · Brotli') }}</span></p>
             <h2>{{ t('高性能，极致小巧', 'Fast, tiny, loaded on demand') }}</h2>
             <p>{{ t('按格式分包、按需加载，配合 Worker 解析与页面虚拟化，减少下载与渲染负担。', 'Format-based bundles and lazy loading, with worker parsing and page virtualization to reduce download and rendering work.') }}</p>
             <a :href="`${repo}/blob/main/docs/bundle-sizes.md`" target="_blank" rel="noopener noreferrer">
@@ -376,7 +420,7 @@ async function playDemo(): Promise<void> {
             <h2 id="formats-title">{{ t('更多文件，也能打开。', 'More files. More possibilities.') }}</h2>
           </div>
           <p>
-            {{ t('从日常照片到 3D 模型，选一类，打开真实样例。', 'From everyday photos to 3D models. Pick a category to try a real sample.') }}
+            {{ t('从传统文档到相机原片、CAD 实体，选一类，打开真实样例。', 'From legacy documents to camera originals and CAD solids. Pick a category to try a real sample.') }}
           </p>
         </div>
         <ul class="format-family-grid">
@@ -398,7 +442,7 @@ async function playDemo(): Promise<void> {
           </li>
         </ul>
         <div class="formats-footer">
-          <p>{{ t('以上为代表格式，具体支持范围与限制请查看兼容性说明。', 'Representative formats shown. See the support matrix for coverage and limits.') }}</p>
+          <p>{{ t('RAW 提供轻量预览；相机全景拼接为实验性能力，依赖标定与配套文件。音视频播放取决于浏览器编解码器。', 'RAW uses lightweight previews. Camera panorama stitching is experimental and requires supported calibration and companion files. Media playback depends on browser codecs.') }}</p>
           <a :href="supportMatrixUrl" target="_blank" rel="noopener noreferrer">
             {{ t('查看完整支持矩阵', 'View the full support matrix') }} <span aria-hidden="true">↗</span>
           </a>

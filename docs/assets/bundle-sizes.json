@@ -6,9 +6,9 @@
       "files": [
         "externals/converter-core.wasm"
       ],
-      "raw": 891845,
-      "gzip": 404472,
-      "brotli": 325563
+      "raw": 891866,
+      "gzip": 404489,
+      "brotli": 325256
     },
     {
       "name": "converter-image",
@@ -16,18 +16,18 @@
         "externals/converter-image.wasm"
       ],
       "raw": 694781,
-      "gzip": 222755,
-      "brotli": 176296
+      "gzip": 222754,
+      "brotli": 176144
     },
     {
       "name": "index",
       "files": [
-        "assets/index-CLq9SJ6n.css",
-        "assets/index-DTR0h0sq.js"
+        "assets/index-C6RxF8Bn.js",
+        "assets/index-kNK8eOoR.css"
       ],
-      "raw": 175829,
-      "gzip": 49556,
-      "brotli": 41455
+      "raw": 177512,
+      "gzip": 50189,
+      "brotli": 41968
     },
     {
       "name": "vendor",
@@ -51,12 +51,12 @@
     {
       "name": "preview",
       "files": [
-        "assets/preview-CSZTxYjU.css",
-        "assets/preview-D5iDhLmx.js"
+        "assets/preview-BC5e8zYb.js",
+        "assets/preview-CSZTxYjU.css"
       ],
       "raw": 70307,
-      "gzip": 16225,
-      "brotli": 14355
+      "gzip": 16224,
+      "brotli": 14373
     },
     {
       "name": "office",
@@ -101,12 +101,12 @@
     {
       "name": "media",
       "files": [
-        "assets/media-BviReceC.css",
-        "assets/media-DnPJXs_Y.js"
+        "assets/media-BRKjI-KU.js",
+        "assets/media-BviReceC.css"
       ],
-      "raw": 213148,
-      "gzip": 63046,
-      "brotli": 53623
+      "raw": 213700,
+      "gzip": 63227,
+      "brotli": 53876
     },
     {
       "name": "archive",
@@ -166,19 +166,19 @@
     }
   ],
   "initial": {
-    "raw": 2596734,
-    "gzip": 728698,
-    "brotli": 607694,
+    "raw": 2598969,
+    "gzip": 729512,
+    "brotli": 608460,
     "files": [
-      "assets/index-DTR0h0sq.js",
+      "assets/index-C6RxF8Bn.js",
       "assets/vendor-BwFmB370.js",
       "assets/core-Bi8nrOYX.js",
       "assets/model3d-CvKDSch4.js",
-      "assets/media-DnPJXs_Y.js",
+      "assets/media-BRKjI-KU.js",
       "assets/core-XuGWIYd0.css",
       "assets/model3d-B1myDZRM.css",
       "assets/media-BviReceC.css",
-      "assets/index-CLq9SJ6n.css"
+      "assets/index-kNK8eOoR.css"
     ]
   }
 }

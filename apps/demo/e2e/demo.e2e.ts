@@ -51,13 +51,13 @@ test('renders rich built-in document, workbook, and presentation samples', async
   await page.goto('./?view=preview');
 
   await page.getByRole('button', { name: 'DOCX', exact: true }).click();
-  await expect(page.locator('.wb-preview-title strong')).toHaveText('generated.docx');
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('filens-aurora-guide.docx');
   await expect(page.locator('.wb-preview-stage')).toContainText('Trip overview');
   await expect(page.locator('.wb-preview-stage')).toContainText('Packing checklist');
   await expect(page.locator('.wb-preview-stage')).toContainText('Route and activities');
 
   await page.getByRole('button', { name: 'XLSX', exact: true }).click();
-  await expect(page.locator('.wb-preview-title strong')).toHaveText('generated.xlsx');
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('filens-observatory.xlsx');
   await expect(page.locator('.wb-preview-stage')).toContainText('AURORA LAB');
   await page.getByRole('button', { name: 'Night log', exact: true }).click();
   await expect(page.locator('.wb-preview-stage')).toContainText('TRACKING');

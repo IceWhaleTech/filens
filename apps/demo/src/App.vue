@@ -102,6 +102,7 @@ const conversionKindBySource = new Map<string, DemoKind>(
   [...conversionManifest as ConversionManifestEntry[]].reverse().map((entry) => [entry.sourceFormat, demoKindForConversionTarget(entry.targetFormat)])
 );
 // Keep conversion modules outside the main graph; each module is fetched on its first matching route.
+const brandIconUrl = `${import.meta.env.BASE_URL}brand/filens-icon.svg`;
 const converterCoreWasmUrl = `${import.meta.env.BASE_URL}externals/converter-core.wasm`;
 const converterImageWasmUrl = `${import.meta.env.BASE_URL}externals/converter-image.wasm`;
 
@@ -151,7 +152,7 @@ const staticSamples: DemoSource[] = [
   {
     kind: 'pdf',
     label: 'PDF',
-    name: 'generated.pdf',
+    name: 'filens-cosmic-atlas.pdf',
     source: '/samples/filens-cosmic-atlas.pdf',
     contentType: 'application/pdf',
     mode: 'sample'
@@ -195,7 +196,7 @@ const staticSamples: DemoSource[] = [
   {
     kind: 'docx',
     label: 'DOCX',
-    name: 'generated.docx',
+    name: 'filens-aurora-guide.docx',
     source: '/samples/filens-aurora-guide.docx',
     contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     mode: 'sample'
@@ -319,7 +320,7 @@ const staticSamples: DemoSource[] = [
   {
     kind: 'xlsx',
     label: 'XLSX',
-    name: 'generated.xlsx',
+    name: 'filens-observatory.xlsx',
     source: '/samples/filens-observatory.xlsx',
     contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     mode: 'sample'
@@ -645,6 +646,13 @@ const staticSamples: DemoSource[] = [
     source: '/samples/filens-cafe.dxf',
     contentType: 'image/vnd.dxf',
     mode: 'generated'
+  },
+  {
+    kind: 'model3d',
+    label: 'STEP Rounded Cube',
+    name: 'rounded-cube.step',
+    source: '/samples/rounded-cube.step',
+    mode: 'sample'
   },
   {
     kind: 'model3d',
@@ -1355,10 +1363,10 @@ const formatSupportByExtension = computed(() => new Map(supportedFormats.value.m
 const sampleByExtension = new Map(
   staticSamples.map((sample) => [sample.catalogId ?? inferExtensionFromName(sample.name) ?? '', sample])
 );
-const generatedDocxSample = staticSamples.find((sample) => sample.name === 'generated.docx');
-if (generatedDocxSample) sampleByExtension.set('docx', generatedDocxSample);
-const generatedXlsxSample = staticSamples.find((sample) => sample.name === 'generated.xlsx');
-if (generatedXlsxSample) sampleByExtension.set('xlsx', generatedXlsxSample);
+const showcaseDocxSample = staticSamples.find((sample) => sample.name === 'filens-aurora-guide.docx');
+if (showcaseDocxSample) sampleByExtension.set('docx', showcaseDocxSample);
+const showcaseXlsxSample = staticSamples.find((sample) => sample.name === 'filens-observatory.xlsx');
+if (showcaseXlsxSample) sampleByExtension.set('xlsx', showcaseXlsxSample);
 const presentationSample = staticSamples.find((sample) => sample.name === 'filens-field-notes.pptx');
 if (presentationSample) sampleByExtension.set('pptx', presentationSample);
 const catalogOnlyFormats: Array<[string, PreviewFamily]> = [
@@ -3639,15 +3647,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
     <header class="wb-header">
       <div class="wb-brand">
         <span class="wb-brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 128 128" focusable="false">
-            <rect width="128" height="128" rx="30" fill="#151713" />
-            <path d="M28 20h36l18 18v51a9 9 0 0 1-9 9H28a9 9 0 0 1-9-9V29a9 9 0 0 1 9-9Z" fill="#c8ff3d" />
-            <path d="M64 20v18h18" fill="#a8d92d" />
-            <path d="M36 51h29M36 64h19" fill="none" stroke="#151713" stroke-linecap="round" stroke-width="7" />
-            <circle cx="83" cy="78" r="21" fill="#ff6847" stroke="#151713" stroke-width="6" />
-            <circle cx="83" cy="78" r="10" fill="#f4f2e9" />
-            <path d="m98 93 13 13" fill="none" stroke="#151713" stroke-linecap="round" stroke-width="8" />
-          </svg>
+          <img :src="brandIconUrl" alt="" width="48" height="48" />
         </span>
         <div>
           <button class="wb-home-link" type="button" @click="returnHome">← filens 首页</button>
@@ -3937,7 +3937,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
   transform: rotate(-3deg);
 }
 
-.wb-brand-mark svg {
+.wb-brand-mark img {
   display: block;
   width: 100%;
   height: 100%;

@@ -11,7 +11,7 @@
   </p>
 </div>
 
-[![filens 的六种实际预览：演示文稿、文档、表格、Keynote、CAD 和全景照片](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
+[![filens 的八种实际预览：演示文稿、文档、表格、PDF、Keynote、CAD、3D 和全景照片](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
 
 <p align="center"><strong>纯前端预览 · 前后端共用 WASM 转换核心 · 高性能、极致小巧</strong></p>
 
@@ -19,27 +19,42 @@
 
 - **纯前端预览。** 文件在浏览器中解析与渲染，本地预览无需上传，也无需部署转换服务。
 - **前后端共用一个 WASM 转换核心。** 浏览器与[后端 CLI / HTTP 转换工具](examples/go-wazero-converter)复用同一个核心；后端只负责调用与服务接入，转换逻辑集中在 WASM 中。
-- **高性能、极致小巧。** 按格式分包、按需加载，配合 Worker 解析与页面虚拟化，减少下载与渲染负担。文档转换 WASM 约 **306 KiB Brotli**，预览界面、共享依赖与其他模块另计，详见[体积实测报告](docs/bundle-sizes.md)。
+- **按格式加载，减少等待。** 按格式分包、按需加载，配合 Worker 解析与页面虚拟化，减少下载与渲染负担。文档转换 WASM 为 **<!-- bundle-size:converter-core -->317.6<!-- /bundle-size --> KiB Brotli**，预览界面、共享依赖与其他模块另计，详见[体积实测报告](docs/bundle-sizes.md)。
 
 原生预览 PPTX 与 iWork，也能查看文档、表格、CAD、3D、RAW、全景、压缩包和电子书。不同格式的支持范围与保真程度有所区别，详见[格式支持矩阵](docs/support-matrix.zh-CN.md)。
+
+## 现在可以打开什么
+
+| 文件 | 你可以做什么 | 当前边界 |
+| --- | --- | --- |
+| PPTX、Keynote / Pages / Numbers | 直接查看幻灯片、页面与工作表。 | 原生解析，版式与对象保真度因文件而异。 |
+| DOCX、XLSX / CSV、PDF | 阅读文档、切换工作表、逐页查看 PDF。 | 只读预览，字体与高级样式可能有差异。 |
+| DOC / XLS / PPT、WPS / ET / DPS | 在本地标准化后预览传统文档。 | 面向预览的转换，宏会移除，不保证完整重建。 |
+| DXF、STEP / STP、3D 模型 | 查看图纸，旋转与缩放实体或网格。 | STEP 独立按需加载；保留几何与实例位置，不输出原始颜色、名称和装配树。 |
+| RAW、PPM、图片与图标 | 查看相机原片、P3 / P6 与 8 / 16 位 PPM。 | RAW 提供内嵌 JPEG 或轻量显影预览，支持情况因相机而异。 |
+| 360° 照片、全景视频 | 拖动环顾；支持部分 Insta360 / DJI 视频实时拼接与标定 DNG 静态拼接。 | 相机拼接为实验性能力，依赖标定元数据、配套文件和浏览器编解码器。 |
+| 压缩包、电子书、代码、思维导图与流程图 | 浏览目录与章节、查看源码和节点关系。 | 各格式的支持子集见支持矩阵。 |
+
+首页提供八种实际预览截图，以及可直接打开的 STEP、RAW、PPM 和传统 Office 样例。RAW / 全景接入方式见 [panorama 包说明](packages/panorama/README.md)。
 
 ## 小核心，按格式分包
 
 <!-- bundle-sizes:zh:start -->
 | 分包 / 核心 | 原始 | gzip | Brotli |
 | --- | ---: | ---: | ---: |
-| 转换核心 WASM | 870.9 KiB | 395.0 KiB | **317.9 KiB** |
-| 图像 / RAW 核心 WASM | 678.5 KiB | 217.5 KiB | **172.2 KiB** |
-| 媒体 / 全景预览 | 208.2 KiB | 61.6 KiB | **52.4 KiB** |
+| 转换核心 WASM | 871.0 KiB | 395.0 KiB | **317.6 KiB** |
+| 图像 / RAW 核心 WASM | 678.5 KiB | 217.5 KiB | **172.0 KiB** |
+| 媒体 / 全景预览 | 208.7 KiB | 61.7 KiB | **52.6 KiB** |
+| STEP 可选 WASM | 2625.8 KiB | 1020.2 KiB | **797.0 KiB** |
 
-两个 WASM 核心独立加载；媒体预览模块与图像转换核心分别计量。JS 分包已包含对应 CSS，共享依赖和 Worker 单列。
+文档、图像 / RAW 与 STEP 的 WASM 模块独立按需加载；媒体预览模块与图像转换核心分别计量。JS 分包已包含对应 CSS，共享依赖和 Worker 单列。
 
 <details>
 <summary>展开查看全部分包及首屏成本</summary>
 
 | 分包 / 核心 | 原始 | gzip | Brotli |
 | --- | ---: | ---: | ---: |
-| 演示站入口 | 171.7 KiB | 48.4 KiB | **40.5 KiB** |
+| 演示站入口 | 173.4 KiB | 49.0 KiB | **41.0 KiB** |
 | 共享第三方依赖 | 1775.2 KiB | 502.1 KiB | **414.8 KiB** |
 | PPTX / 核心运行时 | 275.2 KiB | 71.4 KiB | **61.3 KiB** |
 | Vue 预览容器 | 68.7 KiB | 15.8 KiB | **14.0 KiB** |
@@ -51,10 +66,9 @@
 | 文本 / 电子书 | 18.0 KiB | 6.2 KiB | **5.4 KiB** |
 | iWork Worker | 882.2 KiB | 181.5 KiB | **151.9 KiB** |
 | PDF Worker | 1053.3 KiB | 291.1 KiB | **233.1 KiB** |
-| STEP 可选 WASM | 2625.8 KiB | 1020.2 KiB | **797.0 KiB** |
 | STEP 加载器 | 23.0 KiB | 9.5 KiB | **8.7 KiB** |
 
-本次构建的入口、预加载 JS 与 CSS 合计 **593.5 KiB Brotli**（原始 2535.9 KiB / gzip 711.6 KiB），另计图片、视频和示例文件。模块会共享依赖；上述体积不代表每种格式的独立总下载量。
+本次构建的入口、预加载 JS 与 CSS 合计 **594.2 KiB Brotli**（原始 2538.1 KiB / gzip 712.4 KiB），另计图片、视频和示例文件。模块会共享依赖；上述体积不代表每种格式的独立总下载量。
 
 </details>
 

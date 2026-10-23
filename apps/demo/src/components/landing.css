@@ -281,6 +281,7 @@
 }
 .landing .preview-tabs {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
   margin-top: 22px;
@@ -839,15 +840,15 @@
   }
   .landing .preview-tabs {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 6px;
     margin-top: 17px;
   }
   .landing .preview-tabs button {
     justify-content: center;
-    padding: 5px 8px;
-    gap: 7px;
-    font-size: 11px;
+    padding: 5px 3px;
+    gap: 5px;
+    font-size: 10px;
   }
   .landing .preview-tabs .format-icon {
     width: 22px;
