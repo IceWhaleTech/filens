@@ -1,0 +1,527 @@
+{
+  "method": "Seven fresh browser contexts per engine/sample for complete-model and first-preview comparisons. Same input files and unchanged readiness boundary (media decode, fonts, two animation frames). Final external timings run without concurrent builds/tests. All outputs remain complete; only ZIP entries not requested by the parser stay compressed. Rotating current/previous comparisons are engineering evidence, excluded from external totals.",
+  "externalComparisonRunsAdded": 336,
+  "successfulFilensExternalRunsAdded": 112,
+  "engineeringComparisonRuns": 224,
+  "initialEngineeringRuns": 112,
+  "cumulativeExternalComparisonRuns": 2324,
+  "cumulativeSuccessfulFilensRuns": 945,
+  "sources": {
+    "pptx-model-lazy.json.gz": {
+      "uncompressedSha256": "dfb1ce3825a4f2ee70917916b51b2745652143ca3564a8e8bef0923b37c0e844",
+      "compressedSha256": "55ad50ccfaa22de6f8342c5d0225c91a785de619f86f285867d5e46f0aa41c3f",
+      "runs": 168
+    },
+    "pptx-preview-lazy.json.gz": {
+      "uncompressedSha256": "3eceb593140ac04aa2b23424c01e11f6817e0201f15f9f631bb0053c1a91b5dd",
+      "compressedSha256": "1c22e3ff8936ce802d4eef73e90fa03ff2d459d1655d17c8bb41de0001b5c7a7",
+      "runs": 168
+    },
+    "pptx-model-lazy-ab.json.gz": {
+      "uncompressedSha256": "0537ef5909e87de1395cf3701a92730f968c6c2f949b14bd2a5d1b3889e5109e",
+      "compressedSha256": "d7bc610acaec6b4a4ddc7c948298e252975b7d2ba71192790df6d43a8f11cb5f",
+      "runs": 112
+    },
+    "pptx-preview-lazy-ab.json.gz": {
+      "uncompressedSha256": "a15dc5419478b0586175de896acac4768988980e556e4ad533e5b1da0508d80e",
+      "compressedSha256": "3022a1d2f38e49a1044a679bccaed8a8e5589b34bb406e98310cbe3298e761c5",
+      "runs": 112
+    },
+    "pptx-preview-lazy-initial-ab.json.gz": {
+      "uncompressedSha256": "b2421dfa9f6bde1a1cf6c053a09eca6e2eff03ded0a8ddae570f81d6a68267ea",
+      "compressedSha256": "0d35ecf9b9f018b989dbe573773b0722cbfeba41cf5c3e66ad68bdedf7255aed",
+      "runs": 112
+    }
+  },
+  "artifacts": {
+    "scripts/benchmark-frontends.mjs": "f1633e7518ef1823c735ccbcccef362b0d2e9fcc2f53f61fe6a0fb86743532f7",
+    "packages/core/dist/index.js": "0d559fcb11687ef1434ea5e0618c05c69214a91b8503e64dd40f562ed9d8856a",
+    "packages/iwork/dist/index.js": "6040dd66f03ac25639e556f3b8691f421bc3f41b872d96b61653d84859f869fc",
+    "packages/panorama/dist/index.js": "a5b7b32c337f24fccb9e97338d5c1c475a656ab5d49d968d96b5b72d0bc284d6",
+    "packages/converter-client/dist/index.js": "cbd8f90f4151fced4c6fd4d89da5fc0b1b3ea932c17ae038a90b29bfbf6dee5d",
+    "packages/xlsx/dist/index.js": "37ea0dd6c6a0bf5ffbfbb7efc691b1cd9d30dd11d3415370018bb9de876fe07a",
+    "wasm/converter-core/dist/converter-core.wasm": "9fd03adbdccdd6ab5f05bd625e2ac382dc57a1e6320effacd618c35e4e29fbb4",
+    "wasm/converter-image/dist/converter-image.wasm": "adb3351801f0ff7ef209481013e75f9d708ab87230c4d3918576dd5f7630c7aa",
+    "tmp/performance-sota/package-lock.json": "088496502d26bb7550e7eb3eb4c3dbe2f543a8406caff1af4e7d25f3525bc06c",
+    "tmp/performance-sota/xlsx-0.20.3.full.min.js": "cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41"
+  },
+  "implementationSources": {
+    "packages/core/src/parser/archive.ts": "ce3e5eeea5520b29887412ce702525f7af5c498e86afac276abf88f0ebee72ec",
+    "packages/core/src/parser/load-pptx.ts": "b73905ff9f2c3c0c51ad95b3d3031b177abcba5162c910ba7cfb904adb8b964e",
+    "packages/core/test/archive.spec.ts": "8b3908aa951031efc8cbea5359593c26d897dc01eea040a02c2ee335e445bd3b",
+    "packages/core/test/xml.spec.ts": "17b5d23acdfc057e1be9323c7f09b17e0d8342da367d5abf18c87e707fcc912b"
+  },
+  "baseline": {
+    "artifactPath": "tmp/performance-sota/oct24-lazy-baseline/core-dist/index.js",
+    "artifactSha256": "2e6a26185978c4859da62053a962e1bdc878bdb9beeeeb8a4dd4cee2471dea46",
+    "sourceHashes": {
+      "packages/core/src/parser/archive.ts": "f2763bd2324c3012d8e2c90b82ba5212fcea0f55f7ee9118f827d08e45862f8c",
+      "packages/core/src/parser/load-pptx.ts": "0405d20daf44b40bf51983f7ec77275b0c825d965412a997d97c823a93fef40e",
+      "packages/core/test/archive.spec.ts": "e709bf29bdfca21a4ebe1c172c7bdc9a8c767db37e21a8ca4711354ba6e15dca",
+      "packages/core/test/xml.spec.ts": "7f4ac8ba6919ca8471361a45ae93965a4770206df5c585d9706a84a2571e1f72"
+    },
+    "reproduction": "Reverse pptx-lazy.patch, build @filens/core and copy dist to tmp/performance-sota/oct24-lazy-baseline/core-dist. Restore/apply the patch and rebuild the current core. Run benchmark-pptx-lazy-ab.mjs from the repository root with --family pptx-model or --family pptx-view, --iterations 7 and a separate output directory. Add --review-content for preview interactions. The initial engineering run predates removal of the eager unusual-ZIP fallback; it is retained separately, not used for final conclusions."
+  },
+  "engineeringComparisons": [
+    {
+      "family": "pptx-model",
+      "sample": "vue-office-test.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 31.024999976158142,
+      "peerMs": 36.78999996185303,
+      "peerOverFilensRatio": 1.1858178884810677,
+      "ratio95PercentBootstrapInterval": [
+        1.118907763270404,
+        1.2135442424920215
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "filens-field-notes.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 12.245000004768372,
+      "peerMs": 12.349999904632568,
+      "peerOverFilensRatio": 1.0085749203612338,
+      "ratio95PercentBootstrapInterval": [
+        0.9493106246695339,
+        1.0741211354415763
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-shapes.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 10.835000038146973,
+      "peerMs": 11.199999928474426,
+      "peerOverFilensRatio": 1.0336871148170181,
+      "ratio95PercentBootstrapInterval": [
+        0.9933422167270602,
+        1.0658627013749564
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-pictures.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 5.924999952316284,
+      "peerMs": 6.190000057220459,
+      "peerOverFilensRatio": 1.0447257564619181,
+      "ratio95PercentBootstrapInterval": [
+        1.0172981911413945,
+        1.1072340417415538
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "sample-deck.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 10.540000081062317,
+      "peerMs": 10.274999976158142,
+      "peerOverFilensRatio": 0.9748576752498975,
+      "ratio95PercentBootstrapInterval": [
+        0.9549549530198963,
+        1.0053815995493096
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-SampleShow.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 8.264999985694885,
+      "peerMs": 9.34500002861023,
+      "peerOverFilensRatio": 1.1306715117706734,
+      "ratio95PercentBootstrapInterval": [
+        1.0804664796473318,
+        1.160268120796247
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-pie-chart.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 7.774999976158142,
+      "peerMs": 8.579999923706055,
+      "peerOverFilensRatio": 1.103536971063206,
+      "ratio95PercentBootstrapInterval": [
+        1.084615396136598,
+        1.1387434482675762
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 24.125,
+      "peerMs": 27.069999933242798,
+      "peerOverFilensRatio": 1.1220725360929658,
+      "ratio95PercentBootstrapInterval": [
+        1.097753489482206,
+        1.1353367869718087
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-view",
+      "sample": "vue-office-test.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 49.61500000953674,
+      "peerMs": 55.875,
+      "peerOverFilensRatio": 1.1261715204929958,
+      "ratio95PercentBootstrapInterval": [
+        1.068968816154371,
+        1.148737704763801
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-view",
+      "sample": "filens-field-notes.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 42.985000014305115,
+      "peerMs": 51.5900000333786,
+      "peerOverFilensRatio": 1.2001861118113248,
+      "ratio95PercentBootstrapInterval": [
+        0.9753433195909198,
+        1.2832383377518792
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-shapes.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 50.25999999046326,
+      "peerMs": 53.16500008106232,
+      "peerOverFilensRatio": 1.057799444710511,
+      "ratio95PercentBootstrapInterval": [
+        0.8712693985308814,
+        1.136825226711284
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-pictures.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 30.68499994277954,
+      "peerMs": 33.19000005722046,
+      "peerOverFilensRatio": 1.0816359823728912,
+      "ratio95PercentBootstrapInterval": [
+        0.7632143309519006,
+        1.3678097353277288
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "sample-deck.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 41.5900000333786,
+      "peerMs": 42.47499990463257,
+      "peerOverFilensRatio": 1.021279150530024,
+      "ratio95PercentBootstrapInterval": [
+        0.8337598546295366,
+        1.0679717917307838
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-SampleShow.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 23.5349999666214,
+      "peerMs": 22.49500000476837,
+      "peerOverFilensRatio": 0.9558104965656252,
+      "ratio95PercentBootstrapInterval": [
+        0.9061429994586145,
+        1.2987877262546685
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-pie-chart.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 23.364999890327454,
+      "peerMs": 24.980000019073486,
+      "peerOverFilensRatio": 1.0691204851841067,
+      "ratio95PercentBootstrapInterval": [
+        0.8596397379181534,
+        1.7460059545766318
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 69.55499994754791,
+      "peerMs": 69.74500000476837,
+      "peerOverFilensRatio": 1.0027316520359966,
+      "ratio95PercentBootstrapInterval": [
+        0.8507617005216092,
+        1.4495758721296668
+      ],
+      "stableLeadInThisComparison": false
+    }
+  ],
+  "fullModelChecks": [
+    {
+      "file": "apps/demo/public/samples/vue-office-test.pptx",
+      "same": true,
+      "bytes": 145025651,
+      "currentSha256": "49639b3d46301766a20d60c495ce373a3e9bd0d46fd1604c4a7f6a84ccc8a1d4",
+      "previousSha256": "49639b3d46301766a20d60c495ce373a3e9bd0d46fd1604c4a7f6a84ccc8a1d4",
+      "media": 8,
+      "slides": 13
+    },
+    {
+      "file": "apps/demo/public/samples/filens-field-notes.pptx",
+      "same": true,
+      "bytes": 7820376,
+      "currentSha256": "6ddefa899fe501c919d8db08d4000b5b7831b9999f93ae8bdfca354f1c8dfe65",
+      "previousSha256": "6ddefa899fe501c919d8db08d4000b5b7831b9999f93ae8bdfca354f1c8dfe65",
+      "media": 3,
+      "slides": 3
+    },
+    {
+      "file": "apps/demo/public/samples/rich-pptx-shapes.pptx",
+      "same": true,
+      "bytes": 452772,
+      "currentSha256": "ef441225fc564b4f38ba3d9a01d7bef18650f1712aa4c77f75be7ec073b41b94",
+      "previousSha256": "ef441225fc564b4f38ba3d9a01d7bef18650f1712aa4c77f75be7ec073b41b94",
+      "media": 2,
+      "slides": 2
+    },
+    {
+      "file": "apps/demo/public/samples/rich-pptx-pictures.pptx",
+      "same": true,
+      "bytes": 799914,
+      "currentSha256": "4ad11cd0a51b8816853779c1f29e9defe31ba6a23b85392f57896be219045098",
+      "previousSha256": "4ad11cd0a51b8816853779c1f29e9defe31ba6a23b85392f57896be219045098",
+      "media": 2,
+      "slides": 2
+    },
+    {
+      "file": "apps/demo/public/samples/sample-deck.pptx",
+      "same": true,
+      "bytes": 43190,
+      "currentSha256": "88e05a7d502244a7367d53a60a8367eaf17dd0bb28e5ad4dbd91e52f89931875",
+      "previousSha256": "88e05a7d502244a7367d53a60a8367eaf17dd0bb28e5ad4dbd91e52f89931875",
+      "media": 1,
+      "slides": 3
+    },
+    {
+      "file": "tmp/performance-sota/samples/SampleShow.pptx",
+      "same": true,
+      "bytes": 5701,
+      "currentSha256": "71cdf91808f3445012881acb74433a835e399c8e1d182919f00ba91a6260070f",
+      "previousSha256": "71cdf91808f3445012881acb74433a835e399c8e1d182919f00ba91a6260070f",
+      "media": 0,
+      "slides": 2
+    },
+    {
+      "file": "tmp/performance-sota/samples/pie-chart.pptx",
+      "same": true,
+      "bytes": 3015,
+      "currentSha256": "2201d9cdf499c9f051f545d422882ce61cc1f812c911cb27c9e618554ae8e956",
+      "previousSha256": "2201d9cdf499c9f051f545d422882ce61cc1f812c911cb27c9e618554ae8e956",
+      "media": 0,
+      "slides": 1
+    },
+    {
+      "file": "tmp/performance-sota/samples/2411-Performance_Up.pptx",
+      "same": true,
+      "bytes": 4951309,
+      "currentSha256": "84d93653a0abf7144446069418ac4f2d0cbdb9edde2c65b377da8098ddf93b50",
+      "previousSha256": "84d93653a0abf7144446069418ac4f2d0cbdb9edde2c65b377da8098ddf93b50",
+      "media": 8,
+      "slides": 48
+    }
+  ],
+  "firstPreviewPixelChecks": [
+    {
+      "sample": "vue-office-test.pptx",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "9f5ad038d0e58126c5c6764ff617ad8aaab1ece3f3537e8167d531e2188e1cab",
+      "previousPngSha256": "9f5ad038d0e58126c5c6764ff617ad8aaab1ece3f3537e8167d531e2188e1cab",
+      "rgbPixelSha256": "39c34fb330ad2ccf250b563273c29c03f6c2c5cd7566fe37e1734ffefe36e59c"
+    },
+    {
+      "sample": "filens-field-notes.pptx",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "5ea91780dbb0e907f953459404e7b7b091b289f70ba135f604472dab66cddfda",
+      "previousPngSha256": "5ea91780dbb0e907f953459404e7b7b091b289f70ba135f604472dab66cddfda",
+      "rgbPixelSha256": "8599e4716d998415799b60153579e8a54a105b1e38e5abe14a3db5ace9a5f6af"
+    },
+    {
+      "sample": "rich-pptx-shapes.pptx",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "82301193dd0a9fae23f4bdc2f6aef4ec5c2b099e99ca1ab56f13fb4fa5e68ffd",
+      "previousPngSha256": "82301193dd0a9fae23f4bdc2f6aef4ec5c2b099e99ca1ab56f13fb4fa5e68ffd",
+      "rgbPixelSha256": "dfb65dbd2fbb3104d8a79b9b7134c55d48d1369039a0aed80fd51951a56acd3c"
+    },
+    {
+      "sample": "rich-pptx-pictures.pptx",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "108aa71544c875f82c13b3b0d792cf831aeb04963a480b7a4c10834f7da56064",
+      "previousPngSha256": "108aa71544c875f82c13b3b0d792cf831aeb04963a480b7a4c10834f7da56064",
+      "rgbPixelSha256": "ada877f341852e0f7ec4f1890b75b1ffcb506de4b84833b5d70ea587399ddfcc"
+    },
+    {
+      "sample": "sample-deck.pptx",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "9f36023b8d31c52eb84c9575d2eaae558404e98bbd4fd4e2073fb4ed7975b0aa",
+      "previousPngSha256": "9f36023b8d31c52eb84c9575d2eaae558404e98bbd4fd4e2073fb4ed7975b0aa",
+      "rgbPixelSha256": "802df90ab91a4ea141fd55c0fed77b335c29c36c5bd7ddc6b250f0610126c9fb"
+    },
+    {
+      "sample": "poi-SampleShow.pptx",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "ca0edbc6c7b76f11c22b8fbc12051876a4e7215e93b064cde356d0ee1a289541",
+      "previousPngSha256": "ca0edbc6c7b76f11c22b8fbc12051876a4e7215e93b064cde356d0ee1a289541",
+      "rgbPixelSha256": "42cdc13fbcc3d146442790488bc8ee53e48de5e4eff314d6e187d4eda9ba80af"
+    },
+    {
+      "sample": "poi-pie-chart.pptx",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "76a49b193df279c1cfb68cf2fef197d022a3d5d31ca22eb4727fa37705963c6a",
+      "previousPngSha256": "76a49b193df279c1cfb68cf2fef197d022a3d5d31ca22eb4727fa37705963c6a",
+      "rgbPixelSha256": "411f111bafc63fb2e96ddedc351593403b6300556018edda8ee71be87e334f03"
+    },
+    {
+      "sample": "poi-2411-Performance_Up.pptx",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "1a75707d689194b5be3030aec6b5b6d97f1abb59d4ca3a6edf6409160914fab5",
+      "previousPngSha256": "1a75707d689194b5be3030aec6b5b6d97f1abb59d4ca3a6edf6409160914fab5",
+      "rgbPixelSha256": "1e406eb1b589a7ceea848d973396138a5b653b593aa80da6894107b9863a47ee"
+    }
+  ],
+  "contentAndInteractions": [
+    {
+      "sample": "vue-office-test.pptx",
+      "interactions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "sample": "filens-field-notes.pptx",
+      "interactions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "sample": "rich-pptx-shapes.pptx",
+      "interactions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "sample": "rich-pptx-pictures.pptx",
+      "interactions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "sample": "sample-deck.pptx",
+      "interactions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "sample": "poi-SampleShow.pptx",
+      "interactions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "sample": "poi-pie-chart.pptx",
+      "interactions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "sample": "poi-2411-Performance_Up.pptx",
+      "interactions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    }
+  ],
+  "scopedSota": {
+    "sample": "vue-office-test.pptx",
+    "model": {
+      "family": "pptx-model",
+      "sample": "vue-office-test.pptx",
+      "allMeasuredPeersHaveStableTimingLead": true,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    "preview": {
+      "family": "pptx-view",
+      "sample": "vue-office-test.pptx",
+      "allMeasuredPeersHaveStableTimingLead": true,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    }
+  },
+  "visualLimitations": "Small-picture preview has no stable lead over every measured peer. Pie-chart timing leads are not ranked because both peer screenshots omit the pie itself. Performance_Up peers initially display a different page, so that preview timing remains informational. Small preview improvements over the previous core are not stable.",
+  "regressions": "Regression tests verify unused unsupported attachments at 128 bytes and 17 MiB, deferred corrupt DEFLATE failure when opened, and a complete presentation with a corrupt unrelated attachment. Required corrupt parts still fail when read.",
+  "validation": {
+    "coreTestsPassed": 215,
+    "coreTestsSkipped": 11,
+    "coreBuild": true,
+    "demoBuild": true,
+    "bundleReport": true
+  },
+  "engineeringReproductionArtifacts": {
+    "benchmark-pptx-lazy-ab.mjs": "f5ccb0a9f72989e13a41458b88ac8e37b34e8dd3a8ae300fa1cb03e50609170d",
+    "pptx-lazy.patch": "f4eb97884c242089e3724b9ff8c9e83af388fdc0ad5e592c5e14471f8ecb9a62",
+    "benchmark-pptx-lazy-model-review.mjs": "70962998ea3b620942d419b4f1f8e85f63847b2a54b06d39ea76e3da7ee71178"
+  },
+  "bundleReportSha256": "ada32472337486e33e3b25c8df427c94e0f5e4035af21a7b69e3569d126fd11d"
+}

@@ -66,7 +66,7 @@ The homepage has eight actual preview captures and directly accessible STEP, RAW
 | --- | ---: | ---: | ---: |
 | Conversion core WASM | 871.2 KiB | 395.2 KiB | **318.0 KiB** |
 | Image / RAW core WASM | 1072.2 KiB | 293.0 KiB | **210.7 KiB** |
-| Media / panorama preview | 210.4 KiB | 62.2 KiB | **53.1 KiB** |
+| Media / panorama preview | 210.4 KiB | 62.2 KiB | **53.0 KiB** |
 | Optional STEP WASM | 2625.8 KiB | 1020.2 KiB | **797.0 KiB** |
 
 Document, image / RAW, and STEP WASM modules load independently on demand. Media preview and image conversion are measured separately. JS rows include their CSS; shared dependencies and workers are listed separately.
@@ -78,10 +78,10 @@ Document, image / RAW, and STEP WASM modules load independently on demand. Media
 | --- | ---: | ---: | ---: |
 | Demo entry | 173.1 KiB | 48.9 KiB | **40.9 KiB** |
 | Shared vendor dependencies | 1776.4 KiB | 504.2 KiB | **414.7 KiB** |
-| PPTX / core runtime | 284.1 KiB | 75.1 KiB | **64.3 KiB** |
+| PPTX / core runtime | 284.0 KiB | 75.0 KiB | **64.3 KiB** |
 | Vue preview host | 68.7 KiB | 15.9 KiB | **14.0 KiB** |
 | DOCX / XLSX / PDF | 22.9 KiB | 7.3 KiB | **6.5 KiB** |
-| iWork preview | 24.4 KiB | 8.1 KiB | **7.1 KiB** |
+| iWork preview | 24.4 KiB | 8.1 KiB | **7.2 KiB** |
 | CAD / mind maps / diagrams | 83.5 KiB | 23.7 KiB | **20.2 KiB** |
 | 3D preview | 105.7 KiB | 28.2 KiB | **24.5 KiB** |
 | Archive preview | 20.1 KiB | 6.4 KiB | **5.7 KiB** |
@@ -90,7 +90,7 @@ Document, image / RAW, and STEP WASM modules load independently on demand. Media
 | PDF worker | 1053.3 KiB | 291.1 KiB | **233.1 KiB** |
 | STEP loader | 23.0 KiB | 9.5 KiB | **8.7 KiB** |
 
-Entry, preloaded JS, and CSS total **597.4 KiB Brotli** (2549.6 KiB raw / 718.6 KiB gzip), plus images, video, and samples. Modules share dependencies; these rows are not standalone per-format download totals.
+Entry, preloaded JS, and CSS total **597.4 KiB Brotli** (2549.5 KiB raw / 718.5 KiB gzip), plus images, video, and samples. Modules share dependencies; these rows are not standalone per-format download totals.
 
 </details>
 
@@ -116,8 +116,8 @@ The full recording is linked above. [Chinese captions](apps/demo/public/home/dem
 
 | Measured task | filens | Current peer | Peer time / filens | Result |
 | --- | ---: | --- | ---: | --- |
-| 11.1 MB, 13-slide PPTX parse | **34.3 ms** | pptx-preview 1.0.7: 57.7 ms | **1.68×** | **SOTA\*** |
-| 11.1 MB, 13-slide PPTX first preview | **53.6 ms** | pptx-preview 1.0.7: 75.4 ms | **1.41×** | **SOTA\*** |
+| 11.1 MB, 13-slide PPTX parse | **28.5 ms** | pptx-preview 1.0.7: 56.6 ms | **1.99×** | **SOTA\*** |
+| 11.1 MB, 13-slide PPTX first preview | **48.8 ms** | pptx-preview 1.0.7: 71.8 ms | **1.47×** | **SOTA\*** |
 | 3840×1920 panorama JPEG preview | **154.9 ms** | Photo Sphere Viewer 5.15.1: 205.2 ms | **1.32×** | **SOTA\*** |
 | NEF without embedded JPEG → preview canvas | **152.7 ms** | LibRaw-Wasm 1.6.0 half-size: 326.7 ms | **2.14×** | **SOTA\*** |
 | DNG without embedded JPEG → preview canvas | **167.7 ms** | LibRaw-Wasm 1.6.0 fast half-size: 314.4 ms | **1.87×** | **SOTA\*** |

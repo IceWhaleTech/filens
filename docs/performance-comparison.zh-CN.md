@@ -1,13 +1,13 @@
 # 浏览器前端性能对比
 
-2026-10-23 / 24 · Apple M4 Pro · Chromium 147 · **1,988 次比较测量，每项 7 次；其中 filens 833 / 833 次成功。** 另保留 28 次裁剪 CR3 夹具的诊断记录。
+2026-10-23 / 24 · Apple M4 Pro · Chromium 147 · **2,324 次比较测量，每项 7 次；其中 filens 945 / 945 次成功。** 另保留 28 次裁剪 CR3 夹具的诊断记录。
 
 PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有稳定领先项。对比表忽略 10 ms 以内的任务。以用户实际阅读预览为目标；不要求转换结果保留相同的可编辑内部结构。
 
 | 实测任务 | filens | 对照 | 对手 / filens（95% 区间） | 判定 |
 | --- | --- | --- | --- | --- |
-| 11.1 MB / 13 页 PPTX 解析 | **34.3 ms** | pptx-preview 1.0.7: 57.7 ms | 1.68× (1.65–1.74) | **SOTA\*** |
-| 11.1 MB / 13 页 PPTX 首屏 | **53.6 ms** | pptx-preview 1.0.7: 75.4 ms | 1.41× (1.31–1.45) | **SOTA\*** |
+| 11.1 MB / 13 页 PPTX 解析 | **28.5 ms** | pptx-preview 1.0.7: 56.6 ms | 1.99× (1.94–2.12) | **SOTA\*** |
+| 11.1 MB / 13 页 PPTX 首屏 | **48.8 ms** | pptx-preview 1.0.7: 71.8 ms | 1.47× (1.41–1.51) | **SOTA\*** |
 | 3840×1920 全景 JPEG 首屏 | **154.9 ms** | Photo Sphere Viewer 5.15.1: 205.2 ms | 1.32× (1.29–1.37) | **SOTA\*** |
 | 无内嵌 JPEG 的 NEF → 预览画布 | **152.7 ms** | LibRaw 半尺寸：326.7 ms | 2.14× (2.10–2.17) | **SOTA\*** |
 | 无内嵌 JPEG 的 DNG → 预览画布 | **167.7 ms** | LibRaw 快速半尺寸：314.4 ms | 1.87× (1.78–1.91) | **SOTA\*** |
@@ -133,16 +133,16 @@ PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有
 
 | 文件 | MB | filens 解析 | PPTist 解析器 | pptx-preview 解析 | filens 首屏 | pptx-preview 单页 | vue-office 首屏 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| vue-office-test.pptx | 11.12 | 34.3 | 68.3 | 57.7 | 53.6 | 75.4 | 109.1 |
-| filens-field-notes.pptx | 0.66 | 12.0 | 23.6 | 失败 | 52.8 | 失败 | 失败 |
-| rich-pptx-shapes.pptx | 0.13 | 11.5 | 23.5 | 12.8 | 47.6 | 41.5 | 46.3 |
-| rich-pptx-pictures.pptx | 0.09 | — | 11.1 | — | 28.7 | 35.4 | 34.1 |
-| sample-deck.pptx | 0.07 | 10.1 | 失败 | 失败 | 34.6 | 失败 | 失败 |
-| poi-SampleShow.pptx | 0.04 | — | 13.6 | 12.6 | 25.9 | 18.9 | 18.6 |
-| poi-pie-chart.pptx | 0.06 | — | 11.3 | 13.2 | 28.7 | 39.5 | 39.5 |
-| poi-2411-Performance_Up.pptx | 0.65 | 27.4 | 失败 | 32.5 | 60.4 | 48.2 | 97.8 |
+| vue-office-test.pptx | 11.12 | 28.5 | 70.3 | 56.6 | 48.8 | 71.8 | 108.8 |
+| filens-field-notes.pptx | 0.66 | 11.5 | 23.5 | 失败 | 45.1 | 失败 | 失败 |
+| rich-pptx-shapes.pptx | 0.13 | 10.9 | 23.2 | 12.7 | 48.7 | 42.3 | 50.8 |
+| rich-pptx-pictures.pptx | 0.09 | — | 11.1 | — | 27.5 | 30.9 | 39.4 |
+| sample-deck.pptx | 0.07 | 10.4 | 失败 | 失败 | 37.3 | 失败 | 失败 |
+| poi-SampleShow.pptx | 0.04 | — | 14.1 | 13.4 | 28.7 | 18.2 | 19.7 |
+| poi-pie-chart.pptx | 0.06 | — | 11.8 | 13.4 | 25.4 | 40.5 | 40.1 |
+| poi-2411-Performance_Up.pptx | 0.65 | 24.5 | 失败 | 33.6 | 61.5 | 52.2 | 97.0 |
 
-<sub>单位 ms，10 ms 以内的解析值省略。filens 只挂载可见页面，低缩放时仍完整挂载全部可见页；pptx-preview 为单页，vue-office 为默认整份 DOM。小文件尚未全面领先，小图片首屏的独立复测优势不稳定，不标 SOTA；Performance_Up 对照首屏显示不同页，其速度仅供参考。失败不计为 0。vue-office 的 [PPTX 核心未开源](https://github.com/501351981/pptx-preview#关于授权)。</sub>
+<sub>单位 ms，10 ms 以内的解析值省略。filens 只挂载可见页面，低缩放时仍完整挂载全部可见页；pptx-preview 为单页，vue-office 为默认整份 DOM。小文件尚未全面领先，小图片首屏的独立复测优势不稳定，不标 SOTA；pie-chart 两个对照均未显示饼图，Performance_Up 对照首屏显示不同页；这些速度仅供参考。失败不计为 0。vue-office 的 [PPTX 核心未开源](https://github.com/501351981/pptx-preview#关于授权)。</sub>
 
 ![11.1 MB PPTX 首屏，依次为 filens、pptx-preview、vue-office](assets/performance/pptx-first-preview.webp)
 
@@ -164,13 +164,13 @@ PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有
 
 | 任务 | 优化前（ms） | 优化后（ms） | 前 / 后 |
 | --- | --- | --- | --- |
-| 11.1 MB PPTX 解析 | 45.3 | 34.3 | 1.32× |
-| 11.1 MB PPTX 首屏 | 69.3 | 53.6 | 1.29× |
+| 11.1 MB PPTX 解析 | 45.3 | 28.5 | 1.59× |
+| 11.1 MB PPTX 首屏 | 69.3 | 48.8 | 1.42× |
 | Numbers 完整模型 | 125.5 | 35.4 | 3.54× |
 | Numbers 原生首屏 | 187.3 | 83.7 | 2.24× |
-| SampleShow PPTX 首屏 | 30.7 | 25.9 | 1.19× |
-| shapes PPTX 首屏 | 62.5 | 47.6 | 1.31× |
-| sample-deck PPTX 首屏 | 52.0 | 34.6 | 1.50× |
+| SampleShow PPTX 首屏 | 30.7 | 28.7 | 1.07× |
+| shapes PPTX 首屏 | 62.5 | 48.7 | 1.28× |
+| sample-deck PPTX 首屏 | 52.0 | 37.3 | 1.40× |
 | 6528×3264 全景首屏 | 568.4 | 273.2 | 2.08× |
 | 3840×1920 全景首屏 | 276.1 | 154.9 | 1.78× |
 | DXF：20,000 条线解析 | 39.2 | 29.8 | 1.32× |
@@ -207,5 +207,9 @@ PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有
 追加 7 次 Numbers 首屏复测：[首屏结果](../benchmarks/frontend/2026-10-24/numbers-preview-visibility-summary.json) · [同场对照](../benchmarks/frontend/2026-10-24/numbers-preview-visibility-ab-summary.json) · [完整内容与逐表滚动检查](../benchmarks/frontend/2026-10-24/numbers-visibility-review.json)。
 
 <sub>首屏中位数 83.7 ms；14 次新旧同场测量确认耗时降低约 12%，首屏像素一致，全部 14 个表格滚动可读。完整解析与 SOTA 判定不变。</sub>
+
+追加 336 次 PPTX 复测：[完整解析](../benchmarks/frontend/2026-10-24/pptx-model-lazy-summary.json) · [首屏](../benchmarks/frontend/2026-10-24/pptx-preview-lazy-summary.json) · [同场对照与完整内容检查](../benchmarks/frontend/2026-10-24/pptx-lazy-review.json)。
+
+<sub>11.1 MB PPTX 的完整解析和首屏同场耗时分别降低约 16% / 11%；8 份完整模型和首屏画面一致。小文件首屏收益不稳定，本轮较慢的结果和对照失败均保留。</sub>
 
 <sub>Apple M4 Pro / 24 GiB / macOS arm64；Chromium 147.0.7727.15，1280×800、DPR 1，无 CPU 降速。每次用新 context，共享浏览器进程，轮换对手顺序；库、字节和 WASM 编译在计时前完成。首屏等待内容解码、字体和两个动画帧；全景双方均计入构造。95% 区间使用 10,000 次配对重采样、固定种子 12345。记录的主线程 JS 堆不含 WASM、Worker 和 GPU 内存。[优化前快照](../benchmarks/frontend/2026-10-23/baseline.json.gz) · [修正后的全景基线](../benchmarks/frontend/2026-10-23/panorama-baseline.json.gz)。</sub>

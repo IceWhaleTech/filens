@@ -1,0 +1,146 @@
+--- a/packages/core/src/parser/archive.ts
++++ b/packages/core/src/parser/archive.ts
+@@ -1,4 +1,5 @@
+ import { unzipSync } from 'fflate';
++import { openZipArchive } from './zip';
+ 
+ export class PptxArchiveEntry {
+   private loaded?: Promise<Uint8Array>;
+@@ -16,26 +17,23 @@
+   file(name: string): PptxArchiveEntry | null;
+ }
+ 
+-export function loadPptxArchive(bytes: Uint8Array): PptxArchive {
+-  let expandedSize = 0;
+-  let largeEntry = false;
++export async function loadPptxArchive(bytes: Uint8Array): Promise<PptxArchive> {
++  // Index once and inflate only parts requested by the parser. Most decks
++  // carry unused layouts, thumbnails and other non-preview attachments.
++  const indexed = await openZipArchive(bytes).catch(() => undefined);
++  if (indexed) {
++    const entries = new Map([...indexed].map(([name, entry]) => [name, new PptxArchiveEntry(entry.bytes)]));
++    return { file: name => entries.get(name) ?? null };
++  }
++  // Keep the existing reader for archives with unusual compression methods.
++  // In particular, an unsupported unused attachment must stay compressed.
+   const names: string[] = [];
+   unzipSync(bytes, { filter: file => {
+-    expandedSize += file.originalSize;
+-    largeEntry ||= file.originalSize > 16 * 1024 * 1024;
+     names.push(file.name);
+     return false;
+   } });
+-  // Keep large embedded videos and unrelated payloads compressed until used.
+-  // The directory-only pass above never allocates their expanded contents.
+-  if (largeEntry || expandedSize > 64 * 1024 * 1024) {
+-    const entries = new Map(names.map(name => [name, new PptxArchiveEntry(async () =>
+-      unzipSync(bytes, { filter: file => file.name === name })[name]
+-    )]));
+-    return { file: name => entries.get(name) ?? null };
+-  }
+-  // fflate reads typed input directly; JSZip masks every byte on input and
+-  // schedules a separate inflate stream for each repeated XML read.
+-  const entries = new Map(Object.entries(unzipSync(bytes)).map(([name, data]) => [name, new PptxArchiveEntry(data)]));
++  const entries = new Map(names.map(name => [name, new PptxArchiveEntry(async () =>
++    unzipSync(bytes, { filter: file => file.name === name })[name]
++  )]));
+   return { file: name => entries.get(name) ?? null };
+ }
+--- a/packages/core/src/parser/load-pptx.ts
++++ b/packages/core/src/parser/load-pptx.ts
+@@ -312,7 +312,7 @@
+ 
+ export async function loadPptx(source: PptxSource, options: LoadSourceOptions = {}): Promise<ParsedPresentation> {
+   const bytes = await loadSourceBytes(source, options);
+-  const zip = loadPptxArchive(bytes);
++  const zip = await loadPptxArchive(bytes);
+   const warnings: string[] = [];
+   const caches: ParseCaches = {
+     masters: new Map(),
+--- a/packages/core/test/archive.spec.ts
++++ b/packages/core/test/archive.spec.ts
+@@ -1,11 +1,13 @@
+ // @vitest-environment node
+ import { describe, expect, it } from 'vitest';
+-import { zipSync } from 'fflate';
++import { unzipSync, zipSync } from 'fflate';
+ import { loadPptxArchive } from '../src/parser/archive';
++import { loadPptx } from '../src/parser/load-pptx';
++import { readFixture } from './helpers';
+ 
+ describe('presentation archive', () => {
+-  it('does not inflate a large unrelated attachment when reading XML', async () => {
+-    const bytes = zipSync({ 'slide.xml': new TextEncoder().encode('<slide/>'), 'unused.bin': new Uint8Array(17 * 1024 * 1024) });
++  it.each([128, 17 * 1024 * 1024])('does not inflate an unsupported %i-byte attachment when reading XML', async size => {
++    const bytes = zipSync({ 'slide.xml': new TextEncoder().encode('<slide/>'), 'unused.bin': new Uint8Array(size) });
+     // Make this unused entry unsupported to prove that it is never inflated.
+     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+     for (let offset = 0; offset + 46 < bytes.length; offset++) {
+@@ -16,9 +18,37 @@
+         break;
+       }
+     }
+-    const archive = loadPptxArchive(bytes);
++    const archive = await loadPptxArchive(bytes);
+     expect(await archive.file('slide.xml')!.async('text')).toBe('<slide/>');
+     expect(archive.file('missing.xml')).toBeNull();
+     await expect(archive.file('unused.bin')!.async('uint8array')).rejects.toThrow();
+   });
++
++  it('defers corrupt unused payloads until they are requested', async () => {
++    const bytes = zipSync({ 'unused.bin': new Uint8Array(128), 'slide.xml': new TextEncoder().encode('<slide/>') });
++    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
++    const start = 30 + view.getUint16(26, true) + view.getUint16(28, true);
++    bytes[start] = 7; // Invalid DEFLATE block type in the first entry.
++    const archive = await loadPptxArchive(bytes);
++    expect(await archive.file('slide.xml')!.async('text')).toBe('<slide/>');
++    await expect(archive.file('unused.bin')!.async('uint8array')).rejects.toThrow();
++  });
++
++  it('previews a complete presentation despite a corrupt unrelated attachment', async () => {
++    const original = await readFixture('fixtures-text-theme.pptx');
++    const bytes = zipSync({ 'unused.bin': new Uint8Array(128), ...unzipSync(original) });
++    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
++    const start = 30 + view.getUint16(26, true) + view.getUint16(28, true);
++    bytes[start] = 7;
++    // Generated IDs increase between loads; compare all parsed content.
++    const content = (presentation: Awaited<ReturnType<typeof loadPptx>>) => ({
++      ...presentation,
++      slides: presentation.slides.map(({ id, ...slide }) => ({
++        ...slide,
++        items: slide.items.map(({ id, ...item }) => item)
++      }))
++    });
++    expect(content(await loadPptx(bytes))).toEqual(content(await loadPptx(original)));
++  });
++
+ });
+--- a/packages/core/test/xml.spec.ts
++++ b/packages/core/test/xml.spec.ts
+@@ -37,7 +37,7 @@
+       '<?custom instruction?><a/>'
+     ]) {
+       const zip = new JSZip().file('fallback.xml', source);
+-      const archive = loadPptxArchive(await zip.generateAsync({ type: 'uint8array' }));
++      const archive = await loadPptxArchive(await zip.generateAsync({ type: 'uint8array' }));
+       expect(await parseXmlFileOrdered(archive, 'fallback.xml')).toEqual(orderedReference.parse(source));
+       expect(await parseXmlFile(archive, 'fallback.xml')).toEqual(reference.parse(source));
+     }
+@@ -46,7 +46,7 @@
+   it('retains attributes, mixed text order, repeated and empty tags', async () => {
+     const source = '<?xml version="1.0"?><p:sld xmlns:p="p"><p:p id="0"><p:r>A &amp; B</p:r><p:br/><p:r><![CDATA[C < D]]></p:r><p:fld type="date">2026</p:fld> tail </p:p><p:p/><p:p flag=""/><p:group><p:child/><p:child a="x"/></p:group></p:sld>';
+     const zip = new JSZip().file('slide.xml', source);
+-    const archive = loadPptxArchive(await zip.generateAsync({ type: 'uint8array' }));
++    const archive = await loadPptxArchive(await zip.generateAsync({ type: 'uint8array' }));
+     expect(await parseXmlFile(archive, 'slide.xml')).toEqual(reference.parse(source));
+     expect(await parseXmlFileOrdered(archive, 'slide.xml')).toEqual(new XMLParser({ ...options, preserveOrder: true }).parse(source));
+     expect(await parseXmlFile(archive, 'missing.xml')).toBeNull();
+@@ -63,7 +63,7 @@
+     ]) {
+       const bytes = await readFixture(fixture);
+       const zip = await JSZip.loadAsync(bytes);
+-      const archive = loadPptxArchive(bytes);
++      const archive = await loadPptxArchive(bytes);
+       for (const entry of Object.values(zip.files)) {
+         if (!entry.name.endsWith('.xml') && !entry.name.endsWith('.rels')) continue;
+         const source = await entry.async('text');

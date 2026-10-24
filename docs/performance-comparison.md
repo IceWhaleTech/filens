@@ -1,13 +1,13 @@
 # Browser frontend performance comparison
 
-October 23–24, 2026 · Apple M4 Pro · Chromium 147 · **1,988 comparison measurements, 7 per configuration; all 833 filens runs in those comparisons succeeded.** Another 28 pruned-CR3 diagnostic runs are retained separately.
+October 23–24, 2026 · Apple M4 Pro · Chromium 147 · **2,324 comparison measurements, 7 per configuration; all 945 filens runs in those comparisons succeeded.** Another 28 pruned-CR3 diagnostic runs are retained separately.
 
 PPTX, panorama, RAW without embedded JPEGs, STEP, XLSX and document preview conversion have stable leading cases. Tasks under 10 ms are omitted from the comparison tables. The target is readable previews; converted files need not preserve identical editable internal structures.
 
 | Measured task | filens | Peer | Peer / filens (95% interval) | Result |
 | --- | --- | --- | --- | --- |
-| 11.1 MB / 13-slide PPTX parse | **34.3 ms** | pptx-preview 1.0.7: 57.7 ms | 1.68× (1.65–1.74) | **SOTA\*** |
-| 11.1 MB / 13-slide PPTX first preview | **53.6 ms** | pptx-preview 1.0.7: 75.4 ms | 1.41× (1.31–1.45) | **SOTA\*** |
+| 11.1 MB / 13-slide PPTX parse | **28.5 ms** | pptx-preview 1.0.7: 56.6 ms | 1.99× (1.94–2.12) | **SOTA\*** |
+| 11.1 MB / 13-slide PPTX first preview | **48.8 ms** | pptx-preview 1.0.7: 71.8 ms | 1.47× (1.41–1.51) | **SOTA\*** |
 | 3840×1920 panorama JPEG preview | **154.9 ms** | Photo Sphere Viewer 5.15.1: 205.2 ms | 1.32× (1.29–1.37) | **SOTA\*** |
 | NEF without embedded JPEG → preview canvas | **152.7 ms** | LibRaw half-size: 326.7 ms | 2.14× (2.10–2.17) | **SOTA\*** |
 | DNG without embedded JPEG → preview canvas | **167.7 ms** | LibRaw fast half-size: 314.4 ms | 1.87× (1.78–1.91) | **SOTA\*** |
@@ -133,16 +133,16 @@ All six geometry imports lead [occt-import-js 0.0.23](https://github.com/kovacsv
 
 | File | MB | filens parse | PPTist parser | pptx-preview parse | filens preview | pptx-preview single | vue-office preview |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| vue-office-test.pptx | 11.12 | 34.3 | 68.3 | 57.7 | 53.6 | 75.4 | 109.1 |
-| filens-field-notes.pptx | 0.66 | 12.0 | 23.6 | fail | 52.8 | fail | fail |
-| rich-pptx-shapes.pptx | 0.13 | 11.5 | 23.5 | 12.8 | 47.6 | 41.5 | 46.3 |
-| rich-pptx-pictures.pptx | 0.09 | — | 11.1 | — | 28.7 | 35.4 | 34.1 |
-| sample-deck.pptx | 0.07 | 10.1 | fail | fail | 34.6 | fail | fail |
-| poi-SampleShow.pptx | 0.04 | — | 13.6 | 12.6 | 25.9 | 18.9 | 18.6 |
-| poi-pie-chart.pptx | 0.06 | — | 11.3 | 13.2 | 28.7 | 39.5 | 39.5 |
-| poi-2411-Performance_Up.pptx | 0.65 | 27.4 | fail | 32.5 | 60.4 | 48.2 | 97.8 |
+| vue-office-test.pptx | 11.12 | 28.5 | 70.3 | 56.6 | 48.8 | 71.8 | 108.8 |
+| filens-field-notes.pptx | 0.66 | 11.5 | 23.5 | Failed | 45.1 | Failed | Failed |
+| rich-pptx-shapes.pptx | 0.13 | 10.9 | 23.2 | 12.7 | 48.7 | 42.3 | 50.8 |
+| rich-pptx-pictures.pptx | 0.09 | — | 11.1 | — | 27.5 | 30.9 | 39.4 |
+| sample-deck.pptx | 0.07 | 10.4 | Failed | Failed | 37.3 | Failed | Failed |
+| poi-SampleShow.pptx | 0.04 | — | 14.1 | 13.4 | 28.7 | 18.2 | 19.7 |
+| poi-pie-chart.pptx | 0.06 | — | 11.8 | 13.4 | 25.4 | 40.5 | 40.1 |
+| poi-2411-Performance_Up.pptx | 0.65 | 24.5 | Failed | 33.6 | 61.5 | 52.2 | 97.0 |
 
-<sub>Milliseconds; parse values at or below 10 ms are omitted. filens mounts all visible pages, including at low zoom; pptx-preview uses single-slide mode and vue-office its default full DOM. Some small inputs still have faster peers; the picture deck's lead is unstable in an independent recheck, so it receives no SOTA label. Performance_Up shows a different first page in the peer, so that preview timing is diagnostic. Failures never count as zero. The vue-office [PPTX core is not open source](https://github.com/501351981/pptx-preview#关于授权).</sub>
+<sub>Milliseconds; parse values at or below 10 ms are omitted. filens mounts all visible pages, including at low zoom; pptx-preview uses single-slide mode and vue-office its default full DOM. Some small inputs still have faster peers; the picture deck's lead is unstable in an independent recheck, so it receives no SOTA label. Both pie-chart peers omit the pie, and Performance_Up shows a different first page in the peer; those preview timings are diagnostic. Failures never count as zero. The vue-office [PPTX core is not open source](https://github.com/501351981/pptx-preview#关于授权).</sub>
 
 ![11.1 MB PPTX first preview: filens, pptx-preview, vue-office](assets/performance/pptx-first-preview.webp)
 
@@ -164,13 +164,13 @@ All six geometry imports lead [occt-import-js 0.0.23](https://github.com/kovacsv
 
 | Task | Before (ms) | After (ms) | Before / after |
 | --- | --- | --- | --- |
-| 11.1 MB PPTX parse | 45.3 | 34.3 | 1.32× |
-| 11.1 MB PPTX preview | 69.3 | 53.6 | 1.29× |
+| 11.1 MB PPTX parse | 45.3 | 28.5 | 1.59× |
+| 11.1 MB PPTX preview | 69.3 | 48.8 | 1.42× |
 | Numbers full model | 125.5 | 35.4 | 3.54× |
 | Numbers native preview | 187.3 | 83.7 | 2.24× |
-| SampleShow PPTX preview | 30.7 | 25.9 | 1.19× |
-| shapes PPTX preview | 62.5 | 47.6 | 1.31× |
-| sample-deck PPTX preview | 52.0 | 34.6 | 1.50× |
+| SampleShow PPTX preview | 30.7 | 28.7 | 1.07× |
+| shapes PPTX preview | 62.5 | 48.7 | 1.28× |
+| sample-deck PPTX preview | 52.0 | 37.3 | 1.40× |
 | 6528×3264 panorama preview | 568.4 | 273.2 | 2.08× |
 | 3840×1920 panorama preview | 276.1 | 154.9 | 1.78× |
 | DXF: parse 20,000 lines | 39.2 | 29.8 | 1.32× |
@@ -207,5 +207,9 @@ Additional 21-run native-preview recheck: [iWork preview](../benchmarks/frontend
 Additional 7-run Numbers preview recheck: [Preview results](../benchmarks/frontend/2026-10-24/numbers-preview-visibility-summary.json) · [Rotating engineering comparison](../benchmarks/frontend/2026-10-24/numbers-preview-visibility-ab-summary.json) · [Complete-content and table-scroll checks](../benchmarks/frontend/2026-10-24/numbers-visibility-review.json).
 
 <sub>Median preview time is 83.7 ms. Fourteen rotating new/old measurements confirm about 12% less time, with a pixel-identical first preview and all 14 tables readable after scrolling. Full parsing and SOTA conclusions are unchanged.</sub>
+
+Additional 336-run PPTX recheck: [Complete parsing](../benchmarks/frontend/2026-10-24/pptx-model-lazy-summary.json) · [Preview](../benchmarks/frontend/2026-10-24/pptx-preview-lazy-summary.json) · [Rotating engineering and complete-content checks](../benchmarks/frontend/2026-10-24/pptx-lazy-review.json).
+
+<sub>Rotating comparisons show about 16% less complete-model time and 11% less first-preview time for the 11.1 MB PPTX. All eight complete models and first-preview images are unchanged. Small-preview gains are not stable; slower results and peer failures remain recorded.</sub>
 
 <sub>Apple M4 Pro / 24 GiB / macOS arm64; Chromium 147.0.7727.15, 1280×800, DPR 1, no CPU throttling. Fresh context per run, shared browser process, rotating peer order. Libraries, input bytes and WASM compilation finish before timing. Preview waits for content decoding, fonts and two animation frames; both panorama constructors are timed. Intervals use 10,000 paired resamples, seed 12345. Retained main-thread JS heap excludes WASM, workers and GPU memory. [Historical baseline](../benchmarks/frontend/2026-10-23/baseline.json.gz) · [Corrected panorama baseline](../benchmarks/frontend/2026-10-23/panorama-baseline.json.gz).</sub>

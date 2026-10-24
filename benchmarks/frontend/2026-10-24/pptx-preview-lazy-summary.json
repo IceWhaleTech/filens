@@ -1,0 +1,708 @@
+{
+  "sourceSha256": "3eceb593140ac04aa2b23424c01e11f6817e0201f15f9f631bb0053c1a91b5dd",
+  "date": "2026-10-24T02:49:51.017Z",
+  "cpu": "Apple M4 Pro",
+  "platform": "darwin 25.6.0 arm64",
+  "browser": "147.0.7727.15",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "devicePixelRatio": 1
+  },
+  "versions": {
+    "pptxtojson": "2.2.0",
+    "pptx-preview": "1.0.7",
+    "@vue-office/pptx": "1.0.1",
+    "libraw-wasm": "1.6.0",
+    "@photo-sphere-viewer/core": "5.15.1",
+    "sheetjs": "0.20.3"
+  },
+  "iterations": 7,
+  "totalRuns": 168,
+  "filensSuccessfulRuns": 56,
+  "method": "Ratios are peer / filens (higher means filens is faster). Paired bootstrap of per-iteration measurements, 10000 resamples, percentile 95% interval, LCG seed 12345. Small single-machine sample; not an independent benchmark or a global SOTA proof.",
+  "comparisons": [
+    {
+      "family": "pptx-view",
+      "sample": "vue-office-test.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 48.81499993801117,
+      "peerMs": 71.80499994754791,
+      "peerOverFilensRatio": 1.4709617953237963,
+      "ratio95PercentBootstrapInterval": [
+        1.4145342884363712,
+        1.5120595597411928
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-view",
+      "sample": "vue-office-test.pptx",
+      "peer": "vue-office",
+      "metric": "readyMs",
+      "filensMs": 48.81499993801117,
+      "peerMs": 108.83000004291534,
+      "peerOverFilensRatio": 2.2294376765567057,
+      "ratio95PercentBootstrapInterval": [
+        2.2231320338102143,
+        2.320260063765469
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-shapes.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 48.72000002861023,
+      "peerMs": 42.29000008106232,
+      "peerOverFilensRatio": 0.868021347623728,
+      "ratio95PercentBootstrapInterval": [
+        0.8407131086993107,
+        0.9763561905826951
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-shapes.pptx",
+      "peer": "vue-office",
+      "metric": "readyMs",
+      "filensMs": 48.72000002861023,
+      "peerMs": 50.829999923706055,
+      "peerOverFilensRatio": 1.0433087006128234,
+      "ratio95PercentBootstrapInterval": [
+        0.8935180699014167,
+        1.2524076636749286
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-pictures.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 27.480000019073486,
+      "peerMs": 30.875,
+      "peerOverFilensRatio": 1.1235443951444721,
+      "ratio95PercentBootstrapInterval": [
+        0.7139364318998848,
+        1.1830780440174604
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-pictures.pptx",
+      "peer": "vue-office",
+      "metric": "readyMs",
+      "filensMs": 27.480000019073486,
+      "peerMs": 39.385000109672546,
+      "peerOverFilensRatio": 1.4332241660238707,
+      "ratio95PercentBootstrapInterval": [
+        0.9977995101850595,
+        1.524199416353401
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-SampleShow.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 28.740000009536743,
+      "peerMs": 18.194999933242798,
+      "peerOverFilensRatio": 0.6330897678220314,
+      "ratio95PercentBootstrapInterval": [
+        0.5877000871185908,
+        0.7072025024958253
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-SampleShow.pptx",
+      "peer": "vue-office",
+      "metric": "readyMs",
+      "filensMs": 28.740000009536743,
+      "peerMs": 19.68999993801117,
+      "peerOverFilensRatio": 0.6851078612205105,
+      "ratio95PercentBootstrapInterval": [
+        0.6072024018791677,
+        1.5597304182040246
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-pie-chart.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 25.4099999666214,
+      "peerMs": 40.450000047683716,
+      "peerOverFilensRatio": 1.5918929594970042,
+      "ratio95PercentBootstrapInterval": [
+        1.3006094545961564,
+        1.6523692817061795
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-pie-chart.pptx",
+      "peer": "vue-office",
+      "metric": "readyMs",
+      "filensMs": 25.4099999666214,
+      "peerMs": 40.12000000476837,
+      "peerOverFilensRatio": 1.578905944804016,
+      "ratio95PercentBootstrapInterval": [
+        1.3216932953239688,
+        1.7140522829348337
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 61.47500002384186,
+      "peerMs": 52.205000042915344,
+      "peerOverFilensRatio": 0.8492069950820442,
+      "ratio95PercentBootstrapInterval": [
+        0.7712681875388105,
+        0.9028367584823014
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "peer": "vue-office",
+      "metric": "readyMs",
+      "filensMs": 61.47500002384186,
+      "peerMs": 96.9650000333786,
+      "peerOverFilensRatio": 1.577307848650226,
+      "ratio95PercentBootstrapInterval": [
+        1.4966141727026991,
+        1.6586546623580336
+      ],
+      "stableLeadInThisComparison": true
+    }
+  ],
+  "timingLeads": [
+    {
+      "family": "pptx-view",
+      "sample": "vue-office-test.pptx",
+      "allMeasuredPeersHaveStableTimingLead": true,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-view",
+      "sample": "filens-field-notes.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-shapes.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-pictures.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-view",
+      "sample": "sample-deck.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-SampleShow.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-pie-chart.pptx",
+      "allMeasuredPeersHaveStableTimingLead": true,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    }
+  ],
+  "aggregates": [
+    {
+      "family": "pptx-view",
+      "peer": "pptx-preview",
+      "commonSuccessfulSamples": 6,
+      "geometricMeanPeerOverFilensRatio": 1.034790562815267
+    },
+    {
+      "family": "pptx-view",
+      "peer": "vue-office",
+      "commonSuccessfulSamples": 6,
+      "geometricMeanPeerOverFilensRatio": 1.3360590725648689
+    }
+  ],
+  "summary": [
+    {
+      "family": "pptx-view",
+      "sample": "vue-office-test.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 48.81499993801117,
+      "minMs": 47.61500000953674,
+      "medianProcessingMs": null,
+      "maxMs": 84.89999997615814,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.8173255920410156,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 13,
+        "mountedSlides": 2
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "vue-office-test.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 71.80499994754791,
+      "minMs": 67.375,
+      "medianProcessingMs": null,
+      "maxMs": 74.00999999046326,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 4.726985931396484,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 13,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "vue-office-test.pptx",
+      "engine": "vue-office",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 108.83000004291534,
+      "minMs": 102.23000001907349,
+      "medianProcessingMs": null,
+      "maxMs": 125.52499997615814,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 3.4728775024414062,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 13,
+        "mountedSlides": 13
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "filens-field-notes.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 45.12999999523163,
+      "minMs": 41.545000076293945,
+      "medianProcessingMs": null,
+      "maxMs": 52.44500005245209,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.7693023681640625,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 3,
+        "mountedSlides": 2
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "filens-field-notes.pptx",
+      "engine": "pptx-preview",
+      "successes": 0,
+      "attempted": 7,
+      "medianMs": null,
+      "minMs": null,
+      "medianProcessingMs": null,
+      "maxMs": null,
+      "medianMainThreadRetainedJsHeapDeltaMiB": null,
+      "medianLongestMainThreadTaskMs": null,
+      "medianIdleGlDrawCalls": null,
+      "output": null,
+      "failures": [
+        "Error: page.evaluate: EncodingError: The source image cannot be decoded."
+      ]
+    },
+    {
+      "family": "pptx-view",
+      "sample": "filens-field-notes.pptx",
+      "engine": "vue-office",
+      "successes": 0,
+      "attempted": 7,
+      "medianMs": null,
+      "minMs": null,
+      "medianProcessingMs": null,
+      "maxMs": null,
+      "medianMainThreadRetainedJsHeapDeltaMiB": null,
+      "medianLongestMainThreadTaskMs": null,
+      "medianIdleGlDrawCalls": null,
+      "output": null,
+      "failures": [
+        "Error: page.evaluate: EncodingError: The source image cannot be decoded."
+      ]
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-shapes.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 48.72000002861023,
+      "minMs": 44.52999997138977,
+      "medianProcessingMs": null,
+      "maxMs": 53.13499999046326,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.9193611145019531,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-shapes.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 42.29000008106232,
+      "minMs": 41.93500006198883,
+      "medianProcessingMs": null,
+      "maxMs": 47.93499994277954,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.5185470581054688,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-shapes.pptx",
+      "engine": "vue-office",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 50.829999923706055,
+      "minMs": 43.3050000667572,
+      "medianProcessingMs": null,
+      "maxMs": 61.39999997615814,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.55096435546875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "mountedSlides": 2
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-pictures.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 27.480000019073486,
+      "minMs": 26.37000000476837,
+      "medianProcessingMs": null,
+      "maxMs": 42.86500000953674,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.4148521423339844,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-pictures.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 30.875,
+      "minMs": 27.829999923706055,
+      "medianProcessingMs": null,
+      "maxMs": 42.35000002384186,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.7693023681640625,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-pictures.pptx",
+      "engine": "vue-office",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 39.385000109672546,
+      "minMs": 32.575000047683716,
+      "medianProcessingMs": null,
+      "maxMs": 44.09500002861023,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.7825431823730469,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "mountedSlides": 2
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "sample-deck.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 37.269999980926514,
+      "minMs": 35.19000005722046,
+      "medianProcessingMs": null,
+      "maxMs": 43.2849999666214,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.156494140625,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 3,
+        "mountedSlides": 2
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "sample-deck.pptx",
+      "engine": "pptx-preview",
+      "successes": 0,
+      "attempted": 7,
+      "medianMs": null,
+      "minMs": null,
+      "medianProcessingMs": null,
+      "maxMs": null,
+      "medianMainThreadRetainedJsHeapDeltaMiB": null,
+      "medianLongestMainThreadTaskMs": null,
+      "medianIdleGlDrawCalls": null,
+      "output": null,
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "sample-deck.pptx",
+      "engine": "vue-office",
+      "successes": 0,
+      "attempted": 7,
+      "medianMs": null,
+      "minMs": null,
+      "medianProcessingMs": null,
+      "maxMs": null,
+      "medianMainThreadRetainedJsHeapDeltaMiB": null,
+      "medianLongestMainThreadTaskMs": null,
+      "medianIdleGlDrawCalls": null,
+      "output": null,
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-SampleShow.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 28.740000009536743,
+      "minMs": 26.914999961853027,
+      "medianProcessingMs": null,
+      "maxMs": 31.019999980926514,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.6752777099609375,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-SampleShow.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 18.194999933242798,
+      "minMs": 17.25,
+      "medianProcessingMs": null,
+      "maxMs": 21.914999961853027,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.1345138549804688,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-SampleShow.pptx",
+      "engine": "vue-office",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 19.68999993801117,
+      "minMs": 17.200000047683716,
+      "medianProcessingMs": null,
+      "maxMs": 46.860000014305115,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.128021240234375,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "mountedSlides": 2
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-pie-chart.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 25.4099999666214,
+      "minMs": 21.43999993801117,
+      "medianProcessingMs": null,
+      "maxMs": 30.87000000476837,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.68963623046875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 1,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-pie-chart.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 40.450000047683716,
+      "minMs": 39.32000005245209,
+      "medianProcessingMs": null,
+      "maxMs": 41.875,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.5304832458496094,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 1,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-pie-chart.pptx",
+      "engine": "vue-office",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 40.12000000476837,
+      "minMs": 39.38499999046326,
+      "medianProcessingMs": null,
+      "maxMs": 45.41500008106232,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.5147933959960938,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 1,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 61.47500002384186,
+      "minMs": 53.70999991893768,
+      "medianProcessingMs": null,
+      "maxMs": 64.48500001430511,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.2571945190429688,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 48,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 52.205000042915344,
+      "minMs": 45.21000003814697,
+      "medianProcessingMs": null,
+      "maxMs": 55.22500002384186,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 2.620147705078125,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 36,
+        "mountedSlides": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "engine": "vue-office",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 96.9650000333786,
+      "minMs": 94.52499997615814,
+      "medianProcessingMs": null,
+      "maxMs": 98.9099999666214,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 2.6109161376953125,
+      "medianLongestMainThreadTaskMs": 61,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 36,
+        "mountedSlides": 36
+      },
+      "failures": []
+    }
+  ]
+}

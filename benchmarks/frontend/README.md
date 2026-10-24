@@ -31,9 +31,21 @@ The dated directory retains full, unfiltered measurements, the historical baseli
 
 The benchmark downloads no proprietary source code. The PPTX package license restriction is documented in the reports. Apache POI samples are fetched from the upstream [test-data/slideshow directory](https://github.com/apache/poi/tree/trunk/test-data/slideshow); names, source URLs and Git blob hashes are in [external-samples.json](external-samples.json). Input binaries and third-party library bundles are not committed here.
 
+## Current PPTX parsing and preview
+
+The [336-run PPTX recheck](2026-10-24/pptx-lazy-review.json) measures the 11.1 MB / 13-slide deck at **28.5 ms** for complete parsing and **48.8 ms** for first preview. The fastest measured peers take **56.6 ms** and **71.8 ms**, respectively. Both tasks retain their scoped SOTA label against all measured peers. All 112 filens external-comparison runs pass; the cumulative comparison now has **2,324 measurements**, including **945 successful filens runs**.
+
+[Parser summary](2026-10-24/pptx-model-lazy-summary.json) / [raw](2026-10-24/pptx-model-lazy.json.gz), [preview summary](2026-10-24/pptx-preview-lazy-summary.json) / [raw](2026-10-24/pptx-preview-lazy.json.gz). Reproduce with the standard harness and `--family pptx-model` or `--family pptx-view`, `--iterations 7`, and `--review-content` for previews. Complete models, warnings, every peer failure and slower small-file measurements are retained.
+
+A separate **224-run rotating engineering comparison** finds about **16% less full-model time** (36.8 → 31.0 ms) and **11% less preview time** (55.9 → 49.6 ms) on the large deck. [Model summary](2026-10-24/pptx-model-lazy-ab-summary.json) / [raw](2026-10-24/pptx-model-lazy-ab.json.gz), [preview summary](2026-10-24/pptx-preview-lazy-ab-summary.json) / [raw](2026-10-24/pptx-preview-lazy-ab.json.gz), [derived A/B harness](2026-10-24/benchmark-pptx-lazy-ab.mjs), [implementation patch](2026-10-24/pptx-lazy.patch). The review records baseline/runtime/source hashes and reconstruction steps. Another [112 initial engineering measurements](2026-10-24/pptx-preview-lazy-initial-ab.json.gz) predate a fallback-only refinement and are not used for final conclusions. Engineering runs are excluded from external totals.
+
+All **eight complete models**, including media bytes, match the previous parser, and all eight first-preview images are pixel-identical. [Reproduce complete-model checks](2026-10-24/benchmark-pptx-lazy-model-review.mjs) from the repository root after reconstructing the baseline. Page navigation, zoom and scrolling checks pass. The reader now inflates only requested ZIP parts; regression tests cover corrupt unrelated attachments and unsupported unused compression at small and large sizes. **215 core tests pass**, with 11 existing skips, and package/demo builds and the bundle report pass.
+
+Small-file first-preview improvements are not stable. Both pie-chart peer screenshots omit the pie, and Performance_Up peers initially show another page; those preview timings remain informational and receive no new SOTA label.
+
 ## Current native iWork preview
 
-The [7-run Numbers preview recheck](2026-10-24/numbers-visibility-review.json) measures **83.7 ms**, with all runs successful. Pages and Keynote retain their previous 66.3 ms / 61.3 ms measurements. The cumulative external comparison contains **1,988 measurements**, with all **833 filens runs** successful. Full Numbers parsing remains 35.4 ms versus 26.0 ms SheetJS cached-data extraction; no new SOTA claim.
+The [7-run Numbers preview recheck](2026-10-24/numbers-visibility-review.json) measures **83.7 ms**, with all runs successful. Pages and Keynote retain their previous 66.3 ms / 61.3 ms measurements. The cumulative external comparison now contains **2,324 measurements**, with all **945 filens runs** successful. Full Numbers parsing remains 35.4 ms versus 26.0 ms SheetJS cached-data extraction; no new SOTA claim.
 
 [Preview summary](2026-10-24/numbers-preview-visibility-summary.json) / [raw](2026-10-24/numbers-preview-visibility.json.gz). Reproduce with `node scripts/benchmark-frontends.mjs --family iwork-view --sample a.numbers --iterations 7 --review-content --output tmp/performance-sota/numbers-visibility-reproduced`.
 
