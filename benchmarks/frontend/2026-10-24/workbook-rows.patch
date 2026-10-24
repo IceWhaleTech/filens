@@ -1,0 +1,227 @@
+diff --git a/packages/xlsx/src/parser.ts b/packages/xlsx/src/parser.ts
+--- a/packages/xlsx/src/parser.ts
++++ b/packages/xlsx/src/parser.ts
+@@ -34,23 +34,28 @@
+ }
+ 
+ export async function loadXlsxWorkbook(source: PreviewSource, context?: PreviewLoadContext): Promise<ParsedWorkbook> {
++  checkAborted(context?.signal);
+   const format = normalizeFormat(context?.route?.sourceFormat ?? context?.descriptor.extension);
+   if (format === 'csv') {
+     return loadCsvWorkbook(source, context);
+   }
+ 
+   const bytes = await sourceToBytes(source, context);
++  checkAborted(context?.signal);
+   const zip = await openZipArchive(bytes);
++  checkAborted(context?.signal);
+   const warnings: string[] = [];
+-  const workbookXml = await readRequiredText(zip, 'xl/workbook.xml');
+-  const relsXml = await readRequiredText(zip, 'xl/_rels/workbook.xml.rels');
+-  const sharedStrings = await readSharedStrings(zip);
++  const workbookXml = await readRequiredText(zip, 'xl/workbook.xml', context?.signal);
++  const relsXml = await readRequiredText(zip, 'xl/_rels/workbook.xml.rels', context?.signal);
++  const sharedStrings = await readSharedStrings(zip, context?.signal);
++  checkAborted(context?.signal);
+   const workbook = parser.parse(workbookXml) as Record<string, unknown>;
+   const relationships = readRelationships(relsXml);
+   const sheets = readWorkbookSheets(workbook);
+ 
+   const parsedSheets: ParsedSheet[] = [];
+   for (const sheet of sheets) {
++    checkAborted(context?.signal);
+     const relationship = relationships.find((entry) => entry.id === sheet.relationshipId);
+     if (!relationship) {
+       warnings.push(`Missing relationship for sheet ${sheet.name}.`);
+@@ -59,6 +64,7 @@
+ 
+     const sheetPath = resolveWorkbookTarget(relationship.target);
+     const sheetXml = await zip.get(sheetPath)?.text();
++    checkAborted(context?.signal);
+     if (!sheetXml) {
+       warnings.push(`Missing worksheet file for sheet ${sheet.name}.`);
+       continue;
+@@ -78,7 +84,9 @@
+ }
+ 
+ export async function loadCsvWorkbook(source: PreviewSource, context?: PreviewLoadContext): Promise<ParsedWorkbook> {
++  checkAborted(context?.signal);
+   const text = await sourceToText(source, context);
++  checkAborted(context?.signal);
+   const { rows, columnCount } = parseCsv(text);
+ 
+   return {
+@@ -244,20 +252,29 @@
+   return { rows, columnCount: columnNames.length };
+ }
+ 
+-async function readRequiredText(zip: Map<string, ZipEntry>, path: string): Promise<string> {
++function checkAborted(signal?: AbortSignal): void {
++  if (signal?.aborted) throw new DOMException('Workbook preview aborted.', 'AbortError');
++}
++
++async function readRequiredText(zip: Map<string, ZipEntry>, path: string, signal?: AbortSignal): Promise<string> {
++  checkAborted(signal);
+   const file = zip.get(path);
+   if (!file) {
+     throw new Error(`Invalid XLSX file: missing ${path}.`);
+   }
+-  return file.text();
+-}
+-
+-async function readSharedStrings(zip: Map<string, ZipEntry>): Promise<string[]> {
++  const text = await file.text();
++  checkAborted(signal);
++  return text;
++}
++
++async function readSharedStrings(zip: Map<string, ZipEntry>, signal?: AbortSignal): Promise<string[]> {
++  checkAborted(signal);
+   const file = zip.get('xl/sharedStrings.xml');
+   if (!file) {
+     return [];
+   }
+   const xml = await file.text();
++  checkAborted(signal);
+   const document = parser.parse(xml) as Record<string, unknown>;
+   const items = toArray(readPath(document, ['sst', 'si']));
+   return items.map(readSharedStringItem);
+diff --git a/packages/xlsx/src/preview-driver.ts b/packages/xlsx/src/preview-driver.ts
+--- a/packages/xlsx/src/preview-driver.ts
++++ b/packages/xlsx/src/preview-driver.ts
+@@ -11,7 +11,7 @@
+   type WorkbookPreviewState
+ } from '@filens/core';
+ import { loadXlsxWorkbook, resolveCellValue } from './parser';
+-import type { ParsedSheet, ParsedWorkbook } from './types';
++import type { ParsedRow, ParsedSheet, ParsedWorkbook } from './types';
+ 
+ type PreviewListenerMap = {
+   [K in PreviewEventName]: Set<(payload: PreviewEventMap[K]) => void>;
+@@ -47,6 +47,9 @@
+   private readonly tabs: HTMLDivElement;
+   private readonly grid: HTMLDivElement;
+   private workbook: ParsedWorkbook | null = null;
++  private loadGeneration = 0;
++  private loadController?: AbortController;
++  private removeAbortListener?: () => void;
+   private state: WorkbookPreviewState;
+ 
+   constructor(private readonly host: HTMLElement, options: PreviewOptions = {}) {
+@@ -77,6 +80,23 @@
+   }
+ 
+   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
++    const generation = ++this.loadGeneration;
++    this.loadController?.abort();
++    this.removeAbortListener?.();
++    this.releaseWorkbook();
++    const controller = new AbortController();
++    this.loadController = controller;
++    const signal = context.signal;
++    const abort = () => {
++      controller.abort();
++      if (generation === this.loadGeneration) {
++        this.releaseWorkbook();
++        this.state.loading = false;
++        this.emit('statechange', this.state);
++      }
++    };
++    signal?.addEventListener('abort', abort, { once: true });
++    this.removeAbortListener = () => signal?.removeEventListener('abort', abort);
+     this.state = {
+       ...this.state,
+       loading: true,
+@@ -88,7 +108,11 @@
+     this.emit('statechange', this.state);
+ 
+     try {
+-      this.workbook = await loadXlsxWorkbook(source, context);
++      if (signal?.aborted) abort();
++      const workbook = await loadXlsxWorkbook(source, { ...context, signal: controller.signal });
++      if (generation !== this.loadGeneration) return;
++      if (controller.signal.aborted) throw new DOMException('Workbook preview aborted.', 'AbortError');
++      this.workbook = workbook;
+       this.state = {
+         ...this.state,
+         loading: false,
+@@ -107,8 +131,11 @@
+       this.emit('rendered', this.state);
+       this.emit('statechange', this.state);
+     } catch (error) {
++      if (generation !== this.loadGeneration) return;
++      this.releaseWorkbook();
++      this.state.loading = false;
++      if (controller.signal.aborted) throw new DOMException('Workbook preview aborted.', 'AbortError');
+       const normalizedError = error instanceof Error ? error : new Error(String(error));
+-      this.state.loading = false;
+       this.state.error = normalizedError.message;
+       this.emit('error', normalizedError);
+       this.emit('statechange', this.state);
+@@ -117,13 +144,17 @@
+   }
+ 
+   destroy(): void {
++    this.loadGeneration++;
++    this.loadController?.abort();
++    this.removeAbortListener?.();
++    this.releaseWorkbook();
++    this.state.loading = false;
+     this.grid.removeEventListener('scroll', this.handleGridScroll);
+-    this.tabs.replaceChildren();
+-    this.grid.replaceChildren();
+     this.root.replaceChildren();
+     if (this.root.parentElement === this.host) {
+       this.host.replaceChildren();
+     }
++    for (const listeners of Object.values(this.listeners)) listeners.clear();
+   }
+ 
+   getState(): WorkbookPreviewState {
+@@ -154,6 +185,7 @@
+   }
+ 
+   private goToSheet(index: number): void {
++    if (!Number.isInteger(index) || !this.workbook) return;
+     const nextIndex = Math.max(0, Math.min(index, Math.max(this.state.sheets.length - 1, 0)));
+     if (nextIndex === this.state.activeSheetIndex) {
+       return;
+@@ -184,6 +216,7 @@
+   private renderActiveSheet(): void {
+     const sheet = this.workbook?.sheets[this.state.activeSheetIndex];
+     this.grid.replaceChildren();
++    this.grid.scrollTop = this.grid.scrollLeft = 0;
+     if (!sheet) {
+       return;
+     }
+@@ -205,6 +238,15 @@
+     // ponytail: rows stay mounted after loading; switch to windowed rows if million-row sheets become a real use case.
+     appendSheetRows(body, sheet, renderedRows + 1, Math.min(renderedRows + ROW_BATCH_SIZE, totalRows));
+   };
++
++  private releaseWorkbook(): void {
++    this.workbook = null;
++    this.tabs.replaceChildren();
++    this.grid.replaceChildren();
++    this.grid.scrollTop = this.grid.scrollLeft = 0;
++    this.state.activeSheetIndex = 0;
++    this.state.sheets = [];
++  }
+ 
+   private emit<T extends PreviewEventName>(event: T, payload: PreviewEventMap[T]): void {
+     for (const handler of this.listeners[event]) {
+@@ -254,7 +296,13 @@
+ }
+ 
+ export function appendSheetRows(tbody: HTMLTableSectionElement, sheet: ParsedSheet, firstRow: number, lastRow: number): void {
+-  const rowMap = new Map(sheet.rows.map((row) => [row.index, row]));
++  if (firstRow > lastRow) return;
++  // Index only this batch. Preserve unordered/duplicate rows and caller edits
++  // without allocating a complete-sheet map on every scroll.
++  const rowMap = new Map<number, ParsedRow>();
++  for (const row of sheet.rows) {
++    if (row.index >= firstRow && row.index <= lastRow) rowMap.set(row.index, row);
++  }
+   const fragment = document.createDocumentFragment();
+   for (let rowIndex = firstRow; rowIndex <= lastRow; rowIndex += 1) {
+     const row = rowMap.get(rowIndex);

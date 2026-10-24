@@ -47,6 +47,37 @@ afterAll(() => {
 });
 
 describe('PptxViewer', () => {
+  it('keeps rapid navigation relative to the target while scrolling, then lets manual scrolling take over', () => {
+    const container = document.createElement('div'); document.body.append(container);
+    const viewer = createViewer(container, { fit: 'none' });
+    const internal = viewer as unknown as {
+      applyPresentation(presentation: ParsedPresentation): void;
+      syncCurrentSlideToViewport(): void;
+    };
+    internal.applyPresentation(createPresentationWithSlideCount(4));
+    const area = container.querySelector('.pptxv-scroll-area') as HTMLDivElement;
+    area.getBoundingClientRect = () => createRect({ top: 20, bottom: 380, height: 360 });
+    let visibleSlide = 0;
+    [...container.querySelectorAll('.pptxv-slide-shell')].forEach((shell, index) => {
+      shell.getBoundingClientRect = () => {
+        const top = 20 + (index - visibleSlide) * 400;
+        return createRect({ top, bottom: top + 360, height: 360 });
+      };
+    });
+    viewer.next();
+    internal.syncCurrentSlideToViewport();
+    expect(viewer.getState().currentSlide).toBe(1);
+    viewer.next();
+    visibleSlide = 1; internal.syncCurrentSlideToViewport();
+    expect(viewer.getState().currentSlide).toBe(2);
+    expect(container.querySelector('.pptxv-slide-shell[data-slide-index="1"] .pptxv-slide-stage')).toBeTruthy();
+    expect(container.querySelector('.pptxv-slide-shell[data-slide-index="2"] .pptxv-slide-stage')).toBeTruthy();
+    area.dispatchEvent(new Event('wheel'));
+    internal.syncCurrentSlideToViewport();
+    expect(viewer.getState().currentSlide).toBe(1);
+    viewer.destroy(); container.remove();
+  });
+
   it('mounts the first slide and then every visible short slide without offscreen pre-rendering', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);

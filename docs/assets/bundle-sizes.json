@@ -6,9 +6,9 @@
       "files": [
         "externals/converter-core.wasm"
       ],
-      "raw": 892101,
-      "gzip": 404689,
-      "brotli": 325584
+      "raw": 893007,
+      "gzip": 405104,
+      "brotli": 325977
     },
     {
       "name": "converter-image",
@@ -22,120 +22,129 @@
     {
       "name": "index",
       "files": [
-        "assets/index-C1FR2_Xp.js",
+        "assets/index-BiDVv_jB.js",
         "assets/index-D5zSLHLT.css"
       ],
-      "raw": 177212,
-      "gzip": 50095,
-      "brotli": 41849
+      "raw": 177214,
+      "gzip": 50091,
+      "brotli": 41827
     },
     {
       "name": "vendor",
       "files": [
-        "assets/vendor-CWV0ulr1.js"
+        "assets/vendor-C6Nqiibm.js"
       ],
-      "raw": 1819004,
-      "gzip": 516314,
-      "brotli": 424662
+      "raw": 1351468,
+      "gzip": 378455,
+      "brotli": 312479
     },
     {
       "name": "core",
       "files": [
-        "assets/core-D6eYKq8p.js",
-        "assets/core-HsaNARU6.css"
+        "assets/core-Bae27ngP.js",
+        "assets/core-CEn7YOnF.css"
       ],
-      "raw": 290838,
-      "gzip": 76753,
-      "brotli": 65825
+      "raw": 295569,
+      "gzip": 77924,
+      "brotli": 66966
     },
     {
       "name": "preview",
       "files": [
-        "assets/preview-COSMI7q4.css",
-        "assets/preview-PJWAAOl_.js"
+        "assets/preview-Df5Rcfss.css",
+        "assets/preview-Dj48Nwt-.js"
       ],
-      "raw": 70379,
-      "gzip": 16241,
-      "brotli": 14379
+      "raw": 71562,
+      "gzip": 16657,
+      "brotli": 14722
     },
     {
       "name": "office",
       "files": [
-        "assets/office-BrwHLWlQ.js",
-        "assets/office-QYGK17mJ.css"
+        "assets/office-AsRk-lze.css",
+        "assets/office-BQoGDJO6.js"
       ],
-      "raw": 23424,
-      "gzip": 7474,
-      "brotli": 6649
+      "raw": 33311,
+      "gzip": 10086,
+      "brotli": 9023
+    },
+    {
+      "name": "pdf-runtime",
+      "files": [
+        "assets/pdf-runtime-CGQe2guw.js"
+      ],
+      "raw": 445612,
+      "gzip": 131195,
+      "brotli": 109419
     },
     {
       "name": "iwork",
       "files": [
-        "assets/iwork-CSb1FpLJ.js",
-        "assets/iwork-DigM0bFg.css"
+        "assets/iwork-CEvyIqEJ.js",
+        "assets/iwork-CH87Z9W-.css"
       ],
-      "raw": 24966,
-      "gzip": 8247,
-      "brotli": 7323
+      "raw": 27458,
+      "gzip": 8868,
+      "brotli": 7894
     },
     {
       "name": "design",
       "files": [
-        "assets/design-CETahD-_.js",
-        "assets/design-D5kn6Zx-.css"
+        "assets/design-8HOSZOrd.js",
+        "assets/design-DMErPUwf.css"
       ],
-      "raw": 85509,
-      "gzip": 24245,
-      "brotli": 20638
+      "raw": 92326,
+      "gzip": 25795,
+      "brotli": 22068
     },
     {
       "name": "model3d",
       "files": [
         "assets/model3d-B1myDZRM.css",
-        "assets/model3d-D6cYK6fK.js"
+        "assets/model3d-eI1aTCBW.js"
       ],
-      "raw": 108227,
-      "gzip": 28828,
-      "brotli": 25113
+      "raw": 136623,
+      "gzip": 38815,
+      "brotli": 33684
     },
     {
       "name": "media",
       "files": [
-        "assets/media-BLbrr3K_.css",
-        "assets/media-DJm34-QU.js"
+        "assets/media-B-fNgiss.js",
+        "assets/media-BrueUWFI.css"
       ],
-      "raw": 215432,
-      "gzip": 63736,
-      "brotli": 54302
+      "raw": 222060,
+      "gzip": 65600,
+      "brotli": 55972
     },
     {
       "name": "archive",
       "files": [
         "assets/archive-CeCayQ4R.css",
-        "assets/archive-CpeyGXfH.js"
+        "assets/archive-kraIhtA0.js"
       ],
-      "raw": 20567,
-      "gzip": 6601,
-      "brotli": 5796
+      "raw": 25277,
+      "gzip": 8122,
+      "brotli": 7166
     },
     {
       "name": "text",
       "files": [
-        "assets/text-n3OWMKdL.js",
-        "assets/text-qTZ4EK3r.css"
+        "assets/text-C2xon5Lq.js",
+        "assets/text-DPa2hhg5.css"
       ],
-      "raw": 18413,
-      "gzip": 6391,
-      "brotli": 5563
+      "raw": 23461,
+      "gzip": 8404,
+      "brotli": 7453
     },
     {
       "name": "iwork-worker",
       "files": [
-        "assets/iwork-worker-C5opED7d.js"
+        "assets/iwork-worker-D64s_rsm.js"
       ],
-      "raw": 920567,
-      "gzip": 192669,
-      "brotli": 161225
+      "raw": 915578,
+      "gzip": 191223,
+      "brotli": 159940
     },
     {
       "name": "pdf.worker.min",
@@ -166,18 +175,18 @@
     }
   ],
   "initial": {
-    "raw": 2610713,
-    "gzip": 735726,
-    "brotli": 611751,
+    "raw": 2182934,
+    "gzip": 610885,
+    "brotli": 510928,
     "files": [
-      "assets/index-C1FR2_Xp.js",
-      "assets/vendor-CWV0ulr1.js",
-      "assets/core-D6eYKq8p.js",
-      "assets/model3d-D6cYK6fK.js",
-      "assets/media-DJm34-QU.js",
-      "assets/core-HsaNARU6.css",
+      "assets/index-BiDVv_jB.js",
+      "assets/vendor-C6Nqiibm.js",
+      "assets/core-Bae27ngP.js",
+      "assets/model3d-eI1aTCBW.js",
+      "assets/media-B-fNgiss.js",
+      "assets/core-CEn7YOnF.css",
       "assets/model3d-B1myDZRM.css",
-      "assets/media-BLbrr3K_.css",
+      "assets/media-BrueUWFI.css",
       "assets/index-D5zSLHLT.css"
     ]
   }

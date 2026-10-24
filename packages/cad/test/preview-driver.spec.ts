@@ -2,6 +2,30 @@ import { describe, expect, it, vi } from 'vitest';
 import { createCadPreviewDriver, createCadPreviewRoutes, loadDxfDrawing } from '../src';
 
 describe('CAD preview driver', () => {
+  it.each(['INSERT', 'DIMENSION', 'nested INSERT'])('expands a large %s without exceeding the JavaScript argument limit', kind => {
+    const count = 130_000;
+    const lines = Array.from({ length: count }, (_, index) => `0\nLINE\n8\n0\n10\n${index}\n20\n0\n11\n${index + 1}\n21\n1\n`).join('');
+    const nested = kind === 'nested INSERT';
+    const blocks = `0\nBLOCK\n2\nLARGE\n10\n0\n20\n0\n${lines}0\nENDBLK\n`
+      + (nested ? '0\nBLOCK\n2\nOUTER\n10\n0\n20\n0\n0\nINSERT\n2\nLARGE\n10\n0\n20\n0\n0\nENDBLK\n' : '');
+    const reference = kind === 'DIMENSION' ? '0\nDIMENSION\n2\nLARGE\n'
+      : `0\nINSERT\n2\n${nested ? 'OUTER' : 'LARGE'}\n10\n10\n20\n20\n`;
+    const drawing = loadDxfDrawing(`0\nSECTION\n2\nBLOCKS\n${blocks}0\nENDSEC\n0\nSECTION\n2\nENTITIES\n${reference}0\nENDSEC\n0\nEOF\n`);
+    const x = kind === 'DIMENSION' ? 0 : 10, y = kind === 'DIMENSION' ? 0 : 20;
+    expect(drawing.entities).toHaveLength(count);
+    expect(drawing.entities[0]).toMatchObject({ type: 'line', start: { x, y }, end: { x: x + 1, y: y + 1 } });
+    expect(drawing.entities.at(-1)).toMatchObject({ type: 'line', start: { x: x + count - 1, y }, end: { x: x + count, y: y + 1 } });
+    expect(drawing.bounds).toEqual({ minX: x, minY: y, maxX: x + count, maxY: y + 1 });
+    expect(drawing.warnings).toEqual([]);
+  });
+
+  it('retains the first common style field even when it is empty or invalid', () => {
+    const source = '0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n \n8\nLATER\n62\ninvalid\n62\n1\n420\ninvalid\n420\n16711680\n440\ninvalid\n440\n50\n60\ninvalid\n60\n1\n6\n \n6\nDASHED\n48\ninvalid\n48\n2\n370\ninvalid\n370\n100\n10\n0\n20\n0\n11\n1\n21\n1\n0\nENDSEC\n0\nEOF\n';
+    expect(loadDxfDrawing(source).entities[0]).toMatchObject({ layer: undefined, colorIndex: undefined,
+      trueColor: undefined, opacity: undefined, entityVisible: undefined, lineType: undefined,
+      lineTypeScale: undefined, lineWeight: undefined, visible: true });
+  });
+
   it('computes bounds of large drawings without exceeding JavaScript argument limits', () => {
     const lines = Array.from({ length: 70_000 }, (_, index) => `0\nLINE\n8\n0\n10\n${index}\n20\n0\n11\n${index + 1}\n21\n1\n`).join('');
     const drawing = loadDxfDrawing(`0\nSECTION\n2\nENTITIES\n${lines}0\nENDSEC\n0\nEOF\n`);

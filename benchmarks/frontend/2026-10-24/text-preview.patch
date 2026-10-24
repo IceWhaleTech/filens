@@ -1,0 +1,214 @@
+diff --git a/packages/core/src/preview/native-drivers.ts b/packages/core/src/preview/native-drivers.ts
+index 62da2cb..45b101c 100644
+--- a/packages/core/src/preview/native-drivers.ts
++++ b/packages/core/src/preview/native-drivers.ts
+@@ -578,6 +578,9 @@ export class ImagePreviewSession extends NativePreviewSession<ImagePreviewState>
+ }
+ 
+ export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
++  private loadGeneration = 0;
++  private loadController: AbortController | null = null;
++  private removeAbortListener: (() => void) | null = null;
+   private state: TextPreviewState = {
+     loading: false,
+     error: null,
+@@ -595,6 +598,22 @@ export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
+   };
+ 
+   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
++    const generation = ++this.loadGeneration;
++    this.loadController?.abort();
++    this.removeAbortListener?.();
++    const controller = new AbortController();
++    this.loadController = controller;
++    const abort = () => {
++      controller.abort();
++      if (generation === this.loadGeneration) {
++        this.root.replaceChildren();
++        this.state.loading = false;
++        this.emit('statechange', this.state);
++      }
++    };
++    context.signal?.addEventListener('abort', abort, { once: true });
++    const removeAbortListener = () => context.signal?.removeEventListener('abort', abort);
++    this.removeAbortListener = removeAbortListener;
+     const isCode = context.route?.family === 'code';
+     this.state = {
+       ...this.state,
+@@ -608,13 +627,19 @@ export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
+         codeHighlight: isCode
+       },
+       language: isCode ? inferLanguage(context.route?.sourceFormat) : undefined,
++      lineCount: undefined,
+       wrap: !isCode
+     };
++    this.root.replaceChildren();
+     this.setLoading(this.state);
+ 
+     try {
+-      const text = await readTextSource(source, context);
+-      const lineCount = text ? text.split(/\r\n|\r|\n/).length : 0;
++      if (context.signal?.aborted) abort();
++      checkTextAborted(controller.signal);
++      const text = await readTextSource(source, { ...context, signal: controller.signal });
++      if (generation !== this.loadGeneration) return;
++      checkTextAborted(controller.signal);
++      const lineCount = countTextLines(text);
+       const shell = document.createElement('div');
+       shell.className = 'pptxv-native-text-shell';
+       shell.dataset.family = this.state.family;
+@@ -626,7 +651,7 @@ export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
+       const gutter = document.createElement('div');
+       gutter.className = 'pptxv-native-text-gutter';
+       gutter.setAttribute('aria-hidden', 'true');
+-      gutter.replaceChildren(...renderLineNumbers(lineCount));
++      gutter.textContent = Array.from({ length: lineCount }, (_, index) => String(index + 1)).join('\n');
+ 
+       const pre = document.createElement('pre');
+       pre.className = 'pptxv-native-text';
+@@ -653,10 +678,31 @@ export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
+       this.emit('rendered', this.state);
+       this.emit('statechange', this.state);
+     } catch (error) {
++      if (generation !== this.loadGeneration) return;
++      this.root.replaceChildren();
++      this.state.loading = false;
++      checkTextAborted(controller.signal);
+       this.setError(this.state, error);
++    } finally {
++      removeAbortListener();
++      if (generation === this.loadGeneration) {
++        this.loadController = null;
++        this.removeAbortListener = null;
++      }
+     }
+   }
+ 
++  destroy(): void {
++    this.loadGeneration++;
++    this.loadController?.abort();
++    this.loadController = null;
++    this.removeAbortListener?.();
++    this.removeAbortListener = null;
++    this.state.loading = false;
++    super.destroy();
++    for (const listeners of Object.values(this.listeners)) listeners.clear();
++  }
++
+   getState(): TextPreviewState {
+     return this.state;
+   }
+@@ -953,12 +999,22 @@ function readDataUrl(source: string): string {
+   return decodeURIComponent(payload);
+ }
+ 
+-function renderLineNumbers(lineCount: number): HTMLSpanElement[] {
+-  return Array.from({ length: Math.max(0, lineCount) }, (_, index) => {
+-    const line = document.createElement('span');
+-    line.textContent = String(index + 1);
+-    return line;
+-  });
++function checkTextAborted(signal: AbortSignal): void {
++  if (signal.aborted) throw new DOMException('Text preview loading aborted.', 'AbortError');
++}
++
++function countTextLines(text: string): number {
++  if (!text) return 0;
++  let count = 1;
++  for (let index = 0; index < text.length; index++) {
++    const code = text.charCodeAt(index);
++    if (code === 10) count++;
++    else if (code === 13) {
++      count++;
++      if (text.charCodeAt(index + 1) === 10) index++;
++    }
++  }
++  return count;
+ }
+ 
+ function sourceToHtmlBlobPart(source: PreviewSource): BlobPart {
+diff --git a/packages/core/src/styles/index.css b/packages/core/src/styles/index.css
+index 78765b2..edfcb24 100644
+--- a/packages/core/src/styles/index.css
++++ b/packages/core/src/styles/index.css
+@@ -325,23 +325,17 @@
+   position: sticky;
+   left: 0;
+   z-index: 1;
+-  display: flex;
+-  flex-direction: column;
++  white-space: pre;
+   min-width: 3.25rem;
+   padding-right: 14px;
+   color: #64748b;
+   background: #f8fafc;
+   border-right: 1px solid rgba(100, 116, 139, 0.2);
+-  font: 12px/1.55 Consolas, "SFMono-Regular", "Liberation Mono", Menlo, monospace;
++  font: 13px/1.55 Consolas, "SFMono-Regular", "Liberation Mono", Menlo, monospace;
+   text-align: right;
+   user-select: none;
+ }
+ 
+-.pptxv-native-text-gutter span {
+-  display: block;
+-  height: 1.55em;
+-}
+-
+ .pptxv-native-text {
+   box-sizing: border-box;
+   min-width: 100%;
+diff --git a/packages/core/src/viewer.ts b/packages/core/src/viewer.ts
+index 4d8b29e..8ed3d78 100644
+--- a/packages/core/src/viewer.ts
++++ b/packages/core/src/viewer.ts
+@@ -421,6 +421,10 @@ export class PptxViewer implements ViewerInstance {
+   private bindSlideTracking(): void {
+     this.scrollArea.removeEventListener('scroll', this.handleFallbackScroll);
+     this.scrollArea.addEventListener('scroll', this.handleFallbackScroll, { passive: true });
++    for (const event of ['wheel', 'touchstart', 'pointerdown']) {
++      this.scrollArea.removeEventListener(event, this.handleNavigationInterruption);
++      this.scrollArea.addEventListener(event, this.handleNavigationInterruption, { passive: true });
++    }
+ 
+     if (typeof window !== 'undefined') {
+       window.removeEventListener('scroll', this.handleFallbackScroll);
+@@ -441,7 +445,20 @@ export class PptxViewer implements ViewerInstance {
+     });
+   };
+ 
++  private readonly handleNavigationInterruption = () => {
++    if (this.navigationTargetSlide == null) return;
++    this.navigationSourceSlide = null;
++    this.clearNavigationSettleTimer();
++    this.handleFallbackScroll();
++  };
++
+   private syncCurrentSlideToViewport(): void {
++    // Smooth scrolling crosses other slides; keep rapid Next/Prev actions
++    // relative to the requested destination until navigation settles.
++    if (this.navigationTargetSlide != null) {
++      this.syncMountedSlides();
++      return;
++    }
+     const trackedIndex = this.findTrackedSlideIndex();
+     if (trackedIndex == null) {
+       return;
+@@ -622,7 +639,7 @@ export class PptxViewer implements ViewerInstance {
+       this.navigationSettleTimer = 0;
+       this.navigationSourceSlide = null;
+       this.navigationTargetSlide = null;
+-      this.syncMountedSlides();
++      this.syncCurrentSlideToViewport();
+     }, releaseDelay);
+   }
+ 
+@@ -678,6 +695,9 @@ export class PptxViewer implements ViewerInstance {
+       this.fallbackScrollRaf = 0;
+     }
+     this.scrollArea.removeEventListener('scroll', this.handleFallbackScroll);
++    for (const event of ['wheel', 'touchstart', 'pointerdown']) {
++      this.scrollArea.removeEventListener(event, this.handleNavigationInterruption);
++    }
+     if (typeof window !== 'undefined') {
+       window.removeEventListener('scroll', this.handleFallbackScroll);
+       window.removeEventListener('resize', this.handleFallbackScroll);

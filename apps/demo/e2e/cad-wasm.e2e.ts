@@ -5,8 +5,14 @@ test('loads the optional CAD WASM on the first STEP preview and reuses it', asyn
   const wasmRequests: string[] = [];
   const loaderRequests: string[] = [];
   const errors: string[] = [];
+  page.on('response', response => {
+    // Vite's development ?url import is a JavaScript module, not a WASM download.
+    if (/occt-import-js[^/]*\.wasm(?:\?|$)/.test(response.url()) &&
+        response.headers()['content-type']?.startsWith('application/wasm')) {
+      wasmRequests.push(response.url());
+    }
+  });
   page.on('request', request => {
-    if (/occt-import-js[^/]*\.wasm(?:\?|$)/.test(request.url())) wasmRequests.push(request.url());
     if (/(?:occt-runtime[^/]*|occt-import-js)\.js(?:\?|$)/.test(request.url())) loaderRequests.push(request.url());
   });
   page.on('pageerror', error => errors.push(error.message));

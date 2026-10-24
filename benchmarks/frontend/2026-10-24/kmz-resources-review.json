@@ -1,0 +1,631 @@
+{
+  "date": "2026-10-24",
+  "kind": "kmz-selective-archive-model-selection-and-texture-lifetime",
+  "engineering": true,
+  "scopedSota": false,
+  "scope": "Shared frontend TS library reuses existing core ZIP access and Three Collada parsing; synchronous compatibility API uses filtered fflate. No backend/Go algorithm or production WASM change.",
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "changes": [
+    "Avoid the initial eager KMZLoader attempt in async previews. Index once and extract only selected KML/DAE and declared images through existing shared ZIP access.",
+    "Keep the synchronous public API and make its fflate extraction selective; cache selected entry bytes.",
+    "Select Model/Link hrefs with KML namespace support; prefer root KML, exact relative paths and archive-root paths, decode percent escapes once, resolve parent segments before normalization and reject ambiguous suffix guesses.",
+    "Share one URL per archive image; keep it until all referenced loads finish, then release on success, failure or abort. Borrowed external/data/blob URLs remain caller-owned.",
+    "Await used textures before preview construction; warn on missing or broken images while retaining geometry. Missing local references avoid application-HTML fallback requests.",
+    "Cancel asynchronous ZIP/index/entry/image waits, observe late failures and dispose abandoned geometry/materials/textures. Export the async warning/options API from the package."
+  ],
+  "performance": {
+    "finalRuns": 42,
+    "iterations": 7,
+    "excludedJsZipSmokeRuns": 6,
+    "excludedPreNeutralFallbackRuns": 42,
+    "summary": "kmz-resources-summary.json",
+    "raw": "kmz-resources.json.gz",
+    "method": "Fresh Chromium contexts, alternating build order. Imports and complete generated KMZ bytes ready before timing. Baseline uses the exported synchronous KMZLoader path, exactly the original async preview fast path for these valid root-doc.kml inputs; current uses the selective asynchronous preview API. Both explicitly wait for every image decode through the same TextureLoader observer. loadMs includes ZIP inspection/decompression, KML/DAE parsing, complete geometry/material construction and referenced texture decoding. Inputs contain one used 8x8 texture and 0/8/32 valid unreferenced 1024x1024 PNG noise images. These unused files deliberately exercise selective archive extraction, not representative model complexity or texture compression. Excludes input/network/module transfer, renderer/GPU/paint and peak memory. Complete attributes, materials and decoded pixels checked after timing; original leaked URLs cleaned only after checks. Baselines at or below 10 ms receive no ratio. No peer/SOTA ranking.",
+    "samples": [
+      {
+        "sample": "generated-0-unused-images.kmz",
+        "bytes": 1755,
+        "unusedImages": 0,
+        "unusedDecodedBytes": 0,
+        "currentMs": 4.5,
+        "baselineMs": 5.100000023841858,
+        "below10MsControl": true,
+        "completeGeometryMaterialsDecodedPixelsMatch": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "generated-8-unused-images.kmz",
+        "bytes": 28719233,
+        "unusedImages": 8,
+        "unusedDecodedBytes": 28707624,
+        "currentMs": 4.5,
+        "baselineMs": 8.799999952316284,
+        "below10MsControl": true,
+        "completeGeometryMaterialsDecodedPixelsMatch": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "generated-32-unused-images.kmz",
+        "bytes": 114871405,
+        "unusedImages": 32,
+        "unusedDecodedBytes": 114830496,
+        "currentMs": 5,
+        "baselineMs": 25.100000023841858,
+        "below10MsControl": false,
+        "completeGeometryMaterialsDecodedPixelsMatch": true,
+        "scopedSota": false,
+        "ratio": 5.020000004768372,
+        "ratio95PercentBootstrapInterval": [
+          3.8076923508968585,
+          5.6170213570040035
+        ],
+        "stableEngineeringReduction": true
+      }
+    ]
+  },
+  "validation": {
+    "unitByPackage": {
+      "model3d": 272,
+      "vue": 44
+    },
+    "unitPassed": 316,
+    "newResourceTests": 27,
+    "oldSourceFailed": 19,
+    "oldSourcePassedControls": 8,
+    "currentUnitReportsSuccessful": true,
+    "developmentBrowser": {
+      "passed": 27,
+      "command": "npx playwright test apps/demo/e2e/kmz-resources.e2e.ts apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/kmz-development-browser-final"
+    },
+    "productionBrowser": {
+      "passed": 24,
+      "command": "FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/kmz-resources.e2e.ts apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --grep 'KMZ|LDraw|UTF-8|OBJ|known voxels|non-cooperative volume|real inline|textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/kmz-production-browser"
+    },
+    "browserContent": {
+      "development": [
+        {
+          "kind": "original-flat",
+          "meshes": 1,
+          "positionsMatch": true,
+          "normalsMatch": true,
+          "uvMatch": true,
+          "name": "底色0",
+          "pixelHash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "decodedHash": "08f0b524d027a7d007a4f98a502decea2dcece385b31e890d41bd6f8e8d98d65",
+          "dimensions": [
+            8,
+            8
+          ],
+          "visible": 11236,
+          "glError": 0,
+          "warnings": [],
+          "created": 1,
+          "activeBeforeCleanup": 1
+        },
+        {
+          "kind": "current-flat",
+          "meshes": 1,
+          "positionsMatch": true,
+          "normalsMatch": true,
+          "uvMatch": true,
+          "name": "底色0",
+          "pixelHash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "decodedHash": "08f0b524d027a7d007a4f98a502decea2dcece385b31e890d41bd6f8e8d98d65",
+          "dimensions": [
+            8,
+            8
+          ],
+          "visible": 11236,
+          "glError": 0,
+          "warnings": [],
+          "created": 1,
+          "activeBeforeCleanup": 0
+        },
+        {
+          "kind": "current-nested",
+          "meshes": 1,
+          "positionsMatch": true,
+          "normalsMatch": true,
+          "uvMatch": true,
+          "name": "底色0",
+          "pixelHash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "decodedHash": "08f0b524d027a7d007a4f98a502decea2dcece385b31e890d41bd6f8e8d98d65",
+          "dimensions": [
+            8,
+            8
+          ],
+          "visible": 11236,
+          "glError": 0,
+          "warnings": [],
+          "created": 1,
+          "activeBeforeCleanup": 0
+        },
+        {
+          "kind": "sync-nested",
+          "meshes": 1,
+          "positionsMatch": true,
+          "normalsMatch": true,
+          "uvMatch": true,
+          "name": "底色0",
+          "pixelHash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "decodedHash": "08f0b524d027a7d007a4f98a502decea2dcece385b31e890d41bd6f8e8d98d65",
+          "dimensions": [
+            8,
+            8
+          ],
+          "visible": 11236,
+          "glError": 0,
+          "warnings": [],
+          "created": 1,
+          "activeBeforeCleanup": 0
+        }
+      ],
+      "production": [
+        {
+          "kind": "original-flat",
+          "meshes": 1,
+          "positionsMatch": true,
+          "normalsMatch": true,
+          "uvMatch": true,
+          "name": "底色0",
+          "pixelHash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "decodedHash": "08f0b524d027a7d007a4f98a502decea2dcece385b31e890d41bd6f8e8d98d65",
+          "dimensions": [
+            8,
+            8
+          ],
+          "visible": 11236,
+          "glError": 0,
+          "warnings": [],
+          "created": 1,
+          "activeBeforeCleanup": 1
+        },
+        {
+          "kind": "current-flat",
+          "meshes": 1,
+          "positionsMatch": true,
+          "normalsMatch": true,
+          "uvMatch": true,
+          "name": "底色0",
+          "pixelHash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "decodedHash": "08f0b524d027a7d007a4f98a502decea2dcece385b31e890d41bd6f8e8d98d65",
+          "dimensions": [
+            8,
+            8
+          ],
+          "visible": 11236,
+          "glError": 0,
+          "warnings": [],
+          "created": 1,
+          "activeBeforeCleanup": 0
+        },
+        {
+          "kind": "current-nested",
+          "meshes": 1,
+          "positionsMatch": true,
+          "normalsMatch": true,
+          "uvMatch": true,
+          "name": "底色0",
+          "pixelHash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "decodedHash": "08f0b524d027a7d007a4f98a502decea2dcece385b31e890d41bd6f8e8d98d65",
+          "dimensions": [
+            8,
+            8
+          ],
+          "visible": 11236,
+          "glError": 0,
+          "warnings": [],
+          "created": 1,
+          "activeBeforeCleanup": 0
+        },
+        {
+          "kind": "sync-nested",
+          "meshes": 1,
+          "positionsMatch": true,
+          "normalsMatch": true,
+          "uvMatch": true,
+          "name": "底色0",
+          "pixelHash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "decodedHash": "08f0b524d027a7d007a4f98a502decea2dcece385b31e890d41bd6f8e8d98d65",
+          "dimensions": [
+            8,
+            8
+          ],
+          "visible": 11236,
+          "glError": 0,
+          "warnings": [],
+          "created": 1,
+          "activeBeforeCleanup": 0
+        }
+      ]
+    },
+    "developmentProductionContentMatch": true,
+    "completeGeometryMaterialsDecodedPixelsMatch": true,
+    "coverage": [
+      "Nested UTF-8 and percent-encoded KML/model/texture paths",
+      "Exact path preference, ambiguous suffixes, KML namespaces and unrelated hrefs",
+      "Selective reads, malformed unused compressed image, repeated material textures and owned/borrowed URLs",
+      "Non-cooperative archive/entry cancellation, late rejection, image replacement and reopen",
+      "Missing/broken textures and parse failures, actual multi-file-format demo regression checks and nested KMZ upload with visible texture colors"
+    ],
+    "realStepGeometry": {
+      "fixtures": 3,
+      "imports": 9,
+      "worldSpaceTriangleAndNormalSetsMatch": true
+    },
+    "builds": [
+      "npm run build:model3d",
+      "npm run build:demo"
+    ],
+    "categoryChecks": "npm run test:categories",
+    "bundleReport": "npm run report:bundle-sizes",
+    "sourceMapsMatchOriginalAndFinalParserSource": true,
+    "publicKmzExportsVerifiedInBuildAndDeclarations": true,
+    "incrementalReversePatchRestoresOriginalBytes": true,
+    "gitDiffCheckPassed": true,
+    "verifiedLocalMarkdownLinks": 533,
+    "temporaryPreviewPortsClosed": [
+      4173,
+      4174
+    ],
+    "knownBuildWarning": "Existing large demo vendor chunk warning"
+  },
+  "limits": [
+    "Generated packages with small selected geometry and large unused image collections; no representative KMZ corpus, peer/SOTA or peak-memory ranking.",
+    "All images are valid deterministic PNG noise, repeated as separate archive entries. Timing includes archive reads, parsing and explicit referenced-image decode, excluding input/module transfer and GPU/paint.",
+    "The original exported sync loader is the original async preview fast path for these root-doc.kml packages. Both versions explicitly wait for texture decode; original leaked URLs are reclaimed after checks.",
+    "Baselines at or below 10 ms have no speed ratio. The excluded initial JSZip attempt and slower/control results remain in diagnostics.",
+    "Common ZIPs use the existing shared index; unusual encodings and ZIP64 may use its JSZip fallback. The synchronous API cannot interrupt decompression or Collada parsing.",
+    "This selects one KML Model link. Geographic placement, multiple placemarks, KML LOD traversal and ResourceMap aliases are not added."
+  ],
+  "baseline": [
+    {
+      "path": "tmp/continued-review/kmz-resources-baseline/packages/model3d/src/preview-driver.ts",
+      "bytes": 253012,
+      "sha256": "761007e461a0bd99c7cb1381222a25efda35dfb2d04e1628cc8c73d1466d7a40"
+    },
+    {
+      "path": "tmp/continued-review/kmz-resources-baseline/packages/model3d/src/index.ts",
+      "bytes": 1091,
+      "sha256": "39879a88306ef743925117edf31e3978edef1667a1dad200c45548e4b58cc67f"
+    },
+    {
+      "path": "tmp/continued-review/kmz-resources-baseline/dist/index.js",
+      "bytes": 983315,
+      "sha256": "f64764dac2f91bb442223d9636d7525137751b5f236372a8c03ea4f2ecabf847"
+    },
+    {
+      "path": "tmp/continued-review/kmz-resources-baseline/dist/index.js.map",
+      "bytes": 2508063,
+      "sha256": "793db145cf811aad1f2f511e56b4443e46a530fa8078c9e02abacb652a1b0f49"
+    }
+  ],
+  "bindings": [
+    {
+      "path": "packages/model3d/src/preview-driver.ts",
+      "bytes": 256755,
+      "sha256": "580c239e7f12c0a59ddeb0106add77a52818e480eae1f9c4606ee5df5ae1c31c"
+    },
+    {
+      "path": "packages/model3d/src/index.ts",
+      "bytes": 1149,
+      "sha256": "3b4bee2f1af573cc3de28c26dbb31e679231fefef5b28000fed4d48d4c9a6547"
+    },
+    {
+      "path": "packages/model3d/test/kmz-resources.spec.ts",
+      "bytes": 15260,
+      "sha256": "68119f43558e815b8c505d744b4410ec00c6c7090d491d1d0b4178595c08780c"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/kmz.mjs",
+      "bytes": 4916,
+      "sha256": "7d3fa8925674dc814249b3f2f27123d9a8683abf99ae8e83f25b219dce6006ef"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/obj.mjs",
+      "bytes": 1921,
+      "sha256": "d031b9e0569af3872e83f4f45918f3e75d16cc861322f5de856bcc9d3747a8e4"
+    },
+    {
+      "path": "packages/model3d/test/preview-driver.spec.ts",
+      "bytes": 153615,
+      "sha256": "9bd12db0bfc0791045056b856da8749988ba80e23ab81934d6f723ed80969eeb"
+    },
+    {
+      "path": "apps/demo/e2e/kmz-resources.e2e.ts",
+      "bytes": 13193,
+      "sha256": "057fa1cbabcd4a032333d6b82d81ac0df9bfb1671b3e63292ebbfc56aa4c20a2"
+    },
+    {
+      "path": "scripts/benchmark-kmz-resources.mjs",
+      "bytes": 8764,
+      "sha256": "f1b45dd9995420d53f94af6c4a7c6fc733fc760fe2f3eb6ba2762dc7d0643f2d"
+    },
+    {
+      "path": "scripts/summarize-kmz-resources-benchmark.mjs",
+      "bytes": 3642,
+      "sha256": "b89cd5b3655923bce65bb51e5e82124c81a62f3803dee53bd930d8d294dcd74c"
+    },
+    {
+      "path": "packages/core/src/parser/zip.ts",
+      "bytes": 6613,
+      "sha256": "2e24ffb5036b1644c4254deb87e725cb13d45bc849326ed47cb140feb260ce49"
+    },
+    {
+      "path": "packages/core/src/zip.ts",
+      "bytes": 165,
+      "sha256": "0aaa8c4c089cd825d3f4fbf30d82ef556bf2cbfdb9201c2c1652b8870bbf5f63"
+    },
+    {
+      "path": "packages/core/src/index.ts",
+      "bytes": 836,
+      "sha256": "b7f461d865c07fb808f7ab86544e0512e1ba9bc22f7ac1ab90e7e076554fddb4"
+    },
+    {
+      "path": "packages/core/package.json",
+      "bytes": 1084,
+      "sha256": "0eb19b899b7762b6cc797eee91e1d14ca99f7db73aff61dc5238a6bdf4e20470"
+    },
+    {
+      "path": "packages/model3d/vendor/three/LDrawLoader.js",
+      "bytes": 61248,
+      "sha256": "60b5d77a657b885cf4489aaea387b798870f7d83903335094b3aacb81c6e6074"
+    },
+    {
+      "path": "packages/model3d/vendor/three/LDrawLoader.d.ts",
+      "bytes": 73,
+      "sha256": "ea25a7d7aed6382107ce3d1392ebbdbaee05abc29577a1ba6be09ce8a2eab9ff"
+    },
+    {
+      "path": "packages/model3d/vendor/three/LICENSE",
+      "bytes": 1081,
+      "sha256": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "bytes": 585770,
+      "sha256": "42c42ba5fe8762aa1cd7bc9b2204d0c94798d0ef98eec9735d9411b29ac0888d"
+    },
+    {
+      "path": "packages/core/dist/index.js.map",
+      "bytes": 1608687,
+      "sha256": "c589e51a4f4fa1f8fd6c9c94157cf0c2f0c9322ec479f81c4a0639c13699a7a6"
+    },
+    {
+      "path": "packages/model3d/test/ldraw-resources.spec.ts",
+      "bytes": 15116,
+      "sha256": "985753e02fd50124898be5ee05222adbd08e465bbbca6ee1a5355aef0db15471"
+    },
+    {
+      "path": "packages/model3d/test/ldraw-smoothing.spec.ts",
+      "bytes": 2205,
+      "sha256": "71db0e9dce61c75090b1383fedbf53508068174e95078bc3adecf4843802ca98"
+    },
+    {
+      "path": "packages/model3d/test/obj-resources.spec.ts",
+      "bytes": 15721,
+      "sha256": "de9b2ef83c38dc7e3b145120ed2ddc62e1ea2d5cf06c52e593e585151b366a84"
+    },
+    {
+      "path": "packages/model3d/test/resource-loading.spec.ts",
+      "bytes": 12035,
+      "sha256": "8b567185a81f84c6ae24b58f28fe8d56f9519c6f9441f2a9204cbd1ddfa08867"
+    },
+    {
+      "path": "packages/model3d/test/volume-loading.spec.ts",
+      "bytes": 10279,
+      "sha256": "e6c604fdb6eb200f463282468645320e84890aa9a08f728196f0994865393f17"
+    },
+    {
+      "path": "packages/model3d/test/lifecycle.spec.ts",
+      "bytes": 8620,
+      "sha256": "a27de263b7940f32d1750835e7611091238c55696ce583dca4340753defad02c"
+    },
+    {
+      "path": "apps/demo/e2e/ldraw-resources.e2e.ts",
+      "bytes": 14351,
+      "sha256": "0139dd5a6bdba92565d2692893b7c75f0646c7c1365564691c84bc43edaf4a95"
+    },
+    {
+      "path": "apps/demo/e2e/obj-resources.e2e.ts",
+      "bytes": 12249,
+      "sha256": "d8a449f07b3bea09f5a021bdb17b150278b3f16263aaf9724d2e682402323895"
+    },
+    {
+      "path": "apps/demo/e2e/volume-preview.e2e.ts",
+      "bytes": 8085,
+      "sha256": "dab15bf85a3e68709bcded2721ae9e2f854ac8f825f6edbe86266172f65b0cf1"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-resources.e2e.ts",
+      "bytes": 12407,
+      "sha256": "c0b8f406cf247e83689d08dc3b04219ba40fec41dc94d8ae38bc46294aeb1def"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-lifecycle.e2e.ts",
+      "bytes": 4831,
+      "sha256": "41ffae4946181a00a312a032d1168bc08d909333aa0258f757ed01a591452281"
+    },
+    {
+      "path": "apps/demo/e2e/cad-wasm.e2e.ts",
+      "bytes": 1540,
+      "sha256": "6f921a2f19906cdf232ea60395f00288c0d8630c5c25cf3d72c8369f90e32b7f"
+    },
+    {
+      "path": "packages/model3d/dist/index.js",
+      "bytes": 983654,
+      "sha256": "e7e784bc81624ba621e07ba734cb016842b8a5c87a39d0da336ce321a823e1d9"
+    },
+    {
+      "path": "packages/model3d/dist/index.js.map",
+      "bytes": 2509663,
+      "sha256": "6d3aa9cffbd9809b2dff5b108197d4929a7dc540aada4264690be5cf2cc01af1"
+    },
+    {
+      "path": "packages/model3d/dist/index.d.ts",
+      "bytes": 1058,
+      "sha256": "f65557a44fc409bb0ae6f4eb404ad7bb42456f798a2d5f4c65912422cc687242"
+    },
+    {
+      "path": "packages/model3d/dist/preview-driver.d.ts",
+      "bytes": 12184,
+      "sha256": "fdef43710430d28e65e2a254b3fa5a67a105777daeea36f4f6f418efbaf75b22"
+    },
+    {
+      "path": "packages/model3d/vendor/occt-import-js/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "packages/model3d/dist/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "node_modules/three/build/three.module.js",
+      "bytes": 595384,
+      "sha256": "d513a6de314b2c32d0a11a209bc1ec06b528ae95c0f841a1c1761aa9248c814a"
+    },
+    {
+      "path": "node_modules/three/build/three.core.js",
+      "bytes": 1385513,
+      "sha256": "c943c148229a99917d815f772404c48f5447e82c0c450f92403955bc27e8d100"
+    },
+    {
+      "path": "node_modules/three/examples/jsm/loaders/KMZLoader.js",
+      "bytes": 3279,
+      "sha256": "a050e6b8a09f01315cce31f3dcd09b32c662b4814ccb97fda8e4c3b108789e73"
+    },
+    {
+      "path": "node_modules/three/examples/jsm/loaders/ColladaLoader.js",
+      "bytes": 85540,
+      "sha256": "2c1b060d58068ba90de5b2759c767e949ce465ab63f5c63fd92f54b6d5687ee8"
+    },
+    {
+      "path": "node_modules/three/examples/jsm/libs/fflate.module.js",
+      "bytes": 89384,
+      "sha256": "209a4412eb48ce609edb4391992a792ffcc3983d30ee7e2b0b89a8c470f3cd8a"
+    },
+    {
+      "path": "scripts/test-occt-wasm.mjs",
+      "bytes": 9110,
+      "sha256": "af48b86af8c03677c806fbdb11c325c68f2bb8f61074c5cec2544e616775f584"
+    },
+    {
+      "path": "playwright.config.ts",
+      "bytes": 621,
+      "sha256": "5b2993d7ef92a9c75e16315d52a9c0fdc4207cd5576e7abc45e2d43a21c331d4"
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "bytes": 40542,
+      "sha256": "640a51fb0626c7dca717b6f2f754a822b4076c1e720e8b5dd3f21774f6e00af9"
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "bytes": 38963,
+      "sha256": "3dcb2ba3e4102b15f248bc328a5ddee7f23187acbc52f85bc86681c9ef4f357d"
+    },
+    {
+      "path": "docs/performance-comparison.md",
+      "bytes": 37037,
+      "sha256": "a5796bb115a28ede8bc8ccfa360fae2f1d96686bc6a767e7b6eb462d66b9a011"
+    },
+    {
+      "path": "docs/performance-comparison.zh-CN.md",
+      "bytes": 33744,
+      "sha256": "3abe7e84068adacf742097a79e04efabb8566edc5ee16da64f7c1c5506b5e9b2"
+    },
+    {
+      "path": "docs/bundle-sizes.md",
+      "bytes": 2653,
+      "sha256": "3845ccf12aefbfb05f01652dcd173e0e3700ecd93bd2fdb17e91705dbc2c6af2"
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "bytes": 3853,
+      "sha256": "20486ebcc11ef847958aea8dd3e414fae3b3b3a60c199ef03b8b86dfc954d481"
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "bytes": 104976,
+      "sha256": "4ed621667c724ac2d345ef1a19c019e08fcefec0f1e5de533b61de319b63edae"
+    },
+    {
+      "path": "apps/demo/dist/build-info.json",
+      "bytes": 876,
+      "sha256": "708c657f1f42c98ccc046258bb2c6bd4775dae2c771e41e20d170025f7bfe378"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-BOx3nHbL.js",
+      "bytes": 145197,
+      "sha256": "f513200a7bb32147f12815065f41570f9a810206c238943d5c3cb9c8c3013e7d"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-D5zSLHLT.css",
+      "bytes": 32017,
+      "sha256": "28368a57749f016bc98571bedb5e90a142ad116f6139ec0056474559ac85683e"
+    },
+    {
+      "path": "apps/demo/dist/assets/vendor-DKbrrfrq.js",
+      "bytes": 1350925,
+      "sha256": "70e091c0bb97a0ae3dd44c0b062430ffb67c7fe147794dcb9ea12a555038dba8"
+    },
+    {
+      "path": "apps/demo/dist/assets/core-CEn7YOnF.css",
+      "bytes": 5500,
+      "sha256": "7d158685d2016c05d1bf8c3c4efefd1a086f3977da7e17abae6eacc03fc99f74"
+    },
+    {
+      "path": "apps/demo/dist/assets/core-DVRB0NU4.js",
+      "bytes": 290069,
+      "sha256": "2f3b623265c6b2a3988c325e595ed1d25bedfa3d60f289acd5fbc33d8cb6eb2b"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-B1myDZRM.css",
+      "bytes": 496,
+      "sha256": "6cf6d520f26937cc97308ceef86510cb5035e588673832483b15923fac58588d"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-C9ynD2eQ.js",
+      "bytes": 136573,
+      "sha256": "d5d52a76a80a621202b4200d91a6aae88fafe768b2785bd7c44965cbdb9aff9c"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/kmz-resources.patch",
+      "bytes": 15791,
+      "sha256": "782e6a57e560e4bfd7459df9b62c44d1a64c363c03cd0da0a872df26f0a5a90a"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/kmz-resources.json.gz",
+      "bytes": 2618,
+      "sha256": "dabbdc6dba4d6af784765782ad1172f76f7368eb25aacd89a1b79413d69890f1"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/kmz-resources-summary.json",
+      "bytes": 1894,
+      "sha256": "33c8802f886e1b10d6d2c83d83e94b66a0ea6b5e39a2c4fad9b5233632620c17"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/kmz-resources-diagnostic.json.gz",
+      "bytes": 4128601,
+      "sha256": "225735f523e3d24e3a1bfc5b0649879605f6f42a9d042235101246dc598f63b4"
+    }
+  ],
+  "reproduction": [
+    "Restore diagnostic baselineFiles in an isolated checkout preserving prior changes, or reverse only kmz-resources.patch there. Never reverse it in the active workspace.",
+    "For runtime A/B restore baselineRuntimeFiles at their exact paths; shared core runtime and sources are retained separately.",
+    "npm run build:model3d",
+    "Run alone: node scripts/benchmark-kmz-resources.mjs --iterations 7 --output tmp/continued-review/kmz-resources-reproduced",
+    "node scripts/summarize-kmz-resources-benchmark.mjs --input tmp/continued-review/kmz-resources-reproduced/results.json",
+    "From packages/model3d and packages/vue respectively: ../../node_modules/.bin/vitest run. Current resource tests reproduce 19 failures and eight controls against isolated original production source.",
+    "node scripts/test-occt-wasm.mjs",
+    "npm run build:demo",
+    "npx playwright test apps/demo/e2e/kmz-resources.e2e.ts apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/kmz-development-browser-final",
+    "Serve with npm run preview --workspace @filens/demo -- --host 127.0.0.1 --port 4174, then run: FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/kmz-resources.e2e.ts apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --grep 'KMZ|LDraw|UTF-8|OBJ|known voxels|non-cooperative volume|real inline|textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/kmz-production-browser"
+  ]
+}

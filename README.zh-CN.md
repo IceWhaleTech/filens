@@ -19,7 +19,7 @@
 
 - **纯前端预览。** 文件在浏览器中解析与渲染，本地预览无需上传，也无需部署转换服务。
 - **WASM 转换，灵活部署。** 转换模块可在浏览器中直接运行，也可通过 [CLI / HTTP 工具](examples/go-wazero-converter)独立使用；文件解析与转换由 WASM 完成，服务端负责请求和文件管理。
-- **按格式加载，减少等待。** 按格式分包、按需加载，配合 Worker 解析与页面虚拟化，减少下载与渲染负担。文档转换 WASM 为 **<!-- bundle-size:converter-core -->318.0<!-- /bundle-size --> KiB Brotli**，预览界面、共享依赖与其他模块另计，详见[体积实测报告](docs/bundle-sizes.md)。
+- **按格式加载，减少等待。** 按格式分包、按需加载，配合 Worker 解析与页面虚拟化，减少下载与渲染负担。文档转换 WASM 为 **<!-- bundle-size:converter-core -->318.3<!-- /bundle-size --> KiB Brotli**，预览界面、共享依赖与其他模块另计，详见[体积实测报告](docs/bundle-sizes.md)。
 
 原生预览 PPTX 与 iWork，也能查看文档、表格、CAD、3D、RAW、全景、压缩包和电子书。不同格式的支持范围与保真程度有所区别，详见[格式支持矩阵](docs/support-matrix.zh-CN.md)。
 
@@ -31,11 +31,11 @@
 
 | 前端项目 | PPTX 原生预览 | iWork | 全景照片 / 视频 | RAW 端侧预览 | CAD / 3D | 性能路径与侧重点 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **filens** | **✅** | **✅ Keynote / Pages / Numbers** | **✅ 照片 / 视频**<br><sub>◐ Insta360 / DJI 畸变与标定解析、原片多轨同步、标定 DNG 拼接</sub> | **◐ 内嵌 JPEG / 轻量显影** | **✅ DXF / STEP / 3D** | **按格式加载；RAW 快速预览；全景按需重绘** |
+| **filens** | **✅** | **✅ Keynote / Pages / Numbers** | **✅ 照片 / 视频**<br><sub>◐ X5 INSP 原片、Insta360 / DJI 畸变与标定解析、原片多轨同步、标定 DNG 拼接</sub> | **◐ 内嵌 JPEG / 轻量显影** | **✅ DXF / STEP / 3D** | **按格式加载；RAW 快速预览；全景按需重绘** |
 | [vue-office](https://github.com/501351981/vue-office) | ✅ [PPTX 核心未开源](https://github.com/501351981/pptx-preview#关于授权) | — | — | — | — | Office 文档预览 |
 | [PPTist](https://github.com/pipipi-pikachu/PPTist) | ✅ 导入为演示模型 | — | — | — | — | PPT 编辑与演示 |
 | [SheetJS CE](https://docs.sheetjs.com/docs/miscellany/formats/) | — | ◐ Numbers 表格数据提取 | — | — | — | 工作簿解析；需接入显示界面 |
-| [Photo Sphere Viewer](https://github.com/mistic100/Photo-Sphere-Viewer) | — | — | ✅ 照片 / 视频<br><sub>◐ 预合并的双鱼眼源</sub> | — | — | WebGL 全景、瓦片、热点与漫游 |
+| [Photo Sphere Viewer](https://github.com/mistic100/Photo-Sphere-Viewer) | — | — | ✅ 照片 / 视频<br><sub>◐ 通用双鱼眼；不解析 X5 标定</sub> | — | — | WebGL 全景、瓦片、热点与漫游 |
 | [LibRaw-Wasm](https://github.com/ybouane/LibRaw-Wasm) | — | — | — | ✅ WASM 解码与显影 | — | 全尺寸 / 半尺寸显影；Worker 图像处理 API |
 | [Online 3D Viewer](https://github.com/kovacsv/Online3DViewer) | — | — | — | — | ✅ STEP / IGES / IFC / 3D | 专业模型浏览、检查与导出 |
 
@@ -64,9 +64,9 @@
 <!-- bundle-sizes:zh:start -->
 | 分包 / 核心 | 原始 | gzip | Brotli |
 | --- | ---: | ---: | ---: |
-| 转换核心 WASM | 871.2 KiB | 395.2 KiB | **318.0 KiB** |
+| 转换核心 WASM | 872.1 KiB | 395.6 KiB | **318.3 KiB** |
 | 图像 / RAW 核心 WASM | 1072.2 KiB | 293.0 KiB | **210.7 KiB** |
-| 媒体 / 全景预览 | 210.4 KiB | 62.2 KiB | **53.0 KiB** |
+| 媒体 / 全景预览 | 216.9 KiB | 64.1 KiB | **54.7 KiB** |
 | STEP 可选 WASM | 2625.8 KiB | 1020.2 KiB | **797.0 KiB** |
 
 文档、图像 / RAW 与 STEP 的 WASM 模块独立按需加载；媒体预览模块与图像转换核心分别计量。JS 分包已包含对应 CSS，共享依赖和 Worker 单列。
@@ -76,21 +76,22 @@
 
 | 分包 / 核心 | 原始 | gzip | Brotli |
 | --- | ---: | ---: | ---: |
-| 演示站入口 | 173.1 KiB | 48.9 KiB | **40.9 KiB** |
-| 共享第三方依赖 | 1776.4 KiB | 504.2 KiB | **414.7 KiB** |
-| PPTX / 核心运行时 | 284.0 KiB | 75.0 KiB | **64.3 KiB** |
-| Vue 预览容器 | 68.7 KiB | 15.9 KiB | **14.0 KiB** |
-| DOCX / XLSX / PDF | 22.9 KiB | 7.3 KiB | **6.5 KiB** |
-| iWork 预览 | 24.4 KiB | 8.1 KiB | **7.2 KiB** |
-| CAD / 思维导图 / 流程图 | 83.5 KiB | 23.7 KiB | **20.2 KiB** |
-| 3D 预览 | 105.7 KiB | 28.2 KiB | **24.5 KiB** |
-| 压缩包预览 | 20.1 KiB | 6.4 KiB | **5.7 KiB** |
-| 文本 / 电子书 | 18.0 KiB | 6.2 KiB | **5.4 KiB** |
-| iWork Worker | 899.0 KiB | 188.2 KiB | **157.4 KiB** |
+| 演示站入口 | 173.1 KiB | 48.9 KiB | **40.8 KiB** |
+| 共享第三方依赖 | 1319.8 KiB | 369.6 KiB | **305.2 KiB** |
+| PPTX / 核心运行时 | 288.6 KiB | 76.1 KiB | **65.4 KiB** |
+| Vue 预览容器 | 69.9 KiB | 16.3 KiB | **14.4 KiB** |
+| DOCX / XLSX / PDF | 32.5 KiB | 9.8 KiB | **8.8 KiB** |
+| PDF 按需引擎 | 435.2 KiB | 128.1 KiB | **106.9 KiB** |
+| iWork 预览 | 26.8 KiB | 8.7 KiB | **7.7 KiB** |
+| CAD / 思维导图 / 流程图 | 90.2 KiB | 25.2 KiB | **21.6 KiB** |
+| 3D 预览 | 133.4 KiB | 37.9 KiB | **32.9 KiB** |
+| 压缩包预览 | 24.7 KiB | 7.9 KiB | **7.0 KiB** |
+| 文本 / 电子书 | 22.9 KiB | 8.2 KiB | **7.3 KiB** |
+| iWork Worker | 894.1 KiB | 186.7 KiB | **156.2 KiB** |
 | PDF Worker | 1053.3 KiB | 291.1 KiB | **233.1 KiB** |
 | STEP 加载器 | 23.0 KiB | 9.5 KiB | **8.7 KiB** |
 
-本次构建的入口、预加载 JS 与 CSS 合计 **597.4 KiB Brotli**（原始 2549.5 KiB / gzip 718.5 KiB），另计图片、视频和示例文件。模块会共享依赖；上述体积不代表每种格式的独立总下载量。
+本次构建的入口、预加载 JS 与 CSS 合计 **499.0 KiB Brotli**（原始 2131.8 KiB / gzip 596.6 KiB），另计图片、视频和示例文件。模块会共享依赖；上述体积不代表每种格式的独立总下载量。
 
 </details>
 
@@ -112,13 +113,14 @@
 
 ## 性能实测
 
-**与专业前端方案同场实测，多条路径稳定领先。** 每组重复 7 次；无内嵌 JPEG 的 5 份 RAW 样例，显影并绘制预览比所测 LibRaw 方案快 **1.11–2.14×**。
+**与专业前端方案同场实测，多条路径稳定领先。** 每组重复至少 7 次；X5 原片重复 21 次。无内嵌 JPEG 的 5 份 RAW 样例，显影并绘制预览比所测 LibRaw 方案快 **1.11–2.14×**。
 
 | 实测任务 | filens | 当前对照 | 对手耗时 / filens | 判定 |
 | --- | ---: | --- | ---: | --- |
 | 11.1 MB、13 页 PPTX 解析 | **28.5 ms** | pptx-preview 1.0.7：56.6 ms | **1.99×** | **SOTA\*** |
 | 11.1 MB、13 页 PPTX 首屏 | **48.8 ms** | pptx-preview 1.0.7：71.8 ms | **1.47×** | **SOTA\*** |
 | 3840×1920 全景 JPEG 首屏 | **154.9 ms** | Photo Sphere Viewer 5.15.1：205.2 ms | **1.32×** | **SOTA\*** |
+| 11904×5952 X5 INSP 原片全景首屏 | **369.4 ms** | Photo Sphere Viewer 5.15.1 双鱼眼：414.5 ms | **1.12×** | **SOTA\*** |
 | 无内嵌 JPEG 的 NEF → 预览画布 | **152.7 ms** | LibRaw-Wasm 1.6.0 半尺寸：326.7 ms | **2.14×** | **SOTA\*** |
 | 无内嵌 JPEG 的 DNG → 预览画布 | **167.7 ms** | LibRaw-Wasm 1.6.0 快速半尺寸：314.4 ms | **1.87×** | **SOTA\*** |
 | STEP 几何导入：cube | **46.5 ms** | occt-import-js 0.0.23: 67.6 ms | 1.45× | **SOTA\*** |
@@ -126,7 +128,7 @@
 | XLS → XLSX 预览转换（6 工作表） | **12.3 ms** | x2t WASM v9.3.2+3: 49.1 ms | 4.00× | **SOTA\*** |
 | 20,000×8 数值 CSV → XLSX | **137.6 ms** | x2t WASM v9.3.2+3: 198.8 ms | 1.44× | **SOTA\*** |
 
-<sub>\* 仅指本机、已测样例及表列对手，配对 bootstrap 95% 区间支持的领先；不含下载和库冷加载。Apple M4 Pro / Chromium 147；**全景使用 SwiftShader 软件渲染**。RAW 比较统一画布上的显影与绘制，中间输出尺寸不同；STEP 面向几何预览；XLSX 仅比较数据读取；XLS 以相同预览器中的主要显示内容为准。[完整结果、边界与复现](docs/performance-comparison.zh-CN.md)。</sub>
+<sub>\* 仅指本机、已测样例及表列对手，配对 bootstrap 95% 区间支持的领先；不含下载和库冷加载。Apple M4 Pro / Chromium 147；**全景使用 SwiftShader 软件渲染**。X5 原片中，PSV 通用双鱼眼投影有明显画面重复与硬接缝，filens 的局部重影更轻；速度标注限于这份原片的可读预览。RAW 比较统一画布上的显影与绘制，中间输出尺寸不同；STEP 面向几何预览；XLSX 仅比较数据读取；XLS 以相同预览器中的主要显示内容为准。[完整结果、边界与复现](docs/performance-comparison.zh-CN.md)。</sub>
 
 <details>
 <summary>选型与实测口径</summary>

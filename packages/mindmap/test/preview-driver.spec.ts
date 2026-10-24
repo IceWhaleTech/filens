@@ -1,8 +1,140 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import JSZip from 'jszip';
 import { createMindmapPreviewDriver, createMindmapPreviewRoutes, loadMindmanagerDocument, loadMindmapDocument, loadXmindDocument } from '../src';
+import { createWideMmFixture, mixedMmFixture } from './fixtures/maps.mjs';
 
 describe('mindmap preview driver', () => {
+  it('preserves fallback IDs across wrappers, metadata, namespaces and explicit IDs', () => {
+    const model = loadMindmapDocument(mixedMmFixture, 'mm');
+    expect(model).toEqual({
+      title: 'Mixed tree', nodeCount: 5,
+      root: {
+        id: 'mm-1-1', text: 'Mixed tree', children: [
+          { id: 'known', text: 'First', children: [{ id: 'known-1-1-1-1-1', text: 'Nested', children: [] }] },
+          { id: 'mm-1-1-2-1-1-2', text: 'Second', children: [
+            { id: 'mm-1-1-2-1-1-2-1-1-1-2-1', text: 'Last', children: [] }
+          ] }
+        ]
+      }
+    });
+    expect(loadMindmapDocument('<node TEXT="Root"><node TEXT="Child"/><node TEXT="Second"/></node>', 'mm').root)
+      .toEqual({ id: 'mm-1', text: 'Root', children: [
+        { id: 'mm-1-1-1', text: 'Child', children: [] },
+        { id: 'mm-1-2-2', text: 'Second', children: [] }
+      ] });
+    const wide = loadMindmapDocument(createWideMmFixture(120), 'mm');
+    expect(wide.nodeCount).toBe(120);
+    expect(wide.root.children.at(-1)).toEqual({ id: 'mm-1-119-1-119', text: 'Task 119', children: [] });
+  });
+
+  it.each(['mm', 'opml', 'xmind', 'mmap'])('discards stale %s successes and errors after switching files', async format => {
+    const host = document.createElement('div');
+    const session = createMindmapPreviewDriver().createSession(host);
+    const rendered = vi.fn(), error = vi.fn();
+    session.on('rendered', rendered); session.on('error', error);
+    const bytes = await mindmapBytes(format);
+    const old = delayedMindmap(format);
+    const pending = session.load(old.source, mindmapContext(old.source, format));
+    await session.load(bytes, mindmapContext(bytes, format));
+    const html = host.innerHTML, state = session.getState();
+    old.resolve(new TextEncoder().encode('<map><node TEXT="Old"/></map>'));
+    await pending;
+    expect(host.innerHTML).toBe(html);
+    expect(session.getState()).toEqual(state);
+    const failed = delayedMindmap(format);
+    const rejected = session.load(failed.source, mindmapContext(failed.source, format));
+    await session.load(bytes, mindmapContext(bytes, format));
+    failed.reject(new Error('Old read failed'));
+    await expect(rejected).resolves.toBeUndefined();
+    expect(host.innerHTML).toBe(html);
+    expect(session.getState()).toEqual(state);
+    expect(rendered).toHaveBeenCalledTimes(2);
+    expect(error).not.toHaveBeenCalled();
+    session.destroy();
+  });
+
+  it.each(['mm', 'opml', 'xmind', 'mmap'])('cancels %s before parsing and releases the previous map', async format => {
+    const host = document.createElement('div');
+    const session = createMindmapPreviewDriver().createSession(host);
+    const bytes = await mindmapBytes(format);
+    await session.load(bytes, mindmapContext(bytes, format));
+    const rendered = vi.fn(), error = vi.fn();
+    session.on('rendered', rendered); session.on('error', error);
+    const controller = new AbortController(), delayed = delayedMindmap(format);
+    const pending = session.load(delayed.source, mindmapContext(delayed.source, format, controller.signal));
+    expect(host.querySelector('svg')).toBeNull();
+    expect(session.getState().selectedNodeId).toBeUndefined();
+    controller.abort();
+    expect(session.getState().loading).toBe(false);
+    delayed.resolve(new Uint8Array());
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    expect(host.querySelector('svg')).toBeNull();
+    expect(session.getState()).toMatchObject({ loading: false, error: null, selectedNodeId: undefined });
+    expect(rendered).not.toHaveBeenCalled();
+    expect(error).not.toHaveBeenCalled();
+    const alreadyAborted = delayedMindmap(format);
+    await expect(session.load(alreadyAborted.source, mindmapContext(alreadyAborted.source, format, controller.signal)))
+      .rejects.toMatchObject({ name: 'AbortError' });
+    expect(alreadyAborted.read).not.toHaveBeenCalled();
+    session.destroy();
+  });
+
+  it.each(['mm', 'opml', 'xmind', 'mmap'])('discards %s work and clears selection and listeners on destroy', async format => {
+    const host = document.createElement('div');
+    const session = createMindmapPreviewDriver().createSession(host);
+    const bytes = await mindmapBytes(format);
+    await session.load(bytes, mindmapContext(bytes, format));
+    const delayed = delayedMindmap(format);
+    const pending = session.load(delayed.source, mindmapContext(delayed.source, format));
+    const changed = vi.fn(), rendered = vi.fn();
+    session.on('statechange', changed); session.on('rendered', rendered);
+    session.destroy(); delayed.resolve(new Uint8Array());
+    await expect(pending).resolves.toBeUndefined();
+    expect(session.getState()).toMatchObject({ loading: false, selectedNodeId: undefined });
+    expect(host.childElementCount).toBe(0);
+    session.setScale?.(1.5);
+    expect(changed).not.toHaveBeenCalled();
+    expect(rendered).not.toHaveBeenCalled();
+  });
+
+  it.each(['xmind-json', 'xmind-xml', 'mmap'])('checks cancellation at ZIP boundaries for %s', async format => {
+    const bytes = format === 'mmap' ? await createMindmanagerFixture()
+      : format === 'xmind-xml' ? await createXmindXmlFixture() : await createXmindJsonFixture();
+    const loader = format === 'mmap' ? loadMindmanagerDocument : loadXmindDocument;
+    const zip = await JSZip.loadAsync(bytes);
+    const entry = zip.file(format === 'mmap' ? 'Document.xml' : format === 'xmind-xml' ? 'content.xml' : 'content.json')!;
+    const controller = new AbortController();
+    const extraction = vi.spyOn(entry, 'async');
+    const load = vi.spyOn(JSZip, 'loadAsync');
+    try {
+      load.mockImplementationOnce(async () => { controller.abort(); return zip; });
+      await expect(loader(bytes, { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
+      expect(extraction).not.toHaveBeenCalled();
+      load.mockClear();
+      await expect(loader(new ArrayBuffer(0), { signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
+      expect(load).not.toHaveBeenCalled();
+      const afterExtraction = new AbortController();
+      load.mockResolvedValueOnce(zip);
+      extraction.mockImplementationOnce(async () => { afterExtraction.abort(); return 'invalid XML/JSON'; });
+      await expect(loader(bytes, { signal: afterExtraction.signal })).rejects.toMatchObject({ name: 'AbortError' });
+      expect(extraction).toHaveBeenCalledTimes(1);
+    } finally { extraction.mockRestore(); load.mockRestore(); }
+  });
+
+  it('clears the previous map and reports a current-file error', async () => {
+    const host = document.createElement('div');
+    const session = createMindmapPreviewDriver().createSession(host);
+    const bytes = await mindmapBytes('mm');
+    await session.load(bytes, mindmapContext(bytes, 'mm'));
+    const error = vi.fn(); session.on('error', error);
+    const invalid = new TextEncoder().encode('<not-a-map/>');
+    await expect(session.load(invalid, mindmapContext(invalid, 'mm'))).rejects.toThrow('root node');
+    expect(host.querySelector('svg')).toBeNull();
+    expect(session.getState()).toMatchObject({ loading: false, selectedNodeId: undefined });
+    expect(error).toHaveBeenCalledTimes(1);
+    session.destroy();
+  });
+
   it('parses FreeMind MM documents into a normalized tree', () => {
     const document = loadMindmapDocument(createMmFixture(), 'mm');
 
@@ -205,6 +337,28 @@ describe('mindmap preview driver', () => {
     host.remove();
   });
 });
+
+function mindmapContext(source: Blob | Uint8Array, extension: string, signal?: AbortSignal) {
+  return { descriptor: { source, extension, name: `plan.${extension}` }, signal };
+}
+
+async function mindmapBytes(format: string): Promise<Uint8Array> {
+  if (format === 'xmind') return new Uint8Array(await createXmindJsonFixture());
+  if (format === 'mmap') return new Uint8Array(await createMindmanagerFixture());
+  return new TextEncoder().encode(format === 'opml' ? createOpmlFixture() : createMmFixture());
+}
+
+function delayedMindmap(format: string) {
+  let resolve!: (bytes: Uint8Array) => void, reject!: (error: Error) => void;
+  const source = new Blob([]);
+  const promise = new Promise<Uint8Array>((done, fail) => { resolve = done; reject = fail; });
+  const read = vi.fn(async () => {
+    const bytes = await promise;
+    return format === 'mm' || format === 'opml' ? new TextDecoder().decode(bytes) : bytes.slice().buffer;
+  });
+  Object.defineProperty(source, format === 'mm' || format === 'opml' ? 'text' : 'arrayBuffer', { value: read });
+  return { source, resolve, reject, read };
+}
 
 function createMmFixture(): string {
   return `<?xml version="1.0" encoding="UTF-8"?>

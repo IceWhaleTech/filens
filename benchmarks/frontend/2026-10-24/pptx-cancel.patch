@@ -1,0 +1,172 @@
+diff --git a/packages/core/src/parser/archive.ts b/packages/core/src/parser/archive.ts
+index 44434e7..19332ae 100644
+--- a/packages/core/src/parser/archive.ts
++++ b/packages/core/src/parser/archive.ts
+@@ -1,15 +1,19 @@
+ import { unzipSync } from 'fflate';
+ import { openZipArchive } from './zip';
++import { throwIfAborted, type LoadSourceOptions } from './load-source';
+ 
+ export class PptxArchiveEntry {
+   private loaded?: Promise<Uint8Array>;
+-  constructor(private readonly data: Uint8Array | (() => Promise<Uint8Array>)) {}
++  constructor(private readonly data: Uint8Array | (() => Promise<Uint8Array>), private readonly signal?: AbortSignal) {}
+ 
+   async(type: 'text'): Promise<string>;
+   async(type: 'uint8array'): Promise<Uint8Array>;
+-  async(type: 'text' | 'uint8array'): Promise<string | Uint8Array> {
++  async async(type: 'text' | 'uint8array'): Promise<string | Uint8Array> {
++    throwIfAborted(this.signal);
+     this.loaded ??= typeof this.data === 'function' ? this.data() : Promise.resolve(this.data);
+-    return this.loaded.then(data => type === 'text' ? new TextDecoder().decode(data) : data);
++    const data = await this.loaded;
++    throwIfAborted(this.signal);
++    return type === 'text' ? new TextDecoder().decode(data) : data;
+   }
+ }
+ 
+@@ -17,12 +21,14 @@ export interface PptxArchive {
+   file(name: string): PptxArchiveEntry | null;
+ }
+ 
+-export async function loadPptxArchive(bytes: Uint8Array): Promise<PptxArchive> {
++export async function loadPptxArchive(bytes: Uint8Array, options: LoadSourceOptions = {}): Promise<PptxArchive> {
++  throwIfAborted(options.signal);
+   // Index once and inflate only parts requested by the parser. Most decks
+   // carry unused layouts, thumbnails and other non-preview attachments.
+   const indexed = await openZipArchive(bytes).catch(() => undefined);
++  throwIfAborted(options.signal);
+   if (indexed) {
+-    const entries = new Map([...indexed].map(([name, entry]) => [name, new PptxArchiveEntry(entry.bytes)]));
++    const entries = new Map([...indexed].map(([name, entry]) => [name, new PptxArchiveEntry(entry.bytes, options.signal)]));
+     return { file: name => entries.get(name) ?? null };
+   }
+   // Keep the existing reader for archives with unusual compression methods.
+@@ -32,8 +38,9 @@ export async function loadPptxArchive(bytes: Uint8Array): Promise<PptxArchive> {
+     names.push(file.name);
+     return false;
+   } });
+-  const entries = new Map(names.map(name => [name, new PptxArchiveEntry(async () =>
+-    unzipSync(bytes, { filter: file => file.name === name })[name]
++  const entries = new Map(names.map(name => [name, new PptxArchiveEntry(
++    async () => unzipSync(bytes, { filter: file => file.name === name })[name],
++    options.signal
+   )]));
+   return { file: name => entries.get(name) ?? null };
+ }
+diff --git a/packages/core/src/parser/load-pptx.ts b/packages/core/src/parser/load-pptx.ts
+index bd091ec..68829f4 100644
+--- a/packages/core/src/parser/load-pptx.ts
++++ b/packages/core/src/parser/load-pptx.ts
+@@ -29,7 +29,7 @@ import type {
+ import { applyLumMod, applyLumOff, applyShade, applyTint, resolveThemeColor } from '../utils/colors';
+ import { asArray, clamp, createId, deepClone, resolvePartPath, toNumber } from '../utils/common';
+ import { angleToDegrees, emuToPx } from '../utils/units';
+-import { loadSourceBytes, type LoadSourceOptions } from './load-source';
++import { loadSourceBytes, throwIfAborted, type LoadSourceOptions } from './load-source';
+ import { parseXmlFile, parseXmlFileOrdered, type OrderedXmlNode, type XmlNode } from './xml';
+ 
+ type XmlRecord = Record<string, any>;
+@@ -312,7 +312,7 @@ function createEmptyThemeFormatScheme(): ThemeFormatScheme {
+ 
+ export async function loadPptx(source: PptxSource, options: LoadSourceOptions = {}): Promise<ParsedPresentation> {
+   const bytes = await loadSourceBytes(source, options);
+-  const zip = await loadPptxArchive(bytes);
++  const zip = await loadPptxArchive(bytes, options);
+   const warnings: string[] = [];
+   const caches: ParseCaches = {
+     masters: new Map(),
+@@ -369,6 +369,7 @@ export async function loadPptx(source: PptxSource, options: LoadSourceOptions =
+       slideWarnings,
+       slideIndexByPath
+     );
++    throwIfAborted(options.signal);
+     activeTheme = parsed.theme;
+     warnings.push(...slideWarnings);
+     slides.push({
+@@ -377,6 +378,7 @@ export async function loadPptx(source: PptxSource, options: LoadSourceOptions =
+     });
+   }
+ 
++  throwIfAborted(options.signal);
+   return {
+     size,
+     theme: activeTheme,
+diff --git a/packages/core/src/parser/load-source.ts b/packages/core/src/parser/load-source.ts
+index c035218..340485c 100644
+--- a/packages/core/src/parser/load-source.ts
++++ b/packages/core/src/parser/load-source.ts
+@@ -11,11 +11,14 @@ export async function loadSourceBytes(source: PptxSource, options: LoadSourceOpt
+     const response = await fetch(source, {
+       signal: options.signal
+     });
++    throwIfAborted(options.signal);
+     if (!response.ok) {
+       throw new Error(`Failed to fetch PPTX source: ${response.status} ${response.statusText}`);
+     }
+ 
+-    return new Uint8Array(await response.arrayBuffer());
++    const bytes = await response.arrayBuffer();
++    throwIfAborted(options.signal);
++    return new Uint8Array(bytes);
+   }
+ 
+   if (ArrayBuffer.isView(source)) {
+@@ -27,14 +30,15 @@ export async function loadSourceBytes(source: PptxSource, options: LoadSourceOpt
+   }
+ 
+   if (isBlobLike(source)) {
++    const bytes = await source.arrayBuffer();
+     throwIfAborted(options.signal);
+-    return new Uint8Array(await source.arrayBuffer());
++    return new Uint8Array(bytes);
+   }
+ 
+   throw new Error('Unsupported PPTX source type.');
+ }
+ 
+-function throwIfAborted(signal?: AbortSignal): void {
++export function throwIfAborted(signal?: AbortSignal): void {
+   if (signal?.aborted) {
+     throw createAbortError();
+   }
+diff --git a/packages/core/src/render/dom.ts b/packages/core/src/render/dom.ts
+index d3313f8..d3878b9 100644
+--- a/packages/core/src/render/dom.ts
++++ b/packages/core/src/render/dom.ts
+@@ -151,6 +151,7 @@ function toExactArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+ interface TextMeasurementScope {
+   context?: CanvasRenderingContext2D | null;
+   baselineWidths?: Array<number | undefined>;
++  fontAvailability?: Map<string, boolean>;
+ }
+ 
+ // A render is synchronous. Reuse one canvas while building its text, then
+@@ -2131,7 +2132,6 @@ const SYNTHETIC_FONT_WEIGHT_PROFILES = [
+ const FONT_AVAILABILITY_PROBE_TEXT = 'BESbswy1234567890';
+ const FONT_AVAILABILITY_PROBE_SIZE = 32;
+ const FONT_AVAILABILITY_EPSILON = 0.1;
+-const fontAvailabilityCache = new Map<string, boolean>();
+ 
+ const KNOWN_FONT_FALLBACKS: Record<string, readonly string[]> = {
+   aptos: ['Aptos', 'Aptos Narrow', 'Calibri'],
+@@ -2395,14 +2395,17 @@ function shouldProbeFontFamily(fontFamily: string): boolean {
+ }
+ 
+ function probeExactFontFamilyAvailability(fontFamily: string): boolean {
++  // Fonts can be loaded or removed between renders. Keep probe results only
++  // for this synchronous render, alongside its measurement canvas.
++  const cache = textMeasurementScope && (textMeasurementScope.fontAvailability ??= new Map<string, boolean>());
+   const cacheKey = normalizeFontFamilyName(fontFamily).toLowerCase();
+-  const cached = fontAvailabilityCache.get(cacheKey);
++  const cached = cache?.get(cacheKey);
+   if (cached != null) {
+     return cached;
+   }
+ 
+   const available = detectExactFontFamilyAvailability(fontFamily);
+-  fontAvailabilityCache.set(cacheKey, available);
++  cache?.set(cacheKey, available);
+   return available;
+ }
+ 

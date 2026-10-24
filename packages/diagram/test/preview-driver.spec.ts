@@ -2,8 +2,64 @@ import { describe, expect, it } from 'vitest';
 import { deflateSync, strToU8 } from 'fflate';
 import JSZip from 'jszip';
 import { createDiagramPreviewDriver, createDiagramPreviewRoutes, decodeCompressedDrawioPayload, loadDrawioDiagram, loadVdxDiagram, loadVsdxDiagram } from '../src';
+import { legacyVdxFixture } from './fixtures/diagrams.mjs';
 
 describe('diagram preview driver', () => {
+  it('uses default draw.io dimensions when size attributes are absent', () => {
+    const nodes = loadDrawioDiagram('<mxGraphModel><root><mxCell id="default" vertex="1"><mxGeometry/></mxCell><mxCell id="zero" vertex="1"><mxGeometry width="0" height="0"/></mxCell><mxCell id="invalid" vertex="1"><mxGeometry width="invalid" height="Infinity"/></mxCell></root></mxGraphModel>').pages[0]!.nodes;
+    expect(nodes).toMatchObject([
+      { id: 'default', x: 0, y: 0, width: 120, height: 60 },
+      { id: 'zero', width: 0, height: 0 },
+      { id: 'invalid', width: 120, height: 60 }
+    ]);
+  });
+
+  it('reads legacy VDX XForm, PageProps, colors and one-dimensional Shape connectors', () => {
+    const page = loadVdxDiagram(legacyVdxFixture).pages[0]!;
+    expect(page.nodes).toHaveLength(2);
+    expect(page.nodes[0]).toMatchObject({ id: '1', label: 'Start', style: 'fillColor=#dae8fc;strokeColor=#6c8ebf;rounded=1' });
+    expect(page.nodes[0]!.x).toBeCloseTo(86.4);
+    expect(page.nodes[0]!.y).toBeCloseTo(115.2);
+    expect(page.nodes[0]!.width).toBeCloseTo(115.2);
+    expect(page.nodes[0]!.height).toBeCloseTo(57.6);
+    expect(page.nodes[1]!.x).toBeCloseTo(374.4);
+    expect(page.edges).toMatchObject([{ id: '3', label: 'Next', source: '1', target: '2' }]);
+  });
+
+  it('keeps VSDX connectors with Type="Shape" and cached endpoints', async () => {
+    const zip = new JSZip();
+    zip.file('visio/pages/page1.xml', '<PageContents><Shapes><Shape ID="1" Type="Shape"><Cell N="PinX" V="2"/><Cell N="PinY" V="3"/></Shape><Shape ID="2" Type="Shape"><Cell N="BeginX" V="1"/><Cell N="BeginY" V="2"/><Cell N="EndX" V="4"/><Cell N="EndY" V="5"/><Text>Connector</Text></Shape></Shapes></PageContents>');
+    const page = (await loadVsdxDiagram(await zip.generateAsync({ type: 'arraybuffer' }))).pages[0]!;
+    expect(page.nodes).toHaveLength(1);
+    expect(page.edges).toMatchObject([{ id: '2', label: 'Connector', points: [[96, 624], [384, 336]] }]);
+  });
+
+  it('recognizes connected VSDX Shape edges even without cached endpoints', async () => {
+    const zip = new JSZip();
+    zip.file('visio/pages/page1.xml', '<PageContents><Shapes><Shape ID="1" Type="Shape"/><Shape ID="2" Type="Shape"><Text>Linked</Text></Shape><Shape ID="3" Type="Shape"/></Shapes><Connects><Connect FromSheet="2" FromCell="BeginX" ToSheet="1"/><Connect FromSheet="2" FromCell="EndX" ToSheet="3"/></Connects></PageContents>');
+    const page = (await loadVsdxDiagram(await zip.generateAsync({ type: 'arraybuffer' }))).pages[0]!;
+    expect(page.nodes.map(node => node.id)).toEqual(['1', '3']);
+    expect(page.edges).toMatchObject([{ id: '2', label: 'Linked', source: '1', target: '3', points: [] }]);
+  });
+
+  it('keeps a two-dimensional shape connected by a non-endpoint cell as a node', () => {
+    const page = loadVdxDiagram('<Page><Shapes><Shape ID="1" Type="Shape"><Text>Node</Text></Shape><Shape ID="2" Type="Shape"/></Shapes><Connects><Connect FromSheet="1" FromCell="PinX" ToSheet="2"/></Connects></Page>').pages[0]!;
+    expect(page.nodes.map(node => node.id)).toEqual(['1', '2']);
+    expect(page.edges).toHaveLength(0);
+  });
+
+  it('preserves first-cell precedence, absent values and HTML/entity label normalization', () => {
+    const page = loadVdxDiagram('<Page><Shapes><Shape ID="1" Type="Shape"><Cell N="Width" V="2"/><Cell N="Width" V="8"/><Cell N="Height"/><Text>A &amp;amp; B &lt;b&gt;bold&lt;/b&gt; &amp;#x1F600;</Text></Shape></Shapes></Page>').pages[0]!;
+    expect(page.nodes[0]).toMatchObject({ width: 192, height: 1, label: 'A & B bold 😀' });
+    const labels = ['plain 中文', 'A &amp; B', 'A&#10;B', '&lt;b&gt;hi&lt;/b&gt;', 'A\u0000B', 'A\r\n B', '&quot; &apos; &amp;amp; &amp;lt;', '&copy; &notin; &#128; &AMP;'];
+    const escape = (value: string) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // U+0000 is represented by an HTML numeric entity so the XML remains valid.
+    labels[4] = 'A&#0;B';
+    const xml = '<mxGraphModel><root>' + labels.map((label, i) => `<mxCell id="${i}" vertex="1" value="${escape(label)}"><mxGeometry width="120" height="60"/></mxCell>`).join('') + '</root></mxGraphModel>';
+    expect(loadDrawioDiagram(xml).pages[0]!.nodes.map(node => node.label))
+      .toEqual(['plain 中文', 'A & B', 'A B', '<b>hi</b>', 'A�B', 'A B', '" \' &amp; &lt;', '© ∉ € &']);
+  });
+
   it('parses draw.io mxGraph pages into nodes and edges', () => {
     const document = loadDrawioDiagram(createDrawioFixture());
 
@@ -175,7 +231,17 @@ describe('diagram preview driver', () => {
     host.querySelector<SVGGElement>('[data-element-id="done"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(session.getState().selectedElementId).toBe('done');
 
+    for (const index of [NaN, Infinity, 0.5]) {
+      session.goToPage?.(index);
+      expect(session.getState().pageIndex).toBe(0);
+      expect(host.querySelector('.diagramv-canvas')?.textContent).toContain('Start');
+    }
+    const viewport = host.querySelector<HTMLElement>('.diagramv-preview')!;
+    viewport.scrollTop = 80;
+    viewport.scrollLeft = 90;
     session.next?.();
+    expect(viewport.scrollTop).toBe(0);
+    expect(viewport.scrollLeft).toBe(0);
     expect(session.getState().pageIndex).toBe(1);
     expect(host.querySelector('.diagramv-summary')?.textContent).toContain('Notes');
 

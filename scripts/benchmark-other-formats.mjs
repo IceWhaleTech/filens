@@ -14,12 +14,22 @@ const args = process.argv.slice(2);
 const option = (key, fallback) => args.includes(key) ? args[args.indexOf(key) + 1] : fallback;
 const iterations = Number(option('--iterations', '7'));
 const profile = args.includes('--profile');
+const reviewDxf = args.includes('--review-dxf');
 const selectedFamily = option('--family', 'all'), selectedSample = option('--sample', 'all');
+const cadBaseline = option('--cad-baseline', '');
+if (cadBaseline && (path.isAbsolute(cadBaseline) || cadBaseline.split(/[\\/]/).includes('..'))) throw new Error('--cad-baseline must be repository-relative.');
+const archiveBaseline = option('--archive-baseline', '');
+if (archiveBaseline && (path.isAbsolute(archiveBaseline) || archiveBaseline.split(/[\\/]/).includes('..'))) throw new Error('--archive-baseline must be repository-relative.');
+const workbookBaseline = option('--workbook-baseline', '');
+if (workbookBaseline && (path.isAbsolute(workbookBaseline) || workbookBaseline.split(/[\\/]/).includes('..'))) throw new Error('--workbook-baseline must be repository-relative.');
 const out = path.resolve(root, option('--output', 'tmp/performance-other/results'));
 fs.mkdirSync(out, { recursive: true });
 const samples = JSON.parse(fs.readFileSync(path.join(work, 'samples.json'))).filter(s =>
   (selectedFamily === 'all' || s.family === selectedFamily) && (selectedSample === 'all' || s.name === selectedSample));
 const peers = { dxf: ['filens', 'dxf-parser'], xlsx: ['filens', 'sheetjs'], csv: ['filens', 'papaparse', 'sheetjs'], zip: ['filens', 'zip.js', 'fflate'], step: ['filens', 'occt-import-js'], conversion: ['filens', 'x2t'] };
+if (cadBaseline) peers.dxf = ['filens', 'filens-baseline'];
+if (archiveBaseline) peers.zip = ['filens', 'filens-baseline'];
+if (workbookBaseline) peers.csv = peers.xlsx = ['filens', 'filens-baseline'];
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const sizeCachePath = path.join(work, 'artifact-sizes.json');
 const previousSizes = fs.existsSync(sizeCachePath) ? JSON.parse(fs.readFileSync(sizeCachePath))
@@ -38,7 +48,11 @@ const result = { date: new Date().toISOString(), cpu: os.cpus()[0].model, totalM
   artifacts: ['scripts/benchmark-other-formats.mjs', 'scripts/prepare-other-format-benchmark.mjs', 'benchmarks/frontend/other-formats/package-lock.json',
     ...['core', 'cad', 'xlsx', 'archive', 'converter-client'].map(n => `packages/${n}/dist/index.js`), 'packages/model3d/vendor/occt-import-js/occt-import-js.wasm',
     'tmp/performance-other/node_modules/occt-import-js/dist/occt-import-js.wasm', 'wasm/converter-core/dist/converter-core.wasm', 'tmp/performance-other/x2t/x2t.wasm', 'tmp/performance-other/x2t/x2t.js'].map(measuredSize),
-  samples, runs: [] };
+  samples, engineering: Boolean(cadBaseline || archiveBaseline || workbookBaseline), runs: [] };
+if (cadBaseline || archiveBaseline || workbookBaseline) {
+  result.method += ' Engineering A/B only: filens-baseline is the previous build for its family; no peer or SOTA ranking.';
+  for (const baseline of [cadBaseline, archiveBaseline, workbookBaseline].filter(Boolean)) result.artifacts.push(measuredSize(baseline));
+}
 fs.writeFileSync(sizeCachePath, JSON.stringify(result.artifacts));
 const save = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stringify(result, null, 2) + '\n');
 const imports = Object.fromEntries(['core', 'cad', 'xlsx', 'archive', 'converter-client'].map(n => [`@filens/${n}`, `/repo/packages/${n}/dist/index.js`]));
@@ -49,7 +63,7 @@ const server = http.createServer((req, res) => {
   if (name === '/') { res.setHeader('Content-Type', 'text/html'); res.end(html); return; }
   const file = path.resolve(root, name.startsWith('/repo/') ? name.slice(6) : 'missing');
   if (!file.startsWith(root + path.sep)) { res.writeHead(404).end(); return; }
-  try { res.setHeader('Content-Type', file.endsWith('.js') || file.endsWith('.mjs') ? 'text/javascript' : file.endsWith('.wasm') ? 'application/wasm' : 'application/octet-stream'); res.end(fs.readFileSync(file)); }
+  try { res.setHeader('Content-Type', file.endsWith('.js') || file.endsWith('.mjs') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : file.endsWith('.wasm') ? 'application/wasm' : 'application/octet-stream'); res.end(fs.readFileSync(file)); }
   catch { res.writeHead(404).end(); }
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -67,12 +81,13 @@ try {
       const run = { family: sample.family, sample: sample.name, engine, iteration, errors, logs };
       try {
         await page.goto(base);
-        const setup = await page.evaluate(async ({ sample, engine }) => {
+        const setup = await page.evaluate(async ({ sample, engine, cadBaseline, archiveBaseline, workbookBaseline, reviewDxf }) => {
           const script = url => new Promise((resolve, reject) => { const tag = document.createElement('script'); tag.src = url; tag.onload = resolve; tag.onerror = reject; document.head.append(tag); });
           const bytes = new Uint8Array(await (await fetch(`/repo/${sample.path}`)).arrayBuffer());
-          window.input = bytes; window.text = new TextDecoder().decode(bytes); window.sample = sample;
+          window.input = bytes; window.text = new TextDecoder().decode(bytes); window.sample = sample; window.reviewDxf = reviewDxf;
           window.hash = async value => [...new Uint8Array(await crypto.subtle.digest('SHA-256', typeof value === 'string' ? new TextEncoder().encode(value) : value))].map(v => v.toString(16).padStart(2, '0')).join('');
-          if (engine === 'filens' && sample.family !== 'step') window.lib = await import(`@filens/${({ dxf: 'cad', xlsx: 'xlsx', csv: 'xlsx', zip: 'archive', conversion: 'converter-client' })[sample.family]}`);
+          if (engine === 'filens-baseline') window.lib = await import(`/repo/${sample.family === 'zip' ? archiveBaseline : ['csv', 'xlsx'].includes(sample.family) ? workbookBaseline : cadBaseline}`);
+          else if (engine === 'filens' && sample.family !== 'step') window.lib = await import(`@filens/${({ dxf: 'cad', xlsx: 'xlsx', csv: 'xlsx', zip: 'archive', conversion: 'converter-client' })[sample.family]}`);
           else if (engine === 'dxf-parser') { await script('/repo/tmp/performance-other/node_modules/dxf-parser/dist/dxf-parser.js'); window.parser = new window.DxfParser(); }
           else if (engine === 'sheetjs') await script('/repo/tmp/performance-other/xlsx.full.min.js');
           else if (engine === 'papaparse') await script('/repo/tmp/performance-other/node_modules/papaparse/papaparse.min.js');
@@ -109,7 +124,7 @@ try {
             }
           }
           return { initMs };
-        }, { sample, engine });
+        }, { sample, engine, cadBaseline, archiveBaseline, workbookBaseline, reviewDxf });
         Object.assign(run, setup);
         const cdp = await context.newCDPSession(page); await cdp.send('HeapProfiler.collectGarbage');
         const before = await cdp.send('Runtime.getHeapUsage');
@@ -119,11 +134,12 @@ try {
           await cdp.send('Profiler.start');
         }
         Object.assign(run, await page.evaluate(async engine => {
+          if (engine === 'filens-baseline') engine = 'filens';
           const { family, name, target } = window.sample, stats = {};
           const t0 = performance.now(); let model;
           if (family === 'dxf') model = engine === 'filens' ? window.lib.loadDxfDrawing(window.text) : window.parser.parseSync(window.text);
           else if (family === 'xlsx') model = engine === 'filens' ? await window.lib.loadXlsxWorkbook(window.input) : window.XLSX.read(window.input, { type: 'array', cellFormula: true });
-          else if (family === 'csv') model = engine === 'filens' ? await window.lib.loadCsvWorkbook(window.input) : engine === 'papaparse' ? window.Papa.parse(new TextDecoder().decode(window.input), { delimiter: ',', dynamicTyping: false }) : window.XLSX.read(window.input, { type: 'array', raw: true });
+          else if (family === 'csv') model = engine === 'filens' ? await window.lib.loadCsvWorkbook(window.input) : engine === 'papaparse' ? window.Papa.parse(new TextDecoder().decode(window.input), { delimiter: ',', dynamicTyping: false }) : window.XLSX.read(window.input, { type: 'array', raw: true, codepage: 65001 });
           else if (family === 'step') {
             model = window.importer.ReadStepFile(window.input, { linearUnit: 'millimeter' });
             if (!model.success || !model.meshes?.length) throw new Error('STEP returned no geometry');
@@ -168,6 +184,11 @@ try {
           if (family === 'dxf') {
             stats.entities = (model.entities ?? []).length; stats.warnings = model.warnings ?? [];
             stats.types = (model.entities ?? []).reduce((counts, entity) => { counts[entity.type] = (counts[entity.type] ?? 0) + 1; return counts; }, {});
+            if (window.reviewDxf && engine === 'filens') {
+              const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object'
+                ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])])) : value;
+              stats.modelSha256 = await window.hash(JSON.stringify(canonical(model)));
+            }
             if (name === 'generated-20000-lines.dxf') {
               const lines = model.entities.map(e => engine === 'filens' ? [e.layer, e.start.x, e.start.y, e.end.x, e.end.y] : [e.layer, e.vertices[0].x, e.vertices[0].y, e.vertices[1].x, e.vertices[1].y]);
               stats.contentSha256 = await window.hash(JSON.stringify(lines));
@@ -236,6 +257,35 @@ try {
         run.firstOperationMs += run.initMs;
         await cdp.send('HeapProfiler.collectGarbage');
         run.retainedMainThreadJsHeapMiB = ((await cdp.send('Runtime.getHeapUsage')).usedSize - before.usedSize) / 1024 ** 2;
+        if (reviewDxf && sample.family === 'dxf' && engine.startsWith('filens') && iteration === 0) {
+          run.previewReview = await page.evaluate(async () => {
+            await new Promise((resolve, reject) => {
+              const link = document.createElement('link'); link.rel = 'stylesheet';
+              link.href = '/repo/packages/cad/dist/index.css'; link.onload = resolve; link.onerror = reject;
+              document.head.append(link);
+            });
+            document.body.style.cssText = 'margin:0;width:1280px;height:800px';
+            const host = document.createElement('div'); host.style.cssText = 'width:1280px;height:800px'; document.body.append(host);
+            const session = window.lib.createCadPreviewDriver().createSession(host);
+            await session.load(window.input, { descriptor: { source: window.input, name: window.sample.name, extension: 'dxf' },
+              route: window.lib.createCadPreviewRoutes().find(route => route.extensions.includes('dxf')) });
+            if (session.getState().error) throw new Error(session.getState().error);
+            await document.fonts.ready;
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            window.cadReviewSession = session;
+            return { svgSha256: await window.hash(host.querySelector('svg').outerHTML), state: session.getState() };
+          });
+          await page.screenshot({ path: path.join(out, `${engine}-${sample.name}.png`) });
+          run.previewReview.interactions = await page.evaluate(() => {
+            const session = window.cadReviewSession, layers = session.getState().activeLayerIds;
+            session.setScale(2); const zoomed = session.getState().scale === 2;
+            session.pan(10, 20); session.fit(); const fitted = session.getState().scale === 1;
+            session.setActiveLayers([]); const hidden = session.getState().activeLayerIds.length === 0;
+            session.setActiveLayers(layers); const restored = JSON.stringify(session.getState().activeLayerIds) === JSON.stringify(layers);
+            session.destroy();
+            return { zoomed, fitted, hidden, restored, destroyed: document.querySelector('.cadv-preview') === null };
+          });
+        }
         if (sample.family === 'conversion' && iteration === 0) {
           const bytes = await page.evaluate(() => Array.from(window.convertedBytes));
           fs.writeFileSync(path.join(out, `${engine}-${sample.name}.${sample.target}`), Buffer.from(bytes));

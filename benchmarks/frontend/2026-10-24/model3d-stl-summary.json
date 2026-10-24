@@ -1,0 +1,54 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "7c20f58528cb8d0f7483f204b142b71d0abc6053b09028b97a55ad98e1061aaf",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "iterations": 7,
+  "runs": 42,
+  "method": "10,000 paired bootstrap median-ratio resamples, seed 12345. Binary STL parsing only, excluding input loading, session/edge construction, GPU work and paint. Generated models, no peer/SOTA or peak-memory ranking. Baseline medians at or below 10 ms receive no speed claim; all measurements remain.",
+  "samples": [
+    {
+      "sample": "generated-1000-triangles.stl",
+      "currentMs": 0.5999999046325684,
+      "baselineMs": 0.6000000238418579,
+      "ratio": 1.000000198682181,
+      "ratio95PercentBootstrapInterval": [
+        1,
+        1.2000000476837158
+      ],
+      "below10MsControl": true,
+      "stableEngineeringReduction": false,
+      "completePositionsNormalsAndBoundsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-200000-triangles.stl",
+      "currentMs": 5.100000023841858,
+      "baselineMs": 15.600000023841858,
+      "ratio": 3.058823519787024,
+      "ratio95PercentBootstrapInterval": [
+        2.9038461754484293,
+        3.3200000047683718
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "completePositionsNormalsAndBoundsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-500000-triangles.stl",
+      "currentMs": 11,
+      "baselineMs": 34.10000002384186,
+      "ratio": 3.1000000021674414,
+      "ratio95PercentBootstrapInterval": [
+        3,
+        3.445454543287104
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "completePositionsNormalsAndBoundsMatch": true,
+      "scopedSota": false
+    }
+  ]
+}

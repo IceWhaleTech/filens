@@ -30,8 +30,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
-    "test": "npm.cmd run test:unit",
-    "test:unit": "npm.cmd run build --workspace @filens/core && npm.cmd run build --workspace @filens/converter-client && npm.cmd run build --workspace @filens/xlsx && npm.cmd run build --workspace @filens/archive && npm.cmd run build --workspace @filens/cad && npm.cmd run build --workspace @filens/ebook && npm.cmd run build --workspace @filens/pdf && npm.cmd run build --workspace @filens/docx && npm.cmd run build --workspace @filens/model3d && npm.cmd run build --workspace @filens/mindmap && npm.cmd run build --workspace @filens/diagram && npm.cmd run build --workspace @filens/panorama && npm.cmd run build --workspace @filens/iwork && npm.cmd run build --workspace @filens/design && npm.cmd run build --workspace @filens/media && npm.cmd run build --workspace @filens/office && npm.cmd run build --workspace @filens/text && node ../../scripts/generate-fixtures.mjs && vitest run"
+    "test": "npm run test:unit",
+    "test:unit": "npm run build --workspace @filens/core && npm run build --workspace @filens/converter-client && npm run build --workspace @filens/xlsx && npm run build --workspace @filens/archive && npm run build --workspace @filens/cad && npm run build --workspace @filens/ebook && npm run build --workspace @filens/pdf && npm run build --workspace @filens/docx && npm run build --workspace @filens/model3d && npm run build --workspace @filens/mindmap && npm run build --workspace @filens/diagram && npm run build --workspace @filens/panorama && npm run build --workspace @filens/iwork && npm run build --workspace @filens/design && npm run build --workspace @filens/media && npm run build --workspace @filens/office && npm run build --workspace @filens/text && node ../../scripts/generate-fixtures.mjs && vitest run"
   },
   "peerDependencies": {
     "@filens/archive": "^0.1.0",

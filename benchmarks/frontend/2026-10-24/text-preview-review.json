@@ -1,0 +1,191 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "measurementDate": "2026-10-24T09:21:55.859Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "rawSha256": "23dac4852b792a0c31fc1212cd35ae2da9531b7dca4fdc7c7a27253c68f98bd7",
+  "finalRuns": 56,
+  "currentSuccesses": 28,
+  "currentFailures": 0,
+  "baselineSuccesses": 21,
+  "baselineFailures": 7,
+  "excludedDiagnosticRuns": 64,
+  "externalComparisonTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "changedThisRound": false
+  },
+  "method": "Fresh Chromium context per invocation, rotated build order; bytes and imports ready before timing. loadMs measures session creation plus complete native text load; loadAndLayoutMs also forces synchronous layout. Neither metric includes file I/O, module download, or paint. Text, every line number, state and attached DOM are checked after timing. Failures remain in raw runs. No optimization claim for baseline operations at or below 10 ms. No peer/SOTA comparison.",
+  "completeContentAndEveryLineNumberCheckedForAllSuccessfulRuns": true,
+  "knownBaselineFailure": "All seven 200,000-line baseline runs exceed the JavaScript argument limit; no speed ratio is assigned to this sample.",
+  "smallControl": "Small highlighted code is 5.6 ms in both builds including layout; construction-only control changes, including losses, remain recorded below 10 ms without speed claims.",
+  "limits": [
+    "Generated source fixtures; this is an engineering comparison, with no peer ranking.",
+    "The complete source and line-number text are still decoded and laid out; no text virtualization or peak-memory claim.",
+    "loadAndLayoutMs forces synchronous layout, excluding paint and file I/O.",
+    "Line-height alignment browser coverage uses unwrapped code; this does not establish logical-line gutters for soft-wrapped text.",
+    "The INSP alias browser test stubs the current file API with a bundled stitched image; native calibration has separate tests."
+  ],
+  "changes": [
+    "Replace one DOM element per line with compact multiline line-number text and count line endings without splitting the full source.",
+    "Align the gutter and code line height.",
+    "Cancel superseded network reads; discard late Blob/network results and errors after replacement, abort or destruction.",
+    "Keep rapid PPTX Next/Prev navigation relative to its destination during smooth scrolling; let wheel, touch or pointer input release it.",
+    "Exercise all three ODG/SXD pages and the current INSP sample endpoint in existing demo regressions."
+  ],
+  "validation": {
+    "coreUnitPassed": 239,
+    "coreExistingSkipped": 11,
+    "vueUnitPassed": 44,
+    "browserDevelopmentPassed": 10,
+    "browserProductionPassed": 2,
+    "largeCodeBrowser": "200,000 lines retain all content, all line numbers, last-line alignment, visibility after scrolling and text selection.",
+    "navigationBrowser": "Both ODG and SXD reach page 3 with the final slide physically centered in the viewport; development and production builds pass.",
+    "builds": [
+      "@filens/core including declaration generation",
+      "production demo",
+      "bundle report"
+    ],
+    "earlierBrowserFailures": "Preserved local logs show obsolete first-page/panel expectations, then expose the rapid-navigation bug. These were corrected and the final suites pass.",
+    "reversePatchMatchesAllThreeBaselineSourceSnapshots": true,
+    "runtimeAndHarnessHashesMatchFinalRawArtifacts": true,
+    "localMarkdownLinksChecked": 405,
+    "localMarkdownLinkFailures": 0
+  },
+  "artifacts": [
+    {
+      "path": "packages/core/src/preview/native-drivers.ts",
+      "sha256": "4014a5e0bc563c051ddb80c3a2397b574a1a5f3d002334683a542bd3f8b84bd8"
+    },
+    {
+      "path": "packages/core/src/styles/index.css",
+      "sha256": "bdfdcf24580e768f42d818b7f0e1b53e424a5f66e9760049f9a627a9eeeb820b"
+    },
+    {
+      "path": "packages/core/src/viewer.ts",
+      "sha256": "cab622495d6768d9a3da8a12d63b4a0e9c6ea96c2d1788b4cdb067434bcb63cf"
+    },
+    {
+      "path": "packages/core/test/text-preview.spec.ts",
+      "sha256": "b52b651b46f6df06ee97f8f0a612cb8a1bcb04c1952959e4fa03a1e30fe2de16"
+    },
+    {
+      "path": "packages/core/test/preview.spec.ts",
+      "sha256": "ffa93bb799c1491889be410346ae2370ef412b89bee60930ae618c3826632bf1"
+    },
+    {
+      "path": "packages/core/test/viewer.spec.ts",
+      "sha256": "cd8ce89f1f13cd3154e6f9b5d3015585bec628bda1f5418310c2167562927a5e"
+    },
+    {
+      "path": "apps/demo/e2e/text-preview.e2e.ts",
+      "sha256": "151988d980d7c93322e0ef9fe736cde0dbb6e76d98e7fbabe7ce7df24c5db23d"
+    },
+    {
+      "path": "apps/demo/e2e/business-families.e2e.ts",
+      "sha256": "36b8d5e6f262fadd2e169a572d6121a32a42b46a1fee3f85f9bd0f12e4c6421b"
+    },
+    {
+      "path": "scripts/benchmark-text-preview.mjs",
+      "sha256": "e25a942203bbdd843dc16622ee3c2cff4e2d31c9785d7d4cc03ed83b062b0ae8"
+    },
+    {
+      "path": "scripts/summarize-text-preview-benchmark.mjs",
+      "sha256": "077f464654add6170a8d9de1f27f35860910201052ff626cc44c5597ceba684d"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/text-preview.patch",
+      "sha256": "f0051a5a9428eae9fc5e620471a151a5283e248ed399e4457d5bdf11b50d9ed6"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/text-preview.json.gz",
+      "sha256": "46e1e8ec58afd93a8ca448af2e9b52377f0faa46335efe8a2b8460c1c34e852a"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/text-preview-summary.json",
+      "sha256": "23d6b1ab906e9b4c39d3bb1838eb749b0c3c93d8774b5589fb123fc9be0ee03f"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/text-preview-diagnostic.json.gz",
+      "sha256": "7cae000a061f5053043314cacbb5eb366bae6eb9c854f48fc2eb93093fec0f4a"
+    }
+  ],
+  "baselineSourceSnapshots": [
+    {
+      "path": "tmp/continued-review/text-preview-baseline/src/preview/native-drivers.ts",
+      "sha256": "5066d4c12310c9194a99d9272ed2b5af45858a9ab9965214de1be96007208ae2"
+    },
+    {
+      "path": "tmp/continued-review/text-preview-baseline/src/styles/index.css",
+      "sha256": "006c56d65bd147a1febcd0774cf4e60b3fe55895e4e7bc66975cb6728891f9f2"
+    },
+    {
+      "path": "tmp/continued-review/text-preview-baseline/src/viewer.ts",
+      "sha256": "1785928f876dabd294ae37d7b8d643b1ab548fdc0057e6aeb8b7e4466b82f12b"
+    }
+  ],
+  "runtimeArtifacts": [
+    {
+      "engine": "baseline",
+      "path": "tmp/continued-review/text-preview-baseline/dist/index.js",
+      "sha256": "087860f415a1b58c0a14112d86f5c9ddad57039e0eb3fee5d2533de5f4e273c9"
+    },
+    {
+      "engine": "baseline",
+      "path": "tmp/continued-review/text-preview-baseline/dist/index.css",
+      "sha256": "e4edd515f89dd7d6eef93ae83023c12235bd27716d9747ca773f7189f75358a7"
+    },
+    {
+      "engine": "current",
+      "path": "packages/core/dist/index.js",
+      "sha256": "5c6c3c890739043957b6f0638885a89b648519f15e92c95e04aa1fcf18da0819"
+    },
+    {
+      "engine": "current",
+      "path": "packages/core/dist/index.css",
+      "sha256": "7d158685d2016c05d1bf8c3c4efefd1a086f3977da7e17abae6eacc03fc99f74"
+    },
+    {
+      "path": "scripts/benchmark-text-preview.mjs",
+      "sha256": "e25a942203bbdd843dc16622ee3c2cff4e2d31c9785d7d4cc03ed83b062b0ae8"
+    }
+  ],
+  "localValidationLogs": {
+    "coreUnit": {
+      "path": "tmp/continued-review/text-preview-core-final-tests.log",
+      "sha256": "e4fc96d04800b7847b0c6b71f303fc9f3689a525e47977973d394c6c0e98d0c7"
+    },
+    "vueUnit": {
+      "path": "tmp/continued-review/text-preview-vue-final-tests.log",
+      "sha256": "b6e47a09281b979eb70865223162d6a6a73577bb99b3b428b12a2957a5341a36"
+    },
+    "browserDevelopment": {
+      "path": "tmp/continued-review/text-preview-browser-final-suite.log",
+      "sha256": "f3f2ed8498ef249080a2ab419af384a1c6ab1c17e586786dc7337a98f06f942f"
+    },
+    "browserProduction": {
+      "path": "tmp/continued-review/text-preview-production-browser.log",
+      "sha256": "8e0a5af7cdd52b05f907b300b3fd1793b7a235488651268f1a81225ca5d0cfab"
+    },
+    "coreBuild": {
+      "path": "tmp/continued-review/text-preview-final-core-build.log",
+      "sha256": "ae3153ac694c8f915da3937b7d4dd0cf44cc31bfd351695b39bdb7d2e34c4879"
+    },
+    "demoBuild": {
+      "path": "tmp/continued-review/text-preview-final-demo-build.log",
+      "sha256": "7a71f875001b8e3516c1f7c7504a1e2294c86a6e1b2e59ea0bbb331df0c74d7f"
+    },
+    "bundleReport": {
+      "path": "tmp/continued-review/text-preview-final-bundle-report.log",
+      "sha256": "4c427a59e1bc4f6558d701ba63bc756e7013d69cf21619d9ef37c256c2811730"
+    }
+  },
+  "reproduction": [
+    "Use isolated copies of the current source, preserving all earlier authorized changes; reverse text-preview.patch only in the baseline copy.",
+    "Build @filens/core in both copies. Copy baseline index.js and index.css to tmp/continued-review/text-preview-baseline/dist in the current copy.",
+    "Run node scripts/benchmark-text-preview.mjs --iterations 7 --output tmp/continued-review/text-preview-reproduced with no tests/builds in progress.",
+    "Run node scripts/summarize-text-preview-benchmark.mjs --input tmp/continued-review/text-preview-reproduced/results.json.",
+    "Run core and Vue Vitest directly, and Playwright text-preview/business-families regressions; production checks select demo upload flow and supported Office."
+  ]
+}

@@ -12,7 +12,7 @@ export default defineConfig({
     cssCodeSplit: false,
     sourcemap: true,
     rollupOptions: {
-      external: ['@filens/core', '@filens/xlsx']
+      external: ['@filens/core', '@filens/core/zip', '@filens/xlsx']
     }
   },
   test: {

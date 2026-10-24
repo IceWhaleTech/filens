@@ -32,7 +32,7 @@ import { createDesignPreviewDrivers } from '@filens/design';
 import { createMediaPreviewDrivers, type MediaPreviewDriverOptions } from '@filens/media';
 import { createOfficePreviewDrivers } from '@filens/office';
 import { createTextPreviewDrivers } from '@filens/text';
-import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, shallowRef, useId, watch } from 'vue';
 import { createVueDefaultPreviewRoutes } from './defaults';
 
 type Model3dControlsPreviewer = PreviewerInstance & {
@@ -135,6 +135,8 @@ const previewState = ref<PreviewItemState>({
 const unsubs: Array<() => void> = [];
 const collapsedModelNodes = ref<Set<string>>(new Set());
 const model3dTreeQuery = ref('');
+const modelToolsExpanded = ref(false);
+const modelToolsId = `pptxv-model-tools-${useId()}`;
 
 const isLoading = computed(() => previewState.value.loading);
 const errorMessage = computed(() => previewState.value.error);
@@ -1112,6 +1114,7 @@ onMounted(async () => {
 watch(
   () => props.src,
   async () => {
+    modelToolsExpanded.value = false;
     collapsedModelNodes.value = new Set();
     model3dTreeQuery.value = '';
     await loadSource();
@@ -1132,6 +1135,7 @@ watch(
     props.panoramaProcessor
   ],
   async () => {
+    modelToolsExpanded.value = false;
     collapsedModelNodes.value = new Set();
     model3dTreeQuery.value = '';
     await recreatePreviewer();
@@ -1142,6 +1146,7 @@ watch(
 watch(
   () => [props.name, props.extension, props.contentType],
   async () => {
+    modelToolsExpanded.value = false;
     collapsedModelNodes.value = new Set();
     model3dTreeQuery.value = '';
     await loadSource();
@@ -1324,431 +1329,454 @@ function createVueDefaultPreviewDrivers(panoramaProcessor?: MediaPreviewDriverOp
     </div>
 
     <div class="pptxv-layout">
-      <aside v-if="previewState.family === 'model3d'" class="pptxv-sidebar pptxv-tree-sidebar">
-        <div class="pptxv-meta-panel">
-          <template v-if="showModel3dTree">
-            <div class="pptxv-meta-heading">Model tree</div>
-            <div class="pptxv-tree-actions">
-              <button type="button" class="pptxv-button pptxv-tree-reset" :disabled="!selectedModelNodeId" @click="selectModelNode(undefined)">
-                Show all
-              </button>
-              <button type="button" class="pptxv-button pptxv-tree-reset" :disabled="!selectedModelNodeId" @click="refocusSelectedModelNode">
-                Refocus
-              </button>
-              <button type="button" class="pptxv-button pptxv-tree-reset" @click="resetModelView">
-                Reset view
-              </button>
-            </div>
-            <div class="pptxv-tree-search">
-              <input
-                v-model.trim="model3dTreeQuery"
-                type="search"
-                class="pptxv-tree-search-input"
-                placeholder="Search nodes, kinds, materials"
-              />
-              <button
-                type="button"
-                class="pptxv-button pptxv-tree-search-clear"
-                :disabled="!hasModel3dTreeQuery"
-                @click="clearModelTreeSearch"
-              >
-                Clear
-              </button>
-            </div>
-            <div class="pptxv-tree-search-status">{{ model3dTreeSearchLabel }}</div>
-            <div v-if="canExplodeModel" class="pptxv-tree-explode">
-              <span class="pptxv-tree-explode-label">Explode</span>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                class="pptxv-tree-explode-slider"
-                :value="model3dExplodePercent"
-                @input="setModelExplode($event)"
-              />
-              <button type="button" class="pptxv-button pptxv-tree-explode-value" @click="toggleModelExplode">
-                {{ model3dExplodePercent }}%
-              </button>
-            </div>
-            <div v-if="selectedModelNodeRow" class="pptxv-tree-summary">
-              <span>{{ selectedModelNodeRow.label }}</span>
-              <strong>{{ selectedModelNodeRow.children.length }} child{{ selectedModelNodeRow.children.length === 1 ? '' : 'ren' }}</strong>
-            </div>
-            <div v-if="canControlModelCamera" class="pptxv-measurement-controls">
-              <div class="pptxv-measurement-group">
-                <span class="pptxv-measurement-label">View</span>
-                <div class="pptxv-measurement-buttons">
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'isometric' }" @click="setModelViewPreset('isometric')">Iso</button>
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'front' }" @click="setModelViewPreset('front')">Front</button>
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'back' }" @click="setModelViewPreset('back')">Back</button>
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'left' }" @click="setModelViewPreset('left')">Left</button>
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'right' }" @click="setModelViewPreset('right')">Right</button>
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'top' }" @click="setModelViewPreset('top')">Top</button>
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'bottom' }" @click="setModelViewPreset('bottom')">Bottom</button>
-                </div>
-              </div>
-              <div v-if="canControlModelDisplay" class="pptxv-measurement-group">
-                <span class="pptxv-measurement-label">Display</span>
-                <div class="pptxv-measurement-buttons">
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dDisplayMode === 'shaded' }" @click="setModelDisplayMode('shaded')">Shaded</button>
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dDisplayMode === 'solid-edge' }" @click="setModelDisplayMode('solid-edge')">Solid+Edge</button>
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dDisplayMode === 'wireframe' }" @click="setModelDisplayMode('wireframe')">Wireframe</button>
-                  <button type="button" class="pptxv-button" :class="{ 'is-active': model3dDisplayMode === 'xray' }" @click="setModelDisplayMode('xray')">X-Ray</button>
-                </div>
-              </div>
-            </div>
-            <dl v-if="selectedModelNodeSummary.length" class="pptxv-tree-detail-list">
-              <div v-for="row in selectedModelNodeSummary" :key="row.label" class="pptxv-tree-detail-row">
-                <dt>{{ row.label }}</dt>
-                <dd>{{ row.value }}</dd>
-              </div>
-            </dl>
-            <div class="pptxv-tree-list">
-              <div
-                v-for="node in model3dTreeRows"
-                :key="node.id"
-                class="pptxv-tree-row"
-                :style="{ paddingLeft: `${8 + node.depth * 14}px` }"
-              >
-                <button
-                  v-if="node.children.length"
-                  type="button"
-                  class="pptxv-tree-toggle"
-                  :aria-label="node.collapsed ? 'Expand node' : 'Collapse node'"
-                  @click="toggleModelNodeCollapsed(node.id)"
-                >
-                  {{ node.collapsed ? '+' : '-' }}
+      <div
+        v-if="previewState.family === 'model3d'"
+        v-show="modelToolsExpanded"
+        :id="modelToolsId"
+        class="pptxv-model-tools"
+      >
+        <aside class="pptxv-sidebar pptxv-tree-sidebar">
+          <div class="pptxv-meta-panel">
+            <template v-if="showModel3dTree">
+              <div class="pptxv-meta-heading">Model tree</div>
+              <div class="pptxv-tree-actions">
+                <button type="button" class="pptxv-button pptxv-tree-reset" :disabled="!selectedModelNodeId" @click="selectModelNode(undefined)">
+                  Show all
                 </button>
-                <span v-else class="pptxv-tree-spacer" />
+                <button type="button" class="pptxv-button pptxv-tree-reset" :disabled="!selectedModelNodeId" @click="refocusSelectedModelNode">
+                  Refocus
+                </button>
+                <button type="button" class="pptxv-button pptxv-tree-reset" @click="resetModelView">
+                  Reset view
+                </button>
+              </div>
+              <div class="pptxv-tree-search">
                 <input
-                  type="checkbox"
-                  class="pptxv-tree-visibility"
-                  :checked="node.visible"
-                  :aria-label="node.visible ? 'Hide node' : 'Show node'"
-                  @click.stop
-                  @change="setModelNodeVisibility(node.id, $event)"
+                  v-model.trim="model3dTreeQuery"
+                  type="search"
+                  class="pptxv-tree-search-input"
+                  placeholder="Search nodes, kinds, materials"
                 />
                 <button
                   type="button"
-                  class="pptxv-tree-button"
-                  :class="{ 'is-active': selectedModelNodeId === node.id, 'is-hidden': !node.visible }"
-                  @click="selectModelNode(node.id)"
-                >
-                  <div class="pptxv-tree-topline">
-                    <span class="pptxv-tree-badge">{{ modelNodeKindLabel(node.kind) }}</span>
-                    <span class="pptxv-tree-label">{{ node.label }}</span>
-                    <span v-if="node.children.length" class="pptxv-tree-count">{{ node.children.length }}</span>
-                  </div>
-                  <span class="pptxv-tree-kind">{{ node.kind }}</span>
-                </button>
-              </div>
-            </div>
-            <div v-if="showModel3dTreeEmpty" class="pptxv-tree-empty">
-              No nodes matched the current filter.
-            </div>
-          </template>
-          <template v-else>
-            <div class="pptxv-meta-heading">Model tree</div>
-            <div class="pptxv-meta-muted">{{ isLoading ? 'Loading model...' : 'No model tree available.' }}</div>
-          </template>
-        </div>
-      </aside>
-      <aside v-if="previewState.family === 'model3d'" class="pptxv-sidebar pptxv-meta-sidebar">
-        <div class="pptxv-meta-panel">
-          <div class="pptxv-meta-heading">Model info</div>
-          <template v-if="showModel3dMetadata">
-            <dl class="pptxv-meta-list">
-              <div v-for="row in model3dMetadataRows" :key="row.label" class="pptxv-meta-row">
-                <dt>{{ row.label }}</dt>
-                <dd>{{ row.value }}</dd>
-              </div>
-            </dl>
-          </template>
-          <template v-else>
-            <div class="pptxv-meta-muted">{{ isLoading ? 'Loading model...' : 'No model metadata available.' }}</div>
-          </template>
-          <div v-if="model3dMaterialDetails.length" class="pptxv-meta-heading pptxv-meta-heading-split">
-            <span>{{ model3dMaterialHeading }}</span>
-            <div class="pptxv-meta-heading-actions">
-              <button
-                v-if="activeModelMaterialKey"
-                type="button"
-                class="pptxv-button pptxv-material-clear"
-                @click="toggleActiveMaterial(undefined)"
-              >
-                Clear isolate
-              </button>
-              <span class="pptxv-meta-count">{{ model3dMaterialCountLabel }}</span>
-            </div>
-          </div>
-          <div v-if="model3dMaterialDetails.length" class="pptxv-material-list">
-            <section
-              v-for="material in model3dMaterialDetails"
-              :key="material.key"
-              class="pptxv-material-card"
-              :class="{ 'is-active': activeModelMaterialKey === material.key }"
-            >
-              <div class="pptxv-material-title">
-                <div class="pptxv-material-title-copy">
-                  <strong>{{ material.name || material.type }}</strong>
-                  <span>{{ material.type }}</span>
-                </div>
-                <div v-if="materialColorSwatches(material).length" class="pptxv-material-swatches">
-                  <span
-                    v-for="swatch in materialColorSwatches(material)"
-                    :key="swatch.label"
-                    class="pptxv-material-swatch"
-                    :title="`${swatch.label}: ${swatch.color}`"
-                    :style="{ backgroundColor: swatch.color }"
-                  />
-                </div>
-              </div>
-              <div class="pptxv-material-actions">
-                <button
-                  type="button"
-                  class="pptxv-button pptxv-material-action"
-                  @click="toggleActiveMaterial(material.key)"
-                >
-                  {{ materialActionLabel(material) }}
-                </button>
-              </div>
-              <dl class="pptxv-material-detail-list">
-                <div
-                  v-for="row in materialDetailRows(material)"
-                  :key="row.label"
-                  class="pptxv-material-detail-row"
-                >
-                  <dt>{{ row.label }}</dt>
-                  <dd>{{ row.value }}</dd>
-                </div>
-              </dl>
-            </section>
-          </div>
-          <div v-if="canMeasureModel" class="pptxv-meta-heading">Measurement</div>
-          <div v-if="canControlModelDisplay" class="pptxv-meta-heading">Display</div>
-          <dl v-if="canControlModelDisplay" class="pptxv-meta-list">
-            <div class="pptxv-meta-row">
-              <dt>Mode</dt>
-              <dd>{{ displayModeLabel(model3dDisplayMode) }}</dd>
-            </div>
-            <div class="pptxv-meta-row">
-              <dt>Snapshot bg</dt>
-              <dd>{{ snapshotBackgroundLabel(model3dSnapshotBackground) }}</dd>
-            </div>
-          </dl>
-          <div v-if="canDownloadSnapshot" class="pptxv-measurement-controls">
-            <div class="pptxv-measurement-group">
-              <span class="pptxv-measurement-label">Snapshot</span>
-              <div class="pptxv-measurement-buttons">
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dSnapshotBackground === 'scene' }"
-                  @click="setModelSnapshotBackground('scene')"
-                >
-                  Scene
-                </button>
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dSnapshotBackground === 'white' }"
-                  @click="setModelSnapshotBackground('white')"
-                >
-                  White
-                </button>
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dSnapshotBackground === 'transparent' }"
-                  @click="setModelSnapshotBackground('transparent')"
+                  class="pptxv-button pptxv-tree-search-clear"
+                  :disabled="!hasModel3dTreeQuery"
+                  @click="clearModelTreeSearch"
                 >
                   Clear
                 </button>
               </div>
-            </div>
+              <div class="pptxv-tree-search-status">{{ model3dTreeSearchLabel }}</div>
+              <div v-if="canExplodeModel" class="pptxv-tree-explode">
+                <span class="pptxv-tree-explode-label">Explode</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  class="pptxv-tree-explode-slider"
+                  :value="model3dExplodePercent"
+                  @input="setModelExplode($event)"
+                />
+                <button type="button" class="pptxv-button pptxv-tree-explode-value" @click="toggleModelExplode">
+                  {{ model3dExplodePercent }}%
+                </button>
+              </div>
+              <div v-if="selectedModelNodeRow" class="pptxv-tree-summary">
+                <span>{{ selectedModelNodeRow.label }}</span>
+                <strong>{{ selectedModelNodeRow.children.length }} child{{ selectedModelNodeRow.children.length === 1 ? '' : 'ren' }}</strong>
+              </div>
+              <div v-if="canControlModelCamera" class="pptxv-measurement-controls">
+                <div class="pptxv-measurement-group">
+                  <span class="pptxv-measurement-label">View</span>
+                  <div class="pptxv-measurement-buttons">
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'isometric' }" @click="setModelViewPreset('isometric')">Iso</button>
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'front' }" @click="setModelViewPreset('front')">Front</button>
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'back' }" @click="setModelViewPreset('back')">Back</button>
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'left' }" @click="setModelViewPreset('left')">Left</button>
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'right' }" @click="setModelViewPreset('right')">Right</button>
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'top' }" @click="setModelViewPreset('top')">Top</button>
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dViewPreset === 'bottom' }" @click="setModelViewPreset('bottom')">Bottom</button>
+                  </div>
+                </div>
+                <div v-if="canControlModelDisplay" class="pptxv-measurement-group">
+                  <span class="pptxv-measurement-label">Display</span>
+                  <div class="pptxv-measurement-buttons">
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dDisplayMode === 'shaded' }" @click="setModelDisplayMode('shaded')">Shaded</button>
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dDisplayMode === 'solid-edge' }" @click="setModelDisplayMode('solid-edge')">Solid+Edge</button>
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dDisplayMode === 'wireframe' }" @click="setModelDisplayMode('wireframe')">Wireframe</button>
+                    <button type="button" class="pptxv-button" :class="{ 'is-active': model3dDisplayMode === 'xray' }" @click="setModelDisplayMode('xray')">X-Ray</button>
+                  </div>
+                </div>
+              </div>
+              <dl v-if="selectedModelNodeSummary.length" class="pptxv-tree-detail-list">
+                <div v-for="row in selectedModelNodeSummary" :key="row.label" class="pptxv-tree-detail-row">
+                  <dt>{{ row.label }}</dt>
+                  <dd>{{ row.value }}</dd>
+                </div>
+              </dl>
+              <div class="pptxv-tree-list">
+                <div
+                  v-for="node in model3dTreeRows"
+                  :key="node.id"
+                  class="pptxv-tree-row"
+                  :style="{ paddingLeft: `${8 + node.depth * 14}px` }"
+                >
+                  <button
+                    v-if="node.children.length"
+                    type="button"
+                    class="pptxv-tree-toggle"
+                    :aria-label="node.collapsed ? 'Expand node' : 'Collapse node'"
+                    @click="toggleModelNodeCollapsed(node.id)"
+                  >
+                    {{ node.collapsed ? '+' : '-' }}
+                  </button>
+                  <span v-else class="pptxv-tree-spacer" />
+                  <input
+                    type="checkbox"
+                    class="pptxv-tree-visibility"
+                    :checked="node.visible"
+                    :aria-label="node.visible ? 'Hide node' : 'Show node'"
+                    @click.stop
+                    @change="setModelNodeVisibility(node.id, $event)"
+                  />
+                  <button
+                    type="button"
+                    class="pptxv-tree-button"
+                    :class="{ 'is-active': selectedModelNodeId === node.id, 'is-hidden': !node.visible }"
+                    @click="selectModelNode(node.id)"
+                  >
+                    <div class="pptxv-tree-topline">
+                      <span class="pptxv-tree-badge">{{ modelNodeKindLabel(node.kind) }}</span>
+                      <span class="pptxv-tree-label">{{ node.label }}</span>
+                      <span v-if="node.children.length" class="pptxv-tree-count">{{ node.children.length }}</span>
+                    </div>
+                    <span class="pptxv-tree-kind">{{ node.kind }}</span>
+                  </button>
+                </div>
+              </div>
+              <div v-if="showModel3dTreeEmpty" class="pptxv-tree-empty">
+                No nodes matched the current filter.
+              </div>
+            </template>
+            <template v-else>
+              <div class="pptxv-meta-heading">Model tree</div>
+              <div class="pptxv-meta-muted">{{ isLoading ? 'Loading model...' : 'No model tree available.' }}</div>
+            </template>
           </div>
-          <div v-if="canMeasureModel" class="pptxv-measurement-controls">
-            <div class="pptxv-measurement-group">
-              <span class="pptxv-measurement-label">Snap</span>
-              <div class="pptxv-measurement-buttons">
+        </aside>
+        <aside class="pptxv-sidebar pptxv-meta-sidebar">
+          <div class="pptxv-meta-panel">
+            <div class="pptxv-meta-heading">Model info</div>
+            <template v-if="showModel3dMetadata">
+              <dl class="pptxv-meta-list">
+                <div v-for="row in model3dMetadataRows" :key="row.label" class="pptxv-meta-row">
+                  <dt>{{ row.label }}</dt>
+                  <dd>{{ row.value }}</dd>
+                </div>
+              </dl>
+            </template>
+            <template v-else>
+              <div class="pptxv-meta-muted">{{ isLoading ? 'Loading model...' : 'No model metadata available.' }}</div>
+            </template>
+            <div v-if="model3dMaterialDetails.length" class="pptxv-meta-heading pptxv-meta-heading-split">
+              <span>{{ model3dMaterialHeading }}</span>
+              <div class="pptxv-meta-heading-actions">
                 <button
+                  v-if="activeModelMaterialKey"
                   type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dMeasurementSnapMode === 'surface' }"
-                  @click="setModelMeasurementSnapMode('surface')"
+                  class="pptxv-button pptxv-material-clear"
+                  @click="toggleActiveMaterial(undefined)"
                 >
-                  Surface
+                  Clear isolate
                 </button>
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dMeasurementSnapMode === 'vertex' }"
-                  @click="setModelMeasurementSnapMode('vertex')"
-                >
-                  Vertex
-                </button>
+                <span class="pptxv-meta-count">{{ model3dMaterialCountLabel }}</span>
               </div>
             </div>
-            <div class="pptxv-measurement-group">
-              <span class="pptxv-measurement-label">Axis</span>
-              <div class="pptxv-measurement-buttons">
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dMeasurementAxisLock === 'free' }"
-                  @click="setModelMeasurementAxisLock('free')"
-                >
-                  Free
-                </button>
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dMeasurementAxisLock === 'x' }"
-                  @click="setModelMeasurementAxisLock('x')"
-                >
-                  X
-                </button>
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dMeasurementAxisLock === 'y' }"
-                  @click="setModelMeasurementAxisLock('y')"
-                >
-                  Y
-                </button>
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dMeasurementAxisLock === 'z' }"
-                  @click="setModelMeasurementAxisLock('z')"
-                >
-                  Z
-                </button>
+            <div v-if="model3dMaterialDetails.length" class="pptxv-material-list">
+              <section
+                v-for="material in model3dMaterialDetails"
+                :key="material.key"
+                class="pptxv-material-card"
+                :class="{ 'is-active': activeModelMaterialKey === material.key }"
+              >
+                <div class="pptxv-material-title">
+                  <div class="pptxv-material-title-copy">
+                    <strong>{{ material.name || material.type }}</strong>
+                    <span>{{ material.type }}</span>
+                  </div>
+                  <div v-if="materialColorSwatches(material).length" class="pptxv-material-swatches">
+                    <span
+                      v-for="swatch in materialColorSwatches(material)"
+                      :key="swatch.label"
+                      class="pptxv-material-swatch"
+                      :title="`${swatch.label}: ${swatch.color}`"
+                      :style="{ backgroundColor: swatch.color }"
+                    />
+                  </div>
+                </div>
+                <div class="pptxv-material-actions">
+                  <button
+                    type="button"
+                    class="pptxv-button pptxv-material-action"
+                    @click="toggleActiveMaterial(material.key)"
+                  >
+                    {{ materialActionLabel(material) }}
+                  </button>
+                </div>
+                <dl class="pptxv-material-detail-list">
+                  <div
+                    v-for="row in materialDetailRows(material)"
+                    :key="row.label"
+                    class="pptxv-material-detail-row"
+                  >
+                    <dt>{{ row.label }}</dt>
+                    <dd>{{ row.value }}</dd>
+                  </div>
+                </dl>
+              </section>
+            </div>
+            <div v-if="canMeasureModel" class="pptxv-meta-heading">Measurement</div>
+            <div v-if="canControlModelDisplay" class="pptxv-meta-heading">Display</div>
+            <dl v-if="canControlModelDisplay" class="pptxv-meta-list">
+              <div class="pptxv-meta-row">
+                <dt>Mode</dt>
+                <dd>{{ displayModeLabel(model3dDisplayMode) }}</dd>
+              </div>
+              <div class="pptxv-meta-row">
+                <dt>Snapshot bg</dt>
+                <dd>{{ snapshotBackgroundLabel(model3dSnapshotBackground) }}</dd>
+              </div>
+            </dl>
+            <div v-if="canDownloadSnapshot" class="pptxv-measurement-controls">
+              <div class="pptxv-measurement-group">
+                <span class="pptxv-measurement-label">Snapshot</span>
+                <div class="pptxv-measurement-buttons">
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dSnapshotBackground === 'scene' }"
+                    @click="setModelSnapshotBackground('scene')"
+                  >
+                    Scene
+                  </button>
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dSnapshotBackground === 'white' }"
+                    @click="setModelSnapshotBackground('white')"
+                  >
+                    White
+                  </button>
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dSnapshotBackground === 'transparent' }"
+                    @click="setModelSnapshotBackground('transparent')"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-          <dl v-if="canMeasureModel" class="pptxv-meta-list">
-            <div v-for="row in model3dMeasurementRows" :key="row.label" class="pptxv-meta-row">
-              <dt>{{ row.label }}</dt>
-              <dd>{{ row.value }}</dd>
-            </div>
-          </dl>
-          <div v-if="canSectionModel" class="pptxv-meta-heading">Section</div>
-          <div v-if="canSectionModel" class="pptxv-measurement-controls">
-            <div class="pptxv-measurement-group">
-              <span class="pptxv-measurement-label">Mode</span>
-              <div class="pptxv-measurement-buttons">
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dSectionMode === 'single' }"
-                  @click="setModelSectionMode('single')"
-                >
-                  Plane
-                </button>
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dSectionMode === 'box' }"
-                  @click="setModelSectionMode('box')"
-                >
-                  Box
-                </button>
+            <div v-if="canMeasureModel" class="pptxv-measurement-controls">
+              <div class="pptxv-measurement-group">
+                <span class="pptxv-measurement-label">Snap</span>
+                <div class="pptxv-measurement-buttons">
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dMeasurementSnapMode === 'surface' }"
+                    @click="setModelMeasurementSnapMode('surface')"
+                  >
+                    Surface
+                  </button>
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dMeasurementSnapMode === 'vertex' }"
+                    @click="setModelMeasurementSnapMode('vertex')"
+                  >
+                    Vertex
+                  </button>
+                </div>
+              </div>
+              <div class="pptxv-measurement-group">
+                <span class="pptxv-measurement-label">Axis</span>
+                <div class="pptxv-measurement-buttons">
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dMeasurementAxisLock === 'free' }"
+                    @click="setModelMeasurementAxisLock('free')"
+                  >
+                    Free
+                  </button>
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dMeasurementAxisLock === 'x' }"
+                    @click="setModelMeasurementAxisLock('x')"
+                  >
+                    X
+                  </button>
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dMeasurementAxisLock === 'y' }"
+                    @click="setModelMeasurementAxisLock('y')"
+                  >
+                    Y
+                  </button>
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dMeasurementAxisLock === 'z' }"
+                    @click="setModelMeasurementAxisLock('z')"
+                  >
+                    Z
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="pptxv-measurement-group">
-              <span class="pptxv-measurement-label">Axis</span>
-              <div class="pptxv-measurement-buttons">
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dSectionAxis === 'x' }"
-                  @click="setModelSectionAxis('x')"
-                >
-                  X
-                </button>
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dSectionAxis === 'y' }"
-                  @click="setModelSectionAxis('y')"
-                >
-                  Y
-                </button>
-                <button
-                  type="button"
-                  class="pptxv-button"
-                  :class="{ 'is-active': model3dSectionAxis === 'z' }"
-                  @click="setModelSectionAxis('z')"
-                >
-                  Z
-                </button>
+            <dl v-if="canMeasureModel" class="pptxv-meta-list">
+              <div v-for="row in model3dMeasurementRows" :key="row.label" class="pptxv-meta-row">
+                <dt>{{ row.label }}</dt>
+                <dd>{{ row.value }}</dd>
               </div>
-            </div>
-            <div v-if="model3dSectionMode === 'single'" class="pptxv-measurement-group">
-              <div class="pptxv-section-header">
-                <span class="pptxv-measurement-label">Offset</span>
-                <strong class="pptxv-section-value">{{ formatCompactNumber(model3dSectionOffset) }}</strong>
+            </dl>
+            <div v-if="canSectionModel" class="pptxv-meta-heading">Section</div>
+            <div v-if="canSectionModel" class="pptxv-measurement-controls">
+              <div class="pptxv-measurement-group">
+                <span class="pptxv-measurement-label">Mode</span>
+                <div class="pptxv-measurement-buttons">
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dSectionMode === 'single' }"
+                    @click="setModelSectionMode('single')"
+                  >
+                    Plane
+                  </button>
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dSectionMode === 'box' }"
+                    @click="setModelSectionMode('box')"
+                  >
+                    Box
+                  </button>
+                </div>
               </div>
-              <input
-                type="range"
-                class="pptxv-section-slider"
-                :min="model3dSectionMin"
-                :max="model3dSectionMax"
-                :step="model3dSectionStep"
-                :value="model3dSectionOffset"
-                @input="setModelSectionOffset($event)"
-              />
-              <div class="pptxv-section-range">
-                <span>{{ formatCompactNumber(model3dSectionMin) }}</span>
-                <span>{{ formatCompactNumber(model3dSectionMax) }}</span>
+              <div class="pptxv-measurement-group">
+                <span class="pptxv-measurement-label">Axis</span>
+                <div class="pptxv-measurement-buttons">
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dSectionAxis === 'x' }"
+                    @click="setModelSectionAxis('x')"
+                  >
+                    X
+                  </button>
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dSectionAxis === 'y' }"
+                    @click="setModelSectionAxis('y')"
+                  >
+                    Y
+                  </button>
+                  <button
+                    type="button"
+                    class="pptxv-button"
+                    :class="{ 'is-active': model3dSectionAxis === 'z' }"
+                    @click="setModelSectionAxis('z')"
+                  >
+                    Z
+                  </button>
+                </div>
               </div>
-            </div>
-            <div v-else class="pptxv-section-box">
-              <div v-for="axis in ['x', 'y', 'z']" :key="axis" class="pptxv-measurement-group">
+              <div v-if="model3dSectionMode === 'single'" class="pptxv-measurement-group">
                 <div class="pptxv-section-header">
-                  <span class="pptxv-measurement-label">Box {{ axis.toUpperCase() }}</span>
-                  <strong class="pptxv-section-value">
-                    {{ formatRange(model3dSectionRange[axis as 'x' | 'y' | 'z']) }}
-                  </strong>
+                  <span class="pptxv-measurement-label">Offset</span>
+                  <strong class="pptxv-section-value">{{ formatCompactNumber(model3dSectionOffset) }}</strong>
                 </div>
                 <input
                   type="range"
                   class="pptxv-section-slider"
-                  :min="model3dSectionBounds[axis as 'x' | 'y' | 'z'][0]"
-                  :max="model3dSectionBounds[axis as 'x' | 'y' | 'z'][1]"
-                  :step="Math.max((model3dSectionBounds[axis as 'x' | 'y' | 'z'][1] - model3dSectionBounds[axis as 'x' | 'y' | 'z'][0]) / 200, 0.001)"
-                  :value="model3dSectionRange[axis as 'x' | 'y' | 'z'][0]"
-                  @input="setModelSectionRange(axis as 'x' | 'y' | 'z', 'min', $event)"
-                />
-                <input
-                  type="range"
-                  class="pptxv-section-slider"
-                  :min="model3dSectionBounds[axis as 'x' | 'y' | 'z'][0]"
-                  :max="model3dSectionBounds[axis as 'x' | 'y' | 'z'][1]"
-                  :step="Math.max((model3dSectionBounds[axis as 'x' | 'y' | 'z'][1] - model3dSectionBounds[axis as 'x' | 'y' | 'z'][0]) / 200, 0.001)"
-                  :value="model3dSectionRange[axis as 'x' | 'y' | 'z'][1]"
-                  @input="setModelSectionRange(axis as 'x' | 'y' | 'z', 'max', $event)"
+                  :min="model3dSectionMin"
+                  :max="model3dSectionMax"
+                  :step="model3dSectionStep"
+                  :value="model3dSectionOffset"
+                  @input="setModelSectionOffset($event)"
                 />
                 <div class="pptxv-section-range">
-                  <span>{{ formatCompactNumber(model3dSectionBounds[axis as 'x' | 'y' | 'z'][0]) }}</span>
-                  <span>{{ formatCompactNumber(model3dSectionBounds[axis as 'x' | 'y' | 'z'][1]) }}</span>
+                  <span>{{ formatCompactNumber(model3dSectionMin) }}</span>
+                  <span>{{ formatCompactNumber(model3dSectionMax) }}</span>
+                </div>
+              </div>
+              <div v-else class="pptxv-section-box">
+                <div v-for="axis in ['x', 'y', 'z']" :key="axis" class="pptxv-measurement-group">
+                  <div class="pptxv-section-header">
+                    <span class="pptxv-measurement-label">Box {{ axis.toUpperCase() }}</span>
+                    <strong class="pptxv-section-value">
+                      {{ formatRange(model3dSectionRange[axis as 'x' | 'y' | 'z']) }}
+                    </strong>
+                  </div>
+                  <input
+                    type="range"
+                    class="pptxv-section-slider"
+                    :min="model3dSectionBounds[axis as 'x' | 'y' | 'z'][0]"
+                    :max="model3dSectionBounds[axis as 'x' | 'y' | 'z'][1]"
+                    :step="Math.max((model3dSectionBounds[axis as 'x' | 'y' | 'z'][1] - model3dSectionBounds[axis as 'x' | 'y' | 'z'][0]) / 200, 0.001)"
+                    :value="model3dSectionRange[axis as 'x' | 'y' | 'z'][0]"
+                    @input="setModelSectionRange(axis as 'x' | 'y' | 'z', 'min', $event)"
+                  />
+                  <input
+                    type="range"
+                    class="pptxv-section-slider"
+                    :min="model3dSectionBounds[axis as 'x' | 'y' | 'z'][0]"
+                    :max="model3dSectionBounds[axis as 'x' | 'y' | 'z'][1]"
+                    :step="Math.max((model3dSectionBounds[axis as 'x' | 'y' | 'z'][1] - model3dSectionBounds[axis as 'x' | 'y' | 'z'][0]) / 200, 0.001)"
+                    :value="model3dSectionRange[axis as 'x' | 'y' | 'z'][1]"
+                    @input="setModelSectionRange(axis as 'x' | 'y' | 'z', 'max', $event)"
+                  />
+                  <div class="pptxv-section-range">
+                    <span>{{ formatCompactNumber(model3dSectionBounds[axis as 'x' | 'y' | 'z'][0]) }}</span>
+                    <span>{{ formatCompactNumber(model3dSectionBounds[axis as 'x' | 'y' | 'z'][1]) }}</span>
+                  </div>
                 </div>
               </div>
             </div>
+            <dl v-if="canSectionModel" class="pptxv-meta-list">
+              <div v-for="row in model3dSectionRows" :key="row.label" class="pptxv-meta-row">
+                <dt>{{ row.label }}</dt>
+                <dd>{{ row.value }}</dd>
+              </div>
+            </dl>
           </div>
-          <dl v-if="canSectionModel" class="pptxv-meta-list">
-            <div v-for="row in model3dSectionRows" :key="row.label" class="pptxv-meta-row">
-              <dt>{{ row.label }}</dt>
-              <dd>{{ row.value }}</dd>
-            </div>
-          </dl>
-        </div>
-      </aside>
+        </aside>
+      </div>
       <div class="pptxv-main">
         <div class="pptxv-main-stage">
           <div ref="viewerHost" class="pptxv-main-view" />
+          <button
+            v-if="previewState.family === 'model3d'"
+            type="button"
+            class="pptxv-button pptxv-model-tools-toggle"
+            :aria-label="modelToolsExpanded ? 'Hide model tools' : 'Show model tools'"
+            :title="modelToolsExpanded ? 'Hide model tools' : 'Show model tools'"
+            :aria-expanded="modelToolsExpanded"
+            :aria-controls="modelToolsId"
+            @click="modelToolsExpanded = !modelToolsExpanded"
+          >
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+              <rect x="2.5" y="3.5" width="15" height="13" rx="1.5" />
+              <path d="M7.5 3.5v13" />
+              <path :d="modelToolsExpanded ? 'm12.5 7-3 3 3 3' : 'm10.5 7 3 3-3 3'" />
+            </svg>
+          </button>
           <div v-if="isLoading" class="pptxv-overlay">Loading preview...</div>
           <div v-else-if="errorMessage" class="pptxv-overlay is-error">{{ errorMessage }}</div>
         </div>

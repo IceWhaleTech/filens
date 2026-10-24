@@ -1,0 +1,111 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "f6e3d991be2fd0ff7f6d2c6f9477da5cebfcedf2f7190b09ffcff6f60bc587ad",
+  "iterations": 7,
+  "runs": 42,
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "method": "10,000 paired bootstrap resamples of DOM-construction median ratios, seed 12345. Prepared-model rendering stage only, excluding parsing/layout/paint. Baseline operations at or below 10 ms receive no speed claim. No peer/SOTA ranking.",
+  "samples": [
+    {
+      "sample": "dense-20000-rows",
+      "renderedRows": 200,
+      "tableHtmlMatches": true,
+      "comparisons": [
+        {
+          "metric": "initialRowsMs",
+          "currentMs": 0.8999999761581421,
+          "baselineMs": 1.5,
+          "ratio": 1.6666667108182565,
+          "ratio95PercentBootstrapInterval": [
+            1.5555554966867768,
+            2.2857139937731885
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "appendRowsMs",
+          "currentMs": 0.5,
+          "baselineMs": 1.7999999523162842,
+          "ratio": 3.5999999046325684,
+          "ratio95PercentBootstrapInterval": [
+            3.1666665010982156,
+            4.500000149011621
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "dense-200000-rows",
+      "renderedRows": 200,
+      "tableHtmlMatches": true,
+      "comparisons": [
+        {
+          "metric": "initialRowsMs",
+          "currentMs": 2,
+          "baselineMs": 12,
+          "ratio": 6,
+          "ratio95PercentBootstrapInterval": [
+            5.714285973788941,
+            6
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "appendRowsMs",
+          "currentMs": 1.1999999284744263,
+          "baselineMs": 9.100000023841858,
+          "ratio": 7.583333805203466,
+          "ratio95PercentBootstrapInterval": [
+            6.428570990659782,
+            8.81818167040171
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "sparse-200000-rows",
+      "renderedRows": 200,
+      "tableHtmlMatches": true,
+      "comparisons": [
+        {
+          "metric": "initialRowsMs",
+          "currentMs": 2.100000023841858,
+          "baselineMs": 12.299999952316284,
+          "ratio": 5.857142767938628,
+          "ratio95PercentBootstrapInterval": [
+            5.31818172458775,
+            6.649999976158142
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "appendRowsMs",
+          "currentMs": 1.7000000476837158,
+          "baselineMs": 9.5,
+          "ratio": 5.588235137371873,
+          "ratio95PercentBootstrapInterval": [
+            5.222222347318394,
+            5.705882621058967
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    }
+  ]
+}

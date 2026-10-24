@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { createEpubResources, resolveArchivePath } from './epub-resources';
 import {
   createDefaultPreviewRoutes,
   type EbookPreviewState,
@@ -8,7 +9,6 @@ import {
   type PreviewEventName,
   type PreviewLoadContext,
   type PreviewOptions,
-  type PreviewResourceResolveResult,
   type PreviewResourceResolver,
   type PreviewSession,
   type PreviewSource
@@ -68,6 +68,9 @@ export class EpubPreviewSession implements PreviewSession<EbookPreviewState> {
   private readonly createdUrls: string[] = [];
   private book: ParsedEpubBook | null = null;
   private frame: HTMLIFrameElement | null = null;
+  private loadGeneration = 0;
+  private loadController?: AbortController;
+  private removeAbortListener?: () => void;
   private state: EbookPreviewState = {
     loading: false,
     error: null,
@@ -99,8 +102,23 @@ export class EpubPreviewSession implements PreviewSession<EbookPreviewState> {
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
-    this.revokeCreatedUrls();
-    this.book = null;
+    const generation = ++this.loadGeneration;
+    this.loadController?.abort();
+    this.removeAbortListener?.();
+    this.releaseBook();
+    const controller = new AbortController();
+    this.loadController = controller;
+    const signal = context.signal;
+    const abort = () => {
+      controller.abort();
+      if (generation === this.loadGeneration) {
+        this.releaseBook();
+        this.state.loading = false;
+        this.emit('statechange', this.state);
+      }
+    };
+    signal?.addEventListener('abort', abort, { once: true });
+    this.removeAbortListener = () => signal?.removeEventListener('abort', abort);
     this.state = {
       ...this.state,
       loading: true,
@@ -118,15 +136,25 @@ export class EpubPreviewSession implements PreviewSession<EbookPreviewState> {
     this.emit('statechange', this.state);
 
     try {
+      if (signal?.aborted) controller.abort();
+      checkAborted(controller.signal);
       const format = normalizeFormat(context.route?.sourceFormat ?? context.descriptor.extension);
       if (format !== 'epub' && format !== 'cbz') {
         throw new Error(`Ebook preview currently supports EPUB and CBZ files, got ${format || 'unknown'}.`);
       }
 
-      this.book =
+      const loadContext = { ...context, signal: controller.signal };
+      const createUrl = (blob: Blob) => {
+        checkAborted(controller.signal);
+        return this.createObjectUrl(blob);
+      };
+      const book =
         format === 'cbz'
-          ? await loadCbzBook(source, context, (blob) => this.createObjectUrl(blob))
-          : await loadEpubBook(source, context, (blob) => this.createObjectUrl(blob), this.options.resourceResolver);
+          ? await loadCbzBook(source, loadContext, createUrl)
+          : await loadEpubBook(source, loadContext, createUrl, this.options.resourceResolver);
+      if (generation !== this.loadGeneration) return;
+      checkAborted(controller.signal);
+      this.book = book;
       this.state = {
         ...this.state,
         loading: false,
@@ -146,8 +174,13 @@ export class EpubPreviewSession implements PreviewSession<EbookPreviewState> {
       this.emit('rendered', this.state);
       this.emit('statechange', this.state);
     } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      if (generation !== this.loadGeneration) return;
+      this.releaseBook();
       this.state.loading = false;
+      if (controller.signal.aborted) {
+        checkAborted(controller.signal);
+      }
+      const normalizedError = error instanceof Error ? error : new Error(String(error));
       this.state.error = normalizedError.message;
       this.emit('error', normalizedError);
       this.emit('statechange', this.state);
@@ -156,13 +189,16 @@ export class EpubPreviewSession implements PreviewSession<EbookPreviewState> {
   }
 
   destroy(): void {
-    this.revokeCreatedUrls();
-    this.tabs.replaceChildren();
-    this.stage.replaceChildren();
+    this.loadGeneration++;
+    this.loadController?.abort();
+    this.removeAbortListener?.();
+    this.releaseBook();
+    this.state.loading = false;
     this.root.replaceChildren();
     if (this.root.parentElement === this.host) {
       this.host.replaceChildren();
     }
+    for (const listeners of Object.values(this.listeners)) listeners.clear();
   }
 
   getState(): EbookPreviewState {
@@ -193,7 +229,7 @@ export class EpubPreviewSession implements PreviewSession<EbookPreviewState> {
   }
 
   private goToChapter(index: number): void {
-    if (!this.book?.chapters.length) {
+    if (!Number.isInteger(index) || !this.book?.chapters.length) {
       return;
     }
     const nextIndex = Math.max(0, Math.min(index, this.book.chapters.length - 1));
@@ -245,6 +281,20 @@ export class EpubPreviewSession implements PreviewSession<EbookPreviewState> {
     return url;
   }
 
+  private releaseBook(): void {
+    this.revokeCreatedUrls();
+    this.book = null;
+    this.frame = null;
+    this.tabs.replaceChildren();
+    this.stage.replaceChildren();
+    this.state.chapterCount = 0;
+    this.state.chapterIndex = 0;
+    this.state.chapters = [];
+    this.state.chapterTitle = undefined;
+    this.state.location = undefined;
+    this.state.progress = 0;
+  }
+
   private revokeCreatedUrls(): void {
     while (this.createdUrls.length) {
       const url = this.createdUrls.pop();
@@ -287,19 +337,23 @@ export async function loadEpubBook(
   createUrl: (blob: Blob) => string = (blob) => URL.createObjectURL(blob),
   resourceResolver?: PreviewResourceResolver
 ): Promise<ParsedEpubBook> {
-  const zip = await JSZip.loadAsync(await sourceToArrayBuffer(source, context));
+  const bytes = await sourceToArrayBuffer(source, context);
+  checkAborted(context.signal);
+  const zip = await JSZip.loadAsync(bytes);
+  checkAborted(context.signal);
   const warnings: string[] = [];
-  const container = await readZipText(zip, 'META-INF/container.xml');
+  const container = await readZipText(zip, 'META-INF/container.xml', context.signal);
   if (!container) {
     throw new Error('Invalid EPUB: missing META-INF/container.xml.');
   }
 
-  const packagePath = findRootfilePath(container);
+  const rootfile = findRootfilePath(container);
+  const packagePath = rootfile ? resolveArchivePath('', rootfile) : null;
   if (!packagePath) {
     throw new Error('Invalid EPUB: missing rootfile path.');
   }
 
-  const packageXml = await readZipText(zip, packagePath);
+  const packageXml = await readZipText(zip, packagePath, context.signal);
   if (!packageXml) {
     throw new Error(`Invalid EPUB: missing package document ${packagePath}.`);
   }
@@ -309,10 +363,11 @@ export async function loadEpubBook(
   const manifest = readManifest(document);
   const spineIds = readSpine(document);
   const title = firstText(document, 'title');
-  const assetUrls = await createAssetUrls(zip, manifest, packageDir, createUrl);
+  const resources = await createEpubResources(zip, manifest.values(), packageDir, createUrl, context.signal, resourceResolver, warnings);
   const chapters: ParsedEpubChapter[] = [];
 
   for (const idref of spineIds) {
+    checkAborted(context.signal);
     const item = manifest.get(idref);
     if (!item) {
       warnings.push(`Missing manifest item for spine id ${idref}.`);
@@ -323,18 +378,19 @@ export async function loadEpubBook(
       continue;
     }
 
-    const path = joinPath(packageDir, item.href);
-    const html = await readZipText(zip, path);
+    const path = resolveArchivePath(packageDir, item.href);
+    const html = await readZipText(zip, path, context.signal);
     if (!html) {
       warnings.push(`Missing chapter file ${path}.`);
       continue;
     }
 
+    const chapter = await rewriteChapterHtml(html, item.href, packageDir, resources, context.signal);
     chapters.push({
       id: item.id,
       href: item.href,
-      title: chapterTitle(html) ?? item.href,
-      html: await rewriteChapterHtml(html, item.href, packageDir, assetUrls, createUrl, resourceResolver, context.signal)
+      title: chapter.title ?? item.href,
+      html: chapter.html
     });
   }
 
@@ -358,27 +414,39 @@ export async function loadCbzBook(
   },
   createUrl: (blob: Blob) => string = (blob) => URL.createObjectURL(blob)
 ): Promise<ParsedEpubBook> {
-  const zip = await JSZip.loadAsync(await sourceToArrayBuffer(source, context));
+  const bytes = await sourceToArrayBuffer(source, context);
+  checkAborted(context.signal);
+  const zip = await JSZip.loadAsync(bytes);
+  checkAborted(context.signal);
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
   const entries = Object.values(zip.files)
     .filter((file) => !file.dir && isComicImage(file.name))
-    .sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' }));
+    .sort((left, right) => collator.compare(left.name, right.name));
 
   if (!entries.length) {
     throw new Error('Invalid CBZ: no readable image pages found.');
   }
 
   const chapters: ParsedEpubChapter[] = [];
-  for (const [index, entry] of entries.entries()) {
-    const blob = await entry.async('blob');
-    const contentType = imageContentType(entry.name);
-    const url = createUrl(blob.type ? blob : new Blob([blob], { type: contentType }));
-    const title = `Page ${index + 1}`;
-    chapters.push({
-      id: `page-${index + 1}`,
-      title,
-      href: entry.name,
-      html: createComicPageHtml(title, url)
-    });
+  // Share JSZip's scheduling overhead while bounding in-flight decompression.
+  for (let start = 0; start < entries.length; start += 8) {
+    checkAborted(context.signal);
+    const batch = entries.slice(start, start + 8);
+    const pages = await Promise.all(batch.map(entry => entry.async('arraybuffer')));
+    checkAborted(context.signal);
+    for (const [offset, entry] of batch.entries()) {
+      checkAborted(context.signal);
+      const index = start + offset;
+      const contentType = imageContentType(entry.name);
+      const url = createUrl(new Blob([pages[offset]!], { type: contentType }));
+      const title = `Page ${index + 1}`;
+      chapters.push({
+        id: `page-${index + 1}`,
+        title,
+        href: entry.name,
+        html: createComicPageHtml(title, url)
+      });
+    }
   }
 
   return {
@@ -389,12 +457,15 @@ export async function loadCbzBook(
 }
 
 async function sourceToArrayBuffer(source: PreviewSource, context: PreviewLoadContext): Promise<ArrayBuffer> {
+  checkAborted(context.signal);
   if (typeof source === 'string') {
     const response = await fetch(source, { signal: context.signal });
     if (!response.ok) {
       throw new Error(`Failed to load EPUB source: ${response.status} ${response.statusText}`.trim());
     }
-    return response.arrayBuffer();
+    const bytes = await response.arrayBuffer();
+    checkAborted(context.signal);
+    return bytes;
   }
   if (ArrayBuffer.isView(source)) {
     const bytes = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
@@ -406,17 +477,22 @@ async function sourceToArrayBuffer(source: PreviewSource, context: PreviewLoadCo
     return source;
   }
   if (source instanceof Blob) {
-    return source.arrayBuffer();
+    const bytes = await source.arrayBuffer();
+    checkAborted(context.signal);
+    return bytes;
   }
   return new TextEncoder().encode(String(source)).buffer as ArrayBuffer;
 }
 
-async function readZipText(zip: JSZip, path: string): Promise<string | null> {
+async function readZipText(zip: JSZip, path: string, signal?: AbortSignal): Promise<string | null> {
+  checkAborted(signal);
   const file = zip.file(path);
   if (!file) {
     return null;
   }
-  return file.async('text');
+  const text = await file.async('text');
+  checkAborted(signal);
+  return text;
 }
 
 function findRootfilePath(containerXml: string): string | null {
@@ -452,103 +528,42 @@ function readSpine(document: Document): string[] {
     .filter(Boolean);
 }
 
-async function createAssetUrls(
-  zip: JSZip,
-  manifest: Map<string, ManifestItem>,
-  packageDir: string,
-  createUrl: (blob: Blob) => string
-): Promise<Map<string, string>> {
-  const urls = new Map<string, string>();
-  for (const item of manifest.values()) {
-    if (isHtmlMediaType(item.mediaType)) {
-      continue;
-    }
-    const path = joinPath(packageDir, item.href);
-    const file = zip.file(path);
-    if (!file) {
-      continue;
-    }
-    const blob = await file.async('blob');
-    const url = createUrl(blob.type ? blob : new Blob([blob], { type: item.mediaType || blob.type }));
-    urls.set(normalizePath(path), url);
-    urls.set(normalizePath(item.href), url);
-  }
-  return urls;
-}
-
 async function rewriteChapterHtml(
   html: string,
   chapterHref: string,
   packageDir: string,
-  assetUrls: Map<string, string>,
-  createUrl: (blob: Blob) => string,
-  resourceResolver: PreviewResourceResolver | undefined,
+  resources: Awaited<ReturnType<typeof createEpubResources>>,
   signal?: AbortSignal
-): Promise<string> {
-  const parser = new DOMParser();
-  const document = parser.parseFromString(html, 'text/html');
-  const chapterDir = dirname(joinPath(packageDir, chapterHref));
-  for (const element of Array.from(document.querySelectorAll('[src], [href]'))) {
-    const attr = element.hasAttribute('src') ? 'src' : 'href';
-    const value = element.getAttribute(attr);
-    if (!value || isExternalUrl(value)) {
-      continue;
-    }
-    const [path, suffix = ''] = splitUrlSuffix(value);
-    const resolved = normalizePath(joinPath(chapterDir, path));
-    const url = assetUrls.get(resolved)
-      ?? assetUrls.get(normalizePath(path))
-      ?? await resolveEpubResource(resourceResolver, {
-        path: resolved,
-        source: value,
-        relation: element.localName.toLowerCase() === 'link' ? 'stylesheet' : 'resource',
-        createUrl,
-        signal
-      });
-    if (url) {
-      element.setAttribute(attr, `${url}${suffix}`);
-    }
-  }
-  return `<!doctype html>${document.documentElement.outerHTML}`;
-}
-
-async function resolveEpubResource(
-  resourceResolver: PreviewResourceResolver | undefined,
-  request: {
-    path: string;
-    source: string;
-    relation: string;
-    createUrl: (blob: Blob) => string;
-    signal?: AbortSignal;
-  }
-): Promise<string | undefined> {
-  if (!resourceResolver) {
-    return undefined;
-  }
-  if (request.signal?.aborted) {
-    throw new DOMException('Ebook preview aborted.', 'AbortError');
-  }
-  const resolved = normalizeResourceResolverResult(
-    await resourceResolver({
-      family: 'ebook',
-      sourceFormat: 'epub',
-      source: request.path,
-      relation: request.relation,
-      name: request.path.split('/').pop() ?? request.path
-    }),
-    request.path,
-    request.createUrl
-  );
-  return resolved.source;
-}
-
-function chapterTitle(html: string): string | undefined {
+): Promise<{ title?: string; html: string }> {
+  checkAborted(signal);
   const document = new DOMParser().parseFromString(html, 'text/html');
-  const title = document.querySelector('title')?.textContent?.trim();
-  if (title) {
-    return title;
+  const chapterDir = dirname(resolveArchivePath(packageDir, chapterHref));
+  // Plain chapters need no resource traversal; the pattern also catches namespaced hrefs.
+  if (/\b(?:src|href|poster|style)\b/i.test(html)) {
+    for (const element of Array.from(document.querySelectorAll('[src], [*|href], [poster], [style], style'))) {
+      for (const attr of ['src', 'href', 'xlink:href', 'poster']) {
+        const value = element.getAttribute(attr);
+        if (!value) continue;
+        const stylesheet = element.localName.toLowerCase() === 'link' && /(?:^|\s)stylesheet(?:\s|$)/i.test(element.getAttribute('rel') ?? '');
+        const url = await resources.resolve(value, chapterDir, stylesheet);
+        if (url) element.setAttribute(attr, url);
+      }
+      if (element.localName.toLowerCase() === 'style') {
+        element.textContent = await resources.rewriteCss(element.textContent ?? '', chapterDir);
+      }
+      const inlineStyle = element.getAttribute('style');
+      if (inlineStyle !== null) element.setAttribute('style', await resources.rewriteCss(inlineStyle, chapterDir));
+    }
   }
-  return document.querySelector('h1,h2,h3')?.textContent?.trim() || undefined;
+  checkAborted(signal);
+  return {
+    title: document.querySelector('title')?.textContent?.trim() || document.querySelector('h1,h2,h3')?.textContent?.trim() || undefined,
+    html: `<!doctype html>${document.documentElement.outerHTML}`
+  };
+}
+
+function checkAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException('Ebook preview aborted.', 'AbortError');
 }
 
 function parseXml(xml: string, label: string): Document {
@@ -588,100 +603,6 @@ function imageContentType(name: string): string {
   return types[extension] ?? 'application/octet-stream';
 }
 
-function resourceContentType(name: string): string {
-  const extension = normalizeFormat(name.split('?')[0]?.split('.').pop());
-  const types: Record<string, string> = {
-    css: 'text/css',
-    otf: 'font/otf',
-    ttf: 'font/ttf',
-    woff: 'font/woff',
-    woff2: 'font/woff2',
-    avif: 'image/avif',
-    bmp: 'image/bmp',
-    gif: 'image/gif',
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    png: 'image/png',
-    svg: 'image/svg+xml',
-    webp: 'image/webp'
-  };
-  return types[extension] ?? 'application/octet-stream';
-}
-
-function normalizeResourceResolverResult(
-  result: Awaited<ReturnType<PreviewResourceResolver>>,
-  name: string,
-  createUrl: (blob: Blob) => string
-): { source?: string; warnings: string[] } {
-  if (!result) {
-    return { warnings: [] };
-  }
-  if (typeof result === 'string') {
-    return {
-      source: result,
-      warnings: []
-    };
-  }
-  if (result instanceof Blob) {
-    return {
-      source: createUrl(result.type ? result : new Blob([result], { type: resourceContentType(name) })),
-      warnings: []
-    };
-  }
-  if (ArrayBuffer.isView(result) || result instanceof ArrayBuffer) {
-    const bytes = ArrayBuffer.isView(result)
-      ? new Uint8Array(result.buffer, result.byteOffset, result.byteLength)
-      : new Uint8Array(result);
-    return {
-      source: bytesToDataUrl(bytes, resourceContentType(name)),
-      warnings: []
-    };
-  }
-  return normalizeResourceResolveResult(result, name, createUrl);
-}
-
-function normalizeResourceResolveResult(
-  result: PreviewResourceResolveResult,
-  name: string,
-  createUrl: (blob: Blob) => string
-): { source?: string; warnings: string[] } {
-  return {
-    source: normalizeResolvedPreviewSource(result.source, name, createUrl),
-    warnings: result.warnings ?? []
-  };
-}
-
-function normalizeResolvedPreviewSource(
-  source: PreviewSource | undefined,
-  name: string,
-  createUrl: (blob: Blob) => string
-): string | undefined {
-  if (!source) {
-    return undefined;
-  }
-  if (typeof source === 'string') {
-    return source;
-  }
-  if (source instanceof Blob) {
-    return createUrl(source.type ? source : new Blob([source], { type: resourceContentType(name) }));
-  }
-  if (ArrayBuffer.isView(source)) {
-    return bytesToDataUrl(new Uint8Array(source.buffer, source.byteOffset, source.byteLength), resourceContentType(name));
-  }
-  if (source instanceof ArrayBuffer) {
-    return bytesToDataUrl(new Uint8Array(source), resourceContentType(name));
-  }
-  return undefined;
-}
-
-function bytesToDataUrl(bytes: Uint8Array, contentType: string): string {
-  let binary = '';
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-  return `data:${contentType};base64,${btoa(binary)}`;
-}
-
 function createComicPageHtml(title: string, imageUrl: string): string {
   return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>
 html,body{margin:0;min-height:100%;background:#111827;color:#f8fafc;font-family:system-ui,sans-serif;}
@@ -698,26 +619,10 @@ function escapeAttribute(value: string): string {
   return escapeHtml(value).replace(/"/g, '&quot;');
 }
 
-function isExternalUrl(value: string): boolean {
-  return /^(?:[a-z][a-z0-9+.-]*:|#)/i.test(value);
-}
-
-function splitUrlSuffix(value: string): [string, string?] {
-  const match = value.match(/^([^?#]*)([?#].*)?$/);
-  return [match?.[1] ?? value, match?.[2]];
-}
-
 function dirname(path: string): string {
   const normalized = normalizePath(path);
   const index = normalized.lastIndexOf('/');
   return index > 0 ? normalized.slice(0, index) : '';
-}
-
-function joinPath(base: string, path: string): string {
-  if (!base || path.startsWith('/')) {
-    return normalizePath(path);
-  }
-  return normalizePath(`${base}/${path}`);
 }
 
 function normalizePath(path: string): string {

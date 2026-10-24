@@ -1,0 +1,313 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "measurementDate": "2026-10-24T09:37:27.362Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "rawSha256": "4f1d8a0f25e19d1b651cf74462c352347daede23455968ef1d92783c54c5b027",
+  "diagnosticRawSha256": "8ce0e07e7e31f8b14317f0deb36e8e24afdc7f9b6d27fc659c5dd76b6c5b36a4",
+  "finalRuns": 56,
+  "currentSuccesses": 28,
+  "baselineSuccesses": 28,
+  "currentFailures": 0,
+  "baselineFailures": 0,
+  "excludedDiagnosticRuns": 8,
+  "externalComparisonTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "changedThisRound": false
+  },
+  "method": "Fresh Chromium context per invocation, rotating build order; modules and deterministic valid 64 MiB WAV inputs ready before timing. Measures native session creation, complete load() setup, Blob URL creation and optional artwork inspection; excludes metadata readiness, audible playback, file I/O, download, layout/paint and module loading. Complete Blob bytes and browser metadata are checked after timing. Not codec throughput, total-memory measurement, peer comparison or SOTA ranking.",
+  "statistics": "10,000 paired bootstrap resamples of native audio setup median ratios, seed 12345. Excludes metadata readiness, playback, layout/paint and file I/O. Baseline operations at or below 10 ms receive no speed claim. Losing and non-improving controls remain. No peer/SOTA ranking.",
+  "completePayloadAndBrowserMetadataCheckedForAllRuns": true,
+  "fixture": {
+    "path": "packages/core/test/fixtures/native-media.mjs",
+    "byteLength": 67108864,
+    "sha256": "08a40da0249d19315117560607059934950cd890c400663864a90e4535de23f9",
+    "browserDurationSeconds": 4194.30125,
+    "description": "Deterministic valid mono 8 kHz, 16-bit PCM WAV silence; generated in memory before timing."
+  },
+  "measurements": [
+    {
+      "sample": "typed-64MiB-wav",
+      "currentMs": 8.700000047683716,
+      "baselineMs": 17.5,
+      "ratio": 2.0114942418487907,
+      "ratio95PercentBootstrapInterval": [
+        1.9545454305311867,
+        2.272727285042282
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "scopedSota": false,
+      "completePayloadAndBrowserMetadataMatch": true
+    },
+    {
+      "sample": "subview-64MiB-wav",
+      "currentMs": 5.600000023841858,
+      "baselineMs": 15.299999952316284,
+      "ratio": 2.732142836995879,
+      "ratio95PercentBootstrapInterval": [
+        2.6785714171674786,
+        2.7999999956651167
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "scopedSota": false,
+      "completePayloadAndBrowserMetadataMatch": true
+    },
+    {
+      "sample": "array-buffer-64MiB-wav",
+      "currentMs": 8.700000047683716,
+      "baselineMs": 8.700000047683716,
+      "ratio": 1,
+      "ratio95PercentBootstrapInterval": [
+        0.9885057444489921,
+        1.0116279237395434
+      ],
+      "below10MsControl": true,
+      "stableEngineeringReduction": false,
+      "scopedSota": false,
+      "completePayloadAndBrowserMetadataMatch": true
+    },
+    {
+      "sample": "blob-64MiB-wav",
+      "currentMs": 4,
+      "baselineMs": 4.699999928474426,
+      "ratio": 1.1749999821186066,
+      "ratio95PercentBootstrapInterval": [
+        1.119047589312876,
+        1.199999988079071
+      ],
+      "below10MsControl": true,
+      "stableEngineeringReduction": false,
+      "scopedSota": false,
+      "completePayloadAndBrowserMetadataMatch": true
+    }
+  ],
+  "diagnostics": {
+    "description": "One initial repetition per representation/build, retained outside final claims. All payloads and browser metadata passed. Typed-array setup was initially slower after the change (25.0 to 42.4 ms), as was Blob setup (6.2 to 10.5 ms). No diagnostic run was dropped.",
+    "runs": [
+      {
+        "sample": "typed-64MiB-wav",
+        "engine": "current",
+        "iteration": 0,
+        "setupMs": 42.39999997615814
+      },
+      {
+        "sample": "typed-64MiB-wav",
+        "engine": "baseline",
+        "iteration": 0,
+        "setupMs": 25
+      },
+      {
+        "sample": "subview-64MiB-wav",
+        "engine": "current",
+        "iteration": 0,
+        "setupMs": 5.799999952316284
+      },
+      {
+        "sample": "subview-64MiB-wav",
+        "engine": "baseline",
+        "iteration": 0,
+        "setupMs": 16.100000023841858
+      },
+      {
+        "sample": "array-buffer-64MiB-wav",
+        "engine": "current",
+        "iteration": 0,
+        "setupMs": 9
+      },
+      {
+        "sample": "array-buffer-64MiB-wav",
+        "engine": "baseline",
+        "iteration": 0,
+        "setupMs": 9.100000023841858
+      },
+      {
+        "sample": "blob-64MiB-wav",
+        "engine": "current",
+        "iteration": 0,
+        "setupMs": 10.5
+      },
+      {
+        "sample": "blob-64MiB-wav",
+        "engine": "baseline",
+        "iteration": 0,
+        "setupMs": 6.200000047683716
+      }
+    ]
+  },
+  "changes": [
+    "Cancel prior image/HTML/media element lifecycles; release owned URLs and resources, ignore detached element events and remove listeners on destruction.",
+    "Clear stale image dimensions and ignore nonfinite zoom/rotation requests.",
+    "Navigate HTML data URLs directly and recognize inline fragments/prologs while retaining the script-disabled iframe sandbox.",
+    "Pause and clear replaced/cancelled/destroyed media; report source-element failures instead of leaving loading indefinitely.",
+    "Mount the player before optional artwork inspection; preserve volume/mute preferences and discard late artwork or artwork errors after cancellation/replacement/destruction.",
+    "Let Blob snapshot ordinary typed views directly, preserving the exact byte slice; avoid a full-input copy for artwork scanning and copy only extracted artwork before the first await. Keep the explicit SharedArrayBuffer view copy."
+  ],
+  "limits": [
+    "Engineering old/new setup timing on generated WAV input, not a frontend peer comparison or SOTA ranking.",
+    "Timing excludes metadata readiness, audible playback, input I/O, module loading, layout and paint; earlier player mounting is not a measured first-visible-time claim.",
+    "Blob still snapshots input bytes; no zero-copy or peak-memory claim. Media codecs remain browser-dependent.",
+    "Artwork extraction is unchanged ID3 APIC support; Blob/File inspection is limited to the first 512 KiB. No FLAC/MP4 cover support is added.",
+    "ArrayBuffer and Blob baseline medians are below 10 ms and receive no speed claim; non-improving and slower measurements remain recorded.",
+    "Image fit/rotation geometry, panorama calibration and backend conversion algorithms are outside this incremental patch."
+  ],
+  "validation": {
+    "coreUnitPassed": 262,
+    "coreExistingSkipped": 11,
+    "vueUnitPassed": 44,
+    "targetedUnitPassed": 63,
+    "newRegressionTests": 23,
+    "initialTestsFailedAgainstPreviousSource": 19,
+    "browserDevelopmentPassed": 15,
+    "browserProductionPassed": 3,
+    "developmentBrowserCoverage": [
+      "HTML raw/base64 data URL, fragments/prologs and blocked scripts",
+      "Actual image metadata and replacement/abort URL cleanup",
+      "Actual valid WAV playback with time advancing, replacement/destroy stop, volume/mute preservation",
+      "HTTP404 media source reports an error",
+      "HTML upload, existing business families and native text regressions"
+    ],
+    "productionBrowserCoverage": [
+      "HTML upload",
+      "Highlighted-code upload",
+      "Supported Office sample navigation through the final page"
+    ],
+    "builds": [
+      "@filens/core including declarations",
+      "Production demo",
+      "Bundle report"
+    ],
+    "reversePatchMatchesFreshBaselineSourceSnapshot": true,
+    "runtimeAndHarnessHashesMatchFinalRawArtifacts": true,
+    "earlierFailures": "Initial regression harness lacked URL.createObjectURL and is not production-failure evidence. The corrected harness reproduces all initial 19 regressions. The first browser suite used img.decode() before its load event; the test now waits for the session load event, without a production change for that race. Both local logs are retained.",
+    "knownBuildWarnings": "Existing duplicate Three.js import warning in Vue tests and the production vendor chunk size warning remain; checks pass.",
+    "localMarkdownLinksChecked": 411,
+    "localMarkdownLinkFailures": 0
+  },
+  "artifacts": [
+    {
+      "path": "packages/core/src/preview/native-drivers.ts",
+      "sha256": "3d6ee631e31753762f2502c7b5e9023ffa3ff4375eab5c5fcf603ea8de9f4b19"
+    },
+    {
+      "path": "packages/core/test/native-lifecycle.spec.ts",
+      "sha256": "c134b1917ea819ec168385fb9a41f4813561312e13eb7d974f64bdcd79a7e6a8"
+    },
+    {
+      "path": "packages/core/test/preview.spec.ts",
+      "sha256": "539ba9759660f73b96d5939cb8ebc53ed178e6f49a001f5f5e6d2bf14fadb00f"
+    },
+    {
+      "path": "packages/core/test/fixtures/native-media.mjs",
+      "sha256": "2f3fdce16bb42fd569bc55a748e66fee22aea2c6f57e39dca40d55e6820d780e"
+    },
+    {
+      "path": "apps/demo/e2e/native-lifecycle.e2e.ts",
+      "sha256": "d3ccd563c451e58995cf1ae8b2aeaee142071fb2d04c6c079e38911c06f82313"
+    },
+    {
+      "path": "scripts/benchmark-native-media.mjs",
+      "sha256": "7f8bfe85779ebba93c0193af51910eab3f13d6f046713f97124852d5b993c8f8"
+    },
+    {
+      "path": "scripts/summarize-native-media-benchmark.mjs",
+      "sha256": "5484ec8c8b02a6caadb817679fbb618015fcbc2416b6075da32a5d2732ce5479"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/native-lifecycle.patch",
+      "sha256": "f5db591744c3680ed77fcbc58ff410161ed99155bceae6447e7b97105685b147"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/native-media.json.gz",
+      "sha256": "70fa221b08d67026a98ceb4c4270f08f470e56b63afcedf047e924aea6ce6d5f"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/native-media-summary.json",
+      "sha256": "18c0dbe7af0ea3923852aafa6e37f806cdc997e3ae0ac486c6836033a2749ae3"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/native-media-diagnostic.json.gz",
+      "sha256": "fb6a08dec91163616f09afa6daabe723267325cbeab6bd870c1b37a20e7d446c"
+    }
+  ],
+  "baselineSourceSnapshot": {
+    "path": "tmp/continued-review/native-lifecycle-baseline/src/preview/native-drivers.ts",
+    "sha256": "4014a5e0bc563c051ddb80c3a2397b574a1a5f3d002334683a542bd3f8b84bd8"
+  },
+  "runtimeArtifacts": [
+    {
+      "engine": "baseline",
+      "path": "tmp/continued-review/native-lifecycle-baseline/dist/index.js",
+      "sha256": "5c6c3c890739043957b6f0638885a89b648519f15e92c95e04aa1fcf18da0819"
+    },
+    {
+      "engine": "current",
+      "path": "packages/core/dist/index.js",
+      "sha256": "e7ea2b2a7cf03f6d69aa00099c1f86e4e0b8c9a3004558818fa052a7676bd155"
+    },
+    {
+      "path": "scripts/benchmark-native-media.mjs",
+      "sha256": "7f8bfe85779ebba93c0193af51910eab3f13d6f046713f97124852d5b993c8f8"
+    },
+    {
+      "path": "packages/core/test/fixtures/native-media.mjs",
+      "sha256": "2f3fdce16bb42fd569bc55a748e66fee22aea2c6f57e39dca40d55e6820d780e"
+    }
+  ],
+  "localValidationLogs": {
+    "coreUnit": {
+      "path": "tmp/continued-review/native-lifecycle-core-unit.log",
+      "sha256": "4114b98263a401875eceb9a25e2f22b7cde53fdf43cfcf65beffe82dee7bcff4"
+    },
+    "vueUnit": {
+      "path": "tmp/continued-review/native-lifecycle-vue-unit.log",
+      "sha256": "66cb72292bb80fc2b3eb89fe95254b738acca6d67bf1b4da51fda4e95f2c81db"
+    },
+    "targetedUnit": {
+      "path": "tmp/continued-review/native-lifecycle-unit.log",
+      "sha256": "6c8e77a6e5b5a8747ec2e699d39f59ac8df578cb1fc3e76230ae78f0e0a01501"
+    },
+    "browserDevelopment": {
+      "path": "tmp/continued-review/native-lifecycle-browser-suite.log",
+      "sha256": "9909153a68c143da4b31ccd8cd06ccf8c38bf4595833a5f1adfa2a70014a6e18"
+    },
+    "browserProduction": {
+      "path": "tmp/continued-review/native-lifecycle-production-browser.log",
+      "sha256": "bcfa79f95c32bf608c9c2990e213d4cee7a4a295b2cfbf495a227f2914dad16d"
+    },
+    "coreBuild": {
+      "path": "tmp/continued-review/native-lifecycle-core-build.log",
+      "sha256": "721192a9ec3d6956533d1c892ed4e8e272cce35fc8fddcd345f7acc98325b8e6"
+    },
+    "demoBuild": {
+      "path": "tmp/continued-review/native-lifecycle-demo-build.log",
+      "sha256": "0c1776abdf99e4b4b236d76ce67fa0f94e7a2aa185032a33002e367dc8a3347e"
+    },
+    "bundleReport": {
+      "path": "tmp/continued-review/native-lifecycle-bundle-report.log",
+      "sha256": "c4b3af3b889fdc1281f5d4769ff78dc670fc32a44a3dc4413630cf1ae51d08c9"
+    },
+    "baselineRegressions": {
+      "path": "tmp/continued-review/native-lifecycle-before-regressions.log",
+      "sha256": "63942e4070a19498cdd6f41a9f89c750a3b4b060f65655c0907bf656199e2479"
+    },
+    "earlierHarnessSetupFailure": {
+      "path": "tmp/continued-review/native-lifecycle-before-tests.log",
+      "sha256": "c8fb376b29e7fa50b17b2152f14e5060307a99100c3eb3cf3bc63ed059cf6321"
+    },
+    "earlierBrowserEventRace": {
+      "path": "tmp/continued-review/native-lifecycle-browser.log",
+      "sha256": "c7f766335474ad6535258f507b3bdeddc509214c9c22787594fb3adf821855fd"
+    }
+  },
+  "reproduction": [
+    "Use isolated source copies preserving earlier changes. Reverse native-lifecycle.patch only in the baseline copy.",
+    "Build @filens/core in both copies. Place baseline index.js in tmp/continued-review/native-lifecycle-baseline/dist.",
+    "Run node scripts/benchmark-native-media.mjs --iterations 7 --output tmp/continued-review/native-media-reproduced with no tests/builds in progress.",
+    "Run node scripts/summarize-native-media-benchmark.mjs --input tmp/continued-review/native-media-reproduced/results.json.",
+    "Run core/Vue Vitest directly and Playwright native-lifecycle/text-preview/business-families tests. Production smoke selects HTML upload, code upload and supported Office navigation."
+  ]
+}

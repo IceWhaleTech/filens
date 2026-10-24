@@ -7,6 +7,7 @@ import type {
 } from '@filens/core';
 import conversionManifest from '../../../wasm/converter-core/manifest/conversions.json';
 import imageConversionManifest from '../../../wasm/converter-image/manifest/conversions.json';
+import { isConversionSourceUrl, isDataUrl, readDataUrl, retryableLoader, throwIfAborted, waitForConversion } from './source';
 
 interface ConversionManifestEntry {
   sourceFormat: string;
@@ -48,6 +49,7 @@ export interface WasmCoreInvocation {
   args: string[];
   files: Record<string, Uint8Array>;
   readFiles?: string[];
+  signal?: AbortSignal;
 }
 
 export interface WasmCoreInvocationResult {
@@ -81,20 +83,21 @@ export class WasmConversionError extends Error {
 }
 
 export function createWasmCoreRunner(options: WasmCoreRunnerOptions) {
-  let modulePromise: Promise<WebAssembly.Module> | undefined;
-  const loadModule = () => {
-    modulePromise ??= loadWasmModule(options.wasm, options.fetch);
-    return modulePromise;
-  };
+  const loadModule = retryableLoader(() => loadWasmModule(options.wasm, options.fetch));
 
   return async (invocation: WasmCoreInvocation): Promise<WasmCoreInvocationResult> => {
+    const signal = invocation.signal;
+    throwIfAborted(signal);
     const wasi = new InMemoryWasiHost({
       args: invocation.args,
       files: invocation.files
     });
-    const instance = await WebAssembly.instantiate(await loadModule(), {
+    const module = await waitForConversion(loadModule(), signal);
+    throwIfAborted(signal);
+    const instance = await waitForConversion(WebAssembly.instantiate(module, {
       wasi_snapshot_preview1: wasi.imports
-    });
+    }), signal);
+    throwIfAborted(signal);
     wasi.setInstance(instance);
     let exitCode = 0;
     try {
@@ -118,9 +121,8 @@ export function createWasmCoreRunner(options: WasmCoreRunnerOptions) {
 
 export function createWasmConverterClient(options: WasmConverterClientOptions): ConverterClient {
   const runCore = createWasmCoreRunner(options);
-  let imageModulePromise: Promise<WebAssembly.Module> | undefined;
   const imageModule = options.imageWasm
-    ? () => imageModulePromise ??= loadWasmModule(options.imageWasm!, options.fetch)
+    ? retryableLoader(() => loadWasmModule(options.imageWasm!, options.fetch))
     : undefined;
   const runImage = options.imageWasm
     ? createWasmCoreRunner({ wasm: imageModule!, fetch: options.fetch })
@@ -137,7 +139,7 @@ export function createWasmConverterClient(options: WasmConverterClientOptions): 
       const outputPath = `/work/output.${targetFormat}`;
       const optionsPath = '/work/options.json';
       const resultPath = '/work/result.json';
-      const input = await sourceToBytes(request.source, request.name, options.fetch, context.signal);
+      const input = await sourceToBytes(request.source, options.fetch, context.signal);
       throwIfAborted(context.signal);
       const requestOptions = JSON.stringify({
         ...(request.password ? { password: request.password } : {}),
@@ -171,7 +173,8 @@ export function createWasmConverterClient(options: WasmConverterClientOptions): 
           [inputPath]: input,
           [optionsPath]: new TextEncoder().encode(requestOptions)
         },
-        readFiles: [resultPath, outputPath]
+        readFiles: [resultPath, outputPath],
+        signal: context.signal
       });
       throwIfAborted(context.signal);
 
@@ -207,8 +210,7 @@ interface ImagePreviewExports {
 }
 
 function createImagePreviewRunner(loadModule: () => Promise<WebAssembly.Module>) {
-  let runtimePromise: Promise<ImagePreviewExports | null> | undefined;
-  const runtime = () => runtimePromise ??= (async () => {
+  const runtime = retryableLoader(async () => {
     const module = await loadModule();
     const names = new Set(WebAssembly.Module.exports(module).map(entry => entry.name));
     if (!['filens_image_alloc', 'filens_image_free', 'filens_image_preview', 'memory'].every(name => names.has(name))) return null;
@@ -216,10 +218,10 @@ function createImagePreviewRunner(loadModule: () => Promise<WebAssembly.Module>)
     const instance = await WebAssembly.instantiate(module, { wasi_snapshot_preview1: wasi.imports });
     wasi.setInstance(instance);
     return instance.exports as unknown as ImagePreviewExports;
-  })();
+  });
 
   return async (input: Uint8Array, signal?: AbortSignal): Promise<ConversionResult | null> => {
-    const instance = await runtime();
+    const instance = await waitForConversion(runtime(), signal);
     throwIfAborted(signal);
     // Older image modules remain compatible through the existing WASI path.
     if (!instance || input.length === 0) return null;
@@ -292,9 +294,9 @@ async function compileWasmResponse(response: Response): Promise<WebAssembly.Modu
   return WebAssembly.compile(await response.arrayBuffer());
 }
 
-async function sourceToBytes(source: PreviewSource, name: string | undefined, fetchImpl = globalThis.fetch, signal?: AbortSignal): Promise<Uint8Array> {
+async function sourceToBytes(source: PreviewSource, fetchImpl = globalThis.fetch, signal?: AbortSignal): Promise<Uint8Array> {
   if (isBlobLikeSource(source)) {
-    return new Uint8Array(await source.arrayBuffer());
+    return new Uint8Array(await waitForConversion(source.arrayBuffer(), signal));
   }
   if (source instanceof ArrayBuffer) {
     return new Uint8Array(source);
@@ -304,14 +306,16 @@ async function sourceToBytes(source: PreviewSource, name: string | undefined, fe
   }
   if (typeof source === 'string') {
     if (isDataUrl(source)) {
-      return dataUrlToBytes(source);
+      return readDataUrl(source).bytes;
     }
-    if (fetchImpl && isFetchableSource(source, name)) {
-      const response = await fetchImpl(source, { signal });
+    if (isConversionSourceUrl(source)) {
+      if (!fetchImpl) throw new Error('A fetch implementation is required to load a conversion source URL.');
+      const response = await waitForConversion(fetchImpl(source, { signal }), signal);
+      throwIfAborted(signal);
       if (!response.ok) {
         throw new Error(`Failed to fetch conversion source: ${response.status} ${response.statusText}`.trim());
       }
-      return new Uint8Array(await response.arrayBuffer());
+      return new Uint8Array(await waitForConversion(response.arrayBuffer(), signal));
     }
     return new TextEncoder().encode(source);
   }
@@ -334,49 +338,10 @@ function parseCoreResult(bytes: Uint8Array): WasmCoreResult {
   };
 }
 
-function throwIfAborted(signal: PreviewLoadContext['signal']): void {
-  if (!signal?.aborted) {
-    return;
-  }
-  if (typeof DOMException !== 'undefined') {
-    throw new DOMException('The conversion was aborted.', 'AbortError');
-  }
-  const error = new Error('The conversion was aborted.');
-  error.name = 'AbortError';
-  throw error;
-}
-
 function normalizeFormat(format: string): string {
   return format.trim().replace(/^\./, '').toLowerCase();
 }
 
-function isDataUrl(source: string): boolean {
-  return source.trimStart().toLowerCase().startsWith('data:');
-}
-
-function isFetchableSource(source: string, name: string | undefined): boolean {
-  if (name && source === name) {
-    return false;
-  }
-  return /^(https?:|blob:|\/)/i.test(source);
-}
-
-function dataUrlToBytes(dataUrl: string): Uint8Array {
-  const commaIndex = dataUrl.indexOf(',');
-  if (commaIndex < 0) {
-    return new TextEncoder().encode(dataUrl);
-  }
-  const meta = dataUrl.slice(0, commaIndex);
-  const payload = dataUrl.slice(commaIndex + 1);
-  return meta.toLowerCase().includes(';base64')
-    ? base64ToBytes(payload)
-    : new TextEncoder().encode(decodeURIComponent(payload));
-}
-
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
-}
 
 class WasiExit extends Error {
   constructor(readonly code: number) {
@@ -409,6 +374,7 @@ const FILETYPE_REGULAR_FILE = 4;
 
 const OFLAGS_CREAT = 1;
 const OFLAGS_DIRECTORY = 2;
+const OFLAGS_EXCL = 4;
 const OFLAGS_TRUNC = 8;
 const FDFLAGS_APPEND = 1;
 
@@ -619,6 +585,7 @@ class InMemoryWasiHost {
     if (!descriptor || descriptor.kind !== 'file') {
       return descriptor?.kind === 'dir' ? ERRNO_ISDIR : ERRNO_BADF;
     }
+    if (whence !== 0 && whence !== 1 && whence !== 2) return ERRNO_INVAL;
     const base = whence === 0
       ? 0
       : whence === 1
@@ -661,7 +628,9 @@ class InMemoryWasiHost {
       return ERRNO_ISDIR;
     }
     for (const [source, length] of this.iovs(iovs, iovsLen)) {
-      const chunk = this.bytes.slice(source, source + length);
+      // WASM execution is paused during this import; copy directly into the
+      // owned file storage instead of allocating an intermediate chunk.
+      const chunk = this.bytes.subarray(source, source + length);
       this.writeFileChunk(descriptor, chunk);
       total += length;
     }
@@ -702,6 +671,9 @@ class InMemoryWasiHost {
     const path = this.readPath(fd, pathPtr, pathLen);
     if (!path) {
       return ERRNO_BADF;
+    }
+    if ((oflags & OFLAGS_CREAT) && (oflags & OFLAGS_EXCL) && (this.files.has(path) || this.dirs.has(path))) {
+      return ERRNO_EXIST;
     }
     const wantsDirectory = Boolean(oflags & OFLAGS_DIRECTORY);
     if (wantsDirectory) {
@@ -841,11 +813,21 @@ class InMemoryWasiHost {
   }
 
   private writeFileChunk(descriptor: Extract<FileDescriptor, { kind: 'file' }>, chunk: Uint8Array): void {
+    // A zero-byte write must not extend a file after seeking beyond EOF.
+    if (!chunk.byteLength) return;
     const previous = this.files.get(descriptor.path) ?? new Uint8Array();
     const position = descriptor.append ? previous.byteLength : descriptor.position;
     const nextLength = Math.max(previous.byteLength, position + chunk.byteLength);
-    const next = new Uint8Array(nextLength);
-    next.set(previous);
+    // Keep the map's view at logical length so reads, seeks and stat never
+    // expose spare capacity. Grow geometrically to amortize incremental writes.
+    let next: Uint8Array;
+    if (nextLength <= previous.buffer.byteLength) {
+      next = new Uint8Array(previous.buffer, 0, nextLength);
+    } else {
+      const storage = new Uint8Array(Math.max(nextLength, previous.buffer.byteLength * 2));
+      storage.set(previous);
+      next = storage.subarray(0, nextLength);
+    }
     next.set(chunk, position);
     this.files.set(descriptor.path, next);
     descriptor.position = position + chunk.byteLength;

@@ -54,6 +54,7 @@ export class IworkPreviewSession implements PreviewSession<IworkPreviewState> {
   };
   private readonly unsubscribes: Array<() => void>;
   private lastState: IworkPreviewState;
+  private destroyed = false;
 
   constructor(private readonly host: HTMLElement, options: PreviewOptions = {}) {
     this.viewer = createIworkViewer(host, {
@@ -65,6 +66,11 @@ export class IworkPreviewSession implements PreviewSession<IworkPreviewState> {
     });
     this.lastState = toIworkPreviewState(this.viewer.getState());
     this.unsubscribes = [
+      this.viewer.on('loadingchange', (state) => {
+        this.updateState(state);
+        if (state.loading) this.emit('loading', this.lastState);
+        this.emit('statechange', this.lastState);
+      }),
       this.viewer.on('rendered', (state) => {
         this.updateState(state);
         this.emit('rendered', this.lastState);
@@ -94,22 +100,18 @@ export class IworkPreviewSession implements PreviewSession<IworkPreviewState> {
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
-    const loadTask = this.viewer.preview(source, { signal: context.signal });
-    this.updateState({
-      ...this.viewer.getState(),
-      loading: true,
-      error: null
-    });
-    this.emit('loading', this.lastState);
-    this.emit('statechange', this.lastState);
-    await loadTask;
+    await this.viewer.preview(source, { signal: context.signal });
   }
 
   destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
     for (const unsubscribe of this.unsubscribes) {
       unsubscribe();
     }
     this.viewer.destroy();
+    this.updateState(this.viewer.getState());
+    for (const handlers of Object.values(this.listeners)) handlers.clear();
   }
 
   getState(): IworkPreviewState {
@@ -117,6 +119,7 @@ export class IworkPreviewSession implements PreviewSession<IworkPreviewState> {
   }
 
   on<T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void): () => void {
+    if (this.destroyed) return () => {};
     this.listeners[event].add(handler as never);
     return () => {
       this.listeners[event].delete(handler as never);

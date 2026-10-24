@@ -15,7 +15,9 @@ export async function loadSourceBytes(source: IworkSource, options: LoadSourceOp
       throw new Error(`Failed to fetch iWork source: ${response.status} ${response.statusText}`);
     }
 
-    return new Uint8Array(await response.arrayBuffer());
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    throwIfAborted(options.signal);
+    return bytes;
   }
 
   if (ArrayBuffer.isView(source)) {
@@ -23,12 +25,14 @@ export async function loadSourceBytes(source: IworkSource, options: LoadSourceOp
   }
 
   if (isArrayBufferLike(source)) {
-    return new Uint8Array(source);
+    return new Uint8Array(source).slice();
   }
 
   if (isBlobLike(source)) {
     throwIfAborted(options.signal);
-    return new Uint8Array(await source.arrayBuffer());
+    const bytes = new Uint8Array(await source.arrayBuffer());
+    throwIfAborted(options.signal);
+    return bytes;
   }
 
   throw new Error('Unsupported iWork source type.');

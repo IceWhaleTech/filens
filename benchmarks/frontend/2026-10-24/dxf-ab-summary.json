@@ -1,0 +1,458 @@
+{
+  "sourceSha256": "33442a73d9c21a9186fd04cf790d7d7ffc1aae25cecac8d3f4db3f873f635b25",
+  "date": "2026-10-24T04:07:10.283Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "versions": {
+    "dxf-parser": "1.1.2",
+    "occt-import-js": "0.0.23",
+    "sheetjs": "0.20.3",
+    "papaparse": "5.7.0",
+    "zip.js": "2.24.0",
+    "fflate": "0.8.2",
+    "x2t": "v9.3.2+3"
+  },
+  "iterations": 7,
+  "engineering": true,
+  "totalRuns": 70,
+  "filensRuns": 35,
+  "filensSuccessfulRuns": 35,
+  "method": "Peer / filens ratios; 10,000 paired percentile bootstrap resamples, LCG seed 12345. Eligibility requires a matching recorded output signature and >=7 iterations. Legacy XLS conversion can qualify when all resolved nonempty cell addresses/text match in the same viewer; tiny decimal differences (12 significant digits) and trailing blank grid space are accepted for preview. Editable formula/structure parity is not required. STEP metadata is deliberately omitted from filens; signatures compare oriented world-space triangles/normals, rounded to 1e-5, with independent full numerical regression checks. No global SOTA proof.",
+  "previewReview": null,
+  "summary": [
+    {
+      "family": "dxf",
+      "sample": "filens-cafe.dxf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 4.860000014305115,
+      "initMs": 0,
+      "firstOperationMs": 4.860000014305115,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 223,
+        "types": {
+          "line": 173,
+          "arc": 1,
+          "text": 15,
+          "circle": 34
+        },
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "filens-cafe.dxf",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 5.059999942779541,
+      "initMs": 0,
+      "firstOperationMs": 5.059999942779541,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 223,
+        "types": {
+          "line": 173,
+          "arc": 1,
+          "text": 15,
+          "circle": 34
+        },
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "api-cw750-details.dxf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 32.00999999046326,
+      "initMs": 0,
+      "firstOperationMs": 32.00999999046326,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 5179,
+        "types": {
+          "polyline": 310,
+          "line": 3264,
+          "hatch": 77,
+          "circle": 58,
+          "face": 42,
+          "text": 509,
+          "point": 844,
+          "arc": 75
+        },
+        "warnings": [
+          "DXF references SHX font files (ITALIC.SHX, romans.shx, simplex.shx), which browsers cannot render directly; CSS fallback fonts are used."
+        ]
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "api-cw750-details.dxf",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 32.4650000333786,
+      "initMs": 0,
+      "firstOperationMs": 32.4650000333786,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 5179,
+        "types": {
+          "polyline": 310,
+          "line": 3264,
+          "hatch": 77,
+          "circle": 58,
+          "face": 42,
+          "text": 509,
+          "point": 844,
+          "arc": 75
+        },
+        "warnings": [
+          "DXF references SHX font files (ITALIC.SHX, romans.shx, simplex.shx), which browsers cannot render directly; CSS fallback fonts are used."
+        ]
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "blocks2.dxf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.4750000238418579,
+      "initMs": 0,
+      "firstOperationMs": 0.4750000238418579,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 0,
+        "types": {},
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "blocks2.dxf",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.48000001907348633,
+      "initMs": 0,
+      "firstOperationMs": 0.48000001907348633,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 0,
+        "types": {},
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "splines.dxf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.6399999856948853,
+      "initMs": 0,
+      "firstOperationMs": 0.6399999856948853,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 2,
+        "types": {
+          "spline": 2
+        },
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "splines.dxf",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.6699999570846558,
+      "initMs": 0,
+      "firstOperationMs": 0.6699999570846558,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 2,
+        "types": {
+          "spline": 2
+        },
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "generated-20000-lines.dxf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 23.4650000333786,
+      "initMs": 0,
+      "firstOperationMs": 23.4650000333786,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 20000,
+        "types": {
+          "line": 20000
+        },
+        "warnings": [],
+        "contentSha256": "84c8f06f139aff1d911170e96223581ab85468777a078f108c3833707a903508"
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "generated-20000-lines.dxf",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 31.96499991416931,
+      "initMs": 0,
+      "firstOperationMs": 31.96499991416931,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 20000,
+        "types": {
+          "line": 20000
+        },
+        "warnings": [],
+        "contentSha256": "84c8f06f139aff1d911170e96223581ab85468777a078f108c3833707a903508"
+      },
+      "failures": []
+    }
+  ],
+  "comparisons": [
+    {
+      "family": "dxf",
+      "sample": "filens-cafe.dxf",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 4.860000014305115,
+      "peerMs": 5.059999942779541,
+      "ratio": 1.0411522485361602,
+      "ratio95PercentBootstrapInterval": [
+        0.9837892277366268,
+        1.0592515530170061
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "filens-cafe.dxf",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 4.860000014305115,
+      "peerMs": 5.059999942779541,
+      "ratio": 1.0411522485361602,
+      "ratio95PercentBootstrapInterval": [
+        0.9837892277366268,
+        1.0592515530170061
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "api-cw750-details.dxf",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 32.00999999046326,
+      "peerMs": 32.4650000333786,
+      "ratio": 1.0142143093736615,
+      "ratio95PercentBootstrapInterval": [
+        0.9600302820833989,
+        1.0270823496908914
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "api-cw750-details.dxf",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 32.00999999046326,
+      "peerMs": 32.4650000333786,
+      "ratio": 1.0142143093736615,
+      "ratio95PercentBootstrapInterval": [
+        0.9600302820833989,
+        1.0270823496908914
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "blocks2.dxf",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 0.4750000238418579,
+      "peerMs": 0.48000001907348633,
+      "ratio": 1.0105263052224458,
+      "ratio95PercentBootstrapInterval": [
+        0.9199998378753662,
+        1.0210528666953773
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "blocks2.dxf",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 0.4750000238418579,
+      "peerMs": 0.48000001907348633,
+      "ratio": 1.0105263052224458,
+      "ratio95PercentBootstrapInterval": [
+        0.9199998378753662,
+        1.0210528666953773
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "splines.dxf",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 0.6399999856948853,
+      "peerMs": 0.6699999570846558,
+      "ratio": 1.0468749563442534,
+      "ratio95PercentBootstrapInterval": [
+        1.0075187902533045,
+        1.1065576846034335
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "splines.dxf",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 0.6399999856948853,
+      "peerMs": 0.6699999570846558,
+      "ratio": 1.0468749563442534,
+      "ratio95PercentBootstrapInterval": [
+        1.0075187902533045,
+        1.1065576846034335
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "generated-20000-lines.dxf",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 23.4650000333786,
+      "peerMs": 31.96499991416931,
+      "ratio": 1.3622416308842784,
+      "ratio95PercentBootstrapInterval": [
+        1.2939594487975536,
+        1.3927958810471026
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "dxf",
+      "sample": "generated-20000-lines.dxf",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 23.4650000333786,
+      "peerMs": 31.96499991416931,
+      "ratio": 1.3622416308842784,
+      "ratio95PercentBootstrapInterval": [
+        1.2939594487975536,
+        1.3927958810471026
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    }
+  ]
+}

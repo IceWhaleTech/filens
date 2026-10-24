@@ -1,0 +1,450 @@
+{
+  "date": "2026-10-24",
+  "kind": "gltf-sidecar-loading-and-step-initialization-recovery",
+  "engineering": true,
+  "scopedSota": false,
+  "scope": "Shared frontend model3d loader orchestration. No new backend/Go format algorithm, WASM change, renderer algorithm or peer comparison.",
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "changes": [
+    "Use native Blob snapshots for glTF in-memory buffers and images, preserving exact ArrayBuffer/view boundaries and SharedArrayBuffer-backed views. Avoid per-byte JS string construction, Base64 encoding/serialization and decoding.",
+    "Each invocation owns and releases only URLs it creates, including resolver/missing-resource/parse failures, cancellation and concurrent loads. Borrowed string URLs remain caller-owned.",
+    "Race resolver/parser waits against cancellation, observe late failures and dispose all late scenes with shared geometry/material/texture deduplication. Remove listeners after settlement.",
+    "Accept explicitly resolved HTTP URIs without a separate resourcePath. Rewrite original URIs once through a mapping so replacements cannot cascade.",
+    "Share each STEP initialization attempt across concurrent opens, clear only a failed matching attempt and cache successful initialization. Invalid STEP inputs do not reset an initialized importer."
+  ],
+  "performance": {
+    "finalRuns": 42,
+    "iterations": 7,
+    "excludedDiagnosticRuns": 48,
+    "summary": "model3d-resources-summary.json",
+    "raw": "model3d-resources.json.gz",
+    "method": "Fresh Chromium context for each invocation; alternating build order, seven repeats in final run. Inputs and imports ready before timing. loadMs includes glTF JSON processing, resolver normalization and complete Three.js geometry/material loading. In-memory sidecar contains only referenced positions and normals. Excludes file/network/module loading, scene helpers, renderer/GPU/paint. Complete position/normal bytes, computed bounds, material values and warnings checked after timing. Native Blob URL bookkeeping runs in both builds. No peak-memory, peer or SOTA claim. Baseline medians at or below 10 ms receive no speed claim.",
+    "samples": [
+      {
+        "sample": "generated-1000-triangles.gltf",
+        "bytes": 72000,
+        "currentMs": 4.100000023841858,
+        "baselineMs": 5.899999976158142,
+        "below10MsControl": true,
+        "completePositionsNormalsBoundsMaterialsWarningsMatch": true,
+        "ownedUrlsReleased": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "generated-100000-triangles.gltf",
+        "bytes": 7200000,
+        "currentMs": 11,
+        "baselineMs": 264.2000000476837,
+        "below10MsControl": false,
+        "completePositionsNormalsBoundsMaterialsWarningsMatch": true,
+        "ownedUrlsReleased": true,
+        "scopedSota": false,
+        "ratio": 24.018181822516702,
+        "ratio95PercentBootstrapInterval": [
+          22.836206857837055,
+          24.691588954557364
+        ],
+        "stableEngineeringReduction": true
+      },
+      {
+        "sample": "generated-300000-triangles.gltf",
+        "bytes": 21600000,
+        "currentMs": 15.800000071525574,
+        "baselineMs": 910.0999999046326,
+        "below10MsControl": false,
+        "completePositionsNormalsBoundsMaterialsWarningsMatch": true,
+        "ownedUrlsReleased": true,
+        "scopedSota": false,
+        "ratio": 57.60126555599171,
+        "ratio95PercentBootstrapInterval": [
+          56.20370353827152,
+          58.39240480046149
+        ],
+        "stableEngineeringReduction": true
+      }
+    ]
+  },
+  "validation": {
+    "unitByPackage": {
+      "model3d": 149,
+      "vue": 44
+    },
+    "unitPassed": 193,
+    "newTests": 21,
+    "oldSourceFailed": 19,
+    "oldSourcePassedControls": 2,
+    "unhandledErrors": 0,
+    "developmentBrowser": {
+      "passed": 9,
+      "command": "npx playwright test apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/model3d-resources-development-browser"
+    },
+    "productionBrowser": {
+      "passed": 6,
+      "command": "FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts --grep 'textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/model3d-resources-production-browser"
+    },
+    "realStepGeometry": {
+      "fixtures": 3,
+      "imports": 9,
+      "worldSpaceTriangleAndNormalSetsMatch": true
+    },
+    "completeGeometryBoundsMaterialsWarningsMatch": true,
+    "texturedRenderEquivalence": {
+      "development": [
+        {
+          "engine": "baseline",
+          "counts": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "vertices": 6,
+          "dimensions": [
+            2,
+            2
+          ],
+          "glError": 0,
+          "pixelHash": "935af391e50725ec1318e24efc8bb7305da3d3bbef8f6ec590ded9cdc6496b75",
+          "created": 1,
+          "revoked": 0,
+          "active": 1
+        },
+        {
+          "engine": "current",
+          "counts": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "vertices": 6,
+          "dimensions": [
+            2,
+            2
+          ],
+          "glError": 0,
+          "pixelHash": "935af391e50725ec1318e24efc8bb7305da3d3bbef8f6ec590ded9cdc6496b75",
+          "created": 3,
+          "revoked": 3,
+          "active": 0
+        }
+      ],
+      "production": [
+        {
+          "engine": "baseline",
+          "counts": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "vertices": 6,
+          "dimensions": [
+            2,
+            2
+          ],
+          "glError": 0,
+          "pixelHash": "935af391e50725ec1318e24efc8bb7305da3d3bbef8f6ec590ded9cdc6496b75",
+          "created": 1,
+          "revoked": 0,
+          "active": 1
+        },
+        {
+          "engine": "current",
+          "counts": [
+            10000,
+            10000,
+            10000,
+            10000
+          ],
+          "vertices": 6,
+          "dimensions": [
+            2,
+            2
+          ],
+          "glError": 0,
+          "pixelHash": "935af391e50725ec1318e24efc8bb7305da3d3bbef8f6ec590ded9cdc6496b75",
+          "created": 3,
+          "revoked": 3,
+          "active": 0
+        }
+      ]
+    },
+    "browserCoverage": [
+      "Actual glTF buffer, UV and PNG loading; all four visible color regions and identical complete RGBA hashes after current owned URLs are revoked",
+      "Cancellation before non-cooperative resolver completion releases prior resources and allocates no late URL",
+      "Actual late PNG response completes a cancelled glTF; geometry, material and texture each dispose once",
+      "Two real failed Emscripten WASM fetch attempts, successful STEP retry on the same library instance, subsequent importer reuse",
+      "Existing STL/GLB replacement, source cancellation, detached controls, demo STL upload and optional STEP lazy download"
+    ],
+    "builds": [
+      "npm run build:model3d",
+      "npm run build:demo"
+    ],
+    "categoryChecks": "npm run test:categories",
+    "bundleReport": "npm run report:bundle-sizes",
+    "sourceMapsMatchFreshOriginalAndFinalSource": true,
+    "incrementalReversePatchRestoresOriginalBytes": true,
+    "gitDiffCheckPassed": true,
+    "warnings": [
+      "Existing duplicate Three.js instance warning in Vue tests",
+      "Existing large demo vendor chunk warning"
+    ],
+    "temporaryPreviewPortsClosed": [
+      4173,
+      4174
+    ]
+  },
+  "limits": [
+    "Same-project A/B on generated glTF geometry, not a peer/SOTA ranking or evidence for every real model. Baseline median at or below 10 ms is retained only as a control without a speed ratio.",
+    "The timer ends at complete loader resolution. Renderer/GPU/paint, external file/HTTP input transfer, module loading and peak memory are excluded. In-browser data/Blob URL handling is included.",
+    "Full geometry equivalence covers all three generated models. Pixel equivalence covers one generated two-triangle textured model, not arbitrary extensions, compressed textures or all materials.",
+    "Synchronous parsing/WASM cannot be interrupted. Asynchronous loader work may complete after cancellation; late output is disposed and rejection observed.",
+    "STEP recovery covers WASM fetch/factory initialization failures. Browser-cached JavaScript module import failures are not claimed to recover.",
+    "Existing unsupported glTF extensions and compressed-asset decoder setup are unchanged. No private camera originals or screenshots are accessed."
+  ],
+  "baseline": [
+    {
+      "path": "tmp/continued-review/model3d-resources-baseline/packages/model3d/src/preview-driver.ts",
+      "bytes": 241857,
+      "sha256": "1ca35dbf7a88beeb4bf09d4ec143f06d31af2b01b093476ad706d5cdcb1d3153"
+    },
+    {
+      "path": "tmp/continued-review/model3d-resources-baseline/dist/index.js",
+      "bytes": 976140,
+      "sha256": "0a05341e24e789c95ff8c6641718b3627ebd271451420a4b2af3a9af09363e8f"
+    },
+    {
+      "path": "tmp/continued-review/model3d-resources-baseline/dist/index.js.map",
+      "bytes": 2486960,
+      "sha256": "f0eac2731d4b6b1689267a01d2cee4a8a831bcdb31779eaf408b28bdd9cce821"
+    }
+  ],
+  "bindings": [
+    {
+      "path": "packages/model3d/src/preview-driver.ts",
+      "bytes": 244792,
+      "sha256": "ba3afb1cc35634bd2dc16dcb75809647399d0604afbff49d4a28a862768346fb"
+    },
+    {
+      "path": "packages/model3d/test/resource-loading.spec.ts",
+      "bytes": 12035,
+      "sha256": "8b567185a81f84c6ae24b58f28fe8d56f9519c6f9441f2a9204cbd1ddfa08867"
+    },
+    {
+      "path": "packages/model3d/test/preview-driver.spec.ts",
+      "bytes": 153226,
+      "sha256": "1c45d27ef7a6db2400f05f8cf8a31feea13bae02f80196f4feb24d83df6ebcea"
+    },
+    {
+      "path": "packages/model3d/test/lifecycle.spec.ts",
+      "bytes": 8620,
+      "sha256": "a27de263b7940f32d1750835e7611091238c55696ce583dca4340753defad02c"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/gltf.mjs",
+      "bytes": 2248,
+      "sha256": "fecfba1069b990186f4861d065aa0b320db24c056c441bb35f34db7fb886553d"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/mesh.mjs",
+      "bytes": 2343,
+      "sha256": "b45fab599deadb242451d83a021b9f2c47677af32d8808225e6e10464a303c2b"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-resources.e2e.ts",
+      "bytes": 12407,
+      "sha256": "c0b8f406cf247e83689d08dc3b04219ba40fec41dc94d8ae38bc46294aeb1def"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-lifecycle.e2e.ts",
+      "bytes": 4831,
+      "sha256": "41ffae4946181a00a312a032d1168bc08d909333aa0258f757ed01a591452281"
+    },
+    {
+      "path": "apps/demo/e2e/cad-wasm.e2e.ts",
+      "bytes": 1540,
+      "sha256": "6f921a2f19906cdf232ea60395f00288c0d8630c5c25cf3d72c8369f90e32b7f"
+    },
+    {
+      "path": "scripts/benchmark-model3d-gltf.mjs",
+      "bytes": 7237,
+      "sha256": "7b79014827695d684a3d9e43fd3d55bacb9a4b6998fd75b010af9d3ef085d241"
+    },
+    {
+      "path": "scripts/summarize-model3d-gltf-benchmark.mjs",
+      "bytes": 3472,
+      "sha256": "0881c19140c7455610e05b857153fc03a38bc048e58e20b48dde284bcb2c3bc6"
+    },
+    {
+      "path": "scripts/test-occt-wasm.mjs",
+      "bytes": 9110,
+      "sha256": "af48b86af8c03677c806fbdb11c325c68f2bb8f61074c5cec2544e616775f584"
+    },
+    {
+      "path": "packages/model3d/dist/index.js",
+      "bytes": 977662,
+      "sha256": "6b2011523144a38c8a17be115d934e5be463b2e444df3b54c3f54d53dd036416"
+    },
+    {
+      "path": "packages/model3d/dist/index.js.map",
+      "bytes": 2492041,
+      "sha256": "f4cf051438ee9a8ca01576467580e033e9f7b9438eb4f455ff51154954d28c09"
+    },
+    {
+      "path": "packages/model3d/dist/preview-driver.d.ts",
+      "bytes": 12084,
+      "sha256": "baf559e8faa643130ecb50fc1872fecc26dce32b2f26797c02657e019c61fe69"
+    },
+    {
+      "path": "packages/model3d/vendor/occt-import-js/occt-import-js.js",
+      "bytes": 45276,
+      "sha256": "16e93f3cc1c0acda5fa5d74e285e676987d9d3124c4aa200e5f6ab4263fac8db"
+    },
+    {
+      "path": "packages/model3d/vendor/occt-import-js/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "packages/model3d/dist/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "bytes": 585770,
+      "sha256": "42c42ba5fe8762aa1cd7bc9b2204d0c94798d0ef98eec9735d9411b29ac0888d"
+    },
+    {
+      "path": "node_modules/three/build/three.module.js",
+      "bytes": 595384,
+      "sha256": "d513a6de314b2c32d0a11a209bc1ec06b528ae95c0f841a1c1761aa9248c814a"
+    },
+    {
+      "path": "node_modules/three/build/three.core.js",
+      "bytes": 1385513,
+      "sha256": "c943c148229a99917d815f772404c48f5447e82c0c450f92403955bc27e8d100"
+    },
+    {
+      "path": "playwright.config.ts",
+      "bytes": 621,
+      "sha256": "5b2993d7ef92a9c75e16315d52a9c0fdc4207cd5576e7abc45e2d43a21c331d4"
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "bytes": 38925,
+      "sha256": "d7ea5bb440279f1ba194d8e2fe1cb240f54a228f1b51b0619bdffbf4ed810eac"
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "bytes": 37479,
+      "sha256": "2e054d7ed33ec19147b5b2aa8a4bc47eea24b1c5bd5f9bbdd69c3e0a6b0c351c"
+    },
+    {
+      "path": "docs/performance-comparison.md",
+      "bytes": 35000,
+      "sha256": "1089c7bf8195331bb9103a3e066b64988792c7291a182ee5c34f1525c8481134"
+    },
+    {
+      "path": "docs/performance-comparison.zh-CN.md",
+      "bytes": 31976,
+      "sha256": "475f5e2d1902f875ae9049f6e7f502d5816e8cf4069e67c757d14229f8652a21"
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "bytes": 91578,
+      "sha256": "fb5ccd2408b81691b238aa3ecc3f36e5ef79e3f5b6df8f9072f5c4438e6bbf11"
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "bytes": 3853,
+      "sha256": "da8c47e236e2610b31ce5d4bacc58256c305e289b889fca42c385760a572418f"
+    },
+    {
+      "path": "apps/demo/dist/build-info.json",
+      "bytes": 876,
+      "sha256": "6bec6263d09a6d7b6a88a4555f6278700ad8e2f392d64f8a575777887c924d26"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/occt/README.md",
+      "bytes": 718,
+      "sha256": "48d1192ee1f8506a57d4cdbe84701025c72f18097bc25b23fd2cd45e5cec5795"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/occt/assembly.stp",
+      "bytes": 136663,
+      "sha256": "be1254354f6929a08ce1c8049d4a0a2f4406da4ea283fc4247d009c81976641c"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/occt/cube.stp",
+      "bytes": 8010,
+      "sha256": "cfa52db7eab6fe6a73986a87aff8702d24431bdb7da6382afdd94234deb3f648"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/occt/rounded-cube.step",
+      "bytes": 20532,
+      "sha256": "370c5474e50dc94923f0dacb5113f7258233601620ab530d937c18571869d49e"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-CZ4b4gwj.js",
+      "bytes": 145197,
+      "sha256": "33dd5ec770c09112d6626ab2a9f53973851e08330579679a8c5b2327cd95b325"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-D5zSLHLT.css",
+      "bytes": 32017,
+      "sha256": "28368a57749f016bc98571bedb5e90a142ad116f6139ec0056474559ac85683e"
+    },
+    {
+      "path": "apps/demo/dist/assets/vendor-BqbwLxmX.js",
+      "bytes": 1372133,
+      "sha256": "ab5a0500a99edb5f7fccc0e4341fc87a9f8fbbd196a23d97533d71fa73633dcc"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-B1myDZRM.css",
+      "bytes": 496,
+      "sha256": "6cf6d520f26937cc97308ceef86510cb5035e588673832483b15923fac58588d"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-sVLXr8ax.js",
+      "bytes": 110174,
+      "sha256": "399fb528d47eac75444ddb3cb76f21c244761dd37f95f9ff93c3aa5f061a2079"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/model3d-resources.patch",
+      "bytes": 11776,
+      "sha256": "b15630261628896a539c2685f601f1ee6d6dcd3d87b5c546b539c70db3993e89"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/model3d-resources.json.gz",
+      "bytes": 2653,
+      "sha256": "97e5ebc4a6a659ae2dc60420db7e7ed84e07c08bf07bbaa68ce22bc640368166"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/model3d-resources-summary.json",
+      "bytes": 1869,
+      "sha256": "ad6b6ce74a1403f056983354d765ddcd0e718cf55d77db5a8183fd32ffdfd82f"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/model3d-resources-diagnostic.json.gz",
+      "bytes": 2563738,
+      "sha256": "6b9561f69c0bd626b3502ee283aaf40337c5edf2bcd618057c88760084479669"
+    }
+  ],
+  "reproduction": [
+    "Use diagnostic baselineFiles to restore the old source in an isolated checkout preserving prior changes, or reverse only model3d-resources.patch there. Never reverse it in the current workspace.",
+    "Alternatively restore diagnostic baselineRuntimeFiles at their exact repository-relative paths; the default benchmark command imports tmp/continued-review/model3d-resources-baseline/dist/index.js.",
+    "Build current with npm run build:model3d. Run node scripts/benchmark-model3d-gltf.mjs --iterations 7 --output tmp/continued-review/model3d-gltf-reproduced alone.",
+    "node scripts/summarize-model3d-gltf-benchmark.mjs --input tmp/continued-review/model3d-gltf-reproduced/results.json",
+    "From packages/model3d and packages/vue, run ../../node_modules/.bin/vitest run. In the isolated old model3d source, the new test/resource-loading.spec.ts reproduces nineteen failures and two controls.",
+    "node scripts/test-occt-wasm.mjs",
+    "npm run build:demo",
+    "npx playwright test apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/model3d-resources-development-browser",
+    "Serve the production demo with npm run preview --workspace @filens/demo -- --host 127.0.0.1 --port 4174; run: FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts --grep 'textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/model3d-resources-production-browser"
+  ]
+}

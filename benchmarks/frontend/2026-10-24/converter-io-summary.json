@@ -1,0 +1,119 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "11f48a78b8544cf631cb5b68848504508064aca8e60ed14c57b02421210fc189",
+  "iterations": 7,
+  "runs": 84,
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "method": "10,000 paired bootstrap median-ratio resamples, seed 12345. Claims require seven repeats, a baseline median above 10 ms and a 95% interval above 1. IO fixtures measure actual generated WASM writes/instantiation/output extraction, separate from unchanged real converter-core.wasm DOCM normalization and RTF conversion. Full output bytes/parts and image payloads verified after timing. No peer/SOTA or peak-memory claim; external totals unchanged.",
+  "samples": [
+    {
+      "sample": "wasi-65536-4096",
+      "kind": "io",
+      "baselineMs": 0.5,
+      "currentMs": 0.5,
+      "ratio": null,
+      "pairedBootstrapRatio95": null,
+      "below10MsControl": true,
+      "stableEngineeringReduction": false,
+      "identicalCompleteOutputBytes": true,
+      "outputBytes": 65536,
+      "outputSha256": "f8a38b49873588eea0fa55c178b2ad20a05eb7f3eccf55623323405fdec79fe9",
+      "scopedSota": false
+    },
+    {
+      "sample": "wasi-8388608-16384",
+      "kind": "io",
+      "baselineMs": 140.39999997615814,
+      "currentMs": 2.399999976158142,
+      "ratio": 58.50000057121118,
+      "pairedBootstrapRatio95": [
+        55.880000019073485,
+        58.54166724822588
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "identicalCompleteOutputBytes": true,
+      "outputBytes": 8388608,
+      "outputSha256": "a4b6c5fd40371b12b326890a7e5e4ea0a78a51c3bce6a667d44077f08a93e008",
+      "scopedSota": false
+    },
+    {
+      "sample": "wasi-33554432-65536",
+      "kind": "io",
+      "baselineMs": 701.0999999046326,
+      "currentMs": 9,
+      "ratio": 77.89999998940363,
+      "pairedBootstrapRatio95": [
+        73.31914911452544,
+        82.32183862104175
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "identicalCompleteOutputBytes": true,
+      "outputBytes": 33554432,
+      "outputSha256": "75f70fb5828f5ef1f98f142224ad27620b88f9fb684c720c1bc47162084d3663",
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-4-images.docm",
+      "kind": "conversion",
+      "baselineMs": 122.5,
+      "currentMs": 98.20000004768372,
+      "ratio": 1.2474541745470138,
+      "pairedBootstrapRatio95": [
+        1.23333333357416,
+        1.2676200194377139
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "identicalCompleteOutputBytes": true,
+      "outputBytes": 3592805,
+      "outputSha256": "4eabc99d1709e85286eec51db722afbbaaa19eb34f4a0f3a5a1435de2ae94e23",
+      "imagesDecodedPerRun": 4,
+      "imagePayloadsPreserved": true,
+      "macrosRemoved": true,
+      "normalizedRelationshipSemanticsPreserved": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-16-images.docm",
+      "kind": "conversion",
+      "baselineMs": 687.4000000953674,
+      "currentMs": 363.89999997615814,
+      "ratio": 1.8889804895312015,
+      "pairedBootstrapRatio95": [
+        1.8729899157599872,
+        1.9284321921022267
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "identicalCompleteOutputBytes": true,
+      "outputBytes": 14366707,
+      "outputSha256": "c9ceb40b28255c7e58605d4bf9ca9e1ade6c0bcc381e1a780b71e8c7ae3891c9",
+      "imagesDecodedPerRun": 16,
+      "imagePayloadsPreserved": true,
+      "macrosRemoved": true,
+      "normalizedRelationshipSemanticsPreserved": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "rich-text.rtf",
+      "kind": "conversion",
+      "baselineMs": 10.5,
+      "currentMs": 10.399999976158142,
+      "ratio": 1.009615386929914,
+      "pairedBootstrapRatio95": [
+        0.9904761882055373,
+        1.029126220671303
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": false,
+      "identicalCompleteOutputBytes": true,
+      "outputBytes": 3267,
+      "outputSha256": "de3f1a74a35cf2083fc8764ef35f080e023974ad7c2679e74ede6b04ba3b38c0",
+      "scopedSota": false
+    }
+  ]
+}

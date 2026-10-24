@@ -9,6 +9,7 @@ const output = option('--output', 'tmp/performance-sota/final/analysis.json');
 const source = fs.readFileSync(input);
 const result = JSON.parse(source);
 if (result.profiling) throw new Error('Profiled runs cannot be ranked.');
+const engineering = Boolean(result.engineering) || result.runs.some(run => run.engine.startsWith('filens-'));
 const median = values => {
   const sorted = [...values].sort((a, b) => a - b), middle = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
@@ -40,15 +41,15 @@ const aggregates = ['pptx-model', 'pptx-view'].flatMap(family => ['pptxtojson', 
 const analysis = {
   sourceSha256: crypto.createHash('sha256').update(source).digest('hex'),
   date: result.date, cpu: result.cpu, platform: result.platform, browser: result.browser, gpu: result.gpu,
-  versions: result.versions, iterations: result.iterations, totalRuns: result.runs.length,
+  versions: result.versions, iterations: result.iterations, totalRuns: result.runs.length, engineering,
   filensSuccessfulRuns: result.runs.filter(run => run.engine === 'filens' && !run.failure && !run.errors.length).length,
   method: 'Ratios are peer / filens (higher means filens is faster). Paired bootstrap of per-iteration measurements, 10000 resamples, percentile 95% interval, LCG seed 12345. Small single-machine sample; not an independent benchmark or a global SOTA proof.',
   comparisons,
   timingLeads: (result.summary ?? []).filter(row => row.engine === 'filens').map(row => {
     const peers = result.summary.filter(peer => peer.family === row.family && peer.sample === row.sample && peer.engine !== 'filens');
     const matching = comparisons.filter(pair => pair.family === row.family && pair.sample === row.sample);
-    return { family: row.family, sample: row.sample, allMeasuredPeersHaveStableTimingLead: peers.length > 0 && matching.length === peers.length && matching.every(pair => pair.stableLeadInThisComparison),
-      note: 'Timing only; output/visual review is required before any SOTA claim.' };
+    return { family: row.family, sample: row.sample, allMeasuredPeersHaveStableTimingLead: !engineering && peers.length > 0 && matching.length === peers.length && matching.every(pair => pair.stableLeadInThisComparison),
+      note: engineering ? 'Current/previous implementation engineering check; excluded from peer SOTA.' : 'Timing only; output/visual review is required before any SOTA claim.' };
   }), aggregates, summary: result.summary
 };
 fs.mkdirSync(path.dirname(output), { recursive: true });

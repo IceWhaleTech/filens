@@ -11,11 +11,14 @@ export async function loadSourceBytes(source: PptxSource, options: LoadSourceOpt
     const response = await fetch(source, {
       signal: options.signal
     });
+    throwIfAborted(options.signal);
     if (!response.ok) {
       throw new Error(`Failed to fetch PPTX source: ${response.status} ${response.statusText}`);
     }
 
-    return new Uint8Array(await response.arrayBuffer());
+    const bytes = await response.arrayBuffer();
+    throwIfAborted(options.signal);
+    return new Uint8Array(bytes);
   }
 
   if (ArrayBuffer.isView(source)) {
@@ -27,14 +30,15 @@ export async function loadSourceBytes(source: PptxSource, options: LoadSourceOpt
   }
 
   if (isBlobLike(source)) {
+    const bytes = await source.arrayBuffer();
     throwIfAborted(options.signal);
-    return new Uint8Array(await source.arrayBuffer());
+    return new Uint8Array(bytes);
   }
 
   throw new Error('Unsupported PPTX source type.');
 }
 
-function throwIfAborted(signal?: AbortSignal): void {
+export function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) {
     throw createAbortError();
   }

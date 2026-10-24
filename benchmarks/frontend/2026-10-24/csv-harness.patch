@@ -1,0 +1,82 @@
+diff --git a/scripts/benchmark-other-formats.mjs b/scripts/benchmark-other-formats.mjs
+index 7ba630e..8efbcb1 100644
+--- a/scripts/benchmark-other-formats.mjs
++++ b/scripts/benchmark-other-formats.mjs
+@@ -20,6 +20,8 @@ const cadBaseline = option('--cad-baseline', '');
+ if (cadBaseline && (path.isAbsolute(cadBaseline) || cadBaseline.split(/[\\/]/).includes('..'))) throw new Error('--cad-baseline must be repository-relative.');
+ const archiveBaseline = option('--archive-baseline', '');
+ if (archiveBaseline && (path.isAbsolute(archiveBaseline) || archiveBaseline.split(/[\\/]/).includes('..'))) throw new Error('--archive-baseline must be repository-relative.');
++const workbookBaseline = option('--workbook-baseline', '');
++if (workbookBaseline && (path.isAbsolute(workbookBaseline) || workbookBaseline.split(/[\\/]/).includes('..'))) throw new Error('--workbook-baseline must be repository-relative.');
+ const out = path.resolve(root, option('--output', 'tmp/performance-other/results'));
+ fs.mkdirSync(out, { recursive: true });
+ const samples = JSON.parse(fs.readFileSync(path.join(work, 'samples.json'))).filter(s =>
+@@ -27,6 +29,7 @@ const samples = JSON.parse(fs.readFileSync(path.join(work, 'samples.json'))).fil
+ const peers = { dxf: ['filens', 'dxf-parser'], xlsx: ['filens', 'sheetjs'], csv: ['filens', 'papaparse', 'sheetjs'], zip: ['filens', 'zip.js', 'fflate'], step: ['filens', 'occt-import-js'], conversion: ['filens', 'x2t'] };
+ if (cadBaseline) peers.dxf = ['filens', 'filens-baseline'];
+ if (archiveBaseline) peers.zip = ['filens', 'filens-baseline'];
++if (workbookBaseline) peers.csv = peers.xlsx = ['filens', 'filens-baseline'];
+ const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+ const sizeCachePath = path.join(work, 'artifact-sizes.json');
+ const previousSizes = fs.existsSync(sizeCachePath) ? JSON.parse(fs.readFileSync(sizeCachePath))
+@@ -45,10 +48,10 @@ const result = { date: new Date().toISOString(), cpu: os.cpus()[0].model, totalM
+   artifacts: ['scripts/benchmark-other-formats.mjs', 'scripts/prepare-other-format-benchmark.mjs', 'benchmarks/frontend/other-formats/package-lock.json',
+     ...['core', 'cad', 'xlsx', 'archive', 'converter-client'].map(n => `packages/${n}/dist/index.js`), 'packages/model3d/vendor/occt-import-js/occt-import-js.wasm',
+     'tmp/performance-other/node_modules/occt-import-js/dist/occt-import-js.wasm', 'wasm/converter-core/dist/converter-core.wasm', 'tmp/performance-other/x2t/x2t.wasm', 'tmp/performance-other/x2t/x2t.js'].map(measuredSize),
+-  samples, engineering: Boolean(cadBaseline || archiveBaseline), runs: [] };
+-if (cadBaseline || archiveBaseline) {
++  samples, engineering: Boolean(cadBaseline || archiveBaseline || workbookBaseline), runs: [] };
++if (cadBaseline || archiveBaseline || workbookBaseline) {
+   result.method += ' Engineering A/B only: filens-baseline is the previous build for its family; no peer or SOTA ranking.';
+-  for (const baseline of [cadBaseline, archiveBaseline].filter(Boolean)) result.artifacts.push(measuredSize(baseline));
++  for (const baseline of [cadBaseline, archiveBaseline, workbookBaseline].filter(Boolean)) result.artifacts.push(measuredSize(baseline));
+ }
+ fs.writeFileSync(sizeCachePath, JSON.stringify(result.artifacts));
+ const save = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stringify(result, null, 2) + '\n');
+@@ -78,12 +81,12 @@ try {
+       const run = { family: sample.family, sample: sample.name, engine, iteration, errors, logs };
+       try {
+         await page.goto(base);
+-        const setup = await page.evaluate(async ({ sample, engine, cadBaseline, archiveBaseline, reviewDxf }) => {
++        const setup = await page.evaluate(async ({ sample, engine, cadBaseline, archiveBaseline, workbookBaseline, reviewDxf }) => {
+           const script = url => new Promise((resolve, reject) => { const tag = document.createElement('script'); tag.src = url; tag.onload = resolve; tag.onerror = reject; document.head.append(tag); });
+           const bytes = new Uint8Array(await (await fetch(`/repo/${sample.path}`)).arrayBuffer());
+           window.input = bytes; window.text = new TextDecoder().decode(bytes); window.sample = sample; window.reviewDxf = reviewDxf;
+           window.hash = async value => [...new Uint8Array(await crypto.subtle.digest('SHA-256', typeof value === 'string' ? new TextEncoder().encode(value) : value))].map(v => v.toString(16).padStart(2, '0')).join('');
+-          if (engine === 'filens-baseline') window.lib = await import(`/repo/${sample.family === 'zip' ? archiveBaseline : cadBaseline}`);
++          if (engine === 'filens-baseline') window.lib = await import(`/repo/${sample.family === 'zip' ? archiveBaseline : ['csv', 'xlsx'].includes(sample.family) ? workbookBaseline : cadBaseline}`);
+           else if (engine === 'filens' && sample.family !== 'step') window.lib = await import(`@filens/${({ dxf: 'cad', xlsx: 'xlsx', csv: 'xlsx', zip: 'archive', conversion: 'converter-client' })[sample.family]}`);
+           else if (engine === 'dxf-parser') { await script('/repo/tmp/performance-other/node_modules/dxf-parser/dist/dxf-parser.js'); window.parser = new window.DxfParser(); }
+           else if (engine === 'sheetjs') await script('/repo/tmp/performance-other/xlsx.full.min.js');
+@@ -121,7 +124,7 @@ try {
+             }
+           }
+           return { initMs };
+-        }, { sample, engine, cadBaseline, archiveBaseline, reviewDxf });
++        }, { sample, engine, cadBaseline, archiveBaseline, workbookBaseline, reviewDxf });
+         Object.assign(run, setup);
+         const cdp = await context.newCDPSession(page); await cdp.send('HeapProfiler.collectGarbage');
+         const before = await cdp.send('Runtime.getHeapUsage');
+@@ -136,7 +139,7 @@ try {
+           const t0 = performance.now(); let model;
+           if (family === 'dxf') model = engine === 'filens' ? window.lib.loadDxfDrawing(window.text) : window.parser.parseSync(window.text);
+           else if (family === 'xlsx') model = engine === 'filens' ? await window.lib.loadXlsxWorkbook(window.input) : window.XLSX.read(window.input, { type: 'array', cellFormula: true });
+-          else if (family === 'csv') model = engine === 'filens' ? await window.lib.loadCsvWorkbook(window.input) : engine === 'papaparse' ? window.Papa.parse(new TextDecoder().decode(window.input), { delimiter: ',', dynamicTyping: false }) : window.XLSX.read(window.input, { type: 'array', raw: true });
++          else if (family === 'csv') model = engine === 'filens' ? await window.lib.loadCsvWorkbook(window.input) : engine === 'papaparse' ? window.Papa.parse(new TextDecoder().decode(window.input), { delimiter: ',', dynamicTyping: false }) : window.XLSX.read(window.input, { type: 'array', raw: true, codepage: 65001 });
+           else if (family === 'step') {
+             model = window.importer.ReadStepFile(window.input, { linearUnit: 'millimeter' });
+             if (!model.success || !model.meshes?.length) throw new Error('STEP returned no geometry');
+diff --git a/scripts/prepare-other-format-benchmark.mjs b/scripts/prepare-other-format-benchmark.mjs
+index cb67085..a331681 100644
+--- a/scripts/prepare-other-format-benchmark.mjs
++++ b/scripts/prepare-other-format-benchmark.mjs
+@@ -73,6 +73,9 @@ await add('generated-numeric.csv', 'csv', encode(Array.from({ length: 20000 }, (
+ const quote = value => `"${value.replaceAll('"', '""')}"`;
+ await add('generated-quoted.csv', 'csv', encode(Array.from({ length: 10000 }, (_, r) => [String(r), quote(`中文, field ${r}`), quote('say "hello"'), quote('line one\nline two'), ''].join(',')).join('\r\n')),
+   { generated: '10,000 rows × five fields: UTF-8, comma, escaped quote, multiline field and empty last field' });
++await add('generated-long-fields.csv', 'csv', encode(Array.from({ length: 2048 }, (_, r) => Array.from({ length: 4 }, (_, c) =>
++  quote(`${r}:${c} 中文, "notes"\n${'long text '.repeat(64)}`)).join(',')).join('\r\n')),
++  { generated: '2,048 rows × four long quoted fields: UTF-8, commas, escaped quotes and embedded LF; CRLF records, no trailing newline' });
+ await local('sample-nested-archives.zip', 'zip', 'apps/demo/public/samples/sample-nested-archives.zip');
+ await add('generated-1000-files.zip', 'zip', zipped(Object.fromEntries(Array.from({ length: 1000 }, (_, i) => [`part-${String(i).padStart(4, '0')}.txt`, encode(`Document ${i}: ` + 'sample content\n'.repeat(80))]))),
+   { generated: '1,000 deterministic text files, DEFLATE level 6' });

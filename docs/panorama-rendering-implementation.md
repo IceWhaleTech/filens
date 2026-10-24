@@ -3,6 +3,8 @@
 ## Browser pipeline
 
 - `inspect-panorama` runs in `converter-core-rust` and accepts sparse file ranges plus an optional Insta360 `.insv.pb` sidecar.
+- Insta360 INFO discovery follows bounded frame footers/indexes with small backward ranges, skipping unrelated thumbnail and telemetry payloads. A bounded full-metadata fallback preserves the eight-invocation inspection budget for fragmented layouts. INSP starts with a 1 MiB JPEG prefix and 64 KiB tail; parsing remains in the frontend WASM core.
+- The browser caches nonoverlapping ranges and fetches only missing bytes. WASM joins adjacent segments while rejecting holes, and JPEG inspection scans the largest available prefix once. Remote ranges must match the requested offset/end, retain the probed total size and contain the complete body; invalid responses fail as `range_unavailable`.
 - `createWasmPanoramaProcessor({ wasm })` owns range iteration, sample reads, seeking, abort, limits, and WebCodecs decoder configuration.
 - `createPanoramaPreviewDriver({ processor })` automatically uses the Photos real-time renderer for calibrated side-by-side raw video, including two independent square tracks and a shared packed track. INSP images, unusual crops, top-bottom video, and hardware-confirmed IMU stabilization retain the Three.js renderer.
 - `packages/panorama/src/realtime/stitch-renderer.js` migrates the frame projection and seam-analysis dependencies of `createProjectionRenderer` from `ZimaOS-Photos/src/lib/search-insta360-preview.js` (source checkout `fe5f62af`). It has no Photos API, React, server conversion, file parser, or runtime dependency on the neighboring checkout. Its local changes add an explicit seek reset and allow the WASM core's generic calibrated MEI lenses to use video protection.
@@ -21,12 +23,19 @@
 - Each lens may declare `sourceTrackId` plus a normalized `sourceRect`. This keeps separate tracks, side-by-side packing, and top-bottom packing on one rendering path; a shared packed track is decoded once. Rust only emits packed regions when track and calibrated lens dimensions prove the layout exactly.
 - The Photos path combines calibrated projection, bounded symmetric exposure gain, seam optimization, displaced-content protection, and continuous foreground ownership. DJI enables one bounded overlap registration; MEI keeps its file calibration. Video analysis adapts to its measured cost at 1/3/5-second intervals and reuses accepted analysis for unchanged scenes. Seek clears prior ownership immediately, including when seeking to the same timestamp. Repeated optional readback failures fall back to calibrated blending.
 - Its full-screen WebGL video pass disables multisampling/depth/stencil, updates existing texture allocations, caches unchanged projection uniforms, and draws only for decoded frames, view changes, or resize. A safely covered single-lens viewport skips the other lens in the shader. Decoding retains both tracks so dragging can immediately reveal either lens. Paused views do not continuously redraw; resizing and interaction redraw retained textures.
-- The retained Three.js analyzer runs once for calibrated INSP and every 500 ms for video. It uses WASM minimum-cost seams, temporal constraints, overlap/exposure gates, and calibrated fallback blending.
+- The retained Three.js analyzer runs once for calibrated INSP and every 500 ms for video. It uses WASM minimum-cost seams, temporal constraints, overlap/exposure gates, and calibrated fallback blending. Still-image construction awaits that initial analysis, including its optional-failure fallback; subsequent drag, zoom and resize reuse the result without an idle polling loop.
+- The calibrated still shader converts linear output back to sRGB in every branch. Its linear-filtered source texture disables unused mipmaps. Both ordinary and calibrated still panoramas redraw only when the view or viewport changes; video retains frame/state polling.
 - `.LRF/.LRV` remains a labeled proxy fallback. It is never reported as an accurate raw stitch.
 
 Unknown firmware, missing calibration, missing sidecars, unavailable byte ranges, and unsupported browser media codecs are separate failures. Calibrated INSV can fall back to browser media decoding when WebCodecs is absent, with dynamic seams and IMU stabilization disabled. IMU stabilization stays off when the IMU-to-camera rotation has not been confirmed on real hardware.
 
 ## Local vendor samples
+
+### INSP originals
+
+A real 11904×5952 X5 INSP original has been rendered and checked at eight headings/pitches, including both seams, with drag, zoom, resize and zero idle draws. The [frontend comparison](performance-comparison.md#x5-originals-native-calibration-and-more-natural-seams) records 21 repeats per engine, native embedded calibration and a scoped preview-speed lead over PSV's generic dual-fisheye adapter. PSV repeats scene content at hard seams in this sample; filens retains lighter localized blending/ghosting. This does not establish seamless rendering for other scenes or a general quality SOTA.
+
+`panorama-still-calibrated.e2e.ts` checks neutral-gray sRGB output (118), delayed/failed optional seam work, no mipmaps, no idle draws, interaction and cleanup through the production driver. `INSP_SAMPLE` enables the real-original check in `vendor-panorama.e2e.ts`.
 
 ### RAW images
 

@@ -1,0 +1,26 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "52189f1cc56ba56ab41eedff9637fe71724e24adace11c74c02f156cf104c8a6",
+  "iterations": 7,
+  "runs": 14,
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "method": "10,000 paired bootstrap resamples of public panorama load median ratios, seed 12345. Seven repeats, baseline above 10 ms and an interval above 1 required for a stable reduction. Includes WebGL context, Blob snapshot, image decoding and DOM setup; excludes scheduled drawing/upload, source/module preparation and post-timer content checks. Complete Blob/pixel equivalence checked in every run. No peer/SOTA or peak-memory claim.",
+  "samples": [
+    {
+      "sample": "bmp-24MiB-blob",
+      "baselineMs": 38.299999952316284,
+      "currentMs": 38,
+      "ratio": 1.0078947355872707,
+      "pairedBootstrapRatio95": [
+        0.43665158216052297,
+        1.0684210532589962
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": false,
+      "completeBlobAndCanvasPixelsMatch": true,
+      "scopedSota": false
+    }
+  ]
+}

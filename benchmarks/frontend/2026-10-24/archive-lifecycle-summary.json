@@ -1,0 +1,74 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "d7cfc2dcfbfdfec3be1a3e6269abc80cf8ed67576b00b08fd83f24a956a768c2",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "iterations": 7,
+  "runs": 42,
+  "method": "Fresh Chromium contexts, alternating engine order. Real generated ZIP files; imports and complete input bytes are ready before timing. loadMs includes input-view snapshot, complete ZIP indexing, initial directory listing and DOM construction until session.load resolves. navigationMs measures returning to a previously visited directory after its first visit and a return to the root, including directory selection and complete DOM construction. It deliberately tests repeated navigation, not cold random access. Input/module transfer, layout, paint/GPU, output verification, screenshots, archive creation and peak memory are excluded. All archive metadata, every file name and byte, complete listing HTML and viewport screenshot hashes are checked after timing. Only baseline medians above 10 ms receive ratios. Same-project engineering comparison, no peer/SOTA ranking. 10,000 paired-bootstrap median-ratio resamples, seed 12345.",
+  "samples": [
+    {
+      "sample": "generated-200-0-directories.zip",
+      "bytes": 24112,
+      "files": 200,
+      "directories": 0,
+      "completeMetadataBytesHtmlAndViewportMatch": true,
+      "scopedSota": false,
+      "metrics": {
+        "loadMs": {
+          "baselineMs": 7.400000095367432,
+          "currentMs": 6.900000095367432,
+          "below10MsControl": true
+        }
+      }
+    },
+    {
+      "sample": "generated-10000-0-directories.zip",
+      "bytes": 1218912,
+      "files": 10000,
+      "directories": 0,
+      "completeMetadataBytesHtmlAndViewportMatch": true,
+      "scopedSota": false,
+      "metrics": {
+        "loadMs": {
+          "baselineMs": 64.60000002384186,
+          "currentMs": 40.299999952316284,
+          "below10MsControl": false,
+          "ratio": 1.6029776699820792,
+          "ratio95PercentBootstrapInterval": [
+            1.5724815706392687,
+            1.6352357333531577
+          ],
+          "stableEngineeringReduction": true
+        }
+      }
+    },
+    {
+      "sample": "generated-100000-1000-directories.zip",
+      "bytes": 13688912,
+      "files": 100000,
+      "directories": 1000,
+      "completeMetadataBytesHtmlAndViewportMatch": true,
+      "scopedSota": false,
+      "metrics": {
+        "loadMs": {
+          "baselineMs": 270.8000000715256,
+          "currentMs": 261.60000002384186,
+          "below10MsControl": false,
+          "ratio": 1.0351681958977264,
+          "ratio95PercentBootstrapInterval": [
+            0.9966392831354802,
+            1.1296006265737344
+          ],
+          "stableEngineeringReduction": false
+        },
+        "navigationMs": {
+          "baselineMs": 7.099999904632568,
+          "currentMs": 0.5,
+          "below10MsControl": true
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,222 @@
+diff --git a/packages/mindmap/src/preview-driver.ts b/packages/mindmap/src/preview-driver.ts
+index c1ec25c..45e9f12 100644
+--- a/packages/mindmap/src/preview-driver.ts
++++ b/packages/mindmap/src/preview-driver.ts
+@@ -77,6 +77,9 @@ export class MindmapPreviewSession implements PreviewSession<MindmapPreviewState
+   private scale: number;
+   private fitMode: PreviewFitMode;
+   private document: MindmapDocument | null = null;
++  private loadGeneration = 0;
++  private loadController?: AbortController;
++  private removeAbortListener?: () => void;
+   private selectedNodeId: string | undefined;
+   private state: MindmapPreviewState;
+ 
+@@ -106,6 +109,23 @@ export class MindmapPreviewSession implements PreviewSession<MindmapPreviewState
+   }
+ 
+   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
++    const generation = ++this.loadGeneration;
++    this.loadController?.abort();
++    this.removeAbortListener?.();
++    this.releaseDocument();
++    const controller = new AbortController();
++    this.loadController = controller;
++    const signal = context.signal;
++    const abort = () => {
++      controller.abort();
++      if (generation === this.loadGeneration) {
++        this.releaseDocument();
++        this.state.loading = false;
++        this.emit('statechange', this.state);
++      }
++    };
++    signal?.addEventListener('abort', abort, { once: true });
++    this.removeAbortListener = () => signal?.removeEventListener('abort', abort);
+     this.state = {
+       ...this.state,
+       loading: true,
+@@ -118,17 +138,28 @@ export class MindmapPreviewSession implements PreviewSession<MindmapPreviewState
+     this.emit('statechange', this.state);
+ 
+     try {
++      if (signal?.aborted) controller.abort();
++      checkAborted(controller.signal);
+       const format = normalizeFormat(context.route?.sourceFormat ?? context.descriptor.extension);
+       if (!MINDMAP_DIRECT_FORMATS.has(format)) {
+         throw new Error(
+           `Mind-map preview currently supports FreeMind MM, OPML, XMind, and MindManager MMAP files, got ${format || 'unknown'}.`
+         );
+       }
+-      this.document = format === 'xmind'
+-        ? await loadXmindDocument(await sourceToArrayBuffer(source, context))
+-        : format === 'mmap'
+-          ? await loadMindmanagerDocument(await sourceToArrayBuffer(source, context))
+-        : loadMindmapDocument(await sourceToText(source, context), format);
++      const loadContext = { ...context, signal: controller.signal };
++      let model: MindmapDocument;
++      if (format === 'xmind' || format === 'mmap') {
++        const bytes = await sourceToArrayBuffer(source, loadContext);
++        checkAborted(controller.signal);
++        model = await (format === 'xmind' ? loadXmindDocument(bytes, loadContext) : loadMindmanagerDocument(bytes, loadContext));
++      } else {
++        const text = await sourceToText(source, loadContext);
++        checkAborted(controller.signal);
++        model = loadMindmapDocument(text, format);
++      }
++      if (generation !== this.loadGeneration) return;
++      checkAborted(controller.signal);
++      this.document = model;
+       this.selectedNodeId = this.document.root.id;
+       this.state = {
+         ...this.state,
+@@ -142,8 +173,11 @@ export class MindmapPreviewSession implements PreviewSession<MindmapPreviewState
+       this.emit('rendered', this.state);
+       this.emit('statechange', this.state);
+     } catch (error) {
+-      const normalizedError = error instanceof Error ? error : new Error(String(error));
++      if (generation !== this.loadGeneration) return;
++      this.releaseDocument();
+       this.state.loading = false;
++      checkAborted(controller.signal);
++      const normalizedError = error instanceof Error ? error : new Error(String(error));
+       this.state.error = normalizedError.message;
+       this.emit('error', normalizedError);
+       this.emit('statechange', this.state);
+@@ -152,10 +186,15 @@ export class MindmapPreviewSession implements PreviewSession<MindmapPreviewState
+   }
+ 
+   destroy(): void {
+-    this.root.replaceChildren();
++    this.loadGeneration++;
++    this.loadController?.abort();
++    this.removeAbortListener?.();
++    this.releaseDocument();
++    this.state.loading = false;
+     if (this.root.parentElement === this.host) {
+       this.host.replaceChildren();
+     }
++    for (const listeners of Object.values(this.listeners)) listeners.clear();
+   }
+ 
+   getState(): MindmapPreviewState {
+@@ -254,6 +293,13 @@ export class MindmapPreviewSession implements PreviewSession<MindmapPreviewState
+     wrapper.style.transformOrigin = this.fitMode === 'none' ? '0 0' : 'top left';
+   }
+ 
++  private releaseDocument(): void {
++    this.document = null;
++    this.selectedNodeId = undefined;
++    this.state.selectedNodeId = undefined;
++    this.root.replaceChildren();
++  }
++
+   private emit<T extends PreviewEventName>(event: T, payload: PreviewEventMap[T]): void {
+     for (const handler of this.listeners[event]) {
+       handler(payload as never);
+@@ -293,23 +339,31 @@ export function loadMindmapDocument(source: string, format?: string): MindmapDoc
+   };
+ }
+ 
+-export async function loadXmindDocument(source: ArrayBuffer): Promise<MindmapDocument> {
++export async function loadXmindDocument(source: ArrayBuffer, options: { signal?: AbortSignal } = {}): Promise<MindmapDocument> {
++  checkAborted(options.signal);
+   const archive = await JSZip.loadAsync(source);
++  checkAborted(options.signal);
+   const contentJson = archive.file('content.json');
+   if (contentJson) {
+-    return parseXmindJsonDocument(await contentJson.async('text'));
++    const text = await contentJson.async('text');
++    checkAborted(options.signal);
++    return parseXmindJsonDocument(text);
+   }
+ 
+   const contentXml = archive.file('content.xml');
+   if (contentXml) {
+-    return parseXmindXmlDocument(await contentXml.async('text'));
++    const text = await contentXml.async('text');
++    checkAborted(options.signal);
++    return parseXmindXmlDocument(text);
+   }
+ 
+   throw new Error('XMind package is missing content.json or content.xml.');
+ }
+ 
+-export async function loadMindmanagerDocument(source: ArrayBuffer): Promise<MindmapDocument> {
++export async function loadMindmanagerDocument(source: ArrayBuffer, options: { signal?: AbortSignal } = {}): Promise<MindmapDocument> {
++  checkAborted(options.signal);
+   const archive = await JSZip.loadAsync(source);
++  checkAborted(options.signal);
+   const documentFile =
+     archive.file('Document.xml') ??
+     archive.file('document.xml') ??
+@@ -317,7 +371,9 @@ export async function loadMindmanagerDocument(source: ArrayBuffer): Promise<Mind
+   if (!documentFile) {
+     throw new Error('MindManager package is missing Document.xml.');
+   }
+-  return parseMindmanagerXmlDocument(await documentFile.async('text'));
++  const text = await documentFile.async('text');
++  checkAborted(options.signal);
++  return parseMindmanagerXmlDocument(text);
+ }
+ 
+ function parseMindmanagerXmlDocument(source: string): MindmapDocument {
+@@ -409,13 +465,15 @@ function parseFreemindDocument(document: Document): MindmapNode {
+   if (!rootElement) {
+     throw new Error('FreeMind MM file does not contain a root node.');
+   }
+-  return parseFreemindNode(rootElement, 'mm');
++  // Only the root needs an ancestor/sibling scan; descendants already know their index.
++  return parseFreemindNode(rootElement, 'mm', rootElement.parentElement ? stableNodePath(rootElement) : '');
+ }
+ 
+-function parseFreemindNode(element: Element, prefix: string): MindmapNode {
+-  const id = element.getAttribute('ID') || `${prefix}-${stableNodePath(element)}`;
++function parseFreemindNode(element: Element, prefix: string, path: string): MindmapNode {
++  const id = element.getAttribute('ID') || `${prefix}-${path || '1'}`;
+   const text = normalizeNodeText(element.getAttribute('TEXT') || element.getAttribute('text') || 'Untitled');
+-  const children = childElements(element, 'node').map((child, index) => parseFreemindNode(child, `${id}-${index + 1}`));
++  const children = childElements(element, 'node').map((child, index) =>
++    parseFreemindNode(child, `${id}-${index + 1}`, path ? `${path}-${index + 1}` : String(index + 1)));
+   return {
+     id,
+     text,
+@@ -703,11 +761,13 @@ function stableNodePath(element: Element): string {
+ }
+ 
+ async function sourceToText(source: PreviewSource, context: PreviewLoadContext): Promise<string> {
++  checkAborted(context.signal);
+   if (typeof source === 'string') {
+     if (source.trimStart().toLowerCase().startsWith('data:')) {
+       return readDataUrl(source);
+     }
+     const response = await fetch(source, { signal: context.signal });
++    checkAborted(context.signal);
+     if (!response.ok) {
+       throw new Error(`Failed to load mind-map source: ${response.status} ${response.statusText}`.trim());
+     }
+@@ -726,11 +786,13 @@ async function sourceToText(source: PreviewSource, context: PreviewLoadContext):
+ }
+ 
+ async function sourceToArrayBuffer(source: PreviewSource, context: PreviewLoadContext): Promise<ArrayBuffer> {
++  checkAborted(context.signal);
+   if (typeof source === 'string') {
+     if (source.trimStart().toLowerCase().startsWith('data:')) {
+       return bytesToArrayBuffer(readDataUrlBytes(source));
+     }
+     const response = await fetch(source, { signal: context.signal });
++    checkAborted(context.signal);
+     if (!response.ok) {
+       throw new Error(`Failed to load mind-map source: ${response.status} ${response.statusText}`.trim());
+     }
+@@ -750,6 +812,10 @@ async function sourceToArrayBuffer(source: PreviewSource, context: PreviewLoadCo
+   return bytesToArrayBuffer(new TextEncoder().encode(String(source)));
+ }
+ 
++function checkAborted(signal?: AbortSignal): void {
++  if (signal?.aborted) throw new DOMException('Mind-map preview aborted.', 'AbortError');
++}
++
+ function readDataUrl(source: string): string {
+   const commaIndex = source.indexOf(',');
+   if (commaIndex < 0) {

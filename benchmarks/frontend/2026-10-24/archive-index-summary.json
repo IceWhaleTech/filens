@@ -1,0 +1,692 @@
+{
+  "sourceSha256": "f60c7d54a296c40c11d88036d290dc35ffa30ee7c7d9a285ed15b510487a6487",
+  "date": "2026-10-24T04:35:08.861Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "versions": {
+    "dxf-parser": "1.1.2",
+    "occt-import-js": "0.0.23",
+    "sheetjs": "0.20.3",
+    "papaparse": "5.7.0",
+    "zip.js": "2.24.0",
+    "fflate": "0.8.2",
+    "x2t": "v9.3.2+3"
+  },
+  "iterations": 7,
+  "engineering": false,
+  "totalRuns": 63,
+  "filensRuns": 21,
+  "filensSuccessfulRuns": 21,
+  "method": "Peer / filens ratios; 10,000 paired percentile bootstrap resamples, LCG seed 12345. Eligibility requires a matching recorded output signature and >=7 iterations. Legacy XLS conversion can qualify when all resolved nonempty cell addresses/text match in the same viewer; tiny decimal differences (12 significant digits) and trailing blank grid space are accepted for preview. Editable formula/structure parity is not required. STEP metadata is deliberately omitted from filens; signatures compare oriented world-space triangles/normals, rounded to 1e-5, with independent full numerical regression checks. No global SOTA proof.",
+  "previewReview": null,
+  "summary": [
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 6.125,
+      "initMs": 0,
+      "firstOperationMs": 6.125,
+      "indexMs": 5.049999952316284,
+      "extractMs": 1.0250000953674316,
+      "output": {
+        "files": 4,
+        "expandedBytes": 10128,
+        "contentSha256": "42035bd936b5b994c9da53fc8ac7fea99e9498443320ca3188f21332d0d2e62d"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "engine": "zip.js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 3.40500009059906,
+      "initMs": 0,
+      "firstOperationMs": 3.40500009059906,
+      "indexMs": 1.559999942779541,
+      "extractMs": 1.8000000715255737,
+      "output": {
+        "files": 4,
+        "expandedBytes": 10128,
+        "contentSha256": "42035bd936b5b994c9da53fc8ac7fea99e9498443320ca3188f21332d0d2e62d"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "engine": "fflate",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.20000004768371582,
+      "initMs": 0,
+      "firstOperationMs": 0.20000004768371582,
+      "indexMs": 0.12999999523162842,
+      "extractMs": 0.06500005722045898,
+      "output": {
+        "files": 4,
+        "expandedBytes": 10128,
+        "contentSha256": "42035bd936b5b994c9da53fc8ac7fea99e9498443320ca3188f21332d0d2e62d"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 10.379999995231628,
+      "initMs": 0,
+      "firstOperationMs": 10.379999995231628,
+      "indexMs": 5.835000038146973,
+      "extractMs": 4.504999995231628,
+      "output": {
+        "files": 1000,
+        "expandedBytes": 1213890,
+        "contentSha256": "e30343b2cadc4abe127ab29acd03e4390368f16e68f5898229f6d92a7968342a"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "engine": "zip.js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 220.95499992370605,
+      "initMs": 0,
+      "firstOperationMs": 220.95499992370605,
+      "indexMs": 7.935000061988831,
+      "extractMs": 213.0349999666214,
+      "output": {
+        "files": 1000,
+        "expandedBytes": 1213890,
+        "contentSha256": "e30343b2cadc4abe127ab29acd03e4390368f16e68f5898229f6d92a7968342a"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "engine": "fflate",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 4.315000057220459,
+      "initMs": 0,
+      "firstOperationMs": 4.315000057220459,
+      "indexMs": 0.5700000524520874,
+      "extractMs": 3.7450000047683716,
+      "output": {
+        "files": 1000,
+        "expandedBytes": 1213890,
+        "contentSha256": "e30343b2cadc4abe127ab29acd03e4390368f16e68f5898229f6d92a7968342a"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 7.580000042915344,
+      "initMs": 0,
+      "firstOperationMs": 7.580000042915344,
+      "indexMs": 0.46000003814697266,
+      "extractMs": 7.115000009536743,
+      "output": {
+        "files": 1,
+        "expandedBytes": 16777216,
+        "contentSha256": "0ba44651ac8ffb4b04464a866415776213fd36d4a8fe20ea462f0664969f11b5"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "engine": "zip.js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 11.84499990940094,
+      "initMs": 0,
+      "firstOperationMs": 11.84499990940094,
+      "indexMs": 1.6800000667572021,
+      "extractMs": 10.110000014305115,
+      "output": {
+        "files": 1,
+        "expandedBytes": 16777216,
+        "contentSha256": "0ba44651ac8ffb4b04464a866415776213fd36d4a8fe20ea462f0664969f11b5"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "engine": "fflate",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 49.15499997138977,
+      "initMs": 0,
+      "firstOperationMs": 49.15499997138977,
+      "indexMs": 0.11000001430511475,
+      "extractMs": 49.0349999666214,
+      "output": {
+        "files": 1,
+        "expandedBytes": 16777216,
+        "contentSha256": "0ba44651ac8ffb4b04464a866415776213fd36d4a8fe20ea462f0664969f11b5"
+      },
+      "failures": []
+    }
+  ],
+  "comparisons": [
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "zip.js",
+      "metric": "operationMs",
+      "filensMs": 6.125,
+      "peerMs": 3.40500009059906,
+      "ratio": 0.5559183821386221,
+      "ratio95PercentBootstrapInterval": [
+        0.5254777207897471,
+        0.6219816848078192
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "zip.js",
+      "metric": "firstOperationMs",
+      "filensMs": 6.125,
+      "peerMs": 3.40500009059906,
+      "ratio": 0.5559183821386221,
+      "ratio95PercentBootstrapInterval": [
+        0.5267358466178117,
+        0.6219816848078192
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "zip.js",
+      "metric": "indexMs",
+      "filensMs": 5.049999952316284,
+      "peerMs": 1.559999942779541,
+      "ratio": 0.30891088267516037,
+      "ratio95PercentBootstrapInterval": [
+        0.30255404144665743,
+        0.32567848751632344
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "zip.js",
+      "metric": "extractMs",
+      "filensMs": 1.0250000953674316,
+      "peerMs": 1.8000000715255737,
+      "ratio": 1.756097467366896,
+      "ratio95PercentBootstrapInterval": [
+        1.5517242442413433,
+        1.946078254346084
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "fflate",
+      "metric": "operationMs",
+      "filensMs": 6.125,
+      "peerMs": 0.20000004768371582,
+      "ratio": 0.032653069009586255,
+      "ratio95PercentBootstrapInterval": [
+        0.03184712251362735,
+        0.035436460654948
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "fflate",
+      "metric": "firstOperationMs",
+      "filensMs": 6.125,
+      "peerMs": 0.20000004768371582,
+      "ratio": 0.032653069009586255,
+      "ratio95PercentBootstrapInterval": [
+        0.03184712251362735,
+        0.035436460654948
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "fflate",
+      "metric": "indexMs",
+      "filensMs": 5.049999952316284,
+      "peerMs": 0.12999999523162842,
+      "ratio": 0.025742573556263363,
+      "ratio95PercentBootstrapInterval": [
+        0.025490195620110373,
+        0.02739725924151488
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "fflate",
+      "metric": "extractMs",
+      "filensMs": 1.0250000953674316,
+      "peerMs": 0.06500005722045898,
+      "ratio": 0.06341468407098871,
+      "ratio95PercentBootstrapInterval": [
+        0.05603443093234513,
+        0.06862737879484329
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "zip.js",
+      "metric": "operationMs",
+      "filensMs": 10.379999995231628,
+      "peerMs": 220.95499992370605,
+      "ratio": 21.286608865627024,
+      "ratio95PercentBootstrapInterval": [
+        20.694605013628045,
+        21.590733804295947
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "zip.js",
+      "metric": "firstOperationMs",
+      "filensMs": 10.379999995231628,
+      "peerMs": 220.95499992370605,
+      "ratio": 21.286608865627024,
+      "ratio95PercentBootstrapInterval": [
+        20.694605013628045,
+        21.590733804295947
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "zip.js",
+      "metric": "indexMs",
+      "filensMs": 5.835000038146973,
+      "peerMs": 7.935000061988831,
+      "ratio": 1.3598971739696435,
+      "ratio95PercentBootstrapInterval": [
+        1.334179362943536,
+        1.4073756197783955
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "zip.js",
+      "metric": "extractMs",
+      "filensMs": 4.504999995231628,
+      "peerMs": 213.0349999666214,
+      "ratio": 47.288568300135594,
+      "ratio95PercentBootstrapInterval": [
+        45.627342015624805,
+        48.30527580989535
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "fflate",
+      "metric": "operationMs",
+      "filensMs": 10.379999995231628,
+      "peerMs": 4.315000057220459,
+      "ratio": 0.4157032812333995,
+      "ratio95PercentBootstrapInterval": [
+        0.3982970575256548,
+        0.47345560048815055
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "fflate",
+      "metric": "firstOperationMs",
+      "filensMs": 10.379999995231628,
+      "peerMs": 4.315000057220459,
+      "ratio": 0.4157032812333995,
+      "ratio95PercentBootstrapInterval": [
+        0.3982970575256548,
+        0.4778373091305687
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "fflate",
+      "metric": "indexMs",
+      "filensMs": 5.835000038146973,
+      "peerMs": 0.5700000524520874,
+      "ratio": 0.09768638367191904,
+      "ratio95PercentBootstrapInterval": [
+        0.09560066687008223,
+        0.10025705486087061
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "fflate",
+      "metric": "extractMs",
+      "filensMs": 4.504999995231628,
+      "peerMs": 3.7450000047683716,
+      "ratio": 0.8312985590970726,
+      "ratio95PercentBootstrapInterval": [
+        0.7949836575375319,
+        0.9797068693258663
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "zip.js",
+      "metric": "operationMs",
+      "filensMs": 7.580000042915344,
+      "peerMs": 11.84499990940094,
+      "ratio": 1.5626648868520632,
+      "ratio95PercentBootstrapInterval": [
+        1.514416785580407,
+        1.5826144823292676
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "zip.js",
+      "metric": "firstOperationMs",
+      "filensMs": 7.580000042915344,
+      "peerMs": 11.84499990940094,
+      "ratio": 1.5626648868520632,
+      "ratio95PercentBootstrapInterval": [
+        1.514416785580407,
+        1.5826144823292676
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "zip.js",
+      "metric": "indexMs",
+      "filensMs": 0.46000003814697266,
+      "peerMs": 1.6800000667572021,
+      "ratio": 3.65217375529963,
+      "ratio95PercentBootstrapInterval": [
+        3.3939394961083584,
+        3.9213478631134624
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "zip.js",
+      "metric": "extractMs",
+      "filensMs": 7.115000009536743,
+      "peerMs": 10.110000014305115,
+      "ratio": 1.4209416726288067,
+      "ratio95PercentBootstrapInterval": [
+        1.3859649122807018,
+        1.4568599710198342
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "fflate",
+      "metric": "operationMs",
+      "filensMs": 7.580000042915344,
+      "peerMs": 49.15499997138977,
+      "ratio": 6.484828455552919,
+      "ratio95PercentBootstrapInterval": [
+        6.30297025798275,
+        6.735235597188154
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "fflate",
+      "metric": "firstOperationMs",
+      "filensMs": 7.580000042915344,
+      "peerMs": 49.15499997138977,
+      "ratio": 6.484828455552919,
+      "ratio95PercentBootstrapInterval": [
+        6.30297025798275,
+        6.735235597188154
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "fflate",
+      "metric": "indexMs",
+      "filensMs": 0.46000003814697266,
+      "peerMs": 0.11000001430511475,
+      "ratio": 0.23913044605002642,
+      "ratio95PercentBootstrapInterval": [
+        0.23157896586071988,
+        0.24719101424591025
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "fflate",
+      "metric": "extractMs",
+      "filensMs": 7.115000009536743,
+      "peerMs": 49.0349999666214,
+      "ratio": 6.891777920013532,
+      "ratio95PercentBootstrapInterval": [
+        6.695010530796157,
+        7.1612447628424745
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    }
+  ]
+}

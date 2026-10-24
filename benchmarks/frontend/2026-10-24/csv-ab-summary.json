@@ -1,0 +1,272 @@
+{
+  "sourceSha256": "cefdb0fbde011efda13a7a5c08837aeac7440d5fe02b875f50e90283d4d96e1a",
+  "date": "2026-10-24T04:51:50.666Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "versions": {
+    "dxf-parser": "1.1.2",
+    "occt-import-js": "0.0.23",
+    "sheetjs": "0.20.3",
+    "papaparse": "5.7.0",
+    "zip.js": "2.24.0",
+    "fflate": "0.8.2",
+    "x2t": "v9.3.2+3"
+  },
+  "iterations": 7,
+  "engineering": true,
+  "totalRuns": 42,
+  "filensRuns": 21,
+  "filensSuccessfulRuns": 21,
+  "method": "Peer / filens ratios; 10,000 paired percentile bootstrap resamples, LCG seed 12345. Eligibility requires a matching recorded output signature and >=7 iterations. Legacy XLS conversion can qualify when all resolved nonempty cell addresses/text match in the same viewer; tiny decimal differences (12 significant digits) and trailing blank grid space are accepted for preview. Editable formula/structure parity is not required. STEP metadata is deliberately omitted from filens; signatures compare oriented world-space triangles/normals, rounded to 1e-5, with independent full numerical regression checks. No global SOTA proof.",
+  "previewReview": null,
+  "summary": [
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 11.235000014305115,
+      "initMs": 0,
+      "firstOperationMs": 11.235000014305115,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 20000,
+        "cells": 160000,
+        "contentSha256": "1fb91547152fcb454415d82c84fd432ed4c072ce26bae3a51f5ac1584609ebd9"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 12.964999914169312,
+      "initMs": 0,
+      "firstOperationMs": 12.964999914169312,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 20000,
+        "cells": 160000,
+        "contentSha256": "1fb91547152fcb454415d82c84fd432ed4c072ce26bae3a51f5ac1584609ebd9"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 5.520000100135803,
+      "initMs": 0,
+      "firstOperationMs": 5.520000100135803,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 10000,
+        "cells": 40000,
+        "contentSha256": "fcad32fdd9888fc631ee4e1f32a4224038f8adff34ef384c7d1374b4f2091e05"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 9.625,
+      "initMs": 0,
+      "firstOperationMs": 9.625,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 10000,
+        "cells": 40000,
+        "contentSha256": "fcad32fdd9888fc631ee4e1f32a4224038f8adff34ef384c7d1374b4f2091e05"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-long-fields.csv",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 5.46999990940094,
+      "initMs": 0,
+      "firstOperationMs": 5.46999990940094,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 2048,
+        "cells": 8192,
+        "contentSha256": "36ac59407d73f50bc477d8d3aa8469e62861ab5920fef38abe8d2de1eaada987"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-long-fields.csv",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 69.99500000476837,
+      "initMs": 0,
+      "firstOperationMs": 69.99500000476837,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 2048,
+        "cells": 8192,
+        "contentSha256": "36ac59407d73f50bc477d8d3aa8469e62861ab5920fef38abe8d2de1eaada987"
+      },
+      "failures": []
+    }
+  ],
+  "comparisons": [
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 11.235000014305115,
+      "peerMs": 12.964999914169312,
+      "ratio": 1.1539830794536228,
+      "ratio95PercentBootstrapInterval": [
+        1.1003490377251421,
+        1.1889442614630157
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 11.235000014305115,
+      "peerMs": 12.964999914169312,
+      "ratio": 1.1539830794536228,
+      "ratio95PercentBootstrapInterval": [
+        1.1003490377251421,
+        1.1889442614630157
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 5.520000100135803,
+      "peerMs": 9.625,
+      "ratio": 1.7436593886589251,
+      "ratio95PercentBootstrapInterval": [
+        1.5488332048132858,
+        1.8479698140013123
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 5.520000100135803,
+      "peerMs": 9.625,
+      "ratio": 1.7436593886589251,
+      "ratio95PercentBootstrapInterval": [
+        1.5488332048132858,
+        1.8328611902481442
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "csv",
+      "sample": "generated-long-fields.csv",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 5.46999990940094,
+      "peerMs": 69.99500000476837,
+      "ratio": 12.796161090326972,
+      "ratio95PercentBootstrapInterval": [
+        12.357458158275595,
+        13.276951674880548
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "csv",
+      "sample": "generated-long-fields.csv",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 5.46999990940094,
+      "peerMs": 69.99500000476837,
+      "ratio": 12.796161090326972,
+      "ratio95PercentBootstrapInterval": [
+        12.357458158275595,
+        13.301675956074595
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    }
+  ]
+}

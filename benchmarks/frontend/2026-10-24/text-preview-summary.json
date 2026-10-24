@@ -1,0 +1,159 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "23dac4852b792a0c31fc1212cd35ae2da9531b7dca4fdc7c7a27253c68f98bd7",
+  "iterations": 7,
+  "runs": 56,
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "method": "10,000 paired bootstrap resamples of median ratios, seed 12345. loadAndLayoutMs includes forced synchronous layout, excluding paint. Failed baseline samples receive no speed ratio. Baseline operations at or below 10 ms receive no speed claim. No peer/SOTA ranking.",
+  "samples": [
+    {
+      "sample": "log-20000-lines",
+      "baseline": {
+        "successes": 7,
+        "failures": 0,
+        "failureMessages": []
+      },
+      "current": {
+        "successes": 7,
+        "failures": 0,
+        "loadMs": 3.0999999046325684,
+        "loadAndLayoutMs": 54.89999997615814
+      },
+      "comparisons": [
+        {
+          "metric": "loadMs",
+          "baselineMs": 6.300000071525574,
+          "currentMs": 3.0999999046325684,
+          "ratio": 2.0322581501086496,
+          "ratio95PercentBootstrapInterval": [
+            1.9090909583509468,
+            2.172413835627571
+          ],
+          "below10MsControl": true,
+          "stableEngineeringReduction": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "loadAndLayoutMs",
+          "baselineMs": 86.20000004768372,
+          "currentMs": 54.89999997615814,
+          "ratio": 1.5701275061041615,
+          "ratio95PercentBootstrapInterval": [
+            1.5525362314067577,
+            1.7098540169564946
+          ],
+          "below10MsControl": false,
+          "stableEngineeringReduction": true,
+          "scopedSota": false
+        }
+      ],
+      "contentAndEveryLineNumberCheckedForSuccessfulRuns": true
+    },
+    {
+      "sample": "code-100000-lines",
+      "baseline": {
+        "successes": 7,
+        "failures": 0,
+        "failureMessages": []
+      },
+      "current": {
+        "successes": 7,
+        "failures": 0,
+        "loadMs": 8.200000047683716,
+        "loadAndLayoutMs": 229.79999995231628
+      },
+      "comparisons": [
+        {
+          "metric": "loadMs",
+          "baselineMs": 27.800000071525574,
+          "currentMs": 8.200000047683716,
+          "ratio": 3.390243891447091,
+          "ratio95PercentBootstrapInterval": [
+            3.337349374575649,
+            3.4691357952013844
+          ],
+          "below10MsControl": false,
+          "stableEngineeringReduction": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "loadAndLayoutMs",
+          "baselineMs": 391,
+          "currentMs": 229.79999995231628,
+          "ratio": 1.7014795477856086,
+          "ratio95PercentBootstrapInterval": [
+            1.6802603039979418,
+            1.78065934076414
+          ],
+          "below10MsControl": false,
+          "stableEngineeringReduction": true,
+          "scopedSota": false
+        }
+      ],
+      "contentAndEveryLineNumberCheckedForSuccessfulRuns": true
+    },
+    {
+      "sample": "code-200000-lines",
+      "baseline": {
+        "successes": 0,
+        "failures": 7,
+        "failureMessages": [
+          "RangeError: Maximum call stack size exceeded"
+        ]
+      },
+      "current": {
+        "successes": 7,
+        "failures": 0,
+        "loadMs": 15.300000071525574,
+        "loadAndLayoutMs": 484.1999999284744
+      },
+      "comparisons": [],
+      "contentAndEveryLineNumberCheckedForSuccessfulRuns": true
+    },
+    {
+      "sample": "small-highlighted-code",
+      "baseline": {
+        "successes": 7,
+        "failures": 0,
+        "failureMessages": []
+      },
+      "current": {
+        "successes": 7,
+        "failures": 0,
+        "loadMs": 1.100000023841858,
+        "loadAndLayoutMs": 5.600000023841858
+      },
+      "comparisons": [
+        {
+          "metric": "loadMs",
+          "baselineMs": 0.9000000953674316,
+          "currentMs": 1.100000023841858,
+          "ratio": 0.8181818871458685,
+          "ratio95PercentBootstrapInterval": [
+            0.8181817787737894,
+            1
+          ],
+          "below10MsControl": true,
+          "stableEngineeringReduction": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "loadAndLayoutMs",
+          "baselineMs": 5.600000023841858,
+          "currentMs": 5.600000023841858,
+          "ratio": 1,
+          "ratio95PercentBootstrapInterval": [
+            0.9655172534278118,
+            1.0370370239550848
+          ],
+          "below10MsControl": true,
+          "stableEngineeringReduction": false,
+          "scopedSota": false
+        }
+      ],
+      "contentAndEveryLineNumberCheckedForSuccessfulRuns": true
+    }
+  ]
+}

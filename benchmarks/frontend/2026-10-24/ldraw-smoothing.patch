@@ -1,0 +1,107 @@
+--- a/LDrawLoader.js
++++ b/LDrawLoader.js
+@@ -1,3 +1,28 @@
++/*!
++ * @license
++ * The MIT License
++ *
++ * Copyright © 2010-2025 three.js authors
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to deal
++ * in the Software without restriction, including without limitation the rights
++ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++ * copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++ * THE SOFTWARE.
++ */
++// Three.js r176, MIT. See LICENSE. Local change: iterate pending half-edges once; preserve smoothing order and rules.
+ import {
+ 	BufferAttribute,
+ 	BufferGeometry,
+@@ -124,7 +149,7 @@
+ 
+ 	const hardEdges = new Set();
+ 	const hardEdgeRays = new Map();
+-	const halfEdgeList = {};
++	const halfEdgeList = new Map();
+ 	const normals = [];
+ 
+ 	// Save the list of hard edges by hash
+@@ -243,29 +268,19 @@
+ 				index: index,
+ 				tri: tri
+ 			};
+-			halfEdgeList[ hash ] = info;
+-
+-		}
+-
+-	}
+-
+-	// Iterate until we've tried to connect all faces to share normals
++			halfEdgeList.set( hash, info );
++
++		}
++
++	}
++
++	// A single live iterator skips deleted edges without repeatedly enumerating
++	// the remaining dictionary for every disconnected component.
++	const remainingHalfEdges = halfEdgeList.values();
+ 	while ( true ) {
+ 
+-		// Stop if there are no more faces left
+-		let halfEdge = null;
+-		for ( const key in halfEdgeList ) {
+-
+-			halfEdge = halfEdgeList[ key ];
+-			break;
+-
+-		}
+-
+-		if ( halfEdge === null ) {
+-
+-			break;
+-
+-		}
++		const halfEdge = remainingHalfEdges.next().value;
++		if ( halfEdge === undefined ) break;
+ 
+ 		// Exhaustively find all connected faces
+ 		const queue = [ halfEdge ];
+@@ -288,10 +303,10 @@
+ 
+ 				// delete this triangle from the list so it won't be found again
+ 				const hash = hashEdge( v0, v1 );
+-				delete halfEdgeList[ hash ];
++				halfEdgeList.delete( hash );
+ 
+ 				const reverseHash = hashEdge( v1, v0 );
+-				const otherInfo = halfEdgeList[ reverseHash ];
++				const otherInfo = halfEdgeList.get( reverseHash );
+ 				if ( otherInfo ) {
+ 
+ 					const otherTri = otherInfo.tri;
+@@ -312,10 +327,10 @@
+ 					// if this triangle has already been traversed then it won't be in
+ 					// the halfEdgeList. If it has not then add it to the queue and delete
+ 					// it so it won't be found again.
+-					if ( reverseHash in halfEdgeList ) {
++					if ( halfEdgeList.has( reverseHash ) ) {
+ 
+ 						queue.push( otherInfo );
+-						delete halfEdgeList[ reverseHash ];
++						halfEdgeList.delete( reverseHash );
+ 
+ 					}
+ 

@@ -1,0 +1,240 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "evidenceSha256": "49bb7a0e3f641e8ff214a77ba96846675256899e9cbf300a6860e611a5af8ed2",
+  "summarySha256": "e02877e3fc4922a08781b4c9369eb74c05b10b9e776a7071841d0c933f45a3f3",
+  "contentReviewSha256": "1e557e0605d816323b865680c44da41f88bacab48320d9687b7512cbcefa57b5",
+  "patchSha256": "97f8d610086dee1c9fa0bfa3ac93ae8b870b6765927f6e23e9eaad238fe7c1e9",
+  "sourceHashes": {
+    "packages/mindmap/src/preview-driver.ts": "61952ced12b9509ef1807c113256fce1932041b7ed6c353a38f9c12ae0db88c8",
+    "packages/mindmap/test/preview-driver.spec.ts": "dd9f7edd86ccf8ea470cbd634071a604e796acd75fe0c2bf26019986c246b479",
+    "packages/mindmap/test/fixtures/maps.mjs": "83832cb904637b7f7ed4f7671f9c4c318bd02cb779e5fb8e2d271d9e9fdfa358",
+    "apps/demo/e2e/mindmap-lifecycle.e2e.ts": "3714169335cc7e27338f537d27f9983b85f3210169ac6ea057b6e89baf384321",
+    "scripts/benchmark-mindmap.mjs": "8cbd65b608982e5c1a9d65f12866a22d9c220659e94252e5a7d92b90be289f30",
+    "scripts/summarize-mindmap-benchmark.mjs": "443c0bd34452d5351ecbc4fb6fc1cfae446c83822e719a5200a059b4f9ede779",
+    "scripts/review-mindmap.mjs": "613fe97c4048b4a07a36506b459655594a8ae36c00d242a287ef8a9bb6555ed7"
+  },
+  "currentArtifact": {
+    "engine": "current",
+    "path": "packages/mindmap/dist/index.js",
+    "sha256": "5e3e7b45195d60ecd23b5a4840a19ca49fa3af51907a41bace920a52a15b0e3b"
+  },
+  "coreArtifact": {
+    "path": "packages/core/dist/index.js",
+    "sha256": "087860f415a1b58c0a14112d86f5c9ddad57039e0eb3fee5d2533de5f4e273c9"
+  },
+  "baseline": {
+    "engine": "baseline",
+    "path": "tmp/continued-review/mindmap-baseline/dist/index.js",
+    "sha256": "50bd52098b1cdf0d3f7da8f28d68d56a696914b00d1ba121adcf80803f92e330",
+    "sourceSha256": "e8e9d478faae4fcd8620b0d51d79b4a6afd6579c2f8b5b358716e79003c9f6c7",
+    "reproduction": "Reverse mindmap.patch, build @filens/mindmap and copy dist to tmp/continued-review/mindmap-baseline/dist. Restore the patch and rebuild. Run node scripts/benchmark-mindmap.mjs --iterations 7 --output <directory>, followed by node scripts/summarize-mindmap-benchmark.mjs --input <directory>/results.json. Baseline production source was clean at the start of this round; the patch applies relative to repository HEAD."
+  },
+  "samples": [
+    {
+      "name": "wide-1000-no-ids",
+      "nodeCount": 1000,
+      "explicitIds": false,
+      "sha256": "5b3979e4a51e30117c084ef77ddcc36e07bd146ab6748bbc0ceb206bfc2c5d55"
+    },
+    {
+      "name": "wide-3000-no-ids",
+      "nodeCount": 3000,
+      "explicitIds": false,
+      "sha256": "8dfb54747d7bcd67bf28b4da43634a9bf32ef5f8c121d8ee842becc75e9072d5"
+    },
+    {
+      "name": "wide-3000-explicit-ids",
+      "nodeCount": 3000,
+      "explicitIds": true,
+      "sha256": "36da7dfae323dbe6b8080757731fe7f0ac9da1fc167c6a106d1396933febbddd"
+    },
+    {
+      "name": "small-30-no-ids",
+      "nodeCount": 30,
+      "explicitIds": false,
+      "sha256": "58db95f2d25e0357e68bd6baa9873ab6f160511b0dd2d50e9f91c01b584ad906"
+    }
+  ],
+  "comparisons": [
+    {
+      "sample": "wide-1000-no-ids",
+      "nodeCount": 1000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 2.200000047683716,
+          "baselineMs": 90,
+          "ratio": 40.90909002241026,
+          "ratio95PercentBootstrapInterval": [
+            37.91304428500806,
+            43.04761854753473
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 7.099999904632568,
+          "baselineMs": 91.39999997615814,
+          "ratio": 12.873239606175485,
+          "ratio95PercentBootstrapInterval": [
+            12.066666666666666,
+            14.825396952745626
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "wide-3000-no-ids",
+      "nodeCount": 3000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 4,
+          "baselineMs": 777.2999999523163,
+          "ratio": 194.32499998807907,
+          "ratio95PercentBootstrapInterval": [
+            184.8809555294563,
+            194.375
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 17.299999952316284,
+          "baselineMs": 788.6999999284744,
+          "ratio": 45.589595497245995,
+          "ratio95PercentBootstrapInterval": [
+            43.05347582732043,
+            46.66863911486044
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "wide-3000-explicit-ids",
+      "nodeCount": 3000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 5.300000071525574,
+          "baselineMs": 5.100000023841858,
+          "ratio": 0.9622641424557289,
+          "ratio95PercentBootstrapInterval": [
+            0.925925909573486,
+            1.0192307507145335
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 18.200000047683716,
+          "baselineMs": 18.199999928474426,
+          "ratio": 0.9999999934500391,
+          "ratio95PercentBootstrapInterval": [
+            0.9381443273629655,
+            1.027624302769729
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "small-30-no-ids",
+      "nodeCount": 30,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 0.5,
+          "baselineMs": 0.7000000476837158,
+          "ratio": 1.4000000953674316,
+          "ratio95PercentBootstrapInterval": [
+            1.1666665010982156,
+            1.4000000953674316
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 1,
+          "baselineMs": 1,
+          "ratio": 1,
+          "ratio95PercentBootstrapInterval": [
+            0.8999999761581421,
+            1.222222148636239
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    }
+  ],
+  "contentReview": {
+    "timedCompleteModelsAndSvgMatch": true,
+    "repetitionsPerEngine": 7,
+    "completeModelsAndHtmlMatch": 10,
+    "generatedMixedTrees": 64,
+    "sourceRepresentationChecks": 27,
+    "reproduction": "Run node scripts/review-mindmap.mjs with the reconstructed baseline. Compares complete models and full SVG-containing HTML for ten fixtures (including two demo MM files), 64 deterministic mixed-ID/namespaced trees and 27 source-representation cases. No external input corpus required."
+  },
+  "validation": {
+    "mindmapUnitTestsPassed": 25,
+    "vueUnitTestsPassed": 44,
+    "browserTestsPassed": 2,
+    "oldSourceRegressionsReproduced": 12,
+    "builds": [
+      "@filens/mindmap",
+      "@filens/demo"
+    ],
+    "bundleReportPassed": true,
+    "browserCoverage": [
+      "MM",
+      "OPML",
+      "XMind content.json",
+      "XMind content.xml",
+      "MindManager Document.xml",
+      "node selection and zoom",
+      "superseded successes and errors",
+      "abort before parsing",
+      "destroy during pending reads"
+    ]
+  },
+  "diagnostics": {
+    "path": "mindmap-diagnostic.json.gz",
+    "runs": 8,
+    "excludedFromFinalConclusions": true,
+    "description": "Initial matched pre-change builds; retained separately from the final 56 engineering measurements."
+  },
+  "limits": [
+    "Generated wide FreeMind trees without IDs are the optimization target; they do not establish performance on all mind maps or a peer/SOTA ranking.",
+    "Parsing and a separate source-ready session load through SVG DOM construction are measured. Layout, paint, network/module loading and first-visible time are excluded. Session timing follows a parser measurement in the same context.",
+    "The explicit-ID session control has no stable improvement. Operations at or below 10 ms are retained without speed claims.",
+    "Cancellation is checked before and after asynchronous reads/ZIP boundaries; it cannot interrupt an already executing synchronous operation.",
+    "Fit still resets scale only; support documentation now records that limit."
+  ],
+  "externalTotalsUnchanged": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064
+  }
+}

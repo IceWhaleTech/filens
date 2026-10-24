@@ -171,6 +171,7 @@ async function writeBuildInfo(outputDir: string): Promise<void> {
 function manualChunkForModule(id: string): string | undefined {
   const normalized = id.replaceAll(path.sep, '/');
   if (normalized === '\0filens:occt-wasm-url' || normalized.includes('/packages/model3d/vendor/occt-import-js/')) return 'occt-runtime';
+  if (normalized.includes('/node_modules/pdfjs-dist/')) return 'pdf-runtime';
   if (normalized.includes('/node_modules/')) return 'vendor';
   if (normalized.includes('/packages/iwork/')) return 'iwork';
   if (normalized.includes('/packages/model3d/')) return 'model3d';
@@ -260,6 +261,7 @@ export default defineConfig({
       '@filens/cad/style.css': path.resolve(__dirname, '../../packages/cad/src/styles/index.css'),
       '@filens/cad': path.resolve(__dirname, '../../packages/cad/src/index.ts'),
       '@filens/core/style.css': path.resolve(__dirname, '../../packages/core/src/styles/index.css'),
+      '@filens/core/zip': path.resolve(__dirname, '../../packages/core/src/zip.ts'),
       '@filens/core': path.resolve(__dirname, '../../packages/core/src/index.ts'),
       '@filens/converter-client': path.resolve(__dirname, '../../packages/converter-client/src/index.ts'),
       '@filens/diagram/style.css': path.resolve(__dirname, '../../packages/diagram/src/styles/index.css'),

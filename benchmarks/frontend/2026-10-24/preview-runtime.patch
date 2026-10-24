@@ -1,0 +1,285 @@
+--- a/packages/core/src/preview/previewer.ts
++++ b/packages/core/src/preview/previewer.ts
+@@ -68,66 +68,87 @@
+ 
+   async preview(source: PreviewSource | SourceDescriptor, descriptor: Partial<SourceDescriptor> = {}): Promise<void> {
+     const token = ++this.requestToken;
+-    this.activeAbortController?.abort();
+-    this.activeAbortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+-    this.clearSession();
+-
+-    const initialDescriptor = normalizeSourceDescriptor(source, descriptor);
+-    this.setState({
+-      ...createIdleState(),
+-      loading: true
+-    });
+-    this.emit('loading', this.state);
++    const previousController = this.activeAbortController;
++    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
++    this.activeAbortController = controller;
+ 
+     try {
+-      const resolved = await this.resolveLoadTarget(initialDescriptor, token);
++      // Detach before calling user code: teardown and abort handlers may open another file.
++      try {
++        this.clearSession();
++      } finally {
++        previousController?.abort();
++      }
++      if (token !== this.requestToken) return;
++
++      const initialDescriptor = normalizeSourceDescriptor(source, descriptor);
++      this.setState({ ...createIdleState(), loading: true });
++      this.emit('loading', this.state);
++      if (token !== this.requestToken) return;
++
++      const resolved = await waitForPreviewTask(
++        this.resolveLoadTarget(initialDescriptor, token, controller?.signal), controller?.signal
++      );
+       if (token !== this.requestToken || !resolved) {
+         return;
+       }
+ 
+       const session = resolved.driver.createSession(this.host, this.previewOptions);
+-      this.bindSession(session);
++      if (token !== this.requestToken) {
++        session.destroy();
++        return;
++      }
+       this.activeSession = session;
+-
+-      await session.load(resolved.descriptor.source, {
++      this.bindSession(session, token);
++      if (token !== this.requestToken) return;
++
++      await waitForPreviewTask(session.load(resolved.descriptor.source, {
+         descriptor: resolved.descriptor,
+         route: resolved.route,
+-        signal: this.activeAbortController?.signal
+-      });
++        signal: controller?.signal
++      }), controller?.signal);
+ 
+       if (token !== this.requestToken) {
+         return;
+       }
+ 
+-      this.setState(session.getState());
++      this.setState(this.getState());
+     } catch (error) {
+-      if (token !== this.requestToken || isAbortError(error)) {
++      if (token !== this.requestToken || controller?.signal.aborted) {
+         return;
+       }
+       const normalizedError = error instanceof Error ? error : new Error(String(error));
+-      this.setState({
+-        ...this.state,
++      const failedState = {
++        ...this.getState(),
+         loading: false,
+         error: normalizedError.message
+-      });
++      };
++      try {
++        this.clearSession();
++      } finally {
++        controller?.abort();
++      }
++      if (token !== this.requestToken) return;
++      this.activeAbortController = null;
++      this.setState(failedState);
+       this.emit('error', normalizedError);
++    }
++  }
++
++  destroy(): void {
++    const token = ++this.requestToken;
++    const controller = this.activeAbortController;
++    this.activeAbortController = null;
++    try {
++      this.clearSession();
+     } finally {
+-      if (token === this.requestToken) {
+-        this.activeAbortController = null;
+-      }
+-    }
+-  }
+-
+-  destroy(): void {
+-    this.requestToken += 1;
+-    this.activeAbortController?.abort();
+-    this.activeAbortController = null;
+-    this.clearSession();
+-    this.setState(createIdleState());
++      controller?.abort();
++      if (token === this.requestToken) this.setState(createIdleState());
++    }
+   }
+ 
+   getState(): PreviewItemState {
+-    return this.activeSession?.getState() ?? this.state;
++    return this.state.error ? this.state : this.activeSession?.getState() ?? this.state;
+   }
+ 
+   on<T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void): () => void {
+@@ -259,7 +280,8 @@
+ 
+   private async resolveLoadTarget(
+     descriptor: SourceDescriptor,
+-    token: number
++    token: number,
++    signal?: AbortSignal
+   ): Promise<{ descriptor: SourceDescriptor; driver: PreviewDriver; route: FormatRoute } | null> {
+     const resolved = this.registry.resolve(descriptor);
+     if (!resolved) {
+@@ -286,7 +308,7 @@
+     const context: PreviewLoadContext = {
+       descriptor,
+       route: resolved.route,
+-      signal: this.activeAbortController?.signal
++      signal
+     };
+     const conversion = await this.converter.convert(
+       {
+@@ -324,21 +346,28 @@
+     };
+   }
+ 
+-  private bindSession(session: PreviewSession): void {
+-    this.activeUnsubscribes = [
+-      session.on('loading', (state) => this.setStateAndEmit('loading', state)),
+-      session.on('rendered', (state) => this.setStateAndEmit('rendered', state)),
+-      session.on('statechange', (state) => this.setStateAndEmit('statechange', state)),
+-      session.on('warnings', (warnings) => this.emit('warnings', warnings)),
+-      session.on('error', (error) => {
+-        this.setState({
+-          ...this.getState(),
+-          loading: false,
+-          error: error.message
+-        });
+-        this.emit('error', error);
+-      })
+-    ];
++  private bindSession(session: PreviewSession, token: number): void {
++    const isCurrent = () => token === this.requestToken && session === this.activeSession;
++    const bind = <T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void) => {
++      if (!isCurrent()) return;
++      const unsubscribe = session.on(event, (payload) => {
++        if (isCurrent()) handler(payload);
++      });
++      if (isCurrent()) this.activeUnsubscribes.push(unsubscribe);
++      else unsubscribe();
++    };
++    bind('loading', (state) => this.setStateAndEmit('loading', state));
++    bind('rendered', (state) => this.setStateAndEmit('rendered', state));
++    bind('statechange', (state) => this.setStateAndEmit('statechange', state));
++    bind('warnings', (warnings) => this.emit('warnings', warnings));
++    bind('error', (error) => {
++      this.setState({
++        ...this.getState(),
++        loading: false,
++        error: error.message
++      });
++      this.emit('error', error);
++    });
+   }
+ 
+   private setStateAndEmit<T extends Extract<PreviewEventName, 'loading' | 'rendered' | 'statechange'>>(
+@@ -354,16 +383,20 @@
+   }
+ 
+   private clearSession(): void {
+-    for (const unsubscribe of this.activeUnsubscribes) {
++    const unsubscribes = this.activeUnsubscribes;
++    const session = this.activeSession;
++    this.activeUnsubscribes = [];
++    this.activeSession = null;
++    for (const unsubscribe of unsubscribes) {
+       unsubscribe();
+     }
+-    this.activeUnsubscribes = [];
+-    this.activeSession?.destroy();
+-    this.activeSession = null;
++    session?.destroy();
+   }
+ 
+   private emit<T extends PreviewEventName>(event: T, payload: PreviewEventMap[T]): void {
++    const token = this.requestToken;
+     for (const handler of this.listeners[event]) {
++      if (token !== this.requestToken) break;
+       handler(payload as never);
+     }
+   }
+@@ -445,8 +478,18 @@
+   return undefined;
+ }
+ 
+-function isAbortError(error: unknown): boolean {
+-  return error instanceof Error && error.name === 'AbortError';
++function waitForPreviewTask<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
++  if (!signal) return work;
++  return new Promise<T>((resolve, reject) => {
++    const aborted = () => reject(Object.assign(new Error('Preview load aborted.'), { name: 'AbortError' }));
++    // Always observe work, including when synchronous callbacks already aborted the task.
++    work.then(
++      value => { signal.removeEventListener('abort', aborted); resolve(value); },
++      error => { signal.removeEventListener('abort', aborted); reject(error); }
++    );
++    if (signal.aborted) aborted();
++    else signal.addEventListener('abort', aborted, { once: true });
++  });
+ }
+ 
+ function formatDescriptorLabel(descriptor: SourceDescriptor): string {
+--- a/packages/pdf/src/preview-driver.ts
++++ b/packages/pdf/src/preview-driver.ts
+@@ -12,10 +12,7 @@
+   type PreviewSession,
+   type PreviewSource
+ } from '@filens/core';
+-import { getDocument, GlobalWorkerOptions, type PDFDocumentLoadingTask, type PDFDocumentProxy, type PDFPageProxy, type RenderTask } from 'pdfjs-dist';
+-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+-
+-GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
++import type { PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, RenderTask } from 'pdfjs-dist';
+ 
+ type PreviewListenerMap = {
+   [K in PreviewEventName]: Set<(payload: PreviewEventMap[K]) => void>;
+@@ -125,10 +122,15 @@
+       await previous;
+       if (signal?.aborted) throw abortError();
+       if (generation !== this.loadGeneration) return;
+-      const input = await toPdfSource(source);
++      const [input, pdfjs, { default: pdfWorkerUrl }] = await Promise.all([
++        toPdfSource(source),
++        import('pdfjs-dist'),
++        import('pdfjs-dist/build/pdf.worker.min.mjs?url')
++      ]);
+       if (signal?.aborted) throw abortError();
+       if (generation !== this.loadGeneration) return;
+-      const task = getDocument(input);
++      pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
++      const task = pdfjs.getDocument(input);
+       this.loadingTask = task;
+       const pdf = await task.promise;
+       if (generation !== this.loadGeneration) return;
+--- a/apps/demo/vite.config.ts
++++ b/apps/demo/vite.config.ts
+@@ -171,6 +171,7 @@
+ function manualChunkForModule(id: string): string | undefined {
+   const normalized = id.replaceAll(path.sep, '/');
+   if (normalized === '\0filens:occt-wasm-url' || normalized.includes('/packages/model3d/vendor/occt-import-js/')) return 'occt-runtime';
++  if (normalized.includes('/node_modules/pdfjs-dist/')) return 'pdf-runtime';
+   if (normalized.includes('/node_modules/')) return 'vendor';
+   if (normalized.includes('/packages/iwork/')) return 'iwork';
+   if (normalized.includes('/packages/model3d/')) return 'model3d';
+--- a/scripts/report-bundle-sizes.mjs
++++ b/scripts/report-bundle-sizes.mjs
+@@ -12,6 +12,7 @@
+   core: ['PPTX / 核心运行时', 'PPTX / core runtime'],
+   preview: ['Vue 预览容器', 'Vue preview host'],
+   office: ['DOCX / XLSX / PDF', 'DOCX / XLSX / PDF'],
++  'pdf-runtime': ['PDF 按需引擎', 'On-demand PDF engine'],
+   iwork: ['iWork 预览', 'iWork preview'],
+   design: ['CAD / 思维导图 / 流程图', 'CAD / mind maps / diagrams'],
+   model3d: ['3D 预览', '3D preview'],

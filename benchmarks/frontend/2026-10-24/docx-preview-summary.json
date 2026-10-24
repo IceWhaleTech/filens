@@ -1,0 +1,192 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "59f2af1ba903dab5bc801e6077088c27ed41c518dcbb641e8ac0a445a0c70249",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "iterations": 7,
+  "runs": 70,
+  "method": "10,000 paired bootstrap resamples of load median ratios, seed 12345. Same docx-preview engine before/after resource reuse and lifecycle/input fixes. Excludes image decode readiness, paint, file I/O and module download. Losing/non-improving controls remain; baseline medians at or below 10 ms receive no speed claim. No peer/SOTA ranking.",
+  "samples": [
+    {
+      "sample": "filens-aurora-guide.docx",
+      "currentMs": 18.399999976158142,
+      "baselineMs": 21.200000047683716,
+      "ratio": 1.1521739171279175,
+      "ratio95PercentBootstrapInterval": [
+        1.1135135148022626,
+        1.6960000038146972
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "currentResourceUrls": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "baselineResourceUrls": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "pages": 3,
+      "images": 3,
+      "tables": 2,
+      "completeDomAndImagePayloadsMatch": true,
+      "firstAndLastViewportsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "rich-docx-images.docx",
+      "currentMs": 15.300000071525574,
+      "baselineMs": 16.09999990463257,
+      "ratio": 1.052287570546869,
+      "ratio95PercentBootstrapInterval": [
+        0.7515923570747999,
+        1.071895418267334
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": false,
+      "currentResourceUrls": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "baselineResourceUrls": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "pages": 1,
+      "images": 6,
+      "tables": 0,
+      "completeDomAndImagePayloadsMatch": true,
+      "firstAndLastViewportsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "rich-docx-tables.docx",
+      "currentMs": 8.100000023841858,
+      "baselineMs": 8.300000071525574,
+      "ratio": 1.0246913638388924,
+      "ratio95PercentBootstrapInterval": [
+        1,
+        1.0370370310411423
+      ],
+      "below10MsControl": true,
+      "stableEngineeringReduction": false,
+      "currentResourceUrls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "baselineResourceUrls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pages": 1,
+      "images": 0,
+      "tables": 3,
+      "completeDomAndImagePayloadsMatch": true,
+      "firstAndLastViewportsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-400-images.docx",
+      "currentMs": 25.09999990463257,
+      "baselineMs": 208.60000002384186,
+      "ratio": 8.310757004638143,
+      "ratio95PercentBootstrapInterval": [
+        8.263999996185303,
+        8.466135490334405
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "currentResourceUrls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "baselineResourceUrls": [
+        400,
+        400,
+        400,
+        400,
+        400,
+        400,
+        400
+      ],
+      "pages": 20,
+      "images": 400,
+      "tables": 0,
+      "completeDomAndImagePayloadsMatch": true,
+      "firstAndLastViewportsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-400-images-blob.docx",
+      "currentMs": 24.899999976158142,
+      "baselineMs": 210.59999990463257,
+      "ratio": 8.457831329569597,
+      "ratio95PercentBootstrapInterval": [
+        8.2650602517502,
+        8.58467743970632
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "currentResourceUrls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "baselineResourceUrls": [
+        400,
+        400,
+        400,
+        400,
+        400,
+        400,
+        400
+      ],
+      "pages": 20,
+      "images": 400,
+      "tables": 0,
+      "completeDomAndImagePayloadsMatch": true,
+      "firstAndLastViewportsMatch": true,
+      "scopedSota": false
+    }
+  ]
+}

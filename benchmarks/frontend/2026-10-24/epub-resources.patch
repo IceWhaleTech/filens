@@ -1,0 +1,567 @@
+--- a/packages/ebook/src/preview-driver.ts
++++ b/packages/ebook/src/preview-driver.ts
+@@ -1,4 +1,5 @@
+ import JSZip from 'jszip';
++import { createEpubResources, resolveArchivePath } from './epub-resources';
+ import {
+   createDefaultPreviewRoutes,
+   type EbookPreviewState,
+@@ -8,7 +9,6 @@
+   type PreviewEventName,
+   type PreviewLoadContext,
+   type PreviewOptions,
+-  type PreviewResourceResolveResult,
+   type PreviewResourceResolver,
+   type PreviewSession,
+   type PreviewSource
+@@ -114,6 +114,7 @@
+       if (generation === this.loadGeneration) {
+         this.releaseBook();
+         this.state.loading = false;
++        this.emit('statechange', this.state);
+       }
+     };
+     signal?.addEventListener('abort', abort, { once: true });
+@@ -346,7 +347,8 @@
+     throw new Error('Invalid EPUB: missing META-INF/container.xml.');
+   }
+ 
+-  const packagePath = findRootfilePath(container);
++  const rootfile = findRootfilePath(container);
++  const packagePath = rootfile ? resolveArchivePath('', rootfile) : null;
+   if (!packagePath) {
+     throw new Error('Invalid EPUB: missing rootfile path.');
+   }
+@@ -361,7 +363,7 @@
+   const manifest = readManifest(document);
+   const spineIds = readSpine(document);
+   const title = firstText(document, 'title');
+-  const assetUrls = await createAssetUrls(zip, manifest, packageDir, createUrl, context.signal);
++  const resources = await createEpubResources(zip, manifest.values(), packageDir, createUrl, context.signal, resourceResolver, warnings);
+   const chapters: ParsedEpubChapter[] = [];
+ 
+   for (const idref of spineIds) {
+@@ -376,14 +378,14 @@
+       continue;
+     }
+ 
+-    const path = joinPath(packageDir, item.href);
++    const path = resolveArchivePath(packageDir, item.href);
+     const html = await readZipText(zip, path, context.signal);
+     if (!html) {
+       warnings.push(`Missing chapter file ${path}.`);
+       continue;
+     }
+ 
+-    const chapter = await rewriteChapterHtml(html, item.href, packageDir, assetUrls, createUrl, resourceResolver, context.signal);
++    const chapter = await rewriteChapterHtml(html, item.href, packageDir, resources, context.signal);
+     chapters.push({
+       id: item.id,
+       href: item.href,
+@@ -526,65 +528,31 @@
+     .filter(Boolean);
+ }
+ 
+-async function createAssetUrls(
+-  zip: JSZip,
+-  manifest: Map<string, ManifestItem>,
+-  packageDir: string,
+-  createUrl: (blob: Blob) => string,
+-  signal?: AbortSignal
+-): Promise<Map<string, string>> {
+-  const urls = new Map<string, string>();
+-  for (const item of manifest.values()) {
+-    checkAborted(signal);
+-    if (isHtmlMediaType(item.mediaType)) {
+-      continue;
+-    }
+-    const path = joinPath(packageDir, item.href);
+-    const file = zip.file(path);
+-    if (!file) {
+-      continue;
+-    }
+-    const blob = await file.async('blob');
+-    checkAborted(signal);
+-    const url = createUrl(blob.type ? blob : new Blob([blob], { type: item.mediaType || blob.type }));
+-    urls.set(normalizePath(path), url);
+-    urls.set(normalizePath(item.href), url);
+-  }
+-  return urls;
+-}
+-
+ async function rewriteChapterHtml(
+   html: string,
+   chapterHref: string,
+   packageDir: string,
+-  assetUrls: Map<string, string>,
+-  createUrl: (blob: Blob) => string,
+-  resourceResolver: PreviewResourceResolver | undefined,
++  resources: Awaited<ReturnType<typeof createEpubResources>>,
+   signal?: AbortSignal
+ ): Promise<{ title?: string; html: string }> {
+   checkAborted(signal);
+-  const parser = new DOMParser();
+-  const document = parser.parseFromString(html, 'text/html');
+-  const chapterDir = dirname(joinPath(packageDir, chapterHref));
+-  for (const element of Array.from(document.querySelectorAll('[src], [href]'))) {
+-    const attr = element.hasAttribute('src') ? 'src' : 'href';
+-    const value = element.getAttribute(attr);
+-    if (!value || isExternalUrl(value)) {
+-      continue;
+-    }
+-    const [path, suffix = ''] = splitUrlSuffix(value);
+-    const resolved = normalizePath(joinPath(chapterDir, path));
+-    const url = assetUrls.get(resolved)
+-      ?? assetUrls.get(normalizePath(path))
+-      ?? await resolveEpubResource(resourceResolver, {
+-        path: resolved,
+-        source: value,
+-        relation: element.localName.toLowerCase() === 'link' ? 'stylesheet' : 'resource',
+-        createUrl,
+-        signal
+-      });
+-    if (url) {
+-      element.setAttribute(attr, `${url}${suffix}`);
++  const document = new DOMParser().parseFromString(html, 'text/html');
++  const chapterDir = dirname(resolveArchivePath(packageDir, chapterHref));
++  // Plain chapters need no resource traversal; the pattern also catches namespaced hrefs.
++  if (/\b(?:src|href|poster|style)\b/i.test(html)) {
++    for (const element of Array.from(document.querySelectorAll('[src], [*|href], [poster], [style], style'))) {
++      for (const attr of ['src', 'href', 'xlink:href', 'poster']) {
++        const value = element.getAttribute(attr);
++        if (!value) continue;
++        const stylesheet = element.localName.toLowerCase() === 'link' && /(?:^|\s)stylesheet(?:\s|$)/i.test(element.getAttribute('rel') ?? '');
++        const url = await resources.resolve(value, chapterDir, stylesheet);
++        if (url) element.setAttribute(attr, url);
++      }
++      if (element.localName.toLowerCase() === 'style') {
++        element.textContent = await resources.rewriteCss(element.textContent ?? '', chapterDir);
++      }
++      const inlineStyle = element.getAttribute('style');
++      if (inlineStyle !== null) element.setAttribute('style', await resources.rewriteCss(inlineStyle, chapterDir));
+     }
+   }
+   checkAborted(signal);
+@@ -592,36 +560,6 @@
+     title: document.querySelector('title')?.textContent?.trim() || document.querySelector('h1,h2,h3')?.textContent?.trim() || undefined,
+     html: `<!doctype html>${document.documentElement.outerHTML}`
+   };
+-}
+-
+-async function resolveEpubResource(
+-  resourceResolver: PreviewResourceResolver | undefined,
+-  request: {
+-    path: string;
+-    source: string;
+-    relation: string;
+-    createUrl: (blob: Blob) => string;
+-    signal?: AbortSignal;
+-  }
+-): Promise<string | undefined> {
+-  if (!resourceResolver) {
+-    return undefined;
+-  }
+-  checkAborted(request.signal);
+-  const result = await resourceResolver({
+-    family: 'ebook',
+-    sourceFormat: 'epub',
+-    source: request.path,
+-    relation: request.relation,
+-    name: request.path.split('/').pop() ?? request.path
+-  });
+-  checkAborted(request.signal);
+-  const resolved = normalizeResourceResolverResult(
+-    result,
+-    request.path,
+-    request.createUrl
+-  );
+-  return resolved.source;
+ }
+ 
+ function checkAborted(signal?: AbortSignal): void {
+@@ -665,100 +603,6 @@
+   return types[extension] ?? 'application/octet-stream';
+ }
+ 
+-function resourceContentType(name: string): string {
+-  const extension = normalizeFormat(name.split('?')[0]?.split('.').pop());
+-  const types: Record<string, string> = {
+-    css: 'text/css',
+-    otf: 'font/otf',
+-    ttf: 'font/ttf',
+-    woff: 'font/woff',
+-    woff2: 'font/woff2',
+-    avif: 'image/avif',
+-    bmp: 'image/bmp',
+-    gif: 'image/gif',
+-    jpg: 'image/jpeg',
+-    jpeg: 'image/jpeg',
+-    png: 'image/png',
+-    svg: 'image/svg+xml',
+-    webp: 'image/webp'
+-  };
+-  return types[extension] ?? 'application/octet-stream';
+-}
+-
+-function normalizeResourceResolverResult(
+-  result: Awaited<ReturnType<PreviewResourceResolver>>,
+-  name: string,
+-  createUrl: (blob: Blob) => string
+-): { source?: string; warnings: string[] } {
+-  if (!result) {
+-    return { warnings: [] };
+-  }
+-  if (typeof result === 'string') {
+-    return {
+-      source: result,
+-      warnings: []
+-    };
+-  }
+-  if (result instanceof Blob) {
+-    return {
+-      source: createUrl(result.type ? result : new Blob([result], { type: resourceContentType(name) })),
+-      warnings: []
+-    };
+-  }
+-  if (ArrayBuffer.isView(result) || result instanceof ArrayBuffer) {
+-    const bytes = ArrayBuffer.isView(result)
+-      ? new Uint8Array(result.buffer, result.byteOffset, result.byteLength)
+-      : new Uint8Array(result);
+-    return {
+-      source: bytesToDataUrl(bytes, resourceContentType(name)),
+-      warnings: []
+-    };
+-  }
+-  return normalizeResourceResolveResult(result, name, createUrl);
+-}
+-
+-function normalizeResourceResolveResult(
+-  result: PreviewResourceResolveResult,
+-  name: string,
+-  createUrl: (blob: Blob) => string
+-): { source?: string; warnings: string[] } {
+-  return {
+-    source: normalizeResolvedPreviewSource(result.source, name, createUrl),
+-    warnings: result.warnings ?? []
+-  };
+-}
+-
+-function normalizeResolvedPreviewSource(
+-  source: PreviewSource | undefined,
+-  name: string,
+-  createUrl: (blob: Blob) => string
+-): string | undefined {
+-  if (!source) {
+-    return undefined;
+-  }
+-  if (typeof source === 'string') {
+-    return source;
+-  }
+-  if (source instanceof Blob) {
+-    return createUrl(source.type ? source : new Blob([source], { type: resourceContentType(name) }));
+-  }
+-  if (ArrayBuffer.isView(source)) {
+-    return bytesToDataUrl(new Uint8Array(source.buffer, source.byteOffset, source.byteLength), resourceContentType(name));
+-  }
+-  if (source instanceof ArrayBuffer) {
+-    return bytesToDataUrl(new Uint8Array(source), resourceContentType(name));
+-  }
+-  return undefined;
+-}
+-
+-function bytesToDataUrl(bytes: Uint8Array, contentType: string): string {
+-  let binary = '';
+-  for (const byte of bytes) {
+-    binary += String.fromCharCode(byte);
+-  }
+-  return `data:${contentType};base64,${btoa(binary)}`;
+-}
+-
+ function createComicPageHtml(title: string, imageUrl: string): string {
+   return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>
+ html,body{margin:0;min-height:100%;background:#111827;color:#f8fafc;font-family:system-ui,sans-serif;}
+@@ -775,26 +619,10 @@
+   return escapeHtml(value).replace(/"/g, '&quot;');
+ }
+ 
+-function isExternalUrl(value: string): boolean {
+-  return /^(?:[a-z][a-z0-9+.-]*:|#)/i.test(value);
+-}
+-
+-function splitUrlSuffix(value: string): [string, string?] {
+-  const match = value.match(/^([^?#]*)([?#].*)?$/);
+-  return [match?.[1] ?? value, match?.[2]];
+-}
+-
+ function dirname(path: string): string {
+   const normalized = normalizePath(path);
+   const index = normalized.lastIndexOf('/');
+   return index > 0 ? normalized.slice(0, index) : '';
+-}
+-
+-function joinPath(base: string, path: string): string {
+-  if (!base || path.startsWith('/')) {
+-    return normalizePath(path);
+-  }
+-  return normalizePath(`${base}/${path}`);
+ }
+ 
+ function normalizePath(path: string): string {
+--- /dev/null
++++ b/packages/ebook/src/css-resources.ts
+@@ -0,0 +1,98 @@
++interface CssReference {
++  start: number;
++  end: number;
++  value: string;
++  stylesheet: boolean;
++}
++
++// Find URL tokens without touching comments or literal strings such as content:"url(...)".
++export async function rewriteCssResources(
++  css: string,
++  resolve: (value: string, stylesheet: boolean) => Promise<string | undefined>
++): Promise<string> {
++  const references: CssReference[] = [];
++  for (let index = 0; index < css.length;) {
++    if (css.startsWith('/*', index)) { index = commentEnd(css, index); continue; }
++    if (css[index] === '"' || css[index] === "'") { index = stringEnd(css, index); continue; }
++    let start = index, stylesheet = false;
++    if (/^@import(?![\w-])/i.test(css.slice(index, index + 9))) {
++      stylesheet = true;
++      start = skipSpace(css, index + 7);
++      if (css[start] === '"' || css[start] === "'") {
++        const end = stringEnd(css, start);
++        if (css[end - 1] === css[start]) references.push({ start, end, value: unescapeCss(css.slice(start + 1, end - 1)), stylesheet });
++        index = end; continue;
++      }
++    }
++    if ((start === 0 || !/[\w\\-]/.test(css[start - 1]!)) && /^url\(/i.test(css.slice(start, start + 4))) {
++      const valueStart = skipSpace(css, start + 4);
++      let end = valueStart, value: string;
++      if (css[valueStart] === '"' || css[valueStart] === "'") {
++        end = stringEnd(css, valueStart);
++        if (css[end - 1] !== css[valueStart]) { index = end; continue; }
++        value = css.slice(valueStart + 1, end - 1);
++      } else {
++        while (end < css.length && css[end] !== ')') {
++          if (css[end] === '\\') end++;
++          end++;
++        }
++        value = css.slice(valueStart, end).trimEnd();
++      }
++      const close = skipSpace(css, end);
++      if (css[close] === ')') {
++        references.push({ start: valueStart, end, value: unescapeCss(value), stylesheet });
++        index = close + 1; continue;
++      }
++    }
++    index++;
++  }
++  const parts: string[] = [];
++  let position = 0;
++  for (const reference of references) {
++    const url = await resolve(reference.value, reference.stylesheet);
++    if (url === undefined) continue;
++    parts.push(css.slice(position, reference.start), quoteCss(url));
++    position = reference.end;
++  }
++  if (!position) return css;
++  parts.push(css.slice(position));
++  return parts.join('');
++}
++
++function commentEnd(css: string, index: number): number {
++  const end = css.indexOf('*/', index + 2);
++  return end < 0 ? css.length : end + 2;
++}
++
++function skipSpace(css: string, index: number): number {
++  while (index < css.length) {
++    if (/\s/.test(css[index]!)) index++;
++    else if (css.startsWith('/*', index)) index = commentEnd(css, index);
++    else break;
++  }
++  return index;
++}
++
++function stringEnd(css: string, index: number): number {
++  const quote = css[index++];
++  while (index < css.length) {
++    if (css[index] === '\\') index += 2;
++    else if (css[index++] === quote) return index;
++  }
++  return css.length;
++}
++
++function unescapeCss(value: string): string {
++  return value.replace(/\\(?:([\da-f]{1,6})(?:\r\n|[\t\n\f\r ])?|(\r\n|[\n\r\f])|(.))/gi,
++    (_match, hex: string | undefined, newline: string | undefined, character: string | undefined) => {
++      if (hex) {
++        const code = parseInt(hex, 16);
++        return String.fromCodePoint(!code || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff) ? 0xfffd : code);
++      }
++      return newline ? '' : character ?? '';
++    });
++}
++
++function quoteCss(value: string): string {
++  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\n\r\f]/g, character => `\\${character.charCodeAt(0).toString(16)} `)}"`;
++}
+--- /dev/null
++++ b/packages/ebook/src/epub-resources.ts
+@@ -0,0 +1,154 @@
++import type JSZip from 'jszip';
++import type { PreviewResourceResolver, PreviewSource } from '@filens/core';
++import { rewriteCssResources } from './css-resources';
++
++interface Asset {
++  path: string;
++  mediaType: string;
++  bytes: ArrayBuffer;
++}
++
++export function resolveArchivePath(base: string, href: string): string {
++  const path = href.split(/[?#]/, 1)[0]!;
++  let decoded = path;
++  try { decoded = decodeURIComponent(path); } catch { /* Tolerate literal percent signs in older books. */ }
++  const parts: string[] = [];
++  for (const part of `${decoded.startsWith('/') ? '' : base + '/'}${decoded}`.replace(/\\/g, '/').split('/')) {
++    if (part === '..') parts.pop();
++    else if (part && part !== '.') parts.push(part);
++  }
++  return parts.join('/');
++}
++
++export async function createEpubResources(
++  zip: JSZip,
++  manifest: Iterable<{ href: string; mediaType: string }>,
++  packageDir: string,
++  createUrl: (blob: Blob) => string,
++  signal: AbortSignal | undefined,
++  resourceResolver: PreviewResourceResolver | undefined,
++  warnings: string[]
++) {
++  const assets = new Map<string, Asset>(), urls = new Map<string, string>();
++  const resolved = new Map<string, string | undefined>(), htmlPaths = new Set<string>();
++  const entries = [];
++  for (const item of manifest) {
++    const path = resolveArchivePath(packageDir, item.href);
++    if (/^(?:application\/xhtml\+xml|text\/html)$/.test(item.mediaType)) { htmlPaths.add(path); continue; }
++    const file = zip.file(path);
++    if (file) entries.push({ path, mediaType: item.mediaType, file });
++  }
++  // Keep decompression bounded and allocate URLs in manifest order.
++  for (let start = 0; start < entries.length; start += 8) {
++    checkAborted(signal);
++    const batch = entries.slice(start, start + 8);
++    const contents = await Promise.all(batch.map(entry => entry.file.async('arraybuffer')));
++    checkAborted(signal);
++    for (const [offset, entry] of batch.entries()) {
++      const asset = { path: entry.path, mediaType: entry.mediaType, bytes: contents[offset]! };
++      assets.set(asset.path, asset);
++      if (asset.mediaType !== 'text/css') {
++        checkAborted(signal);
++        urls.set(asset.path, createUrl(new Blob([asset.bytes], { type: asset.mediaType })));
++      }
++    }
++  }
++
++  async function materialize(path: string, stylesheet: boolean, ancestors: Set<string>): Promise<string | undefined> {
++    checkAborted(signal);
++    if (ancestors.has(path)) {
++      const warning = `Skipped circular EPUB stylesheet import: ${path}.`;
++      if (!warnings.includes(warning)) warnings.push(warning);
++      return 'data:text/css,';
++    }
++    if (urls.has(path)) return urls.get(path);
++    if (htmlPaths.has(path) || /\.(?:xhtml|html?)$/i.test(path)) return undefined;
++    const key = `${stylesheet ? 'stylesheet' : 'resource'}:${path}`;
++    if (resolved.has(key)) return resolved.get(key);
++    let asset = assets.get(path);
++    if (!asset) {
++      const file = zip.file(path);
++      if (file) {
++        const bytes = await file.async('arraybuffer'); checkAborted(signal);
++        asset = { path, bytes, mediaType: contentType(path) };
++        assets.set(path, asset);
++      }
++    }
++    let source: PreviewSource | undefined = asset?.bytes;
++    let type = asset?.mediaType || contentType(path);
++    if (!asset && resourceResolver) {
++      const result = await resourceResolver({ family: 'ebook', sourceFormat: 'epub', source: path,
++        relation: stylesheet ? 'stylesheet' : 'resource', name: path.split('/').pop() ?? path });
++      checkAborted(signal);
++      if (result && typeof result === 'object' && !(result instanceof Blob) && !(result instanceof ArrayBuffer) && !ArrayBuffer.isView(result)) {
++        source = result.source;
++      } else source = result || undefined;
++    }
++    let url: string | undefined;
++    if (typeof source === 'string') url = source;
++    else if (source !== undefined) {
++      if (source instanceof Blob && source.type) type = source.type;
++      if (type.split(';', 1)[0] === 'text/css' || stylesheet) {
++        const bytes = source instanceof Blob ? await source.arrayBuffer() : source instanceof ArrayBuffer
++          ? source : new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
++        checkAborted(signal);
++        const next = new Set(ancestors); next.add(path);
++        const css = await rewrite(decodeCss(bytes, type), dirname(path), next);
++        checkAborted(signal);
++        url = createUrl(new Blob([css], { type: 'text/css;charset=utf-8' }));
++      } else if (asset || source instanceof Blob) {
++        const part = source instanceof Uint8Array ? new Uint8Array(source) : source;
++        url = createUrl(source instanceof Blob && source.type ? source : new Blob([part], { type }));
++      } else {
++        const bytes = source instanceof ArrayBuffer ? new Uint8Array(source) : new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
++        let binary = '';
++        for (const byte of bytes) binary += String.fromCharCode(byte);
++        url = `data:${type};base64,${btoa(binary)}`;
++      }
++    }
++    checkAborted(signal);
++    resolved.set(key, url);
++    if (asset && url) urls.set(path, url);
++    return url;
++  }
++
++  async function resolve(value: string, base: string, stylesheet = false, ancestors = new Set<string>()): Promise<string | undefined> {
++    checkAborted(signal);
++    const href = value.trim();
++    if (!href || /^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i.test(href)) return undefined;
++    const path = resolveArchivePath(base, href);
++    const url = await materialize(path, stylesheet, ancestors);
++    if (!url) return undefined;
++    const suffix = href.match(/[?#].*$/)?.[0] ?? '';
++    // Blob/data resources have no query variants; fragments still select SVG views.
++    return url + (/^(?:blob|data):/i.test(url) ? suffix.match(/#.*/)?.[0] ?? '' : suffix);
++  }
++
++  async function rewrite(css: string, base: string, ancestors = new Set<string>()): Promise<string> {
++    return rewriteCssResources(css, (value, stylesheet) => resolve(value, base, stylesheet, ancestors));
++  }
++
++  checkAborted(signal);
++  return { resolve, rewriteCss: rewrite };
++}
++
++function dirname(path: string): string { return path.slice(0, Math.max(0, path.lastIndexOf('/'))); }
++function checkAborted(signal?: AbortSignal): void {
++  if (signal?.aborted) throw new DOMException('Ebook preview aborted.', 'AbortError');
++}
++
++function decodeCss(bytes: ArrayBuffer | Uint8Array, type: string): string {
++  const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
++  const bom = view[0] === 0xff && view[1] === 0xfe ? 'utf-16le' : view[0] === 0xfe && view[1] === 0xff ? 'utf-16be'
++    : view[0] === 0xef && view[1] === 0xbb && view[2] === 0xbf ? 'utf-8' : undefined;
++  const header = type.match(/;\s*charset\s*=\s*["']?([^;\s"']+)/i)?.[1];
++  const charset = new TextDecoder('ascii').decode(view.subarray(0, 128)).match(/^@charset "([^"\r\n]+)";/)?.[1];
++  const encoding = bom ?? header ?? charset ?? 'utf-8';
++  try { return new TextDecoder(encoding).decode(view); } catch { return new TextDecoder().decode(view); }
++}
++
++function contentType(path: string): string {
++  const types: Record<string, string> = { css: 'text/css', otf: 'font/otf', ttf: 'font/ttf', woff: 'font/woff', woff2: 'font/woff2',
++    avif: 'image/avif', bmp: 'image/bmp', gif: 'image/gif', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', svg: 'image/svg+xml', webp: 'image/webp' };
++  return types[path.split('.').pop()?.toLowerCase() ?? ''] ?? 'application/octet-stream';
++}

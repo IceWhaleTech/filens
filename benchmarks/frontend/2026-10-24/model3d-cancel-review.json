@@ -1,0 +1,664 @@
+{
+  "date": "2026-10-24",
+  "kind": "model3d-input-parser-and-shared-initialization-cancellation",
+  "engineering": true,
+  "scopedSota": false,
+  "scope": "Shared frontend TS library only. Existing core, Three, ZIP and STEP WASM engines are reused. No backend/Go parsing or production WASM change.",
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "changes": [
+    "Use the shared cancellable input reader for every 3D format; discard obsolete reads and release failed or late HTTP response bodies.",
+    "Share GLB/glTF parser cancellation and dispose all late scenes, deduplicating shared geometry/material/texture resources.",
+    "Stop waiting for STEP initialization without cancelling its shared promise; check cancellation before expensive stale ReadStepFile conversion. Failed initialization remains retryable.",
+    "Cancel 3MF ZIP indexing and per-model extraction waits, checking cancellation before parsing late XML.",
+    "Add optional ModelLoadOptions with signal to public GLB, STEP and both 3MF loader APIs; preserve existing one-argument behavior and exact synchronous native-input snapshots."
+  ],
+  "performance": {
+    "newMeasurements": 0,
+    "speedRatioClaim": false,
+    "sotaClaim": false,
+    "reason": "Cancellation settlement and cleanup checks; no parse-throughput or peer ranking measurement."
+  },
+  "validation": {
+    "unitByPackage": {
+      "model3d": 311,
+      "vue": 44
+    },
+    "unitPassed": 355,
+    "newCancellationTests": 39,
+    "oldSourceFailed": 34,
+    "oldSourcePassedControls": 5,
+    "originalProductionAndNewTestBytesVerified": true,
+    "developmentBrowser": {
+      "passed": 41,
+      "command": "npx playwright test apps/demo/e2e/model3d-cancel.e2e.ts apps/demo/e2e/kmz-resources.e2e.ts apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/model3d-cancel-development-browser-final"
+    },
+    "productionBrowser": {
+      "passed": 38,
+      "command": "FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/model3d-cancel.e2e.ts apps/demo/e2e/kmz-resources.e2e.ts apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --grep 'settles held|settles real GLB texture|keeps real STEP WASM|preserves complete|KMZ|LDraw|UTF-8|OBJ|known voxels|non-cooperative volume|real inline|textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/model3d-cancel-production-browser-final"
+    },
+    "browserPassed": 79,
+    "newBrowserTestsPerEnvironment": 14,
+    "browserContent": {
+      "development": [
+        [
+          {
+            "format": "stl",
+            "name": "original",
+            "meshes": 1,
+            "geometryHash": "b34d084531f0d439d34a160955203ac3c801ac32384814977de3d431b1f00624",
+            "pixelHash": "7cf60ec840a36efb6b7f1c3a8db37bb49156592b6ed325290ef57c9e76c1a5c0",
+            "visible": 2428,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "stl",
+            "name": "current",
+            "meshes": 1,
+            "geometryHash": "b34d084531f0d439d34a160955203ac3c801ac32384814977de3d431b1f00624",
+            "pixelHash": "7cf60ec840a36efb6b7f1c3a8db37bb49156592b6ed325290ef57c9e76c1a5c0",
+            "visible": 2428,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "stl",
+            "name": "signal",
+            "meshes": 1,
+            "geometryHash": "b34d084531f0d439d34a160955203ac3c801ac32384814977de3d431b1f00624",
+            "pixelHash": "7cf60ec840a36efb6b7f1c3a8db37bb49156592b6ed325290ef57c9e76c1a5c0",
+            "visible": 2428,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          }
+        ],
+        [
+          {
+            "format": "glb",
+            "name": "original",
+            "meshes": 1,
+            "geometryHash": "84ce0db38b013e0da63f28029a87d5a2df587512d042de04fb4a35777bb7969d",
+            "pixelHash": "52986268afbb98c663a598fc8da59518c3971914924323e935bd215a84546a53",
+            "visible": 1055,
+            "glError": 0,
+            "textureCount": 1,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "glb",
+            "name": "current",
+            "meshes": 1,
+            "geometryHash": "84ce0db38b013e0da63f28029a87d5a2df587512d042de04fb4a35777bb7969d",
+            "pixelHash": "52986268afbb98c663a598fc8da59518c3971914924323e935bd215a84546a53",
+            "visible": 1055,
+            "glError": 0,
+            "textureCount": 1,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "glb",
+            "name": "signal",
+            "meshes": 1,
+            "geometryHash": "84ce0db38b013e0da63f28029a87d5a2df587512d042de04fb4a35777bb7969d",
+            "pixelHash": "52986268afbb98c663a598fc8da59518c3971914924323e935bd215a84546a53",
+            "visible": 1055,
+            "glError": 0,
+            "textureCount": 1,
+            "texturePixelsMatch": true
+          }
+        ],
+        [
+          {
+            "format": "step",
+            "name": "original",
+            "meshes": 1,
+            "geometryHash": "c0181b1d5c9ecf10233f748edd0188401dfa1038b10d09638fecf44ad0a147e4",
+            "pixelHash": "e120e2de8dfacea69bb4d040b73ae85483b0118ae432327d4825cd2ebfb7c318",
+            "visible": 4644,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "step",
+            "name": "current",
+            "meshes": 1,
+            "geometryHash": "c0181b1d5c9ecf10233f748edd0188401dfa1038b10d09638fecf44ad0a147e4",
+            "pixelHash": "e120e2de8dfacea69bb4d040b73ae85483b0118ae432327d4825cd2ebfb7c318",
+            "visible": 4644,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "step",
+            "name": "signal",
+            "meshes": 1,
+            "geometryHash": "c0181b1d5c9ecf10233f748edd0188401dfa1038b10d09638fecf44ad0a147e4",
+            "pixelHash": "e120e2de8dfacea69bb4d040b73ae85483b0118ae432327d4825cd2ebfb7c318",
+            "visible": 4644,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          }
+        ],
+        [
+          {
+            "format": "3mf",
+            "name": "original",
+            "meshes": 1,
+            "geometryHash": "ef781b6f5aa77df73a776a3a09580627cfd1c07903aac7d1a246914da3647224",
+            "pixelHash": "6aed7be3a7f0ea0f1d64b40a0e36f0ada65a3404901aebf47fa72f5e9c8fc875",
+            "visible": 930,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "3mf",
+            "name": "current",
+            "meshes": 1,
+            "geometryHash": "ef781b6f5aa77df73a776a3a09580627cfd1c07903aac7d1a246914da3647224",
+            "pixelHash": "6aed7be3a7f0ea0f1d64b40a0e36f0ada65a3404901aebf47fa72f5e9c8fc875",
+            "visible": 930,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "3mf",
+            "name": "signal",
+            "meshes": 1,
+            "geometryHash": "ef781b6f5aa77df73a776a3a09580627cfd1c07903aac7d1a246914da3647224",
+            "pixelHash": "6aed7be3a7f0ea0f1d64b40a0e36f0ada65a3404901aebf47fa72f5e9c8fc875",
+            "visible": 930,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          }
+        ]
+      ],
+      "production": [
+        [
+          {
+            "format": "stl",
+            "name": "original",
+            "meshes": 1,
+            "geometryHash": "b34d084531f0d439d34a160955203ac3c801ac32384814977de3d431b1f00624",
+            "pixelHash": "7cf60ec840a36efb6b7f1c3a8db37bb49156592b6ed325290ef57c9e76c1a5c0",
+            "visible": 2428,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "stl",
+            "name": "current",
+            "meshes": 1,
+            "geometryHash": "b34d084531f0d439d34a160955203ac3c801ac32384814977de3d431b1f00624",
+            "pixelHash": "7cf60ec840a36efb6b7f1c3a8db37bb49156592b6ed325290ef57c9e76c1a5c0",
+            "visible": 2428,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "stl",
+            "name": "signal",
+            "meshes": 1,
+            "geometryHash": "b34d084531f0d439d34a160955203ac3c801ac32384814977de3d431b1f00624",
+            "pixelHash": "7cf60ec840a36efb6b7f1c3a8db37bb49156592b6ed325290ef57c9e76c1a5c0",
+            "visible": 2428,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          }
+        ],
+        [
+          {
+            "format": "glb",
+            "name": "original",
+            "meshes": 1,
+            "geometryHash": "84ce0db38b013e0da63f28029a87d5a2df587512d042de04fb4a35777bb7969d",
+            "pixelHash": "52986268afbb98c663a598fc8da59518c3971914924323e935bd215a84546a53",
+            "visible": 1055,
+            "glError": 0,
+            "textureCount": 1,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "glb",
+            "name": "current",
+            "meshes": 1,
+            "geometryHash": "84ce0db38b013e0da63f28029a87d5a2df587512d042de04fb4a35777bb7969d",
+            "pixelHash": "52986268afbb98c663a598fc8da59518c3971914924323e935bd215a84546a53",
+            "visible": 1055,
+            "glError": 0,
+            "textureCount": 1,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "glb",
+            "name": "signal",
+            "meshes": 1,
+            "geometryHash": "84ce0db38b013e0da63f28029a87d5a2df587512d042de04fb4a35777bb7969d",
+            "pixelHash": "52986268afbb98c663a598fc8da59518c3971914924323e935bd215a84546a53",
+            "visible": 1055,
+            "glError": 0,
+            "textureCount": 1,
+            "texturePixelsMatch": true
+          }
+        ],
+        [
+          {
+            "format": "step",
+            "name": "original",
+            "meshes": 1,
+            "geometryHash": "c0181b1d5c9ecf10233f748edd0188401dfa1038b10d09638fecf44ad0a147e4",
+            "pixelHash": "e120e2de8dfacea69bb4d040b73ae85483b0118ae432327d4825cd2ebfb7c318",
+            "visible": 4644,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "step",
+            "name": "current",
+            "meshes": 1,
+            "geometryHash": "c0181b1d5c9ecf10233f748edd0188401dfa1038b10d09638fecf44ad0a147e4",
+            "pixelHash": "e120e2de8dfacea69bb4d040b73ae85483b0118ae432327d4825cd2ebfb7c318",
+            "visible": 4644,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "step",
+            "name": "signal",
+            "meshes": 1,
+            "geometryHash": "c0181b1d5c9ecf10233f748edd0188401dfa1038b10d09638fecf44ad0a147e4",
+            "pixelHash": "e120e2de8dfacea69bb4d040b73ae85483b0118ae432327d4825cd2ebfb7c318",
+            "visible": 4644,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          }
+        ],
+        [
+          {
+            "format": "3mf",
+            "name": "original",
+            "meshes": 1,
+            "geometryHash": "ef781b6f5aa77df73a776a3a09580627cfd1c07903aac7d1a246914da3647224",
+            "pixelHash": "6aed7be3a7f0ea0f1d64b40a0e36f0ada65a3404901aebf47fa72f5e9c8fc875",
+            "visible": 930,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "3mf",
+            "name": "current",
+            "meshes": 1,
+            "geometryHash": "ef781b6f5aa77df73a776a3a09580627cfd1c07903aac7d1a246914da3647224",
+            "pixelHash": "6aed7be3a7f0ea0f1d64b40a0e36f0ada65a3404901aebf47fa72f5e9c8fc875",
+            "visible": 930,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          },
+          {
+            "format": "3mf",
+            "name": "signal",
+            "meshes": 1,
+            "geometryHash": "ef781b6f5aa77df73a776a3a09580627cfd1c07903aac7d1a246914da3647224",
+            "pixelHash": "6aed7be3a7f0ea0f1d64b40a0e36f0ada65a3404901aebf47fa72f5e9c8fc875",
+            "visible": 930,
+            "glError": 0,
+            "textureCount": 0,
+            "texturePixelsMatch": true
+          }
+        ]
+      ]
+    },
+    "completeGeometryMaterialsDecodedTextureAndFramebufferPixelsMatch": true,
+    "developmentProductionContentMatch": true,
+    "heldWorkReleasedOnlyAfterCancellationSettles": true,
+    "lateGlbResourceDisposalCounts": {
+      "geometry": 1,
+      "material": 1,
+      "texture": 1
+    },
+    "realStepSharedInitialization": {
+      "cancelledWaiterSettledBeforeWasmResponse": true,
+      "liveAndLaterCallerEachTriangles": 12,
+      "wasmRequests": 1
+    },
+    "realStepGeometry": {
+      "fixtures": 3,
+      "imports": 9,
+      "worldSpaceTriangleAndNormalSetsMatch": true
+    },
+    "builds": [
+      "npm run build:model3d",
+      "npm run build:demo"
+    ],
+    "categoryChecks": "npm run test:categories",
+    "bundleReport": "npm run report:bundle-sizes",
+    "originalAndFinalSourceMapContentVerified": true,
+    "publicOptionsInDeclarationsVerified": true,
+    "incrementalReversePatchRestoresOriginalBytes": true,
+    "archivedBaselineRuntimeVerifiedAndUsedByFinalBrowserRuns": true,
+    "gitDiffCheckPassed": true,
+    "verifiedLocalMarkdownLinks": 538,
+    "temporaryPreviewPortsClosed": [
+      4173,
+      4174
+    ],
+    "knownBuildWarning": "Existing large demo vendor chunk warning"
+  },
+  "limits": [
+    "Cancellation settles the public wait and skips later work; non-cooperative platform reads, loader network/image work and shared initialization may continue until their underlying operations finish.",
+    "Already-running synchronous parsing, decompression and STEP ReadStepFile execution cannot be interrupted on the same browser thread.",
+    "No timing, peak-memory or peer/SOTA ranking claim. The timeout in held-operation unit checks is an assertion deadline, not a benchmark.",
+    "Full-output fixtures cover one generated STL, textured GLB and 3MF plus a bundled STEP cube; separate real-STEP engine validation covers three fixtures.",
+    "Legacy development-only source-import browser tests run in development; production uses built runtime and upload checks. An early overly broad production selection is retained in diagnostics."
+  ],
+  "baseline": [
+    {
+      "path": "tmp/continued-review/model3d-cancel-baseline/packages/model3d/src/preview-driver.ts",
+      "bytes": 256755,
+      "sha256": "580c239e7f12c0a59ddeb0106add77a52818e480eae1f9c4606ee5df5ae1c31c"
+    },
+    {
+      "path": "tmp/continued-review/model3d-cancel-baseline/packages/model3d/src/index.ts",
+      "bytes": 1149,
+      "sha256": "3b4bee2f1af573cc3de28c26dbb31e679231fefef5b28000fed4d48d4c9a6547"
+    },
+    {
+      "path": "tmp/continued-review/model3d-cancel-baseline/dist/index.js",
+      "bytes": 983654,
+      "sha256": "e7e784bc81624ba621e07ba734cb016842b8a5c87a39d0da336ce321a823e1d9"
+    },
+    {
+      "path": "tmp/continued-review/model3d-cancel-baseline/dist/index.js.map",
+      "bytes": 2509663,
+      "sha256": "6d3aa9cffbd9809b2dff5b108197d4929a7dc540aada4264690be5cf2cc01af1"
+    }
+  ],
+  "bindings": [
+    {
+      "path": "packages/model3d/src/preview-driver.ts",
+      "bytes": 256647,
+      "sha256": "6a967e775c11208d08b1cb79ce4afb3d044c8b9e7944615f8771221b5fbff562"
+    },
+    {
+      "path": "packages/model3d/src/index.ts",
+      "bytes": 1174,
+      "sha256": "be4b709bb3a81dcda3f54f1efceb58898d41f5bbafc94dc7604641d159166318"
+    },
+    {
+      "path": "packages/model3d/test/load-cancellation.spec.ts",
+      "bytes": 17725,
+      "sha256": "f731d67e5d7818f628a5cd91ec58eb8fdc901550cc676398328349ec014ab309"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/cancellation.mjs",
+      "bytes": 2351,
+      "sha256": "3e95cda314ec83da5822bb96248d6ecb8337a15282ecf2f9e71764bc3d4b411f"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-cancel.e2e.ts",
+      "bytes": 17161,
+      "sha256": "8845e9b8fc9d4151bf8b32403e4931c54a8ebaa758f0dd35529a137bf9b04103"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/mesh.mjs",
+      "bytes": 2343,
+      "sha256": "b45fab599deadb242451d83a021b9f2c47677af32d8808225e6e10464a303c2b"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/obj.mjs",
+      "bytes": 1921,
+      "sha256": "d031b9e0569af3872e83f4f45918f3e75d16cc861322f5de856bcc9d3747a8e4"
+    },
+    {
+      "path": "packages/model3d/test/lifecycle.spec.ts",
+      "bytes": 8620,
+      "sha256": "a27de263b7940f32d1750835e7611091238c55696ce583dca4340753defad02c"
+    },
+    {
+      "path": "packages/model3d/test/resource-loading.spec.ts",
+      "bytes": 12035,
+      "sha256": "8b567185a81f84c6ae24b58f28fe8d56f9519c6f9441f2a9204cbd1ddfa08867"
+    },
+    {
+      "path": "packages/core/src/parser/zip.ts",
+      "bytes": 6613,
+      "sha256": "2e24ffb5036b1644c4254deb87e725cb13d45bc849326ed47cb140feb260ce49"
+    },
+    {
+      "path": "packages/core/src/zip.ts",
+      "bytes": 165,
+      "sha256": "0aaa8c4c089cd825d3f4fbf30d82ef556bf2cbfdb9201c2c1652b8870bbf5f63"
+    },
+    {
+      "path": "packages/core/src/index.ts",
+      "bytes": 836,
+      "sha256": "b7f461d865c07fb808f7ab86544e0512e1ba9bc22f7ac1ab90e7e076554fddb4"
+    },
+    {
+      "path": "packages/model3d/vendor/occt-import-js/occt-import-js.js",
+      "bytes": 45276,
+      "sha256": "16e93f3cc1c0acda5fa5d74e285e676987d9d3124c4aa200e5f6ab4263fac8db"
+    },
+    {
+      "path": "packages/model3d/vendor/occt-import-js/occt-import-js.d.ts",
+      "bytes": 595,
+      "sha256": "894d3aa042d2b2cbefaa092b834c956c1197cf5875426bb6c4ad406c3fb80759"
+    },
+    {
+      "path": "playwright.config.ts",
+      "bytes": 621,
+      "sha256": "5b2993d7ef92a9c75e16315d52a9c0fdc4207cd5576e7abc45e2d43a21c331d4"
+    },
+    {
+      "path": "apps/demo/e2e/kmz-resources.e2e.ts",
+      "bytes": 13193,
+      "sha256": "057fa1cbabcd4a032333d6b82d81ac0df9bfb1671b3e63292ebbfc56aa4c20a2"
+    },
+    {
+      "path": "apps/demo/e2e/ldraw-resources.e2e.ts",
+      "bytes": 14351,
+      "sha256": "0139dd5a6bdba92565d2692893b7c75f0646c7c1365564691c84bc43edaf4a95"
+    },
+    {
+      "path": "apps/demo/e2e/obj-resources.e2e.ts",
+      "bytes": 12249,
+      "sha256": "d8a449f07b3bea09f5a021bdb17b150278b3f16263aaf9724d2e682402323895"
+    },
+    {
+      "path": "apps/demo/e2e/volume-preview.e2e.ts",
+      "bytes": 8085,
+      "sha256": "dab15bf85a3e68709bcded2721ae9e2f854ac8f825f6edbe86266172f65b0cf1"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-resources.e2e.ts",
+      "bytes": 12407,
+      "sha256": "c0b8f406cf247e83689d08dc3b04219ba40fec41dc94d8ae38bc46294aeb1def"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-lifecycle.e2e.ts",
+      "bytes": 4831,
+      "sha256": "41ffae4946181a00a312a032d1168bc08d909333aa0258f757ed01a591452281"
+    },
+    {
+      "path": "apps/demo/e2e/cad-wasm.e2e.ts",
+      "bytes": 1540,
+      "sha256": "6f921a2f19906cdf232ea60395f00288c0d8630c5c25cf3d72c8369f90e32b7f"
+    },
+    {
+      "path": "packages/model3d/package.json",
+      "bytes": 1158,
+      "sha256": "4b8b6f694fd476b0e84d8ceb224fb4d3411fea7736cec5afc29b5e81268fb461"
+    },
+    {
+      "path": "packages/model3d/vite.config.ts",
+      "bytes": 720,
+      "sha256": "5788396cddfe72c2341cbe9f31c43a90d6360ca1db4f1ee1d7f0ea4150a58027"
+    },
+    {
+      "path": "packages/model3d/dist/index.js",
+      "bytes": 983333,
+      "sha256": "85c8317dde7ff44a90bbe4caf475bb9e09ac75f5636986357396f8e24ff1f09c"
+    },
+    {
+      "path": "packages/model3d/dist/index.js.map",
+      "bytes": 2509479,
+      "sha256": "32eba4c0cb6c11fbe7950c81fbcc2998adff6950000465877a736ea563aef1d9"
+    },
+    {
+      "path": "packages/model3d/dist/index.d.ts",
+      "bytes": 1081,
+      "sha256": "22d6a39f11b9546b6c2f5acd63b3d4a572193a4242fcce2b61398ca5531eb6e3"
+    },
+    {
+      "path": "packages/model3d/dist/preview-driver.d.ts",
+      "bytes": 12360,
+      "sha256": "7bd291a64e7614a964a1e2a781ac2833772312d18eed15a2d80027ac812a2da6"
+    },
+    {
+      "path": "packages/model3d/dist/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "bytes": 585770,
+      "sha256": "42c42ba5fe8762aa1cd7bc9b2204d0c94798d0ef98eec9735d9411b29ac0888d"
+    },
+    {
+      "path": "packages/core/dist/index.js.map",
+      "bytes": 1608687,
+      "sha256": "c589e51a4f4fa1f8fd6c9c94157cf0c2f0c9322ec479f81c4a0639c13699a7a6"
+    },
+    {
+      "path": "node_modules/three/build/three.module.js",
+      "bytes": 595384,
+      "sha256": "d513a6de314b2c32d0a11a209bc1ec06b528ae95c0f841a1c1761aa9248c814a"
+    },
+    {
+      "path": "node_modules/three/build/three.core.js",
+      "bytes": 1385513,
+      "sha256": "c943c148229a99917d815f772404c48f5447e82c0c450f92403955bc27e8d100"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/occt/cube.stp",
+      "bytes": 8010,
+      "sha256": "cfa52db7eab6fe6a73986a87aff8702d24431bdb7da6382afdd94234deb3f648"
+    },
+    {
+      "path": "scripts/test-occt-wasm.mjs",
+      "bytes": 9110,
+      "sha256": "af48b86af8c03677c806fbdb11c325c68f2bb8f61074c5cec2544e616775f584"
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "bytes": 40880,
+      "sha256": "f8fa3813d4c6b06ddfc9cc403089043e2ee64de85019953fde2f321fe3815cbb"
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "bytes": 39266,
+      "sha256": "ae8293dcbe2a75aa6f35dace3dcd227214e22d15144a93bcab58477db96c8c5e"
+    },
+    {
+      "path": "docs/bundle-sizes.md",
+      "bytes": 2653,
+      "sha256": "11741769cca5a0458bf2a3962bb789e38d6007844e7b9dcd729fd0f60bc171bb"
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "bytes": 3853,
+      "sha256": "340ba03174a6aaae67716d6f93328f8fa04c71bbdeeabf1d503bd0e69aced562"
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "bytes": 107268,
+      "sha256": "77200205940a98f9851ed5a17e39cbb826f6747c5344ff1e2b9764ec46160f98"
+    },
+    {
+      "path": "apps/demo/dist/build-info.json",
+      "bytes": 876,
+      "sha256": "a3a1db11bc39b77fc6a748f1933c643f2a7b50c3c7cb6680e1346f19e9d21e44"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-BI6OAXJr.js",
+      "bytes": 145197,
+      "sha256": "c89b3e23d27b3e5d99f22743f4e5fd9224c6ee144a7ea6fba6232c03724c9b54"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-D5zSLHLT.css",
+      "bytes": 32017,
+      "sha256": "28368a57749f016bc98571bedb5e90a142ad116f6139ec0056474559ac85683e"
+    },
+    {
+      "path": "apps/demo/dist/assets/vendor-BCn5OR-d.js",
+      "bytes": 1350925,
+      "sha256": "9a2f3c0c96ef1655d6e6011653cbc6901a848b9d1bc6050f06b33ab4caaa6a88"
+    },
+    {
+      "path": "apps/demo/dist/assets/core-CBPzGA93.js",
+      "bytes": 290069,
+      "sha256": "01a674380f29a52f0ec71115bdf79c697699685b3013d978a169aa18c375ff51"
+    },
+    {
+      "path": "apps/demo/dist/assets/core-CEn7YOnF.css",
+      "bytes": 5500,
+      "sha256": "7d158685d2016c05d1bf8c3c4efefd1a086f3977da7e17abae6eacc03fc99f74"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-B1myDZRM.css",
+      "bytes": 496,
+      "sha256": "6cf6d520f26937cc97308ceef86510cb5035e588673832483b15923fac58588d"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-BIxKfyAV.js",
+      "bytes": 136282,
+      "sha256": "066451626a2ab076a25bdc6bff425068d78e4fa566f8ba32f9bc4190addf41ad"
+    },
+    {
+      "path": "apps/demo/dist/assets/occt-runtime-B6y5lcOh.js",
+      "bytes": 23593,
+      "sha256": "9b106537f9888bf669fd07394c7931a4514a30335d0f11b8bf3eecb4fb38351d"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/model3d-cancel.patch",
+      "bytes": 7528,
+      "sha256": "fdbdf74352e65b47c10f686fc9a60e5f5242f28380c7fff7ce4f910fe7578053"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/model3d-cancel-diagnostic.json.gz",
+      "bytes": 2490225,
+      "sha256": "0476e9a4eee0e2d5cf63100478879a1dcb17ba2432c91ce6a26819bddeb66f47"
+    }
+  ],
+  "reproduction": [
+    "Restore baselineFiles from the diagnostic archive or reverse only model3d-cancel.patch in an isolated checkout preserving all earlier changes; never reverse in the active workspace.",
+    "Restore the new test in an isolated original package with jsdom Vitest configuration, the existing vendor/fixtures/styles and shared workspace dependencies. It reproduces 34 failures and five passing controls.",
+    "From packages/model3d and packages/vue respectively: ../../node_modules/.bin/vitest run",
+    "npm run build:model3d",
+    "node scripts/test-occt-wasm.mjs",
+    "npm run build:demo",
+    "npx playwright test apps/demo/e2e/model3d-cancel.e2e.ts apps/demo/e2e/kmz-resources.e2e.ts apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/model3d-cancel-development-browser-final",
+    "The new browser test loads baseline JS directly from the checked-in diagnostic archive and verifies the shared unchanged WASM binding; no temporary baseline restore is needed for those 14 cases.",
+    "Restore earlier review baselines for the older combined browser regressions, then serve npm run preview --workspace @filens/demo -- --host 127.0.0.1 --port 4174 and run: FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/model3d-cancel.e2e.ts apps/demo/e2e/kmz-resources.e2e.ts apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --grep 'settles held|settles real GLB texture|keeps real STEP WASM|preserves complete|KMZ|LDraw|UTF-8|OBJ|known voxels|non-cooperative volume|real inline|textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/model3d-cancel-production-browser-final"
+  ]
+}

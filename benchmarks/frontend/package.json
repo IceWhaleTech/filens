@@ -1,1 +1,1 @@
-{"name":"filens-performance-audit","private":true,"type":"module","dependencies":{"@photo-sphere-viewer/core":"5.15.1","@vue-office/pptx":"1.0.1","libraw-wasm":"1.6.0","pptx-preview":"1.0.7","pptxtojson":"2.2.0","xlsx":"0.18.5"}}
+{"name":"filens-performance-audit","private":true,"type":"module","dependencies":{"@photo-sphere-viewer/core":"5.15.1","@photo-sphere-viewer/dual-fisheye-adapter":"5.15.1","@vue-office/pptx":"1.0.1","libraw-wasm":"1.6.0","pptx-preview":"1.0.7","pptxtojson":"2.2.0","xlsx":"0.18.5"}}

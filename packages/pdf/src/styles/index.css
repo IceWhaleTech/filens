@@ -1,6 +1,8 @@
 .pdfv-preview {
+  position: relative;
   box-sizing: border-box;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   align-content: start;
   gap: 16px;
@@ -11,10 +13,14 @@
   overflow: auto;
 }
 
+.pdfv-page-slot {
+  justify-self: start;
+  margin-inline: auto;
+}
+
 .pdfv-page {
   box-sizing: border-box;
   display: block;
-  max-width: 100%;
   border: 1px solid #d7dee8;
   background: #ffffff;
 }

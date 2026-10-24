@@ -1,0 +1,386 @@
+{
+  "sourceSha256": "4446b6054bb3528f530ce27349e712c8c1c514fdd969969a412e07000d74a607",
+  "date": "2026-10-24T04:35:03.268Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "versions": {
+    "dxf-parser": "1.1.2",
+    "occt-import-js": "0.0.23",
+    "sheetjs": "0.20.3",
+    "papaparse": "5.7.0",
+    "zip.js": "2.24.0",
+    "fflate": "0.8.2",
+    "x2t": "v9.3.2+3"
+  },
+  "iterations": 7,
+  "engineering": true,
+  "totalRuns": 42,
+  "filensRuns": 21,
+  "filensSuccessfulRuns": 21,
+  "method": "Peer / filens ratios; 10,000 paired percentile bootstrap resamples, LCG seed 12345. Eligibility requires a matching recorded output signature and >=7 iterations. Legacy XLS conversion can qualify when all resolved nonempty cell addresses/text match in the same viewer; tiny decimal differences (12 significant digits) and trailing blank grid space are accepted for preview. Editable formula/structure parity is not required. STEP metadata is deliberately omitted from filens; signatures compare oriented world-space triangles/normals, rounded to 1e-5, with independent full numerical regression checks. No global SOTA proof.",
+  "previewReview": null,
+  "summary": [
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 6.025000095367432,
+      "initMs": 0,
+      "firstOperationMs": 6.025000095367432,
+      "indexMs": 4.96999990940094,
+      "extractMs": 1.0600000619888306,
+      "output": {
+        "files": 4,
+        "expandedBytes": 10128,
+        "contentSha256": "42035bd936b5b994c9da53fc8ac7fea99e9498443320ca3188f21332d0d2e62d"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 5.855000019073486,
+      "initMs": 0,
+      "firstOperationMs": 5.855000019073486,
+      "indexMs": 4.899999976158142,
+      "extractMs": 0.9950000047683716,
+      "output": {
+        "files": 4,
+        "expandedBytes": 10128,
+        "contentSha256": "42035bd936b5b994c9da53fc8ac7fea99e9498443320ca3188f21332d0d2e62d"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 10.240000009536743,
+      "initMs": 0,
+      "firstOperationMs": 10.240000009536743,
+      "indexMs": 5.699999928474426,
+      "extractMs": 4.485000014305115,
+      "output": {
+        "files": 1000,
+        "expandedBytes": 1213890,
+        "contentSha256": "e30343b2cadc4abe127ab29acd03e4390368f16e68f5898229f6d92a7968342a"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 11.794999957084656,
+      "initMs": 0,
+      "firstOperationMs": 11.794999957084656,
+      "indexMs": 7.34499990940094,
+      "extractMs": 4.324999928474426,
+      "output": {
+        "files": 1000,
+        "expandedBytes": 1213890,
+        "contentSha256": "e30343b2cadc4abe127ab29acd03e4390368f16e68f5898229f6d92a7968342a"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 6.709999918937683,
+      "initMs": 0,
+      "firstOperationMs": 6.709999918937683,
+      "indexMs": 0.4649999141693115,
+      "extractMs": 6.235000014305115,
+      "output": {
+        "files": 1,
+        "expandedBytes": 16777216,
+        "contentSha256": "0ba44651ac8ffb4b04464a866415776213fd36d4a8fe20ea462f0664969f11b5"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "engine": "filens-baseline",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 6.784999966621399,
+      "initMs": 0,
+      "firstOperationMs": 6.784999966621399,
+      "indexMs": 0.5749999284744263,
+      "extractMs": 6.199999928474426,
+      "output": {
+        "files": 1,
+        "expandedBytes": 16777216,
+        "contentSha256": "0ba44651ac8ffb4b04464a866415776213fd36d4a8fe20ea462f0664969f11b5"
+      },
+      "failures": []
+    }
+  ],
+  "comparisons": [
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 6.025000095367432,
+      "peerMs": 5.855000019073486,
+      "ratio": 0.9717842201488666,
+      "ratio95PercentBootstrapInterval": [
+        0.9095911876744642,
+        1.0074688526411752
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 6.025000095367432,
+      "peerMs": 5.855000019073486,
+      "ratio": 0.9717842201488666,
+      "ratio95PercentBootstrapInterval": [
+        0.9095911876744642,
+        1.0074688526411752
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "filens-baseline",
+      "metric": "indexMs",
+      "filensMs": 4.96999990940094,
+      "peerMs": 4.899999976158142,
+      "ratio": 0.9859155061330303,
+      "ratio95PercentBootstrapInterval": [
+        0.9238186894091779,
+        1.019172534526366
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "filens-baseline",
+      "metric": "extractMs",
+      "filensMs": 1.0600000619888306,
+      "peerMs": 0.9950000047683716,
+      "ratio": 0.9386791948874963,
+      "ratio95PercentBootstrapInterval": [
+        0.8925234602782367,
+        1.0095694833332287
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 10.240000009536743,
+      "peerMs": 11.794999957084656,
+      "ratio": 1.1518554634862994,
+      "ratio95PercentBootstrapInterval": [
+        1.070967740021614,
+        1.1978239364164298
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 10.240000009536743,
+      "peerMs": 11.794999957084656,
+      "ratio": 1.1518554634862994,
+      "ratio95PercentBootstrapInterval": [
+        1.070967740021614,
+        1.1978239364164298
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "filens-baseline",
+      "metric": "indexMs",
+      "filensMs": 5.699999928474426,
+      "peerMs": 7.34499990940094,
+      "ratio": 1.2885964915032533,
+      "ratio95PercentBootstrapInterval": [
+        1.1826298904716266,
+        1.3374558264814844
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "filens-baseline",
+      "metric": "extractMs",
+      "filensMs": 4.485000014305115,
+      "peerMs": 4.324999928474426,
+      "ratio": 0.964325510519429,
+      "ratio95PercentBootstrapInterval": [
+        0.9241452706797166,
+        1.0318906574376048
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 6.709999918937683,
+      "peerMs": 6.784999966621399,
+      "ratio": 1.0111773544843186,
+      "ratio95PercentBootstrapInterval": [
+        0.8979180821935969,
+        1.0805214689714673
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "filens-baseline",
+      "metric": "firstOperationMs",
+      "filensMs": 6.709999918937683,
+      "peerMs": 6.784999966621399,
+      "ratio": 1.0111773544843186,
+      "ratio95PercentBootstrapInterval": [
+        0.8979180821935969,
+        1.0805214689714673
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "filens-baseline",
+      "metric": "indexMs",
+      "filensMs": 0.4649999141693115,
+      "peerMs": 0.5749999284744263,
+      "ratio": 1.2365592142132364,
+      "ratio95PercentBootstrapInterval": [
+        1.1546393070227314,
+        1.2608698807051697
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "filens-baseline",
+      "metric": "extractMs",
+      "filensMs": 6.235000014305115,
+      "peerMs": 6.199999928474426,
+      "ratio": 0.9943865139133301,
+      "ratio95PercentBootstrapInterval": [
+        0.8803725047770817,
+        1.0520325086635107
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    }
+  ]
+}

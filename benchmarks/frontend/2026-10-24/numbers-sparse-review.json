@@ -1,0 +1,116 @@
+{
+  "method": "112 rotating current/previous engineering runs and 3 browser functional checks. Six complete real iWork archives/models, a synthetic sparse Numbers table and a dense control all serialize identically. The sparse-header regression is a separate intentional correction. These runs are excluded from external comparison totals and SOTA ranking.",
+  "engineeringRuns": 112,
+  "browserFunctionalRuns": 3,
+  "externalComparisonRunsAdded": 0,
+  "cumulativeExternalComparisonRuns": 2408,
+  "cumulativeSuccessfulFilensRuns": 987,
+  "sources": {
+    "numbers-sparse-ab.json.gz": {
+      "uncompressedSha256": "b72fa2b56b9bf4d1fa8c8fdbcff753c0fecca6ec8de394d91707743e77361df0",
+      "compressedSha256": "a2d93790e979004910b39d25610d5523f46defe1cf753699b4e4f71a1801e6c6",
+      "runs": 112
+    },
+    "iwork-sparse-browser-review.json.gz": {
+      "uncompressedSha256": "f125f5543aa4fc600b8ab28c3c0e8bc419ac19c951a008801bccee77ab29ab72",
+      "compressedSha256": "1cab168bd153f92d17660f946ac0b15725fe1bd016231e1fc607f7b62c619fb6",
+      "runs": 3
+    }
+  },
+  "artifacts": {
+    "scripts/benchmark-iwork-sparse.mjs": "d6baa8580610ecddd5929fcccee71c0b109d1e462fc3fadbc48dcbfa4be220df",
+    "scripts/summarize-iwork-sparse-benchmark.mjs": "f9f76840104b4f3fbdc650160c187cc2f7442f83fd0e8d20ca8fa434a84b6fce",
+    "scripts/benchmark-frontends.mjs": "f1633e7518ef1823c735ccbcccef362b0d2e9fcc2f53f61fe6a0fb86743532f7",
+    "packages/iwork/src/parser/table.ts": "a44312e069e525e6147120c17f21d1b6c83b43075c9b966936e404aacbdbaf71",
+    "packages/iwork/test/table.spec.ts": "99802492712a7f58da121a68b4bfe2236fb29d1ecffcb45d6d88967167660a83",
+    "packages/iwork/src/parser/archive.ts": "470b4149b787c0c28bfc891ebfa26c84ecbf99f7475777a981095bfb858d5757",
+    "packages/iwork/src/parser/protobuf.ts": "b949b939bad0bc901d63cdda5b34f7b66620aceb087964b89e92e21e16cbd004",
+    "packages/iwork/src/parser/helpers.ts": "8ee95e7353a64c8cd2983e30775076c13c8a2c495ad3232a50f0113c279f859a",
+    "packages/iwork/src/worker/iwork-worker.ts": "4d976e05b4833d8547336afe58120a77dc0bb9c0ad9833abe24418d303a87d6f",
+    "packages/iwork/src/viewer/create-iwork-viewer.ts": "79de4b8fc980e7f7b8b67f498dfd894b856d88e773594a31a1ed5d1646026bdf",
+    "packages/iwork/src/styles/index.css": "46bccbe60475208122ea5c2d3a71cc6e45bf4724198103a6c03b11ee4e71df70",
+    "packages/iwork/dist/index.js": "1d6e80096547e5ce690f5db15e0522676f075b619347e5966ee87d41086d9ac8",
+    "packages/core/dist/index.js": "0d559fcb11687ef1434ea5e0618c05c69214a91b8503e64dd40f562ed9d8856a",
+    "packages/xlsx/dist/index.js": "37ea0dd6c6a0bf5ffbfbb7efc691b1cd9d30dd11d3415370018bb9de876fe07a",
+    "benchmarks/frontend/2026-10-24/numbers-sparse.patch": "262082a6b0979337a3443dddf7696ec3d3fbc8bbcbbf56c0a757dc1f06f09e01",
+    "benchmarks/frontend/2026-10-24/numbers-sparse-ab-summary.json": "ceda9d0362f5ac0b429695194422de09ba13d1e55dd18826dfe35fbcb465209c"
+  },
+  "baseline": {
+    "module": "tmp/continued-review/iwork-baseline/dist/index.js",
+    "moduleSha256": "ec39b09517caa0d94e040d4e21fecc239c58de40cff8cb80191c26ab32c29f34",
+    "tableSourceSha256": "7abd02e7432f90decbd999380965e97d227ce52f893ef9d27a261ebac05dd294",
+    "reconstruct": "In an isolated checkout of this source state, reverse numbers-sparse.patch, build @filens/iwork, and copy its dist directory and src/parser/table.ts into tmp/continued-review/iwork-baseline. Reapply the patch, rebuild @filens/iwork, and run scripts/benchmark-iwork-sparse.mjs. Baseline module/table paths can be overridden with --baseline-module and --baseline-table."
+  },
+  "content": {
+    "fullArchiveAndModelMatches": 6,
+    "realNumbersNonemptyCells": 5772,
+    "syntheticSparseGrid": [
+      1024,
+      1024
+    ],
+    "syntheticSparseNonemptyCells": 2048,
+    "syntheticSparseModelCells": 2052,
+    "syntheticDenseGrid": [
+      128,
+      128
+    ],
+    "syntheticDenseModelCells": 16384,
+    "firstPreviewImages": [
+      {
+        "file": "iwork-view-filens-a.numbers.png",
+        "currentSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+        "baselineSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+        "identical": true
+      },
+      {
+        "file": "iwork-view-filens-a.pages.png",
+        "currentSha256": "ccc28b72f1e5922b106e571cfee6dec860686776de9b88c3aa5e37caef5a4a74",
+        "baselineSha256": "ccc28b72f1e5922b106e571cfee6dec860686776de9b88c3aa5e37caef5a4a74",
+        "identical": true
+      },
+      {
+        "file": "iwork-view-filens-filens-weekend.key.png",
+        "currentSha256": "c3754fc7a470290e3a6da9ed1bf0d33a16a4349762945817f714880f709dd8cb",
+        "baselineSha256": "c3754fc7a470290e3a6da9ed1bf0d33a16a4349762945817f714880f709dd8cb",
+        "identical": true
+      }
+    ],
+    "browserChecks": [
+      {
+        "sample": "a.numbers",
+        "errors": [],
+        "interactions": {
+          "archiveMatches": true,
+          "sheetsMatch": true,
+          "sheets": 6,
+          "tables": 14
+        }
+      },
+      {
+        "sample": "a.pages",
+        "errors": [],
+        "interactions": {
+          "archiveMatches": true,
+          "navigated": true,
+          "zoomed": true
+        }
+      },
+      {
+        "sample": "filens-weekend.key",
+        "errors": [],
+        "interactions": {
+          "archiveMatches": true,
+          "navigated": true,
+          "zoomed": true
+        }
+      }
+    ]
+  },
+  "validation": {
+    "iworkUnitTests": 302,
+    "packageBuild": true,
+    "demoBuild": true,
+    "bundleReport": true
+  },
+  "scope": "Sparse measurement times table-model construction from a prepared archive; it excludes ZIP/Snappy/protobuf decoding and DOM rendering. Real a.numbers full parsing measures 34.9 ms current versus 34.8 ms baseline with an interval overlapping 1. Dense controls and the other real files have no stable speed gain. The prior SheetJS comparison is unchanged."
+}

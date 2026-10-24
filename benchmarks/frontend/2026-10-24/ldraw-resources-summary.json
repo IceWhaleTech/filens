@@ -1,0 +1,54 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "6914291c5063feead48b88d31856c61df02afd09be8cb2534d542fd618c67c43",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "iterations": 7,
+  "runs": 42,
+  "method": "Complete LDraw dependency preparation and Three geometry construction. Includes three local HTTP 404 lookup probes in the original build, zero in current. Generated native UTF-8 sidecars; excludes input/module transfer, GPU/paint and peak memory. 10,000 paired bootstrap median-ratio resamples, seed 12345, only for baseline medians above 10 ms. No peer/SOTA ranking.",
+  "samples": [
+    {
+      "sample": "generated-100-triangles.ldr",
+      "bytes": 2636,
+      "currentMs": 2.799999952316284,
+      "baselineMs": 6.700000047683716,
+      "below10MsControl": true,
+      "completePositionsNormalsMaterialsWarningsMatch": true,
+      "noOwnedUrlsCreated": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-2000-triangles.ldr",
+      "bytes": 56686,
+      "currentMs": 9.300000071525574,
+      "baselineMs": 289,
+      "below10MsControl": false,
+      "completePositionsNormalsMaterialsWarningsMatch": true,
+      "noOwnedUrlsCreated": true,
+      "scopedSota": false,
+      "ratio": 31.07526857820684,
+      "ratio95PercentBootstrapInterval": [
+        30.442105268177233,
+        31.413043722482172
+      ],
+      "stableEngineeringReduction": true
+    },
+    {
+      "sample": "generated-10000-triangles.ldr",
+      "bytes": 317036,
+      "currentMs": 29.09999990463257,
+      "baselineMs": 8909.400000095367,
+      "below10MsControl": false,
+      "completePositionsNormalsMaterialsWarningsMatch": true,
+      "noOwnedUrlsCreated": true,
+      "scopedSota": false,
+      "ratio": 306.16494946025887,
+      "ratio95PercentBootstrapInterval": [
+        304.95890360995696,
+        310.4320552366834
+      ],
+      "stableEngineeringReduction": true
+    }
+  ]
+}

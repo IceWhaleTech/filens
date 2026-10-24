@@ -42,6 +42,80 @@ describe('WASM panorama processor', () => {
     processor.close();
   });
 
+  it('reuses sparse bytes across growing JPEG prefixes without losing embedded calibration', async () => {
+    const wasm = coreWasm();
+    const original = calibratedInsp();
+    const jpegLength = jpeg(800, 400).length;
+    const app = new Uint8Array(65537);
+    app.set([0xff, 0xe2, 0xff, 0xff]);
+    const source = concatBytes(
+      original.subarray(0, 2), ...new Array(80).fill(app), original.subarray(2, jpegLength),
+      new Uint8Array(8 << 20), original.subarray(jpegLength)
+    );
+    const reads: Array<{ offset: number; end: number }> = [];
+    class TracedBlob extends Blob {
+      slice(start = 0, end = this.size, type?: string) {
+        reads.push({ offset: start, end });
+        // jsdom's Blob lacks arrayBuffer(); keep real byte slices in this test.
+        return Object.assign(super.slice(start, end, type), {
+          arrayBuffer: async () => source.slice(start, end).buffer
+        });
+      }
+    }
+    const processor = createWasmPanoramaProcessor({ wasm });
+    const expected = await processor.open(original, { format: 'insp' });
+    const actual = await processor.open(new TracedBlob([source]), { format: 'insp' });
+    expect(actual).toEqual(expected);
+    const ordered = reads.toSorted((left, right) => left.offset - right.offset);
+    for (let index = 1; index < ordered.length; index++) {
+      expect(ordered[index].offset).toBeGreaterThanOrEqual(ordered[index - 1].end);
+    }
+    expect(reads.reduce((sum, range) => sum + range.end - range.offset, 0)).toBe((8 << 20) + (64 << 10));
+    processor.close();
+  });
+
+  it('reuses overlapping initial head/tail ranges of small remote panoramas', async () => {
+    const wasm = coreWasm();
+    const source = calibratedInsp();
+    const requests: string[] = [];
+    const fetchRange = (async (_input, options) => {
+      const range = (options!.headers as Record<string, string>).Range;
+      requests.push(range);
+      const [, start, end] = range.match(/^bytes=(\d+)-(\d+)$/)!;
+      return new Response(source.slice(Number(start), Number(end) + 1).buffer, {
+        status: 206, headers: { 'Content-Range': `bytes ${start}-${end}/${source.length}` }
+      });
+    }) as typeof fetch;
+    const processor = createWasmPanoramaProcessor({ wasm, fetch: fetchRange });
+    await expect(processor.open('https://example.test/original.insp', { format: 'insp' })).resolves.toMatchObject({
+      cameraModel: 'Insta360 OneRS', calibrationSource: 'embedded'
+    });
+    expect(requests).toEqual(['bytes=0-0', `bytes=0-${source.length - 1}`]);
+    processor.close();
+  });
+
+  it.each(['probe', 'shifted', 'resized', 'truncated'])('rejects a %s HTTP byte-range response', async failure => {
+    const wasm = coreWasm();
+    const source = calibratedInsp();
+    const fetchRange = (async (_input, options) => {
+      const range = (options!.headers as Record<string, string>).Range;
+      const [, first, last] = range.match(/^bytes=(\d+)-(\d+)$/)!;
+      const start = Number(first), end = Number(last);
+      const probe = range === 'bytes=0-0';
+      const shifted = failure === 'probe' && probe || failure === 'shifted' && !probe;
+      const size = source.length + (failure === 'resized' && !probe ? 1 : 0);
+      const body = source.slice(start, end + 1 - (failure === 'truncated' && !probe ? 1 : 0));
+      return new Response(body.buffer, {
+        status: 206, headers: { 'Content-Range': `bytes ${start + (shifted ? 1 : 0)}-${end}/${size}` }
+      });
+    }) as typeof fetch;
+    const processor = createWasmPanoramaProcessor({ wasm, fetch: fetchRange });
+    await expect(processor.open('https://example.test/original.insp', { format: 'insp' })).rejects.toMatchObject({
+      code: 'range_unavailable'
+    });
+    processor.close();
+  });
+
   it('computes a temporally stable minimum-cost seam in WASM', async () => {
     const wasmFile = readFileSync(resolve(process.cwd(), '../../wasm/converter-core/dist/converter-core.wasm'));
     const wasm = wasmFile.buffer.slice(wasmFile.byteOffset, wasmFile.byteOffset + wasmFile.byteLength);
@@ -353,6 +427,11 @@ describe('WASM panorama processor', () => {
     )).toEqual([{ ...front, sourceTrackId: 1 }, { ...back, sourceTrackId: 1_000_001 }]);
   });
 });
+
+function coreWasm(): ArrayBuffer {
+  const bytes = readFileSync(resolve(process.cwd(), '../../wasm/converter-core/dist/converter-core.wasm'));
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
 
 function jpeg(width: number, height: number): Uint8Array {
   return Uint8Array.from([

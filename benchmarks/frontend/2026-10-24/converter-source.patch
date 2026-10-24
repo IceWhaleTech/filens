@@ -1,0 +1,393 @@
+--- a/packages/converter-client/src/index.ts
++++ b/packages/converter-client/src/index.ts
+@@ -5,6 +5,7 @@
+   PreviewLoadContext,
+   PreviewSource
+ } from '@filens/core';
++import { base64ToBytes, isConversionSourceUrl, isDataUrl, readDataUrl, throwIfAborted, waitForConversion } from './source';
+ 
+ export * from './wasm-client';
+ 
+@@ -60,31 +61,39 @@
+ 
+   return {
+     async convert(request, context) {
++      const signal = context.signal;
++      throwIfAborted(signal);
+       const body = new FormData();
+       body.set('sourceFormat', request.sourceFormat);
+       body.set('targetFormat', request.targetFormat);
+       if (request.name) body.set('name', request.name);
+       if (request.password) body.set('password', request.password);
+       if (request.locale) body.set('locale', request.locale);
+-      body.set('file', await sourceToBlob(request.source, request), inferUploadFileName(request));
+-
+-      const response = await fetchImpl(options.endpoint, {
++      body.set('file', await sourceToBlob(request.source, request, fetchImpl, signal), inferUploadFileName(request));
++      throwIfAborted(signal);
++
++      const headers = typeof options.headers === 'function' ? options.headers(request) : options.headers;
++      throwIfAborted(signal);
++      const response = await waitForConversion(fetchImpl(options.endpoint, {
+         method: 'POST',
+         body,
+-        signal: context.signal,
++        signal,
+         credentials: options.credentials,
+-        headers: typeof options.headers === 'function' ? options.headers(request) : options.headers
+-      });
++        headers
++      }), signal);
++      throwIfAborted(signal);
+ 
+       if (!response.ok) {
+-        throw await httpConversionError(response, request);
++        throw await waitForConversion(httpConversionError(response, request), signal);
+       }
+ 
+       if ((options.responseType ?? 'json') === 'blob') {
+-        return blobResponseToConversionResult(response, request.targetFormat);
++        return waitForConversion(blobResponseToConversionResult(response, request.targetFormat), signal);
+       }
+ 
+-      return jsonResponseToConversionResult(await response.json(), request, response);
++      const payload = await waitForConversion(response.json(), signal);
++      throwIfAborted(signal);
++      return jsonResponseToConversionResult(payload, request, response);
+     }
+   };
+ }
+@@ -166,7 +175,7 @@
+   };
+ }
+ 
+-async function sourceToBlob(source: PreviewSource, request: ConversionRequest): Promise<Blob> {
++async function sourceToBlob(source: PreviewSource, request: ConversionRequest, fetchImpl: typeof fetch, signal?: AbortSignal): Promise<Blob> {
+   const inferredType = inferContentType(request.name, request.sourceFormat);
+   if (source instanceof Blob) {
+     if (source.type || inferredType === 'application/octet-stream') {
+@@ -180,12 +189,22 @@
+     if (isDataUrl(source)) {
+       return dataUrlToBlob(source, inferredType);
+     }
++    if (isConversionSourceUrl(source)) {
++      const response = await waitForConversion(fetchImpl(source, { signal }), signal);
++      throwIfAborted(signal);
++      if (!response.ok) throw new Error(`Failed to fetch conversion source: ${response.status} ${response.statusText}`.trim());
++      const blob = await waitForConversion(response.blob(), signal);
++      throwIfAborted(signal);
++      return blob.type ? blob : new Blob([blob], { type: inferredType });
++    }
+     return new Blob([source], {
+       type: inferredType === 'application/octet-stream' ? 'text/plain' : inferredType
+     });
+   }
+   if (ArrayBuffer.isView(source)) {
+     const bytes = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
++    if (bytes.buffer instanceof ArrayBuffer) return new Blob([bytes as Uint8Array<ArrayBuffer>], { type: inferredType });
++    // Blob rejects SharedArrayBuffer views; keep a snapshot for those callers.
+     const copy = new Uint8Array(bytes.byteLength);
+     copy.set(bytes);
+     return new Blob([copy.buffer as ArrayBuffer], {
+@@ -244,26 +263,10 @@
+ }
+ 
+ function dataUrlToBlob(dataUrl: string, fallbackContentType = 'application/octet-stream'): Blob {
+-  const commaIndex = dataUrl.indexOf(',');
+-  if (commaIndex < 0) {
+-    return new Blob([dataUrl]);
+-  }
+-  const meta = dataUrl.slice(0, commaIndex);
+-  const payload = dataUrl.slice(commaIndex + 1);
+-  const contentType = meta.match(/^data:([^;,]+)/i)?.[1] ?? fallbackContentType;
+-  const bytes = meta.toLowerCase().includes(';base64')
+-    ? base64ToBytes(payload)
+-    : new TextEncoder().encode(decodeURIComponent(payload));
+-  const copy = new Uint8Array(bytes.byteLength);
+-  copy.set(bytes);
+-  return new Blob([copy.buffer as ArrayBuffer], {
+-    type: contentType
++  const { bytes, contentType } = readDataUrl(dataUrl);
++  return new Blob([bytes as Uint8Array<ArrayBuffer>], {
++    type: contentType ?? fallbackContentType
+   });
+-}
+-
+-function base64ToBytes(base64: string): Uint8Array {
+-  const binary = atob(base64);
+-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+ }
+ 
+ function parseWarningsHeader(headers: Headers): string[] | undefined {
+@@ -850,7 +853,3 @@
+ function normalizeFormat(format: string): string {
+   return format.trim().replace(/^\./, '').toLowerCase();
+ }
+-
+-function isDataUrl(source: string): boolean {
+-  return source.trimStart().toLowerCase().startsWith('data:');
+-}
+--- a/packages/converter-client/src/wasm-client.ts
++++ b/packages/converter-client/src/wasm-client.ts
+@@ -7,6 +7,7 @@
+ } from '@filens/core';
+ import conversionManifest from '../../../wasm/converter-core/manifest/conversions.json';
+ import imageConversionManifest from '../../../wasm/converter-image/manifest/conversions.json';
++import { isConversionSourceUrl, isDataUrl, readDataUrl, retryableLoader, throwIfAborted, waitForConversion } from './source';
+ 
+ interface ConversionManifestEntry {
+   sourceFormat: string;
+@@ -48,6 +49,7 @@
+   args: string[];
+   files: Record<string, Uint8Array>;
+   readFiles?: string[];
++  signal?: AbortSignal;
+ }
+ 
+ export interface WasmCoreInvocationResult {
+@@ -81,20 +83,21 @@
+ }
+ 
+ export function createWasmCoreRunner(options: WasmCoreRunnerOptions) {
+-  let modulePromise: Promise<WebAssembly.Module> | undefined;
+-  const loadModule = () => {
+-    modulePromise ??= loadWasmModule(options.wasm, options.fetch);
+-    return modulePromise;
+-  };
++  const loadModule = retryableLoader(() => loadWasmModule(options.wasm, options.fetch));
+ 
+   return async (invocation: WasmCoreInvocation): Promise<WasmCoreInvocationResult> => {
++    const signal = invocation.signal;
++    throwIfAborted(signal);
+     const wasi = new InMemoryWasiHost({
+       args: invocation.args,
+       files: invocation.files
+     });
+-    const instance = await WebAssembly.instantiate(await loadModule(), {
++    const module = await waitForConversion(loadModule(), signal);
++    throwIfAborted(signal);
++    const instance = await waitForConversion(WebAssembly.instantiate(module, {
+       wasi_snapshot_preview1: wasi.imports
+-    });
++    }), signal);
++    throwIfAborted(signal);
+     wasi.setInstance(instance);
+     let exitCode = 0;
+     try {
+@@ -118,9 +121,8 @@
+ 
+ export function createWasmConverterClient(options: WasmConverterClientOptions): ConverterClient {
+   const runCore = createWasmCoreRunner(options);
+-  let imageModulePromise: Promise<WebAssembly.Module> | undefined;
+   const imageModule = options.imageWasm
+-    ? () => imageModulePromise ??= loadWasmModule(options.imageWasm!, options.fetch)
++    ? retryableLoader(() => loadWasmModule(options.imageWasm!, options.fetch))
+     : undefined;
+   const runImage = options.imageWasm
+     ? createWasmCoreRunner({ wasm: imageModule!, fetch: options.fetch })
+@@ -137,7 +139,7 @@
+       const outputPath = `/work/output.${targetFormat}`;
+       const optionsPath = '/work/options.json';
+       const resultPath = '/work/result.json';
+-      const input = await sourceToBytes(request.source, request.name, options.fetch, context.signal);
++      const input = await sourceToBytes(request.source, options.fetch, context.signal);
+       throwIfAborted(context.signal);
+       const requestOptions = JSON.stringify({
+         ...(request.password ? { password: request.password } : {}),
+@@ -171,7 +173,8 @@
+           [inputPath]: input,
+           [optionsPath]: new TextEncoder().encode(requestOptions)
+         },
+-        readFiles: [resultPath, outputPath]
++        readFiles: [resultPath, outputPath],
++        signal: context.signal
+       });
+       throwIfAborted(context.signal);
+ 
+@@ -207,8 +210,7 @@
+ }
+ 
+ function createImagePreviewRunner(loadModule: () => Promise<WebAssembly.Module>) {
+-  let runtimePromise: Promise<ImagePreviewExports | null> | undefined;
+-  const runtime = () => runtimePromise ??= (async () => {
++  const runtime = retryableLoader(async () => {
+     const module = await loadModule();
+     const names = new Set(WebAssembly.Module.exports(module).map(entry => entry.name));
+     if (!['filens_image_alloc', 'filens_image_free', 'filens_image_preview', 'memory'].every(name => names.has(name))) return null;
+@@ -216,10 +218,10 @@
+     const instance = await WebAssembly.instantiate(module, { wasi_snapshot_preview1: wasi.imports });
+     wasi.setInstance(instance);
+     return instance.exports as unknown as ImagePreviewExports;
+-  })();
++  });
+ 
+   return async (input: Uint8Array, signal?: AbortSignal): Promise<ConversionResult | null> => {
+-    const instance = await runtime();
++    const instance = await waitForConversion(runtime(), signal);
+     throwIfAborted(signal);
+     // Older image modules remain compatible through the existing WASI path.
+     if (!instance || input.length === 0) return null;
+@@ -292,9 +294,9 @@
+   return WebAssembly.compile(await response.arrayBuffer());
+ }
+ 
+-async function sourceToBytes(source: PreviewSource, name: string | undefined, fetchImpl = globalThis.fetch, signal?: AbortSignal): Promise<Uint8Array> {
++async function sourceToBytes(source: PreviewSource, fetchImpl = globalThis.fetch, signal?: AbortSignal): Promise<Uint8Array> {
+   if (isBlobLikeSource(source)) {
+-    return new Uint8Array(await source.arrayBuffer());
++    return new Uint8Array(await waitForConversion(source.arrayBuffer(), signal));
+   }
+   if (source instanceof ArrayBuffer) {
+     return new Uint8Array(source);
+@@ -304,14 +306,16 @@
+   }
+   if (typeof source === 'string') {
+     if (isDataUrl(source)) {
+-      return dataUrlToBytes(source);
+-    }
+-    if (fetchImpl && isFetchableSource(source, name)) {
+-      const response = await fetchImpl(source, { signal });
++      return readDataUrl(source).bytes;
++    }
++    if (isConversionSourceUrl(source)) {
++      if (!fetchImpl) throw new Error('A fetch implementation is required to load a conversion source URL.');
++      const response = await waitForConversion(fetchImpl(source, { signal }), signal);
++      throwIfAborted(signal);
+       if (!response.ok) {
+         throw new Error(`Failed to fetch conversion source: ${response.status} ${response.statusText}`.trim());
+       }
+-      return new Uint8Array(await response.arrayBuffer());
++      return new Uint8Array(await waitForConversion(response.arrayBuffer(), signal));
+     }
+     return new TextEncoder().encode(source);
+   }
+@@ -334,49 +338,10 @@
+   };
+ }
+ 
+-function throwIfAborted(signal: PreviewLoadContext['signal']): void {
+-  if (!signal?.aborted) {
+-    return;
+-  }
+-  if (typeof DOMException !== 'undefined') {
+-    throw new DOMException('The conversion was aborted.', 'AbortError');
+-  }
+-  const error = new Error('The conversion was aborted.');
+-  error.name = 'AbortError';
+-  throw error;
+-}
+-
+ function normalizeFormat(format: string): string {
+   return format.trim().replace(/^\./, '').toLowerCase();
+ }
+ 
+-function isDataUrl(source: string): boolean {
+-  return source.trimStart().toLowerCase().startsWith('data:');
+-}
+-
+-function isFetchableSource(source: string, name: string | undefined): boolean {
+-  if (name && source === name) {
+-    return false;
+-  }
+-  return /^(https?:|blob:|\/)/i.test(source);
+-}
+-
+-function dataUrlToBytes(dataUrl: string): Uint8Array {
+-  const commaIndex = dataUrl.indexOf(',');
+-  if (commaIndex < 0) {
+-    return new TextEncoder().encode(dataUrl);
+-  }
+-  const meta = dataUrl.slice(0, commaIndex);
+-  const payload = dataUrl.slice(commaIndex + 1);
+-  return meta.toLowerCase().includes(';base64')
+-    ? base64ToBytes(payload)
+-    : new TextEncoder().encode(decodeURIComponent(payload));
+-}
+-
+-function base64ToBytes(base64: string): Uint8Array {
+-  const binary = atob(base64);
+-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+-}
+ 
+ class WasiExit extends Error {
+   constructor(readonly code: number) {
+--- /dev/null
++++ b/packages/converter-client/src/source.ts
+@@ -0,0 +1,77 @@
++export function throwIfAborted(signal?: AbortSignal): void {
++  if (signal?.aborted) throw abortError();
++}
++
++function abortError(): Error {
++  return Object.assign(new Error('The conversion was aborted.'), { name: 'AbortError' });
++}
++
++export function waitForConversion<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
++  if (!signal) return work;
++  return new Promise<T>((resolve, reject) => {
++    const abort = () => reject(abortError());
++    // Observe late failures even if the operation was cancelled synchronously.
++    work.then(
++      value => { signal.removeEventListener('abort', abort); resolve(value); },
++      error => { signal.removeEventListener('abort', abort); reject(error); }
++    );
++    if (signal.aborted) abort();
++    else signal.addEventListener('abort', abort, { once: true });
++  });
++}
++
++export function retryableLoader<T>(load: () => Promise<T>): () => Promise<T> {
++  let pending: Promise<T> | undefined;
++  return () => {
++    if (!pending) {
++      const attempt = Promise.resolve().then(load);
++      pending = attempt;
++      void attempt.catch(() => { if (pending === attempt) pending = undefined; });
++    }
++    return pending;
++  };
++}
++
++export function isConversionSourceUrl(source: string): boolean {
++  return /^(?:https?:|blob:|\/|\.{1,2}\/)/i.test(source);
++}
++
++export function isDataUrl(source: string): boolean {
++  return source.trimStart().toLowerCase().startsWith('data:');
++}
++
++export function base64ToBytes(base64: string): Uint8Array {
++  const binary = atob(base64);
++  const bytes = new Uint8Array(binary.length);
++  for (let i = 0; i < bytes.length; i++) bytes[i] = binary.charCodeAt(i);
++  return bytes;
++}
++
++export function readDataUrl(source: string): { bytes: Uint8Array; contentType?: string } {
++  const url = source.trimStart(), comma = url.indexOf(',');
++  if (comma < 0) throw new Error('Conversion data URL is missing its payload separator.');
++  const meta = url.slice(0, comma), payload = url.slice(comma + 1);
++  const contentType = meta.match(/^data:([^;,]+)/i)?.[1];
++  if (/;base64$/i.test(meta)) return { bytes: base64ToBytes(payload), contentType };
++  // Decode percent escapes as bytes: binary payloads need not be valid UTF-8.
++  const bytes = new TextEncoder().encode(payload);
++  let written = 0;
++  for (let i = 0; i < bytes.length; i++) {
++    if (bytes[i] === 37) {
++      const high = hexDigit(bytes[i + 1]), low = hexDigit(bytes[i + 2]);
++      if (high >= 0 && low >= 0) {
++        bytes[written++] = (high << 4) | low;
++        i += 2;
++        continue;
++      }
++    }
++    bytes[written++] = bytes[i];
++  }
++  return { bytes: bytes.subarray(0, written), contentType };
++}
++
++function hexDigit(value: number): number {
++  if (value >= 48 && value <= 57) return value - 48;
++  const lower = value | 32;
++  return lower >= 97 && lower <= 102 ? lower - 87 : -1;
++}

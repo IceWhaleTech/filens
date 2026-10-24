@@ -1,4 +1,5 @@
 import { createWasmCoreRunner, type WasmModuleSource } from '@filens/converter-client';
+import { waitForPanoramaLoad } from './load-task';
 
 const MAX_ITERATIONS = 8;
 const MAX_RANGE_BYTES = 64 << 20;
@@ -173,232 +174,292 @@ export function createWasmPanoramaProcessor(options: WasmPanoramaProcessorOption
   const fetchImpl = options.fetch ?? globalThis.fetch;
   const runCore = createWasmCoreRunner({ wasm: options.wasm, fetch: fetchImpl });
   const runImage = options.imageWasm ? createWasmCoreRunner({ wasm: options.imageWasm, fetch: fetchImpl }) : undefined;
-  let reader: RangeReader | undefined;
-  let manifest: PanoramaAssetManifest | undefined;
-  let controller: AbortController | undefined;
-  let companionProcessor: PanoramaProcessor | undefined;
-  const companionTrackIds = new Map<number, number>();
-
-  const close = () => {
-    controller?.abort();
-    controller = undefined;
+  interface SourceState {
+    controller: AbortController;
+    signal: AbortSignal;
+    release(): void;
+    reader?: RangeReader;
+    manifest?: PanoramaAssetManifest;
+    companionProcessor?: PanoramaProcessor;
+    companionTrackIds: Map<number, number>;
+  }
+  const createState = (parent?: AbortSignal): SourceState => {
+    const controller = new AbortController();
+    const scope = linkSignals(controller.signal, parent);
+    return { controller, ...scope, companionTrackIds: new Map() };
+  };
+  let current = createState();
+  const dispose = (state: SourceState) => {
+    const { reader, companionProcessor } = state;
+    state.reader = undefined;
+    state.manifest = undefined;
+    state.companionProcessor = undefined;
+    state.companionTrackIds.clear();
+    state.controller.abort();
+    state.release();
     reader?.close();
-    reader = undefined;
     companionProcessor?.close();
-    companionProcessor = undefined;
-    companionTrackIds.clear();
-    manifest = undefined;
+  };
+  const close = () => {
+    const previous = current;
+    current = createState();
+    dispose(previous);
+  };
+
+  const readSample = async (state: SourceState, trackId: number, sampleIndex: number, signal: AbortSignal): Promise<PanoramaEncodedSample> => {
+    throwIfAborted(signal);
+    const companionTrackId = state.companionTrackIds.get(trackId);
+    if (companionTrackId !== undefined && state.companionProcessor) {
+      const sample = await state.companionProcessor.readSample(companionTrackId, sampleIndex, signal);
+      throwIfAborted(signal);
+      return { ...sample, trackId };
+    }
+    const { reader, manifest } = state;
+    if (!reader || !manifest) throw new PanoramaProcessorError('invalid_manifest', 'Open a panorama source before reading samples.');
+    const track = manifest.tracks.find((item) => item.id === trackId) ?? (manifest.metadataTrack?.id === trackId ? manifest.metadataTrack : undefined);
+    const sample = track?.samples[sampleIndex];
+    if (!track || !sample) throw new RangeError(`Unknown panorama sample ${trackId}:${sampleIndex}.`);
+    const data = await reader.read(sample.offset, sample.size, signal);
+    return { ...sample, trackId, timescale: track.timescale, data };
   };
 
   return {
     async open(source, openOptions) {
-      close();
-      controller = new AbortController();
-      const signal = combineSignals(controller.signal, openOptions.signal);
-      const sourceReader = await RangeReader.open(source, fetchImpl, signal);
-      throwIfAborted(signal);
-      reader = sourceReader;
-      const ranges = new Map<string, { offset: number; bytes: Uint8Array }>();
-      const initial = [
-        { offset: 0, length: Math.min(64 << 10, sourceReader.size) },
-        { offset: Math.max(0, sourceReader.size - (1 << 20)), length: Math.min(1 << 20, sourceReader.size) }
-      ];
-      await addRanges(sourceReader, ranges, initial, signal);
-      let sidecarBytes: Uint8Array | undefined;
-      if (openOptions.sidecar) {
-        const sidecar = await RangeReader.open(openOptions.sidecar, fetchImpl, signal);
-        if (sidecar.size > 8 << 20) throw new PanoramaProcessorError('resource_limit', 'Panorama sidecar exceeds 8 MiB.');
-        sidecarBytes = await sidecar.read(0, sidecar.size, signal);
-        sidecar.close();
-      }
+      const state = createState(openOptions.signal);
+      const previous = current;
+      current = state;
+      dispose(previous);
+      const signal = state.signal;
+      try {
+        throwIfAborted(signal);
+        const sourceReader = await waitForPanoramaLoad(RangeReader.open(source, fetchImpl, signal), signal, reader => reader.close());
+        throwIfAborted(signal);
+        state.reader = sourceReader;
+        let manifest: PanoramaAssetManifest;
+        const ranges = new Map<string, { offset: number; bytes: Uint8Array }>();
+        const headBytes = openOptions.format === 'insp' ? 1 << 20 : 64 << 10;
+        const tailBytes = openOptions.format === 'insp' ? 64 << 10 : 1 << 20;
+        const initial = [
+          { offset: 0, length: Math.min(headBytes, sourceReader.size) },
+          { offset: Math.max(0, sourceReader.size - tailBytes), length: Math.min(tailBytes, sourceReader.size) }
+        ];
+        await addRanges(sourceReader, ranges, initial, signal);
+        let sidecarBytes: Uint8Array | undefined;
+        if (openOptions.sidecar) {
+          const sidecar = await RangeReader.open(openOptions.sidecar, fetchImpl, signal);
+          try {
+            if (sidecar.size > 8 << 20) throw new PanoramaProcessorError('resource_limit', 'Panorama sidecar exceeds 8 MiB.');
+            sidecarBytes = await sidecar.read(0, sidecar.size, signal);
+          } finally { sidecar.close(); }
+        }
 
-      for (let iteration = 0; iteration < MAX_ITERATIONS; iteration += 1) {
-        throwIfAborted(signal);
-        const optionRanges = [...ranges.values()].map((range, index) => ({
-          offset: range.offset,
-          path: `/work/range-${index}.bin`
-        }));
-        const files: Record<string, Uint8Array> = {
-          '/work/options.json': new TextEncoder().encode(JSON.stringify({
-            logicalSize: sourceReader.size,
-            ranges: optionRanges,
-            ...(sidecarBytes ? { sidecarPath: '/work/sidecar.pb' } : {})
-          }))
-        };
-        if (sidecarBytes) files['/work/sidecar.pb'] = sidecarBytes;
-        [...ranges.values()].forEach((range, index) => { files[`/work/range-${index}.bin`] = range.bytes; });
-        const resultPath = '/work/result.json';
-        const invocation = await runCore({
-          args: ['converter-core', '--operation', 'inspect-panorama', '--source', openOptions.format, '--options', '/work/options.json', '--result', resultPath],
-          files,
-          readFiles: [resultPath]
-        });
-        throwIfAborted(signal);
-        const resultBytes = invocation.files[resultPath];
-        if (!resultBytes) throw new PanoramaProcessorError('invalid_manifest', 'Panorama inspector did not return a result.');
-        const result = JSON.parse(new TextDecoder().decode(resultBytes)) as CoreInspectResult;
-        if (result.ok && result.payload) {
-          manifest = normalizeManifest(result.payload);
-          if (openOptions.companion) {
-            companionProcessor = createWasmPanoramaProcessor(options);
-            const companionManifest = await companionProcessor.open(openOptions.companion, {
-              format: openOptions.format,
-              sidecar: openOptions.sidecar,
-              signal
-            });
-            throwIfAborted(signal);
-            const usedIds = new Set(manifest.tracks.map((track) => track.id));
-            const remappedTrackIds = new Map<number, number>();
-            const companionTracks = companionManifest.tracks.map((track) => {
-              let id = track.id;
-              while (usedIds.has(id)) id += 1_000_000;
-              usedIds.add(id);
-              companionTrackIds.set(id, track.id);
-              remappedTrackIds.set(track.id, id);
-              return { ...track, id };
-            });
-            const companionLenses = companionManifest.lenses.map((lens) => ({
-              ...lens,
-              sourceTrackId: lens.sourceTrackId === undefined ? undefined : remappedTrackIds.get(lens.sourceTrackId)
-            }));
-            const tracks = [...manifest.tracks, ...companionTracks];
-            const lenses = bindPanoramaLensTracks(mergeCompanionLenses(manifest.lenses, companionLenses), tracks);
-            const warnings = [...manifest.warnings, ...companionManifest.warnings];
-            manifest = {
-              ...manifest,
-              cameraModel: manifest.cameraModel || companionManifest.cameraModel,
-              firmware: manifest.firmware || companionManifest.firmware,
-              textureOrigin: manifest.textureOrigin || companionManifest.textureOrigin,
-              projection: manifest.projection.kind === 'unknown' ? companionManifest.projection : manifest.projection,
-              calibrationSource: manifest.calibrationSource === 'unavailable' ? companionManifest.calibrationSource : manifest.calibrationSource,
-              confidence: manifest.confidence === 'low' ? companionManifest.confidence : manifest.confidence,
-              tracks,
-              lenses,
-              warnings: lenses.length >= 2
-                ? warnings.filter((warning) => !warning.includes('matching companion file') && !warning.startsWith('INSV calibration was not found'))
-                : warnings
-            };
+        for (let iteration = 0; iteration < MAX_ITERATIONS; iteration += 1) {
+          throwIfAborted(signal);
+          const optionRanges = [...ranges.values()].map((range, index) => ({
+            offset: range.offset,
+            path: `/work/range-${index}.bin`
+          }));
+          const files: Record<string, Uint8Array> = {
+            '/work/options.json': new TextEncoder().encode(JSON.stringify({
+              logicalSize: sourceReader.size,
+              ranges: optionRanges,
+              ...(sidecarBytes ? { sidecarPath: '/work/sidecar.pb' } : {})
+            }))
+          };
+          if (sidecarBytes) files['/work/sidecar.pb'] = sidecarBytes;
+          [...ranges.values()].forEach((range, index) => { files[`/work/range-${index}.bin`] = range.bytes; });
+          const resultPath = '/work/result.json';
+          const invocation = await runCore({
+            args: ['converter-core', '--operation', 'inspect-panorama', '--source', openOptions.format, '--options', '/work/options.json', '--result', resultPath],
+            files,
+            readFiles: [resultPath],
+            signal
+          });
+          throwIfAborted(signal);
+          const resultBytes = invocation.files[resultPath];
+          if (!resultBytes) throw new PanoramaProcessorError('invalid_manifest', 'Panorama inspector did not return a result.');
+          const result = JSON.parse(new TextDecoder().decode(resultBytes)) as CoreInspectResult;
+          if (result.ok && result.payload) {
+            manifest = normalizeManifest(result.payload);
+            if (openOptions.companion) {
+              state.companionProcessor = createWasmPanoramaProcessor(options);
+              const companionManifest = await state.companionProcessor.open(openOptions.companion, {
+                format: openOptions.format,
+                sidecar: openOptions.sidecar,
+                signal
+              });
+              throwIfAborted(signal);
+              const usedIds = new Set(manifest.tracks.map((track) => track.id));
+              const remappedTrackIds = new Map<number, number>();
+              const companionTracks = companionManifest.tracks.map((track) => {
+                let id = track.id;
+                while (usedIds.has(id)) id += 1_000_000;
+                usedIds.add(id);
+                state.companionTrackIds.set(id, track.id);
+                remappedTrackIds.set(track.id, id);
+                return { ...track, id };
+              });
+              const companionLenses = companionManifest.lenses.map((lens) => ({
+                ...lens,
+                sourceTrackId: lens.sourceTrackId === undefined ? undefined : remappedTrackIds.get(lens.sourceTrackId)
+              }));
+              const tracks = [...manifest.tracks, ...companionTracks];
+              const lenses = bindPanoramaLensTracks(mergeCompanionLenses(manifest.lenses, companionLenses), tracks);
+              const warnings = [...manifest.warnings, ...companionManifest.warnings];
+              manifest = {
+                ...manifest,
+                cameraModel: manifest.cameraModel || companionManifest.cameraModel,
+                firmware: manifest.firmware || companionManifest.firmware,
+                textureOrigin: manifest.textureOrigin || companionManifest.textureOrigin,
+                projection: manifest.projection.kind === 'unknown' ? companionManifest.projection : manifest.projection,
+                calibrationSource: manifest.calibrationSource === 'unavailable' ? companionManifest.calibrationSource : manifest.calibrationSource,
+                confidence: manifest.confidence === 'low' ? companionManifest.confidence : manifest.confidence,
+                tracks,
+                lenses,
+                warnings: lenses.length >= 2
+                  ? warnings.filter((warning) => !warning.includes('matching companion file') && !warning.startsWith('INSV calibration was not found'))
+                  : warnings
+              };
+            }
+            state.manifest = manifest;
+            return manifest;
           }
-          return manifest;
+          if (result.errorCode !== 'need_ranges' || !result.requiredRanges?.length) {
+            throw mapCoreError(result.errorCode, result.errorMessage);
+          }
+          await addRanges(sourceReader, ranges, result.requiredRanges, signal);
         }
-        if (result.errorCode !== 'need_ranges' || !result.requiredRanges?.length) {
-          throw mapCoreError(result.errorCode, result.errorMessage);
-        }
-        await addRanges(sourceReader, ranges, result.requiredRanges, signal);
+        throw new PanoramaProcessorError('resource_limit', `Panorama inspection exceeded ${MAX_ITERATIONS} range iterations.`);
+      } catch (error) {
+        if (current === state) current = createState();
+        dispose(state);
+        throw error;
       }
-      throw new PanoramaProcessorError('resource_limit', `Panorama inspection exceeded ${MAX_ITERATIONS} range iterations.`);
     },
 
     async decodeImage(signal) {
-      const imageReader = reader;
-      const imageManifest = manifest;
-      const imageSignal = combineSignals(controller?.signal, signal);
-      if (!imageReader || imageManifest?.format !== 'dng') throw new PanoramaProcessorError('invalid_manifest', 'Open a DNG before developing its RAW preview.');
-      if (!runImage) throw new PanoramaProcessorError('codec_unsupported', 'Calibrated DNG preview requires converter-image.wasm (imageWasm).');
-      if (imageReader.size > 256 * 1024 * 1024) throw new PanoramaProcessorError('resource_limit', 'RAW preview input exceeds 256 MiB.');
-      const input = new Uint8Array(imageReader.size);
-      for (let offset = 0; offset < input.length; offset += MAX_RANGE_BYTES) {
-        const length = Math.min(MAX_RANGE_BYTES, input.length - offset);
-        const bytes = await imageReader.read(offset, length, imageSignal);
+      const state = current;
+      const scope = linkSignals(state.signal, signal);
+      const imageSignal = scope.signal;
+      try {
         throwIfAborted(imageSignal);
-        if (bytes.length !== length) throw new PanoramaProcessorError('range_unavailable', 'DNG source returned an incomplete byte range.');
-        input.set(bytes, offset);
-      }
-      const resultPath = '/work/result.json';
-      const outputPath = '/work/preview.jpg';
-      const result = await runImage({
-        args: ['converter-image', '--source', 'dng', '--target', 'jpg', '--input', '/work/input.dng', '--output', outputPath, '--options', '/work/options.json', '--result', resultPath],
-        files: { '/work/input.dng': input, '/work/options.json': new TextEncoder().encode(JSON.stringify({ preserveSensorGeometry: true })) },
-        readFiles: [resultPath, outputPath]
-      });
-      throwIfAborted(imageSignal);
-      const contract = JSON.parse(new TextDecoder().decode(result.files[resultPath] ?? new Uint8Array())) as { ok: boolean; errorMessage?: string };
-      if (!contract.ok || result.exitCode !== 0 || !result.files[outputPath]?.length) {
-        throw new PanoramaProcessorError('codec_unsupported', contract.errorMessage || 'WASM could not develop the DNG sensor preview.');
-      }
-      return result.files[outputPath];
+        const imageReader = state.reader;
+        const imageManifest = state.manifest;
+        if (!imageReader || imageManifest?.format !== 'dng') throw new PanoramaProcessorError('invalid_manifest', 'Open a DNG before developing its RAW preview.');
+        if (!runImage) throw new PanoramaProcessorError('codec_unsupported', 'Calibrated DNG preview requires converter-image.wasm (imageWasm).');
+        if (imageReader.size > 256 * 1024 * 1024) throw new PanoramaProcessorError('resource_limit', 'RAW preview input exceeds 256 MiB.');
+        const input = new Uint8Array(imageReader.size);
+        for (let offset = 0; offset < input.length; offset += MAX_RANGE_BYTES) {
+          const length = Math.min(MAX_RANGE_BYTES, input.length - offset);
+          const bytes = await imageReader.read(offset, length, imageSignal);
+          throwIfAborted(imageSignal);
+          if (bytes.length !== length) throw new PanoramaProcessorError('range_unavailable', 'DNG source returned an incomplete byte range.');
+          input.set(bytes, offset);
+        }
+        const resultPath = '/work/result.json';
+        const outputPath = '/work/preview.jpg';
+        const result = await runImage({
+          args: ['converter-image', '--source', 'dng', '--target', 'jpg', '--input', '/work/input.dng', '--output', outputPath, '--options', '/work/options.json', '--result', resultPath],
+          files: { '/work/input.dng': input, '/work/options.json': new TextEncoder().encode(JSON.stringify({ preserveSensorGeometry: true })) },
+          readFiles: [resultPath, outputPath],
+          signal: imageSignal
+        });
+        throwIfAborted(imageSignal);
+        const contract = JSON.parse(new TextDecoder().decode(result.files[resultPath] ?? new Uint8Array())) as { ok: boolean; errorMessage?: string };
+        if (!contract.ok || result.exitCode !== 0 || !result.files[outputPath]?.length) {
+          throw new PanoramaProcessorError('codec_unsupported', contract.errorMessage || 'WASM could not develop the DNG sensor preview.');
+        }
+        return result.files[outputPath];
+      } finally { scope.release(); }
     },
 
     async readSample(trackId, sampleIndex, signal) {
-      const companionTrackId = companionTrackIds.get(trackId);
-      if (companionTrackId !== undefined && companionProcessor) {
-        const sample = await companionProcessor.readSample(companionTrackId, sampleIndex, signal);
-        return { ...sample, trackId };
-      }
-      if (!reader || !manifest) throw new PanoramaProcessorError('invalid_manifest', 'Open a panorama source before reading samples.');
-      const track = manifest.tracks.find((item) => item.id === trackId) ?? (manifest.metadataTrack?.id === trackId ? manifest.metadataTrack : undefined);
-      const sample = track?.samples[sampleIndex];
-      if (!track || !sample) throw new RangeError(`Unknown panorama sample ${trackId}:${sampleIndex}.`);
-      const data = await reader.read(sample.offset, sample.size, combineSignals(controller?.signal, signal));
-      return { ...sample, trackId, timescale: track.timescale, data };
+      const state = current;
+      const scope = linkSignals(state.signal, signal);
+      try { return await readSample(state, trackId, sampleIndex, scope.signal); }
+      finally { scope.release(); }
     },
 
     async readImuWindow(start, count, signal) {
-      if (!manifest?.metadataTrack) return [];
-      if (!Number.isSafeInteger(start) || !Number.isSafeInteger(count) || start < 0 || count < 0 || count > MAX_METADATA_SAMPLES) {
-        throw new PanoramaProcessorError('resource_limit', `Panorama metadata windows are limited to ${MAX_METADATA_SAMPLES} samples.`);
-      }
-      const track = manifest.metadataTrack;
-      const selected = track.samples.slice(start, start + count);
-      const total = selected.reduce((sum, sample) => sum + sample.size, 0);
-      if (total > MAX_METADATA_BYTES) throw new PanoramaProcessorError('resource_limit', 'Panorama metadata window exceeds 8 MiB.');
-      const files: Record<string, Uint8Array> = {};
-      const samples = [];
-      for (let index = 0; index < selected.length; index += 1) {
-        const encoded = await this.readSample(track.id, start + index, signal);
-        const path = `/work/metadata-${index}.bin`;
-        files[path] = encoded.data;
-        samples.push({ path, pts: encoded.pts, timescale: encoded.timescale });
-      }
-      const resultPath = '/work/result.json';
-      throwIfAborted(combineSignals(controller?.signal, signal));
-      files['/work/options.json'] = new TextEncoder().encode(JSON.stringify({ vendor: manifest.vendor, samples }));
-      const invocation = await runCore({
-        args: ['converter-core', '--operation', 'decode-panorama-metadata', '--options', '/work/options.json', '--result', resultPath],
-        files,
-        readFiles: [resultPath]
-      });
-      const bytes = invocation.files[resultPath];
-      if (!bytes) throw new PanoramaProcessorError('invalid_manifest', 'Panorama metadata decoder did not return a result.');
-      const result = JSON.parse(new TextDecoder().decode(bytes)) as { ok: boolean; payload?: { samples?: PanoramaImuSample[] }; errorCode?: string; errorMessage?: string };
-      if (!result.ok || !Array.isArray(result.payload?.samples)) throw mapCoreError(result.errorCode, result.errorMessage);
-      return result.payload.samples;
+      const state = current;
+      const scope = linkSignals(state.signal, signal);
+      try {
+        throwIfAborted(scope.signal);
+        const manifest = state.manifest;
+        if (!manifest?.metadataTrack) return [];
+        if (!Number.isSafeInteger(start) || !Number.isSafeInteger(count) || start < 0 || count < 0 || count > MAX_METADATA_SAMPLES) {
+          throw new PanoramaProcessorError('resource_limit', `Panorama metadata windows are limited to ${MAX_METADATA_SAMPLES} samples.`);
+        }
+        const track = manifest.metadataTrack;
+        const selected = track.samples.slice(start, start + count);
+        const total = selected.reduce((sum, sample) => sum + sample.size, 0);
+        if (total > MAX_METADATA_BYTES) throw new PanoramaProcessorError('resource_limit', 'Panorama metadata window exceeds 8 MiB.');
+        const files: Record<string, Uint8Array> = {};
+        const samples = [];
+        for (let index = 0; index < selected.length; index += 1) {
+          const encoded = await readSample(state, track.id, start + index, scope.signal);
+          const path = `/work/metadata-${index}.bin`;
+          files[path] = encoded.data;
+          samples.push({ path, pts: encoded.pts, timescale: encoded.timescale });
+        }
+        const resultPath = '/work/result.json';
+        throwIfAborted(scope.signal);
+        files['/work/options.json'] = new TextEncoder().encode(JSON.stringify({ vendor: manifest.vendor, samples }));
+        const invocation = await runCore({
+          args: ['converter-core', '--operation', 'decode-panorama-metadata', '--options', '/work/options.json', '--result', resultPath],
+          files,
+          readFiles: [resultPath],
+          signal: scope.signal
+        });
+        throwIfAborted(scope.signal);
+        const bytes = invocation.files[resultPath];
+        if (!bytes) throw new PanoramaProcessorError('invalid_manifest', 'Panorama metadata decoder did not return a result.');
+        const result = JSON.parse(new TextDecoder().decode(bytes)) as { ok: boolean; payload?: { samples?: PanoramaImuSample[] }; errorCode?: string; errorMessage?: string };
+        if (!result.ok || !Array.isArray(result.payload?.samples)) throw mapCoreError(result.errorCode, result.errorMessage);
+        return result.payload.samples;
+      } finally { scope.release(); }
     },
 
     seek(seconds) {
+      const manifest = current.manifest;
       if (!manifest) return {};
       return Object.fromEntries(manifest.tracks.map((track) => [track.id, findKeySample(track, seconds)]));
     },
 
     async computeSeam(request, signal) {
-      throwIfAborted(combineSignals(controller?.signal, signal));
-      const resultPath = '/work/result.json';
-      const invocation = await runCore({
-        args: ['converter-core', '--operation', 'panorama-seam', '--options', '/work/options.json', '--result', resultPath],
-        files: {
-          '/work/options.json': new TextEncoder().encode(JSON.stringify({
-            width: request.width,
-            height: request.height,
-            costs: Array.from(request.costs),
-            previous: request.previous ? Array.from(request.previous) : [],
-            temporalWeight: request.temporalWeight ?? 2,
-            maxStep: request.maxStep ?? 1
-          }))
-        },
-        readFiles: [resultPath]
-      });
-      const bytes = invocation.files[resultPath];
-      if (!bytes) throw new PanoramaProcessorError('invalid_manifest', 'Panorama seam solver did not return a result.');
-      const result = JSON.parse(new TextDecoder().decode(bytes)) as CoreInspectResult;
-      if (!result.ok || !result.payload) throw mapCoreError(result.errorCode, result.errorMessage);
-      const payload = result.payload as unknown as PanoramaSeamResult;
-      if (!Array.isArray(payload.seam) || !Number.isFinite(payload.cost)) throw new PanoramaProcessorError('invalid_manifest', 'Panorama seam solver returned an invalid path.');
-      return payload;
+      const scope = linkSignals(current.signal, signal);
+      try {
+        throwIfAborted(scope.signal);
+        const resultPath = '/work/result.json';
+        const invocation = await runCore({
+          args: ['converter-core', '--operation', 'panorama-seam', '--options', '/work/options.json', '--result', resultPath],
+          files: {
+            '/work/options.json': new TextEncoder().encode(JSON.stringify({
+              width: request.width,
+              height: request.height,
+              costs: Array.from(request.costs),
+              previous: request.previous ? Array.from(request.previous) : [],
+              temporalWeight: request.temporalWeight ?? 2,
+              maxStep: request.maxStep ?? 1
+            }))
+          },
+          readFiles: [resultPath],
+          signal: scope.signal
+        });
+        throwIfAborted(scope.signal);
+        const bytes = invocation.files[resultPath];
+        if (!bytes) throw new PanoramaProcessorError('invalid_manifest', 'Panorama seam solver did not return a result.');
+        const result = JSON.parse(new TextDecoder().decode(bytes)) as CoreInspectResult;
+        if (!result.ok || !result.payload) throw mapCoreError(result.errorCode, result.errorMessage);
+        const payload = result.payload as unknown as PanoramaSeamResult;
+        if (!Array.isArray(payload.seam) || !Number.isFinite(payload.cost)) throw new PanoramaProcessorError('invalid_manifest', 'Panorama seam solver returned an invalid path.');
+        return payload;
+      } finally { scope.release(); }
     },
 
     close,
-    abort: () => controller?.abort(),
-    getManifest: () => manifest
+    abort: () => current.controller.abort(),
+    getManifest: () => current.manifest
   };
 }
 
@@ -505,13 +566,30 @@ function hexBytes(value: string): Uint8Array {
 
 async function addRanges(reader: RangeReader, cache: Map<string, { offset: number; bytes: Uint8Array }>, requested: RequiredRange[], signal?: AbortSignal): Promise<void> {
   for (const range of requested) {
-    if (!Number.isSafeInteger(range.offset) || !Number.isSafeInteger(range.length) || range.offset < 0 || range.length <= 0 || range.length > MAX_RANGE_BYTES || range.offset + range.length > reader.size) {
+    const end = range.offset + range.length;
+    if (!Number.isSafeInteger(range.offset) || !Number.isSafeInteger(range.length) || !Number.isSafeInteger(end) || range.offset < 0 || range.length <= 0 || range.length > MAX_RANGE_BYTES || end > reader.size) {
       throw new PanoramaProcessorError('resource_limit', 'Panorama inspector requested an invalid source range.');
     }
-    const key = `${range.offset}:${range.length}`;
-    if (!cache.has(key)) cache.set(key, { offset: range.offset, bytes: await reader.read(range.offset, range.length, signal) });
-    const total = [...cache.values()].reduce((sum, item) => sum + item.bytes.byteLength, 0);
-    if (total > MAX_TOTAL_BYTES) throw new PanoramaProcessorError('resource_limit', 'Panorama inspection exceeded its 128 MiB range budget.');
+    const cached = [...cache.values()].sort((left, right) => left.offset - right.offset);
+    const missing: RequiredRange[] = [];
+    let cursor = range.offset;
+    for (const item of cached) {
+      if (item.offset > cursor) missing.push({ offset: cursor, length: Math.min(item.offset, end) - cursor });
+      cursor = Math.max(cursor, item.offset + item.bytes.length);
+      if (cursor >= end) break;
+    }
+    if (cursor < end) missing.push({ offset: cursor, length: end - cursor });
+    // The WASM sparse reader joins adjacent segments. Keep only unique bytes,
+    // including when JPEG prefixes grow or the initial head/tail overlap.
+    const total = cached.reduce((sum, item) => sum + item.bytes.length, 0)
+      + missing.reduce((sum, item) => sum + item.length, 0);
+    if (total > MAX_TOTAL_BYTES) {
+      throw new PanoramaProcessorError('resource_limit', 'Panorama inspection exceeded its 128 MiB range budget.');
+    }
+    for (const part of missing) {
+      const bytes = await reader.read(part.offset, part.length, signal);
+      cache.set(`${part.offset}:${part.length}`, { offset: part.offset, bytes });
+    }
   }
 }
 
@@ -519,6 +597,7 @@ class RangeReader {
   private constructor(readonly size: number, private readonly readRange: (offset: number, length: number, signal?: AbortSignal) => Promise<Uint8Array>, private readonly cleanup?: () => void) {}
 
   static async open(source: PanoramaInput, fetchImpl: typeof fetch | undefined, signal?: AbortSignal): Promise<RangeReader> {
+    throwIfAborted(signal);
     if (source instanceof Blob) return new RangeReader(source.size, async (offset, length) => new Uint8Array(await source.slice(offset, offset + length).arrayBuffer()));
     if (source instanceof ArrayBuffer || ArrayBuffer.isView(source)) {
       const bytes = source instanceof ArrayBuffer ? new Uint8Array(source) : new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
@@ -526,30 +605,49 @@ class RangeReader {
     }
     if (!fetchImpl) throw new PanoramaProcessorError('range_unavailable', 'A fetch implementation is required for remote panorama sources.');
     const url = String(source);
-    const probe = await fetchImpl(url, { headers: { Range: 'bytes=0-0' }, signal });
+    const probe = await waitForSource(fetchImpl(url, { headers: { Range: 'bytes=0-0' }, signal }), signal, cancelResponse);
+    throwIfAborted(signal);
     const contentRange = probe.headers.get('content-range');
-    if (probe.status === 206 && contentRange) {
-      const size = Number(contentRange.match(/\/(\d+)$/)?.[1]);
-      await probe.body?.cancel();
+    if (probe.status === 206) {
+      const matched = contentRange?.match(/^bytes 0-0\/(\d+)$/i);
+      const size = Number(matched?.[1]);
+      cancelResponse(probe);
       if (!Number.isSafeInteger(size) || size <= 0) throw new PanoramaProcessorError('range_unavailable', 'Remote panorama size is unavailable.');
       return new RangeReader(size, async (offset, length, readSignal) => {
-        const response = await fetchImpl(url, { headers: { Range: `bytes=${offset}-${offset + length - 1}` }, signal: readSignal });
-        if (response.status !== 206) throw new PanoramaProcessorError('range_unavailable', 'Remote server stopped honoring byte ranges.');
-        return new Uint8Array(await response.arrayBuffer());
+        const response = await waitForSource(fetchImpl(url, { headers: { Range: `bytes=${offset}-${offset + length - 1}` }, signal: readSignal }), readSignal, cancelResponse);
+        throwIfAborted(readSignal);
+        if (response.status !== 206 || response.headers.get('content-range')?.toLowerCase() !== `bytes ${offset}-${offset + length - 1}/${size}`) {
+          cancelResponse(response);
+          throw new PanoramaProcessorError('range_unavailable', 'Remote server returned an inconsistent panorama byte range.');
+        }
+        return new Uint8Array(await waitForSource(response.arrayBuffer(), readSignal));
       });
     }
     const size = Number(probe.headers.get('content-length'));
     if (!probe.ok || !Number.isSafeInteger(size) || size <= 0 || size > MAX_RANGE_BYTES) {
-      await probe.body?.cancel();
+      cancelResponse(probe);
       throw new PanoramaProcessorError('range_unavailable', 'Remote server must support HTTP byte ranges for large panorama files.');
     }
-    const bytes = new Uint8Array(await probe.arrayBuffer());
+    const bytes = new Uint8Array(await waitForSource(probe.arrayBuffer(), signal));
+    throwIfAborted(signal);
+    // Browsers decode HTTP content encodings but retain the encoded length.
+    const encoded = probe.headers.get('content-encoding');
+    if (!bytes.length || bytes.length > MAX_RANGE_BYTES || ((!encoded || encoded.toLowerCase() === 'identity') && bytes.length !== size)) {
+      throw new PanoramaProcessorError('range_unavailable', 'Remote panorama body does not match its declared length or size limit.');
+    }
     return new RangeReader(bytes.byteLength, async (offset, length) => bytes.slice(offset, offset + length));
   }
 
-  read(offset: number, length: number, signal?: AbortSignal) {
+  async read(offset: number, length: number, signal?: AbortSignal): Promise<Uint8Array> {
     throwIfAborted(signal);
-    return this.readRange(offset, length, signal);
+    if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || length > this.size - offset) {
+      throw new PanoramaProcessorError('range_unavailable', 'Panorama source range is out of bounds.');
+    }
+    if (!length) return new Uint8Array();
+    const bytes = await waitForSource(this.readRange(offset, length, signal), signal);
+    throwIfAborted(signal);
+    if (bytes.length !== length) throw new PanoramaProcessorError('range_unavailable', 'Panorama source returned an incomplete byte range.');
+    return bytes;
   }
 
   close() { this.cleanup?.(); }
@@ -566,20 +664,29 @@ function mapCoreError(code?: string, message?: string): PanoramaProcessorError {
   return new PanoramaProcessorError(mapped[code ?? ''] ?? 'calibration_missing', message || code || 'Panorama inspection failed.');
 }
 
-function combineSignals(...signals: Array<AbortSignal | undefined>): AbortSignal | undefined {
-  const active = signals.filter(Boolean) as AbortSignal[];
-  if (!active.length) return undefined;
-  if (active.length === 1) return active[0];
-  if (typeof AbortSignal.any === 'function') return AbortSignal.any(active);
-  const combined = new AbortController();
+function linkSignals(owner: AbortSignal, ...signals: Array<AbortSignal | undefined>): { signal: AbortSignal; release(): void } {
+  const active = [...new Set([owner, ...signals.filter((signal): signal is AbortSignal => !!signal)])];
   const cleanup: Array<() => void> = [];
+  const release = () => { cleanup.splice(0).forEach(remove => remove()); };
+  if (active.length === 1) return { signal: active[0], release };
+  if (typeof AbortSignal.any === 'function') return { signal: AbortSignal.any(active), release };
+  const combined = new AbortController();
   for (const signal of active) {
-    const abort = () => { combined.abort(signal.reason); cleanup.forEach((remove) => remove()); };
+    const abort = () => { combined.abort(signal.reason); release(); };
     if (signal.aborted) { abort(); break; }
     signal.addEventListener('abort', abort, { once: true });
     cleanup.push(() => signal.removeEventListener('abort', abort));
   }
-  return combined.signal;
+  return { signal: combined.signal, release };
+}
+
+function waitForSource<T>(work: Promise<T>, signal?: AbortSignal, release?: (value: T) => void): Promise<T> {
+  return signal ? waitForPanoramaLoad(work, signal, release) : work;
+}
+
+function cancelResponse(response: Response): void {
+  // Releasing an obsolete response must not wait for a non-cooperative stream.
+  try { void response.body?.cancel().catch(() => {}); } catch { /* The body may already be locked. */ }
 }
 
 function throwIfAborted(signal?: AbortSignal): void {

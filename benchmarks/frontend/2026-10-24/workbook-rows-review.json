@@ -1,0 +1,217 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "evidenceSha256": "f6e3d991be2fd0ff7f6d2c6f9477da5cebfcedf2f7190b09ffcff6f60bc587ad",
+  "summarySha256": "13259bb861aed19c5db64a4a03f5579137ebe3110750873271c416c80544a4b1",
+  "contentReviewSha256": "deed8ec5e06ca9a959aff0850a86473cd70d4fc208ef80a4f2c27d76b034056a",
+  "patchSha256": "3b9bd2de8c2d87d65e426c7f9abb92c48c2ac20ead11de78a0bfd0ddb754ccbd",
+  "sourceHashes": {
+    "packages/xlsx/src/parser.ts": "3d387ef7d6b71e461030f5132d06cd87719a523128c6595546ce383652d40ec2",
+    "packages/xlsx/src/preview-driver.ts": "f7d3c1f2c59076ac49e47c83c0587ba246ac07fb33b70ce32c782eac1317446b",
+    "packages/xlsx/test/preview-driver.spec.ts": "e0d398bef32720496e50327cb70050222fcacff424f8192a5c3565e6db75dd23",
+    "packages/xlsx/test/fixtures/rows.mjs": "b76868980e141fdc1b2945ffff587b126c0dc47af496f6f986fbd8217344ccc5",
+    "packages/xlsx/test/fixtures/workbook.mjs": "714dc56fae3a5ca2a5fe8314a1fa8273c08549114b69fb0a054d5f8a51cacd1d",
+    "apps/demo/e2e/workbook-lifecycle.e2e.ts": "8435fc41754361492bc85cae272cdf349f39177b7fe842690c7b920eb5d0d7d8",
+    "scripts/benchmark-workbook-rows.mjs": "3718866f6ad31c9fa324f83124db766a4bef56c01b6f4570b3edb51f4476692e",
+    "scripts/summarize-workbook-rows-benchmark.mjs": "84bbf399560d604cc56c54327a0423c21d6215b2778c0ff1c01b268cc01dd125",
+    "scripts/review-workbook-rows.mjs": "8057215fa877329d4b2e27f047e9d81511e76b8823456250fdd9123fac3cd957"
+  },
+  "currentArtifact": {
+    "engine": "current",
+    "path": "packages/xlsx/dist/index.js",
+    "sha256": "c4cb84f4578b1d9d82afba08298b664ef8731f43002dee0d833e39c2dd4bf1ea"
+  },
+  "coreArtifact": {
+    "path": "packages/core/dist/index.js",
+    "sha256": "087860f415a1b58c0a14112d86f5c9ddad57039e0eb3fee5d2533de5f4e273c9"
+  },
+  "baseline": {
+    "engine": "baseline",
+    "path": "tmp/continued-review/workbook-rows-baseline/dist/index.js",
+    "sha256": "6316049b2bb920df977f2af5b656a21d9b6972c9a192f153bcd73f1b060efaa2",
+    "sourceHashes": {
+      "parser.ts": "d6fcf46b9e73c31fe089fdb24594ac4223a7c05c0e076b77da726cc5cc751d04",
+      "preview-driver.ts": "65afbdd89a4824d82deb64a8f890bfe04821797706c53d75dfea08cbc4d118d6"
+    },
+    "reproduction": "Reverse workbook-rows.patch, build @filens/xlsx, copy dist to tmp/continued-review/workbook-rows-baseline/dist. Restore the patch and rebuild. Run node scripts/benchmark-workbook-rows.mjs --iterations 7 --output <directory>, then node scripts/summarize-workbook-rows-benchmark.mjs --input <directory>/results.json. This patch is relative to the already-optimized CSV parser from the previous round, not repository HEAD."
+  },
+  "samples": [
+    {
+      "name": "dense-20000-rows",
+      "rows": 20000,
+      "sparse": false
+    },
+    {
+      "name": "dense-200000-rows",
+      "rows": 200000,
+      "sparse": false
+    },
+    {
+      "name": "sparse-200000-rows",
+      "rows": 200000,
+      "sparse": true
+    }
+  ],
+  "comparisons": [
+    {
+      "sample": "dense-20000-rows",
+      "renderedRows": 200,
+      "tableHtmlMatches": true,
+      "comparisons": [
+        {
+          "metric": "initialRowsMs",
+          "currentMs": 0.8999999761581421,
+          "baselineMs": 1.5,
+          "ratio": 1.6666667108182565,
+          "ratio95PercentBootstrapInterval": [
+            1.5555554966867768,
+            2.2857139937731885
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "appendRowsMs",
+          "currentMs": 0.5,
+          "baselineMs": 1.7999999523162842,
+          "ratio": 3.5999999046325684,
+          "ratio95PercentBootstrapInterval": [
+            3.1666665010982156,
+            4.500000149011621
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "dense-200000-rows",
+      "renderedRows": 200,
+      "tableHtmlMatches": true,
+      "comparisons": [
+        {
+          "metric": "initialRowsMs",
+          "currentMs": 2,
+          "baselineMs": 12,
+          "ratio": 6,
+          "ratio95PercentBootstrapInterval": [
+            5.714285973788941,
+            6
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "appendRowsMs",
+          "currentMs": 1.1999999284744263,
+          "baselineMs": 9.100000023841858,
+          "ratio": 7.583333805203466,
+          "ratio95PercentBootstrapInterval": [
+            6.428570990659782,
+            8.81818167040171
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "sparse-200000-rows",
+      "renderedRows": 200,
+      "tableHtmlMatches": true,
+      "comparisons": [
+        {
+          "metric": "initialRowsMs",
+          "currentMs": 2.100000023841858,
+          "baselineMs": 12.299999952316284,
+          "ratio": 5.857142767938628,
+          "ratio95PercentBootstrapInterval": [
+            5.31818172458775,
+            6.649999976158142
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "appendRowsMs",
+          "currentMs": 1.7000000476837158,
+          "baselineMs": 9.5,
+          "ratio": 5.588235137371873,
+          "ratio95PercentBootstrapInterval": [
+            5.222222347318394,
+            5.705882621058967
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    }
+  ],
+  "contentReview": {
+    "timedTableHtmlMatches": true,
+    "pairedTablesPerRepetition": 3,
+    "repetitionsPerEngine": 7,
+    "completeModelsMatch": 8,
+    "corpusTableCount": 10,
+    "generatedTableCases": 64,
+    "sourceRepresentations": [
+      "bytes",
+      "arrayBuffer",
+      "offsetView",
+      "blob",
+      "dataUrl",
+      "base64Url"
+    ],
+    "reproduction": "Run node scripts/review-workbook-rows.mjs with the reconstructed baseline. Requires the existing tmp/performance-other/samples.json corpus, prepared by scripts/prepare-other-format-benchmark.mjs. It compares complete CSV/XLSX models, first 200-row HTML, 64 generated unordered/duplicate/edited tables, and six source representations without timing."
+  },
+  "validation": {
+    "xlsxUnitTestsPassed": 23,
+    "iworkUnitTestsPassed": 302,
+    "vueUnitTestsPassed": 44,
+    "browserTestsPassed": 3,
+    "oldSourceRegressionsReproduced": 5,
+    "builds": [
+      "@filens/xlsx",
+      "demo",
+      "bundle report"
+    ],
+    "coverage": [
+      "CSV and XLSX delayed reads after replacement, abort and destruction",
+      "superseded source failures do not override new content/errors",
+      "already-aborted input does not start a read",
+      "sparse/unsorted/duplicate rows and additions between batches",
+      "invalid sheet indices ignored",
+      "formula values and final rows in two-sheet browser workbook",
+      "scroll position resets on sheet change",
+      "existing multiline CSV/final empty record browser regression"
+    ],
+    "testRepair": "The old large-sheet unit test mocked scrollTop as read-only. It is now writable, matching a real element, so session cleanup can reset scrolling.",
+    "vueCommand": "../../node_modules/.bin/vitest run from packages/vue, avoiding fixture regeneration",
+    "localMarkdownLinksChecked": 373,
+    "evidenceAndRuntimeHashesChecked": true,
+    "reverseProductionPatchCheck": true,
+    "syntaxAndWhitespaceChecksPassed": true
+  },
+  "behaviorChanges": [
+    "Batch row lookup stores only requested rows, preserving last-duplicate-wins behavior, unordered sparse rows and caller edits.",
+    "Shared createSheetTable/appendSheetRows helpers benefit XLSX/CSV and Numbers consumers without changing their DOM.",
+    "Session generations and internal abort signals discard stale success/failure results, clear old models/DOM and detach listeners on destruction.",
+    "CSV/XLSX parsers check cancellation before reads, after asynchronous reads/decompression and before subsequent parsing.",
+    "Switching worksheets resets horizontal/vertical scroll offsets."
+  ],
+  "limitations": [
+    "Prepared-model DOM construction only: no input loading/parsing, layout, paint or end-to-end first-preview speedup claim.",
+    "Generated fixtures contain two columns and 20,000 or 200,000 stored rows. The sparse fixture occupies 600,000 row positions.",
+    "Row batches still scan the complete row array; previously rendered rows remain mounted. This is not windowed spreadsheet virtualization.",
+    "Append operations and the 20,000-row control are at or below 10 ms and receive no performance claim, even though raw ratios are retained.",
+    "Cancellation cannot interrupt an already executing synchronous XML/CSV/ZIP operation; guards stop later work at asynchronous boundaries.",
+    "Engineering A/B only, no peer/SOTA ranking or memory claim. External totals remain 2,604 measurements / 1,064 successful filens runs."
+  ],
+  "conclusion": "For the generated 200,000-row model, first-100-row DOM construction falls from 12.0 to 2.0 ms (6.00x), and for the sparse model from 12.3 to 2.1 ms (5.86x). All table signatures match; eight complete file models and 64 additional generated tables also match. No SOTA label."
+}

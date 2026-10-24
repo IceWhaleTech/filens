@@ -1,0 +1,192 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "f47210077c74699b8f59c10fdc5cd1f7f6f66f276ef0d64710651118db4fa616",
+  "iterations": 7,
+  "runs": 42,
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "method": "10,000 paired bootstrap resamples of median ratios, seed 12345. Ready time is load settlement plus two display frames, not first visible content. Canvas pixels count backing-store dimensions and are not a process-memory measurement. Engineering-only comparison of scheduling around the same PDF.js engine.",
+  "samples": [
+    {
+      "sample": "cosmic-atlas.pdf",
+      "firstPagePixelsMatch": true,
+      "completePageReviewMatches": true,
+      "reviewedPages": 3,
+      "comparisons": [
+        {
+          "metric": "readyMs",
+          "current": 116.69999992847443,
+          "baseline": 134,
+          "ratio": 1.148243359744034,
+          "ratio95PercentBootstrapInterval": [
+            1.1195928755444713,
+            1.176470588481556
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "firstPaintMs",
+          "current": 116.69999992847443,
+          "baseline": 117.19999992847443,
+          "ratio": 1.0042844901482986,
+          "ratio95PercentBootstrapInterval": [
+            0.9770992362321483,
+            1.0298769758770816
+          ],
+          "stableEngineeringReduction": false,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvasPixels",
+          "current": 720000,
+          "baseline": 1080000,
+          "ratio": 1.5,
+          "ratio95PercentBootstrapInterval": [
+            1.5,
+            1.5
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvases",
+          "current": 2,
+          "baseline": 3,
+          "ratio": 1.5,
+          "ratio95PercentBootstrapInterval": [
+            1.5,
+            1.5
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "generated-100-pages.pdf",
+      "firstPagePixelsMatch": true,
+      "completePageReviewMatches": true,
+      "reviewedPages": 100,
+      "comparisons": [
+        {
+          "metric": "readyMs",
+          "current": 104.19999992847443,
+          "baseline": 1750.2000000476837,
+          "ratio": 16.796545117553418,
+          "ratio95PercentBootstrapInterval": [
+            16.463781757374377,
+            17.191176470588236
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "firstPaintMs",
+          "current": 120.59999990463257,
+          "baseline": 116.70000004768372,
+          "ratio": 0.9676616927028783,
+          "ratio95PercentBootstrapInterval": [
+            0.9433805156521594,
+            1.0134907253247911
+          ],
+          "stableEngineeringReduction": false,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvasPixels",
+          "current": 540000,
+          "baseline": 27000000,
+          "ratio": 50,
+          "ratio95PercentBootstrapInterval": [
+            50,
+            50
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvases",
+          "current": 2,
+          "baseline": 100,
+          "ratio": 50,
+          "ratio95PercentBootstrapInterval": [
+            50,
+            50
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "generated-100-mixed-pages.pdf",
+      "firstPagePixelsMatch": true,
+      "completePageReviewMatches": true,
+      "reviewedPages": 100,
+      "comparisons": [
+        {
+          "metric": "readyMs",
+          "current": 100.70000004768372,
+          "baseline": 1753.6999999284744,
+          "ratio": 17.41509433066592,
+          "ratio95PercentBootstrapInterval": [
+            17.00874634038487,
+            17.673057513166494
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "firstPaintMs",
+          "current": 117.30000007152557,
+          "baseline": 120.29999995231628,
+          "ratio": 1.0255754465384606,
+          "ratio95PercentBootstrapInterval": [
+            0.9765690380559306,
+            1.0485762140156987
+          ],
+          "stableEngineeringReduction": false,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvasPixels",
+          "current": 750000,
+          "baseline": 32148000,
+          "ratio": 42.864,
+          "ratio95PercentBootstrapInterval": [
+            42.864,
+            42.864
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvases",
+          "current": 2,
+          "baseline": 100,
+          "ratio": 50,
+          "ratio95PercentBootstrapInterval": [
+            50,
+            50
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        }
+      ]
+    }
+  ]
+}

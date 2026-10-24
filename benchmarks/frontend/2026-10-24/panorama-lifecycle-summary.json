@@ -1,0 +1,68 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "e6edd7944da7df94fbfb18aaab3471361f5ac766e1228d1423f3232f3157a1de",
+  "iterations": 7,
+  "runs": 56,
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "method": "10,000 paired bootstrap resamples of public panorama load median ratios, seed 12345. Seven repeats, baseline above 10 ms and an interval above 1 required for a stable reduction. Includes WebGL context, Blob snapshot, image decoding and DOM setup; excludes scheduled drawing/upload, source/module preparation and post-timer content checks. Complete Blob/pixel equivalence checked in every run. No peer/SOTA or peak-memory claim.",
+  "samples": [
+    {
+      "sample": "bmp-24MiB-typed",
+      "baselineMs": 41.800000071525574,
+      "currentMs": 38,
+      "ratio": 1.100000001882252,
+      "pairedBootstrapRatio95": [
+        1.0435779810807146,
+        1.1260053597710944
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "completeBlobAndCanvasPixelsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "bmp-24MiB-subview",
+      "baselineMs": 41.09999990463257,
+      "currentMs": 41.200000047683716,
+      "ratio": 0.9975728120646745,
+      "pairedBootstrapRatio95": [
+        0.9855421681001962,
+        1.1220779233164602
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": false,
+      "completeBlobAndCanvasPixelsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "bmp-24MiB-array-buffer",
+      "baselineMs": 37.799999952316284,
+      "currentMs": 37.59999990463257,
+      "ratio": 1.0053191502178456,
+      "pairedBootstrapRatio95": [
+        0.9528535985507132,
+        1.0161290296737493
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": false,
+      "completeBlobAndCanvasPixelsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "bmp-24MiB-blob",
+      "baselineMs": 17.399999976158142,
+      "currentMs": 35.39999997615814,
+      "ratio": 0.4915254233863565,
+      "pairedBootstrapRatio95": [
+        0.44473007616759574,
+        1.0257142850330898
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": false,
+      "completeBlobAndCanvasPixelsMatch": true,
+      "scopedSota": false
+    }
+  ]
+}

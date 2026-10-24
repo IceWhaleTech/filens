@@ -29,7 +29,7 @@ import type {
 import { applyLumMod, applyLumOff, applyShade, applyTint, resolveThemeColor } from '../utils/colors';
 import { asArray, clamp, createId, deepClone, resolvePartPath, toNumber } from '../utils/common';
 import { angleToDegrees, emuToPx } from '../utils/units';
-import { loadSourceBytes, type LoadSourceOptions } from './load-source';
+import { loadSourceBytes, throwIfAborted, type LoadSourceOptions } from './load-source';
 import { parseXmlFile, parseXmlFileOrdered, type OrderedXmlNode, type XmlNode } from './xml';
 
 type XmlRecord = Record<string, any>;
@@ -312,7 +312,7 @@ function createEmptyThemeFormatScheme(): ThemeFormatScheme {
 
 export async function loadPptx(source: PptxSource, options: LoadSourceOptions = {}): Promise<ParsedPresentation> {
   const bytes = await loadSourceBytes(source, options);
-  const zip = await loadPptxArchive(bytes);
+  const zip = await loadPptxArchive(bytes, options);
   const warnings: string[] = [];
   const caches: ParseCaches = {
     masters: new Map(),
@@ -369,6 +369,7 @@ export async function loadPptx(source: PptxSource, options: LoadSourceOptions = 
       slideWarnings,
       slideIndexByPath
     );
+    throwIfAborted(options.signal);
     activeTheme = parsed.theme;
     warnings.push(...slideWarnings);
     slides.push({
@@ -377,6 +378,7 @@ export async function loadPptx(source: PptxSource, options: LoadSourceOptions = 
     });
   }
 
+  throwIfAborted(options.signal);
   return {
     size,
     theme: activeTheme,

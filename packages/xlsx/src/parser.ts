@@ -34,23 +34,28 @@ interface RelationshipRef {
 }
 
 export async function loadXlsxWorkbook(source: PreviewSource, context?: PreviewLoadContext): Promise<ParsedWorkbook> {
+  checkAborted(context?.signal);
   const format = normalizeFormat(context?.route?.sourceFormat ?? context?.descriptor.extension);
   if (format === 'csv') {
     return loadCsvWorkbook(source, context);
   }
 
   const bytes = await sourceToBytes(source, context);
+  checkAborted(context?.signal);
   const zip = await openZipArchive(bytes);
+  checkAborted(context?.signal);
   const warnings: string[] = [];
-  const workbookXml = await readRequiredText(zip, 'xl/workbook.xml');
-  const relsXml = await readRequiredText(zip, 'xl/_rels/workbook.xml.rels');
-  const sharedStrings = await readSharedStrings(zip);
+  const workbookXml = await readRequiredText(zip, 'xl/workbook.xml', context?.signal);
+  const relsXml = await readRequiredText(zip, 'xl/_rels/workbook.xml.rels', context?.signal);
+  const sharedStrings = await readSharedStrings(zip, context?.signal);
+  checkAborted(context?.signal);
   const workbook = parser.parse(workbookXml) as Record<string, unknown>;
   const relationships = readRelationships(relsXml);
   const sheets = readWorkbookSheets(workbook);
 
   const parsedSheets: ParsedSheet[] = [];
   for (const sheet of sheets) {
+    checkAborted(context?.signal);
     const relationship = relationships.find((entry) => entry.id === sheet.relationshipId);
     if (!relationship) {
       warnings.push(`Missing relationship for sheet ${sheet.name}.`);
@@ -59,6 +64,7 @@ export async function loadXlsxWorkbook(source: PreviewSource, context?: PreviewL
 
     const sheetPath = resolveWorkbookTarget(relationship.target);
     const sheetXml = await zip.get(sheetPath)?.text();
+    checkAborted(context?.signal);
     if (!sheetXml) {
       warnings.push(`Missing worksheet file for sheet ${sheet.name}.`);
       continue;
@@ -78,19 +84,10 @@ export async function loadXlsxWorkbook(source: PreviewSource, context?: PreviewL
 }
 
 export async function loadCsvWorkbook(source: PreviewSource, context?: PreviewLoadContext): Promise<ParsedWorkbook> {
+  checkAborted(context?.signal);
   const text = await sourceToText(source, context);
-  const records = parseCsv(text);
-  const columnCount = records.reduce((max, row) => Math.max(max, row.length), 0);
-  const columnNames = Array.from({ length: columnCount }, (_, index) => columnIndexToName(index + 1));
-  const rows: ParsedRow[] = records.map((record, rowIndex) => ({
-    index: rowIndex + 1,
-    cells: record.map((value, columnIndex) => ({
-      ref: `${columnNames[columnIndex]}${rowIndex + 1}`,
-      row: rowIndex + 1,
-      column: columnIndex + 1,
-      value
-    }))
-  }));
+  checkAborted(context?.signal);
+  const { rows, columnCount } = parseCsv(text);
 
   return {
     sheets: [
@@ -171,51 +168,68 @@ function readDataUrlText(source: string): string {
   return decodeURIComponent(payload);
 }
 
-function parseCsv(text: string): string[][] {
+function parseCsv(text: string): Pick<ParsedSheet, 'rows' | 'columnCount'> {
   text = text.replace(/^\uFEFF/, '');
+  const rows: ParsedRow[] = [];
+  const columnNames: string[] = [];
+  const appendRow = (record: string[]) => {
+    while (columnNames.length < record.length) columnNames.push(columnIndexToName(columnNames.length + 1));
+    const row = rows.length + 1;
+    const suffix = String(row);
+    const cells: ParsedCell[] = new Array(record.length);
+    for (let column = 0; column < record.length; column++) {
+      cells[column] = { ref: columnNames[column] + suffix, row, column: column + 1, value: record[column] };
+    }
+    rows.push({ index: row, cells });
+  };
   if (!text.includes('"')) {
     const lines = text.split(/\r\n|\r|\n/);
     if (text.length && /[\r\n]$/.test(text)) lines.pop();
-    return lines.map(line => line.split(','));
+    for (const line of lines) appendRow(line.split(','));
+    return { rows, columnCount: columnNames.length };
   }
-  const rows: string[][] = [];
   let row: string[] = [];
   let cell = '';
   let index = 0;
+  let start = 0;
+  let recordStart = 0;
   let quoted = false;
 
   while (index < text.length) {
-    const char = text[index];
     if (quoted) {
-      if (char === '"') {
-        if (text[index + 1] === '"') {
-          cell += '"';
-          index += 2;
-          continue;
-        }
-        quoted = false;
-        index += 1;
-        continue;
+      const quote = text.indexOf('"', index);
+      if (quote < 0) {
+        cell += text.slice(index);
+        start = index = text.length;
+        break;
       }
-      cell += char;
-      index += 1;
+      cell += text.slice(index, quote);
+      index = quote + 1;
+      if (text[index] === '"') {
+        cell += '"';
+        index++;
+      } else {
+        quoted = false;
+      }
+      start = index;
       continue;
     }
 
-    if (char === '"' && cell.length === 0) {
+    const char = text[index];
+    if (char === '"' && cell.length === 0 && index === start) {
       quoted = true;
-      index += 1;
+      start = ++index;
       continue;
     }
     if (char === ',') {
-      row.push(cell);
+      row.push(cell + text.slice(start, index));
       cell = '';
-      index += 1;
+      start = ++index;
       continue;
     }
     if (char === '\r' || char === '\n') {
-      row.push(cell);
-      rows.push(row);
+      row.push(cell + text.slice(start, index));
+      appendRow(row);
       row = [];
       cell = '';
       if (char === '\r' && text[index + 1] === '\n') {
@@ -223,34 +237,44 @@ function parseCsv(text: string): string[][] {
       } else {
         index += 1;
       }
+      recordStart = start = index;
       continue;
     }
-    cell += char;
     index += 1;
   }
 
-  if (cell.length || row.length || text.length === 0) {
-    row.push(cell);
-    rows.push(row);
+  // A quoted empty field still starts a record, even though its decoded value is empty.
+  if (recordStart < text.length || text.length === 0) {
+    row.push(cell + text.slice(start, index));
+    appendRow(row);
   }
 
-  return rows;
+  return { rows, columnCount: columnNames.length };
 }
 
-async function readRequiredText(zip: Map<string, ZipEntry>, path: string): Promise<string> {
+function checkAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException('Workbook preview aborted.', 'AbortError');
+}
+
+async function readRequiredText(zip: Map<string, ZipEntry>, path: string, signal?: AbortSignal): Promise<string> {
+  checkAborted(signal);
   const file = zip.get(path);
   if (!file) {
     throw new Error(`Invalid XLSX file: missing ${path}.`);
   }
-  return file.text();
+  const text = await file.text();
+  checkAborted(signal);
+  return text;
 }
 
-async function readSharedStrings(zip: Map<string, ZipEntry>): Promise<string[]> {
+async function readSharedStrings(zip: Map<string, ZipEntry>, signal?: AbortSignal): Promise<string[]> {
+  checkAborted(signal);
   const file = zip.get('xl/sharedStrings.xml');
   if (!file) {
     return [];
   }
   const xml = await file.text();
+  checkAborted(signal);
   const document = parser.parse(xml) as Record<string, unknown>;
   const items = toArray(readPath(document, ['sst', 'si']));
   return items.map(readSharedStringItem);

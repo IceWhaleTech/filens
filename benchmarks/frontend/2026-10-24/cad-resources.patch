@@ -1,0 +1,331 @@
+--- a/packages/cad/src/preview-driver.ts
++++ b/packages/cad/src/preview-driver.ts
+@@ -438,6 +438,10 @@
+   private panX = 0;
+   private panY = 0;
+   private state: CadPreviewState;
++  private loadController: AbortController | null = null;
++  private resourceUrls = new Set<string>();
++  private readonly layerElements = new Map<string, SVGElement[]>();
++  private appliedLayers = new Set<string>();
+ 
+   constructor(private readonly host: HTMLElement, private readonly options: PreviewOptions = {}) {
+     this.root = document.createElement('div');
+@@ -463,6 +467,21 @@
+   }
+ 
+   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
++    this.stopLoad();
++    const controller = new AbortController();
++    this.loadController = controller;
++    const signal = controller.signal;
++    const resourceUrls = this.resourceUrls = new Set();
++    const abort = () => controller.abort();
++    signal.addEventListener('abort', () => {
++      context.signal?.removeEventListener('abort', abort);
++      if (this.loadController === controller) {
++        this.stopLoad();
++        this.state.loading = false;
++        this.emit('statechange', this.state);
++      }
++    }, { once: true });
++    context.signal?.addEventListener('abort', abort, { once: true });
+     this.state = {
+       ...this.state,
+       loading: true,
+@@ -474,19 +493,26 @@
+     this.emit('statechange', this.state);
+ 
+     try {
++      if (context.signal?.aborted) controller.abort();
++      checkCadAborted(signal);
+       const format = normalizeFormat(context.route?.sourceFormat ?? context.descriptor.extension);
+       if (format !== 'dxf') {
+         throw new Error(`CAD preview currently supports browser-native DXF files, got ${format || 'unknown'}.`);
+       }
+ 
+-      const parsedDrawing = loadDxfDrawing(await sourceToText(source, context));
++      const text = await sourceToText(source, { ...context, signal });
++      checkCadAborted(signal);
++      const parsedDrawing = loadDxfDrawing(text);
+       const resourceResolvedDrawing = await applyCadResourceResolver(
+         parsedDrawing,
+         this.options.resourceResolver,
+         format,
+-        context.signal
++        resourceUrls,
++        signal
+       );
++      checkCadAborted(signal);
+       const drawing = applyCadFontResolver(resourceResolvedDrawing, this.options.fontResolver, format);
++      checkCadAborted(signal);
+       const activeLayerIds = drawing.layerStyles.length
+         ? drawing.layerStyles.filter((layer) => layer.visible).map((layer) => layer.name)
+         : drawing.layers;
+@@ -505,6 +531,11 @@
+       this.emit('rendered', this.state);
+       this.emit('statechange', this.state);
+     } catch (error) {
++      if (signal.aborted) {
++        if (context.signal?.aborted) checkCadAborted(signal);
++        return;
++      }
++      this.stopLoad();
+       const normalizedError = error instanceof Error ? error : new Error(String(error));
+       this.state.loading = false;
+       this.state.error = normalizedError.message;
+@@ -515,12 +546,31 @@
+   }
+ 
+   destroy(): void {
+-    this.root.replaceChildren();
++    this.stopLoad();
++    this.state.loading = false;
+     if (this.root.parentElement === this.host) {
+       this.host.replaceChildren();
+     }
++    for (const listeners of Object.values(this.listeners)) listeners.clear();
+   }
+ 
++  private stopLoad(): void {
++    const controller = this.loadController;
++    this.loadController = null;
++    controller?.abort();
++    this.root.replaceChildren();
++    this.canvas = null;
++    this.drawing = null;
++    this.layerElements.clear();
++    this.appliedLayers.clear();
++    this.panX = 0;
++    this.panY = 0;
++    this.state.layers = [];
++    this.state.activeLayerIds = [];
++    for (const url of this.resourceUrls) URL.revokeObjectURL(url);
++    this.resourceUrls.clear();
++  }
++
+   getState(): CadPreviewState {
+     return {
+       ...this.state,
+@@ -593,11 +643,12 @@
+     this.drawing = drawing;
+     const stage = document.createElement('div');
+     stage.className = 'cadv-stage';
+-    const svg = renderDrawingToSvg(drawing);
++    this.layerElements.clear();
++    const svg = renderDrawingToSvg(drawing, this.layerElements);
+     this.canvas = svg;
++    this.appliedLayers = new Set(this.state.activeLayerIds);
+     stage.appendChild(svg);
+     this.root.replaceChildren(stage);
+-    this.applyLayerVisibility();
+     this.applyTransform();
+   }
+ 
+@@ -606,17 +657,20 @@
+       return;
+     }
+     const activeLayers = new Set(this.state.activeLayerIds ?? []);
+-    for (const element of this.canvas.querySelectorAll<SVGElement>('[data-layer]')) {
+-      const layerId = element.getAttribute('data-layer');
+-      const entityVisible = element.getAttribute('data-entity-visible') !== 'false';
+-      const visible = entityVisible && (!layerId || activeLayers.has(layerId));
+-      if (visible) {
+-        element.removeAttribute('display');
+-      } else {
+-        element.setAttribute('display', 'none');
++    for (const [layerId, elements] of this.layerElements) {
++      if (activeLayers.has(layerId) === this.appliedLayers.has(layerId)) continue;
++      for (const element of elements) {
++        const entityVisible = element.getAttribute('data-entity-visible') !== 'false';
++        const visible = entityVisible && (!layerId || activeLayers.has(layerId));
++        if (visible) {
++          element.removeAttribute('display');
++        } else {
++          element.setAttribute('display', 'none');
++        }
++        element.setAttribute('data-layer-visible', visible ? 'true' : 'false');
+       }
+-      element.setAttribute('data-layer-visible', visible ? 'true' : 'false');
+     }
++    this.appliedLayers = activeLayers;
+   }
+ 
+   private applyTransform(): void {
+@@ -1964,7 +2018,7 @@
+   return index;
+ }
+ 
+-function renderDrawingToSvg(drawing: CadDrawing): SVGSVGElement {
++function renderDrawingToSvg(drawing: CadDrawing, layerElements: Map<string, SVGElement[]>): SVGSVGElement {
+   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+   svg.classList.add('cadv-canvas');
+   const width = Math.max(drawing.bounds.maxX - drawing.bounds.minX, 1);
+@@ -1991,7 +2045,7 @@
+   svg.appendChild(group);
+ 
+   for (const entity of drawing.entities) {
+-    const node = renderEntity(entity, drawing.bounds);
++    const node = renderEntity(entity, drawing.bounds, layerElements);
+     if (node) {
+       group.appendChild(node);
+     }
+@@ -2009,7 +2063,7 @@
+   return svg;
+ }
+ 
+-function renderEntity(entity: CadEntity, bounds: CadDrawing['bounds']): SVGElement | null {
++function renderEntity(entity: CadEntity, bounds: CadDrawing['bounds'], layerElements: Map<string, SVGElement[]>): SVGElement | null {
+   const applyEntityAttributes = (node: SVGElement, paintTarget: 'stroke' | 'fill' = 'stroke'): SVGElement => {
+     node.setAttribute(paintTarget, entity.color ?? DEFAULT_CAD_COLOR);
+     if (paintTarget === 'stroke') {
+@@ -2023,6 +2077,9 @@
+     }
+     if (entity.layer) {
+       node.setAttribute('data-layer', entity.layer);
++      const elements = layerElements.get(entity.layer);
++      if (elements) elements.push(node);
++      else layerElements.set(entity.layer, [node]);
+     }
+     if (entity.colorIndex != null) {
+       node.setAttribute('data-color-index', String(entity.colorIndex));
+@@ -2039,6 +2096,8 @@
+     if (entity.visible === false) {
+       node.setAttribute('display', 'none');
+       node.setAttribute('data-layer-visible', 'false');
++    } else if (entity.layer) {
++      node.setAttribute('data-layer-visible', 'true');
+     }
+     return node;
+   };
+@@ -3595,6 +3654,7 @@
+   drawing: CadDrawing,
+   resourceResolver: PreviewResourceResolver | undefined,
+   sourceFormat: string,
++  resourceUrls: Set<string>,
+   signal?: AbortSignal
+ ): Promise<CadDrawing> {
+   if (!resourceResolver) {
+@@ -3604,25 +3664,23 @@
+   const resolverWarnings = new Set<string>();
+   const entities: CadEntity[] = [];
+   for (const entity of drawing.entities) {
+-    if (signal?.aborted) {
+-      throw new DOMException('CAD preview aborted.', 'AbortError');
+-    }
++    checkCadAborted(signal);
+     if (entity.type !== 'image' || !entity.source || isBrowserLoadableImageSource(entity.source)) {
+       entities.push(entity);
+       continue;
+     }
+     const unresolvedSource = entity.source;
+ 
+-    const resolved = normalizeResourceResolverResult(
+-      await resourceResolver({
+-        family: 'cad',
+-        sourceFormat,
+-        source: unresolvedSource,
+-        relation: 'image',
+-        handle: entity.imageDefHandle,
+-        name: unresolvedSource.split(/[\\/]/).pop() ?? unresolvedSource
+-      })
+-    );
++    const result = await resourceResolver({
++      family: 'cad',
++      sourceFormat,
++      source: unresolvedSource,
++      relation: 'image',
++      handle: entity.imageDefHandle,
++      name: unresolvedSource.split(/[\\/]/).pop() ?? unresolvedSource
++    });
++    checkCadAborted(signal);
++    const resolved = normalizeResourceResolverResult(result, resourceUrls);
+     for (const warning of resolved.warnings) {
+       resolverWarnings.add(warning);
+     }
+@@ -3641,7 +3699,8 @@
+ }
+ 
+ function normalizeResourceResolverResult(
+-  result: Awaited<ReturnType<PreviewResourceResolver>>
++  result: Awaited<ReturnType<PreviewResourceResolver>>,
++  resourceUrls: Set<string>
+ ): { source?: string; warnings: string[] } {
+   if (!result) {
+     return { warnings: [] };
+@@ -3652,28 +3711,19 @@
+       warnings: []
+     };
+   }
+-  if (result instanceof Blob) {
++  if (result instanceof Blob || ArrayBuffer.isView(result) || result instanceof ArrayBuffer) {
+     return {
+-      source: URL.createObjectURL(result),
++      source: normalizeResolvedPreviewSource(result, resourceUrls),
+       warnings: []
+     };
+   }
+-  if (ArrayBuffer.isView(result) || result instanceof ArrayBuffer) {
+-    const bytes = ArrayBuffer.isView(result)
+-      ? new Uint8Array(result.buffer, result.byteOffset, result.byteLength)
+-      : new Uint8Array(result);
+-    return {
+-      source: bytesToDataUrl(bytes),
+-      warnings: []
+-    };
+-  }
+   return {
+-    source: normalizeResolvedPreviewSource(result.source),
++    source: normalizeResolvedPreviewSource(result.source, resourceUrls),
+     warnings: result.warnings ?? []
+   };
+ }
+ 
+-function normalizeResolvedPreviewSource(source: PreviewSource | undefined): string | undefined {
++function normalizeResolvedPreviewSource(source: PreviewSource | undefined, resourceUrls: Set<string>): string | undefined {
+   if (!source) {
+     return undefined;
+   }
+@@ -3681,23 +3731,22 @@
+     return source;
+   }
+   if (source instanceof Blob) {
+-    return URL.createObjectURL(source);
++    const url = URL.createObjectURL(source);
++    resourceUrls.add(url);
++    return url;
+   }
+   if (ArrayBuffer.isView(source)) {
+-    return bytesToDataUrl(new Uint8Array(source.buffer, source.byteOffset, source.byteLength));
++    const bytes = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
++    return normalizeResolvedPreviewSource(new Blob([new Uint8Array(bytes)]), resourceUrls);
+   }
+   if (source instanceof ArrayBuffer) {
+-    return bytesToDataUrl(new Uint8Array(source));
++    return normalizeResolvedPreviewSource(new Blob([source]), resourceUrls);
+   }
+   return undefined;
+ }
+ 
+-function bytesToDataUrl(bytes: Uint8Array, contentType = 'application/octet-stream'): string {
+-  let binary = '';
+-  for (const byte of bytes) {
+-    binary += String.fromCharCode(byte);
+-  }
+-  return `data:${contentType};base64,${btoa(binary)}`;
++function checkCadAborted(signal?: AbortSignal): void {
++  if (signal?.aborted) throw new DOMException('CAD preview aborted.', 'AbortError');
+ }
+ 
+ function applyCadFontResolver(drawing: CadDrawing, fontResolver: PreviewFontResolver | undefined, sourceFormat: string): CadDrawing {
+@@ -3860,7 +3909,9 @@
+   const meta = dataUrl.slice(0, commaIndex).toLowerCase();
+   const payload = dataUrl.slice(commaIndex + 1);
+   if (meta.includes(';base64')) {
+-    return atob(payload);
++    const binary = atob(payload);
++    const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
++    return new TextDecoder().decode(bytes);
+   }
+   return decodeURIComponent(payload);
+ }

@@ -16,6 +16,8 @@ File inspection and calibration decoding run in the frontend WASM core. Browser 
 
 For direct frontend integrations, `createRealtimeStitchCalibration(manifest)` checks and adapts an inspected manifest. `createRealtimePanoramaRenderer(processor, manifest)` returns a canvas and playback controls; append the canvas, call `update()` from an animation loop, use `setView(yaw, pitch, roll, fov)` in degrees, and call `close()` when finished. IMU stabilization requires the existing renderer and confirmed camera calibration.
 
+`processor.open(source, { format, signal })` keeps that signal active for later sample reads, RAW decoding and seam/IMU work. A new `open()` or `close()` cancels the previous source's pending operations; failed opens expose no partial manifest. Individual operation signals cancel only that operation. Shared WASM loading remains reusable, while already-running synchronous WASM cannot be interrupted.
+
 The reusable frame renderer was migrated from `ZimaOS-Photos`; it does not require that repository or a Photos server at runtime. See [implementation and validation](../../docs/panorama-rendering-implementation.md).
 
 For RAW panoramas, configure both WASM modules and the RAW image driver before

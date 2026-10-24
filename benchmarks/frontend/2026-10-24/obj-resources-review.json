@@ -1,0 +1,561 @@
+{
+  "date": "2026-10-24",
+  "kind": "obj-native-materials-texture-loading-and-lifetime",
+  "engineering": true,
+  "scopedSota": false,
+  "scope": "Shared frontend 3D library reuses Three MTLLoader/OBJLoader. No new backend/Go format algorithm or production WASM change.",
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "changes": [
+    "Decode native MTL views, ArrayBuffers and Blobs directly as UTF-8; data URLs use native byte fetching and the same text decoder. Avoid binary-string corruption and unnecessary material URLs.",
+    "Preserve Three-supported -s, -o, -bm and -mm option arities while resolving filenames with spaces; include norm, bump and disp aliases alongside map_* directives.",
+    "Normalize binary texture sidecars as exact owned Blob snapshots, retain URLs through image loading and revoke on completion, failure or abort. Borrowed strings remain caller-owned.",
+    "Use a scoped LoadingManager sentinel to wait for referenced image loads and report image failures. Create materials on demand instead of preloading unused images.",
+    "Race material/texture resolvers and material fetch, body and Blob reads against cancellation; reject pre-aborted loads and observe late failures.",
+    "Dispose abandoned geometry/materials/textures on abort or parse failure. Clean copied line/point material caches while preserving retained shared textures."
+  ],
+  "performance": {
+    "finalRuns": 42,
+    "iterations": 7,
+    "excludedSmokeRuns": 6,
+    "summary": "obj-resources-summary.json",
+    "raw": "obj-resources.json.gz",
+    "method": "Fresh Chromium contexts, alternating build order. Imports, UTF-8 MTL bytes and PNG bytes ready before timing. loadMs includes native resource resolution/normalization, real MTL/OBJ parsing and explicit HTMLImageElement.decode() for every referenced texture. The same TextureLoader observer waits for image completion in both versions, since the baseline API returns early. Excludes input/network/module loading, renderer/GPU/paint and peak memory. Full geometry/UV/normal arrays, decoded texture pixels, materials and warnings checked after timing. Generated opaque noise textures; no unused padding or unused materials. Baselines at or below 10 ms receive no ratio. Same-project engineering comparison, no peer/SOTA ranking.",
+    "samples": [
+      {
+        "sample": "generated-128-texture.obj",
+        "bytes": 56228,
+        "currentMs": 2.5,
+        "baselineMs": 3.6999999284744263,
+        "below10MsControl": true,
+        "fullGeometryMaterialsDecodedTexturePixelsMatch": true,
+        "ownedUrlsReleased": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "generated-1024-texture.obj",
+        "bytes": 3588453,
+        "currentMs": 10.800000071525574,
+        "baselineMs": 122.19999992847443,
+        "below10MsControl": false,
+        "fullGeometryMaterialsDecodedTexturePixelsMatch": true,
+        "ownedUrlsReleased": true,
+        "scopedSota": false,
+        "ratio": 11.31481473325702,
+        "ratio95PercentBootstrapInterval": [
+          11.165137643475353,
+          11.42056069008408
+        ],
+        "stableEngineeringReduction": true
+      },
+      {
+        "sample": "generated-2048-texture.obj",
+        "bytes": 14351902,
+        "currentMs": 37.39999997615814,
+        "baselineMs": 476.5,
+        "below10MsControl": false,
+        "fullGeometryMaterialsDecodedTexturePixelsMatch": true,
+        "ownedUrlsReleased": true,
+        "scopedSota": false,
+        "ratio": 12.740641719351887,
+        "ratio95PercentBootstrapInterval": [
+          12.554376640681086,
+          13.25000002803982
+        ],
+        "stableEngineeringReduction": true
+      }
+    ],
+    "baselineAndCurrentWaitForExplicitImageDecode": true
+  },
+  "validation": {
+    "unitByPackage": {
+      "model3d": 210,
+      "vue": 44
+    },
+    "unitPassed": 254,
+    "newTests": 32,
+    "oldSourceFailed": 28,
+    "oldSourcePassedControls": 4,
+    "currentUnitReportsSuccessful": true,
+    "developmentBrowser": {
+      "passed": 17,
+      "command": "npx playwright test apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/obj-development-browser-final"
+    },
+    "productionBrowser": {
+      "passed": 14,
+      "command": "FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --grep 'UTF-8|OBJ|known voxels|non-cooperative volume|real inline|textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/obj-production-browser"
+    },
+    "browserContent": {
+      "development": [
+        {
+          "kind": "view",
+          "hash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "visible": 11236,
+          "glError": 0,
+          "expected": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "name": "底色",
+          "dimensions": [
+            8,
+            8
+          ],
+          "positionsMatch": true,
+          "uvMatch": true,
+          "warnings": [],
+          "created": 1,
+          "active": 0
+        },
+        {
+          "kind": "buffer",
+          "hash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "visible": 11236,
+          "glError": 0,
+          "expected": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "name": "底色",
+          "dimensions": [
+            8,
+            8
+          ],
+          "positionsMatch": true,
+          "uvMatch": true,
+          "warnings": [],
+          "created": 1,
+          "active": 0
+        },
+        {
+          "kind": "blob",
+          "hash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "visible": 11236,
+          "glError": 0,
+          "expected": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "name": "底色",
+          "dimensions": [
+            8,
+            8
+          ],
+          "positionsMatch": true,
+          "uvMatch": true,
+          "warnings": [],
+          "created": 1,
+          "active": 0
+        },
+        {
+          "kind": "base64",
+          "hash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "visible": 11236,
+          "glError": 0,
+          "expected": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "name": "底色",
+          "dimensions": [
+            8,
+            8
+          ],
+          "positionsMatch": true,
+          "uvMatch": true,
+          "warnings": [],
+          "created": 1,
+          "active": 0
+        },
+        {
+          "kind": "percent",
+          "hash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "visible": 11236,
+          "glError": 0,
+          "expected": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "name": "底色",
+          "dimensions": [
+            8,
+            8
+          ],
+          "positionsMatch": true,
+          "uvMatch": true,
+          "warnings": [],
+          "created": 1,
+          "active": 0
+        }
+      ],
+      "production": [
+        {
+          "kind": "view",
+          "hash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "visible": 11236,
+          "glError": 0,
+          "expected": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "name": "底色",
+          "dimensions": [
+            8,
+            8
+          ],
+          "positionsMatch": true,
+          "uvMatch": true,
+          "warnings": [],
+          "created": 1,
+          "active": 0
+        },
+        {
+          "kind": "buffer",
+          "hash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "visible": 11236,
+          "glError": 0,
+          "expected": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "name": "底色",
+          "dimensions": [
+            8,
+            8
+          ],
+          "positionsMatch": true,
+          "uvMatch": true,
+          "warnings": [],
+          "created": 1,
+          "active": 0
+        },
+        {
+          "kind": "blob",
+          "hash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "visible": 11236,
+          "glError": 0,
+          "expected": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "name": "底色",
+          "dimensions": [
+            8,
+            8
+          ],
+          "positionsMatch": true,
+          "uvMatch": true,
+          "warnings": [],
+          "created": 1,
+          "active": 0
+        },
+        {
+          "kind": "base64",
+          "hash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "visible": 11236,
+          "glError": 0,
+          "expected": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "name": "底色",
+          "dimensions": [
+            8,
+            8
+          ],
+          "positionsMatch": true,
+          "uvMatch": true,
+          "warnings": [],
+          "created": 1,
+          "active": 0
+        },
+        {
+          "kind": "percent",
+          "hash": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "visible": 11236,
+          "glError": 0,
+          "expected": "ea5a92cbc27f48465179398b0568e3b6670863cc655a3208bd42a64cb088242c",
+          "name": "底色",
+          "dimensions": [
+            8,
+            8
+          ],
+          "positionsMatch": true,
+          "uvMatch": true,
+          "warnings": [],
+          "created": 1,
+          "active": 0
+        }
+      ]
+    },
+    "fiveNativeFormsMatchIndependentRenderedReference": true,
+    "developmentProductionContentMatch": true,
+    "coverage": [
+      "UTF-8 names via native view, ArrayBuffer, Blob, Base64 and percent data URLs",
+      "All eight Three MTL texture directives with supported options and filenames containing spaces",
+      "Non-cooperative resolver/Blob/fetch/body cancellation, late errors, texture completion and late image responses",
+      "Owned and borrowed texture URLs, damaged image fallback, parse failures and line/point material ownership",
+      "Actual demo multi-file OBJ/MTL/PNG upload, preceding glTF/STEP/STL/NRRD regressions"
+    ],
+    "realStepGeometry": {
+      "fixtures": 3,
+      "imports": 9,
+      "worldSpaceTriangleAndNormalSetsMatch": true
+    },
+    "builds": [
+      "npm run build:model3d",
+      "npm run build:demo"
+    ],
+    "categoryChecks": "npm run test:categories",
+    "bundleReport": "npm run report:bundle-sizes",
+    "sourceMapsMatchOriginalAndFinalSource": true,
+    "incrementalReversePatchRestoresOriginalBytes": true,
+    "gitDiffCheckPassed": true,
+    "verifiedLocalMarkdownLinks": 512,
+    "temporaryPreviewPortsClosed": [
+      4173,
+      4174
+    ],
+    "knownBuildWarning": "Existing large demo vendor chunk warning"
+  },
+  "limits": [
+    "Same-project generated-input comparison; no peer/SOTA or peak-memory ranking. The 56 KB control is below 10 ms and has no speed ratio.",
+    "Performance includes in-memory resource resolution, MTL/OBJ parsing and explicit HTML image decode; excludes external input transfer, module loading, GPU upload and paint.",
+    "Generated opaque PNG noise textures cover this path, not all compression profiles, texture formats or representative real-world models.",
+    "Dedicated UTF-8 outputs intentionally correct original rendering. Final performance samples use ASCII names and match complete old/new geometry/material/decoded pixels.",
+    "Option handling follows Three support for -s/-o with three components, -bm with one and -mm with two. Arbitrary MTL options and quoted multiword mtllib names are not newly supported.",
+    "Cancellation stops waiting and releases owned resources. Non-cooperative work may finish later; synchronous parsing and already-started image networking cannot be interrupted by this wrapper."
+  ],
+  "baseline": [
+    {
+      "path": "tmp/continued-review/obj-resources-baseline/packages/model3d/src/preview-driver.ts",
+      "bytes": 247808,
+      "sha256": "c156853bfdcbe2eae08ee70f3e9468524da9bfdaf7c00ad66ff64570d57cbee3"
+    },
+    {
+      "path": "tmp/continued-review/obj-resources-baseline/dist/index.js",
+      "bytes": 979668,
+      "sha256": "873c1f69f96cd124d5c4a1455a8d646a436efdba800aae32f999acfb2bbc80dd"
+    },
+    {
+      "path": "tmp/continued-review/obj-resources-baseline/dist/index.js.map",
+      "bytes": 2497508,
+      "sha256": "fe3a30e14a2d45da01cee4fe5fc4a383af0a7c0a705e549081a7e108610577f5"
+    }
+  ],
+  "bindings": [
+    {
+      "path": "packages/model3d/src/preview-driver.ts",
+      "bytes": 249571,
+      "sha256": "5559ef3d9531aa27218af622d01e6697ade2c02ef8c53c042dc8af3477919b03"
+    },
+    {
+      "path": "packages/model3d/test/obj-resources.spec.ts",
+      "bytes": 15721,
+      "sha256": "de9b2ef83c38dc7e3b145120ed2ddc62e1ea2d5cf06c52e593e585151b366a84"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/obj.mjs",
+      "bytes": 1921,
+      "sha256": "d031b9e0569af3872e83f4f45918f3e75d16cc861322f5de856bcc9d3747a8e4"
+    },
+    {
+      "path": "packages/model3d/test/preview-driver.spec.ts",
+      "bytes": 153237,
+      "sha256": "c9d67219a071ef2a3d718311749c676b8110333f3ad20e06721b1f80db7af1f3"
+    },
+    {
+      "path": "apps/demo/e2e/obj-resources.e2e.ts",
+      "bytes": 12249,
+      "sha256": "d8a449f07b3bea09f5a021bdb17b150278b3f16263aaf9724d2e682402323895"
+    },
+    {
+      "path": "scripts/benchmark-obj-resources.mjs",
+      "bytes": 7992,
+      "sha256": "8ef3ed083e95d7b13571b2dfcedcda4a530e9e4cca71e1f4c717e7717041ae1f"
+    },
+    {
+      "path": "scripts/summarize-obj-resources-benchmark.mjs",
+      "bytes": 3690,
+      "sha256": "33c9e6976da9f739e70f814df757324f9f38ef88eae6fefb1edfc5be320d41e8"
+    },
+    {
+      "path": "packages/model3d/test/resource-loading.spec.ts",
+      "bytes": 12035,
+      "sha256": "8b567185a81f84c6ae24b58f28fe8d56f9519c6f9441f2a9204cbd1ddfa08867"
+    },
+    {
+      "path": "packages/model3d/test/volume-loading.spec.ts",
+      "bytes": 10279,
+      "sha256": "e6c604fdb6eb200f463282468645320e84890aa9a08f728196f0994865393f17"
+    },
+    {
+      "path": "packages/model3d/test/lifecycle.spec.ts",
+      "bytes": 8620,
+      "sha256": "a27de263b7940f32d1750835e7611091238c55696ce583dca4340753defad02c"
+    },
+    {
+      "path": "apps/demo/e2e/volume-preview.e2e.ts",
+      "bytes": 8085,
+      "sha256": "dab15bf85a3e68709bcded2721ae9e2f854ac8f825f6edbe86266172f65b0cf1"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-resources.e2e.ts",
+      "bytes": 12407,
+      "sha256": "c0b8f406cf247e83689d08dc3b04219ba40fec41dc94d8ae38bc46294aeb1def"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-lifecycle.e2e.ts",
+      "bytes": 4831,
+      "sha256": "41ffae4946181a00a312a032d1168bc08d909333aa0258f757ed01a591452281"
+    },
+    {
+      "path": "apps/demo/e2e/cad-wasm.e2e.ts",
+      "bytes": 1540,
+      "sha256": "6f921a2f19906cdf232ea60395f00288c0d8630c5c25cf3d72c8369f90e32b7f"
+    },
+    {
+      "path": "packages/model3d/dist/index.js",
+      "bytes": 980424,
+      "sha256": "671e5355b4f3d38dd22b7859728674064f480849ad5737de2724081908347fb0"
+    },
+    {
+      "path": "packages/model3d/dist/index.js.map",
+      "bytes": 2500488,
+      "sha256": "b8dad4963fa939847749b4f5e9f10aeaab36afbaebff64dd17ca3b2ad5e13e64"
+    },
+    {
+      "path": "packages/model3d/dist/preview-driver.d.ts",
+      "bytes": 12084,
+      "sha256": "baf559e8faa643130ecb50fc1872fecc26dce32b2f26797c02657e019c61fe69"
+    },
+    {
+      "path": "packages/model3d/vendor/occt-import-js/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "packages/model3d/dist/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "bytes": 585770,
+      "sha256": "42c42ba5fe8762aa1cd7bc9b2204d0c94798d0ef98eec9735d9411b29ac0888d"
+    },
+    {
+      "path": "node_modules/three/build/three.module.js",
+      "bytes": 595384,
+      "sha256": "d513a6de314b2c32d0a11a209bc1ec06b528ae95c0f841a1c1761aa9248c814a"
+    },
+    {
+      "path": "node_modules/three/build/three.core.js",
+      "bytes": 1385513,
+      "sha256": "c943c148229a99917d815f772404c48f5447e82c0c450f92403955bc27e8d100"
+    },
+    {
+      "path": "node_modules/three/examples/jsm/loaders/MTLLoader.js",
+      "bytes": 11356,
+      "sha256": "233890bce609dbb321f8f62dd1d5fc02b5f397446478afd949bfd64f04f468e7"
+    },
+    {
+      "path": "node_modules/three/examples/jsm/loaders/OBJLoader.js",
+      "bytes": 22922,
+      "sha256": "e3ceb6a8ed48ca146049a8f0879c7acbf884d430f2e728779af26c6ea3a57c65"
+    },
+    {
+      "path": "node_modules/three/src/loaders/ImageLoader.js",
+      "bytes": 2764,
+      "sha256": "2e766e2760cf01d40152cfcf30b615c95569ad2f604c5e03a88802d0d973cd58"
+    },
+    {
+      "path": "node_modules/three/src/loaders/TextureLoader.js",
+      "bytes": 2066,
+      "sha256": "3d2253b0761b70c856b97a2c55d9f7f57ca2c4ef5734bd1b3ddf3a1960a4da59"
+    },
+    {
+      "path": "scripts/test-occt-wasm.mjs",
+      "bytes": 9110,
+      "sha256": "af48b86af8c03677c806fbdb11c325c68f2bb8f61074c5cec2544e616775f584"
+    },
+    {
+      "path": "playwright.config.ts",
+      "bytes": 621,
+      "sha256": "5b2993d7ef92a9c75e16315d52a9c0fdc4207cd5576e7abc45e2d43a21c331d4"
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "bytes": 39705,
+      "sha256": "4b20481a8d18999b2bee60b4438a75656d2c55392be5decb1b24a8d67af4abe0"
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "bytes": 38221,
+      "sha256": "ef6df6103e328572e7ae5ad3a4c5049590ae486342b99d92a88cbdcaced90e07"
+    },
+    {
+      "path": "docs/performance-comparison.md",
+      "bytes": 35857,
+      "sha256": "6c2785bc67d1bb1269b1ff038fa9d2080c8da147f351ae9b516b91e50e579edb"
+    },
+    {
+      "path": "docs/performance-comparison.zh-CN.md",
+      "bytes": 32724,
+      "sha256": "d7e826a3d7bc06fa577f7fb652e75cfcb94efc6fb1be6c456c58d85955a92c48"
+    },
+    {
+      "path": "docs/bundle-sizes.md",
+      "bytes": 2653,
+      "sha256": "92935baacee3c66f42d62d65195f5a0326084cf7ca3867481229848d63cf1b7c"
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "bytes": 3853,
+      "sha256": "33de9d9979e21c600d4ece041a5e51d84c2e11510c0292e5a97cddd4d3aef255"
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "bytes": 97388,
+      "sha256": "8376b2c1632b47641c8c24d07d12d3ee24bc6bb75788ac4e1abd3828d549862f"
+    },
+    {
+      "path": "apps/demo/dist/build-info.json",
+      "bytes": 876,
+      "sha256": "535e68c0f0036d41a6dedf15913069b67e8b86eb27bd429fa4365ee4ec738cf2"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-CHIOVJiq.js",
+      "bytes": 145197,
+      "sha256": "003997c3dcd7052062871dc1b540658225f21cbedc843d37185d2df7b415c55a"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-D5zSLHLT.css",
+      "bytes": 32017,
+      "sha256": "28368a57749f016bc98571bedb5e90a142ad116f6139ec0056474559ac85683e"
+    },
+    {
+      "path": "apps/demo/dist/assets/vendor-DHXMlhQm.js",
+      "bytes": 1372133,
+      "sha256": "724ded24b5b08b96648d76657a9fbe5c04a73fb6c479eb2445ea4fd0a95564d8"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-8_Vk3sr4.js",
+      "bytes": 112250,
+      "sha256": "d6e193d32765af6ef769beb29af535b0f89616dfb3b91833d007d2ddd9cf8c5e"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-B1myDZRM.css",
+      "bytes": 496,
+      "sha256": "6cf6d520f26937cc97308ceef86510cb5035e588673832483b15923fac58588d"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/obj-resources.patch",
+      "bytes": 9012,
+      "sha256": "27a66dae8c708600a22096588324aa3538c8b529181f1bcb35878e159c2c5c1d"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/obj-resources.json.gz",
+      "bytes": 2881,
+      "sha256": "625e29a1d41e1b8bcaa9e2673cd085dc836a9060bf439dfeaa38c5149d31d2cf"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/obj-resources-summary.json",
+      "bytes": 1938,
+      "sha256": "d2e981f8d0533ce133f1d01eaa29061b6d4c8ba56abac2c02a8e1aaf98dfd99a"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/obj-resources-diagnostic.json.gz",
+      "bytes": 1851989,
+      "sha256": "6850537615400958a23ecd4ce9973b51663a6189f1738c181eb79ededbdc79c1"
+    }
+  ],
+  "reproduction": [
+    "Restore diagnostic baselineFiles in an isolated checkout preserving earlier changes, or reverse only obj-resources.patch there. Never reverse it in the active workspace.",
+    "For runtime A/B restore diagnostic baselineRuntimeFiles at their exact paths.",
+    "npm run build:model3d",
+    "Run alone: node scripts/benchmark-obj-resources.mjs --iterations 7 --output tmp/continued-review/obj-resources-reproduced",
+    "node scripts/summarize-obj-resources-benchmark.mjs --input tmp/continued-review/obj-resources-reproduced/results.json",
+    "From packages/model3d and packages/vue: ../../node_modules/.bin/vitest run. The isolated original model3d source reproduces 28 failures and four controls in test/obj-resources.spec.ts.",
+    "node scripts/test-occt-wasm.mjs",
+    "npm run build:demo",
+    "npx playwright test apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/obj-development-browser-final",
+    "Serve with npm run preview --workspace @filens/demo -- --host 127.0.0.1 --port 4174, then run: FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --grep 'UTF-8|OBJ|known voxels|non-cooperative volume|real inline|textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/obj-production-browser"
+  ]
+}

@@ -1,0 +1,288 @@
+{
+  "date": "2026-10-24",
+  "kind": "correctness-and-load-ownership",
+  "scope": "Shared frontend preview runtime and deferred PDF initialization; no new conversion algorithms or Go changes.",
+  "changes": [
+    "Replacement/destruction settle superseded preview calls even when a converter or driver ignores cancellation; late success and rejection remain observed and discarded.",
+    "Each load owns its signal through background resource work, including after initial load resolves.",
+    "Rejected loads detach and destroy their failed session, abort its signal and expose the error in getState and the error event. An unrelated AbortError is reported rather than leaving a spinner.",
+    "Driver error events remain visible through initial load completion until an explicit state update recovers.",
+    "PDF.js and its worker URL load only when opening a PDF. The demo places the PDF engine in its own dynamic chunk, preserving route-only imports in Node without DOMMatrix.",
+    "Detach subscriptions/session before teardown callbacks; token checks preserve previews opened by loading, warning, abort, factory or destroy callbacks, and stop obsolete event delivery."
+  ],
+  "limits": [
+    "Already-started synchronous work cannot be interrupted; non-cooperative asynchronous work may finish after the caller stops waiting.",
+    "Custom drivers remain responsible for their own DOM and resource cleanup; the runtime cannot prevent arbitrary DOM writes by a non-cooperative custom driver.",
+    "The initial load promise does not guarantee every browser image/media resource has finished decoding."
+  ],
+  "performance": {
+    "measured": false,
+    "sotaClaim": false,
+    "note": "Correctness checks only; no load-time, throughput, memory or peer-ranking claim. Existing external benchmark totals remain unchanged.",
+    "externalMeasurements": 2604,
+    "successfulFilensRuns": 1064
+  },
+  "validation": {
+    "newUnitTests": 18,
+    "oldSourceRegressions": {
+      "failed": 15,
+      "passedControls": 3,
+      "unhandledErrors": 0,
+      "log": "preview-runtime-before-final.log"
+    },
+    "unitByPackage": {
+      "core": {
+        "passed": 280,
+        "skipped": 11
+      },
+      "vue": {
+        "passed": 44,
+        "skipped": 0
+      },
+      "archive": {
+        "passed": 22,
+        "skipped": 0
+      },
+      "cad": {
+        "passed": 63,
+        "skipped": 0
+      },
+      "converter-client": {
+        "passed": 32,
+        "skipped": 0
+      },
+      "diagram": {
+        "passed": 31,
+        "skipped": 0
+      },
+      "docx": {
+        "passed": 17,
+        "skipped": 0
+      },
+      "ebook": {
+        "passed": 29,
+        "skipped": 0
+      },
+      "iwork": {
+        "passed": 334,
+        "skipped": 0
+      },
+      "mindmap": {
+        "passed": 25,
+        "skipped": 0
+      },
+      "model3d": {
+        "passed": 128,
+        "skipped": 0
+      },
+      "panorama": {
+        "passed": 150,
+        "skipped": 0
+      },
+      "pdf": {
+        "passed": 9,
+        "skipped": 0
+      },
+      "xlsx": {
+        "passed": 23,
+        "skipped": 0
+      }
+    },
+    "unitTotalPassed": 1187,
+    "existingCoreSkips": 11,
+    "developmentBrowser": {
+      "passed": 13,
+      "command": "npx playwright test apps/demo/e2e/preview-runtime.e2e.ts apps/demo/e2e/pdf-lifecycle.e2e.ts apps/demo/e2e/native-lifecycle.e2e.ts apps/demo/e2e/converter-io.e2e.ts --workers=1",
+      "log": "preview-runtime-browser-final.log"
+    },
+    "productionBrowser": {
+      "passed": 5,
+      "log": "preview-runtime-production-browser-final.log",
+      "baseURL": "http://127.0.0.1:4174/modules/filens/",
+      "checks": [
+        "Demo broken DOCX → readable text recovery",
+        "Real DOCM conversion with all four decoded pictures",
+        "Uploaded HTML sandbox rendering",
+        "Uploaded highlighted code",
+        "No PDF engine request during text preview; exactly one when PDF opens, complete canvas pixels contain ink, text replacement removes canvases"
+      ]
+    },
+    "builds": [
+      "npm run build:core",
+      "npm run build:pdf",
+      "npm run build:demo"
+    ],
+    "categoryChecks": "npm run test:categories",
+    "bundleReport": "npm run report:bundle-sizes",
+    "sourceMapMatchesFinalProductionSource": true,
+    "pdfSourceMapMatchesFinalProductionSource": true,
+    "reversePatchRestoresBaselineBytes": true,
+    "diagnostics": [
+      "The initial category-boundary check failed because eager PDF.js evaluated DOMMatrix in Node. Deferred runtime/worker imports fix the real failure; the original failure and final successful category logs are retained.",
+      "Initial new test routes used FormatRoute instead of FormatDefinition, leaving converter work unobserved in the test fixture. Corrected before the final old-source regression proof; initial failed log retained.",
+      "The first current-source focused run used a matcher unavailable in installed Vitest. Replaced with separate count and argument assertions; failed log retained.",
+      "Final unit and browser checks have no unhandled errors. Existing Three.js duplicate-instance and production vendor chunk-size warnings remain."
+    ]
+  },
+  "loadingArtifacts": {
+    "note": "Production entry, module preloads and CSS as reported by the bundle-size script; bytes are compressed artifacts, not measured network transfer or elapsed time. PDF engine is requested exactly once when opening PDF, zero times for preceding text preview.",
+    "beforeInitial": {
+      "raw": 2621365,
+      "gzip": 738485,
+      "brotli": 614414,
+      "files": [
+        "assets/index-DWCgtP0n.js",
+        "assets/vendor-CebgMNZY.js",
+        "assets/core-CZg8uFKG.js",
+        "assets/model3d-COhBZgW_.js",
+        "assets/media-IpBX_POz.js",
+        "assets/core-CEn7YOnF.css",
+        "assets/model3d-B1myDZRM.css",
+        "assets/media-BrueUWFI.css",
+        "assets/index-D5zSLHLT.css"
+      ]
+    },
+    "currentInitial": {
+      "raw": 2174560,
+      "gzip": 606953,
+      "brotli": 507013,
+      "files": [
+        "assets/index-BT7uluqb.js",
+        "assets/vendor-BqbwLxmX.js",
+        "assets/core-BQQk23gN.js",
+        "assets/model3d-hAhVepbp.js",
+        "assets/media-FA0QU6QA.js",
+        "assets/core-CEn7YOnF.css",
+        "assets/model3d-B1myDZRM.css",
+        "assets/media-BrueUWFI.css",
+        "assets/index-D5zSLHLT.css"
+      ]
+    }
+  },
+  "baseline": {
+    "path": "tmp/continued-review/preview-runtime-baseline/previewer.ts",
+    "sha256": "ec3f76e13dcf10539c9281fd9c89a554047608996ad42764d44066847a052fe5",
+    "bytes": 13889
+  },
+  "additionalBaselines": [
+    {
+      "path": "tmp/continued-review/preview-runtime-baseline/packages/pdf/src/preview-driver.ts",
+      "sha256": "7a4928a126500644fbc784d658c023ddcac16f5a8e61b581804be2862eddfa01",
+      "bytes": 16141
+    },
+    {
+      "path": "tmp/continued-review/preview-runtime-baseline/apps/demo/vite.config.ts",
+      "sha256": "e10251249e5c617171b428ef7c8ddfd8792753b11633bacfef198c078cbf9391",
+      "bytes": 14148
+    },
+    {
+      "path": "tmp/continued-review/preview-runtime-baseline/scripts/report-bundle-sizes.mjs",
+      "sha256": "cd3b86d844e199793b2d9579064ec847c1f6fbd50f022df63c5de5185363f5dd",
+      "bytes": 7726
+    }
+  ],
+  "bindings": [
+    {
+      "path": "packages/core/src/preview/previewer.ts",
+      "sha256": "542b119fb1a2e34901262961080877dff870f3b46ee0fe5aa1ad75645bb805d6",
+      "bytes": 15765
+    },
+    {
+      "path": "packages/pdf/src/preview-driver.ts",
+      "sha256": "f1359a9ed3d8237c6efbd81eb66ea3f470c1576d92df46e59a002848fb828312",
+      "bytes": 16197
+    },
+    {
+      "path": "apps/demo/vite.config.ts",
+      "sha256": "c59cf4425e5f223ee83635a4528ffeb2ceb8d63ee3166dd5d84710920d2f1267",
+      "bytes": 14226
+    },
+    {
+      "path": "scripts/report-bundle-sizes.mjs",
+      "sha256": "85fb611446fd2fb3ef9456b66f7636e437ec99c17a42900f41c79f3789c55ab3",
+      "bytes": 7789
+    },
+    {
+      "path": "packages/core/test/runtime-lifecycle.spec.ts",
+      "sha256": "d74079950091c6f173bc9f91c371d36bca3e020f3e8992c2096478100ce28150",
+      "bytes": 13562
+    },
+    {
+      "path": "apps/demo/e2e/preview-runtime.e2e.ts",
+      "sha256": "51b8324286b3dffdf767ee5351044df4a5b6b746f8a00a19631f1ed24090136f",
+      "bytes": 9621
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "sha256": "42c42ba5fe8762aa1cd7bc9b2204d0c94798d0ef98eec9735d9411b29ac0888d",
+      "bytes": 585770
+    },
+    {
+      "path": "packages/core/dist/index.js.map",
+      "sha256": "c589e51a4f4fa1f8fd6c9c94157cf0c2f0c9322ec479f81c4a0639c13699a7a6",
+      "bytes": 1608687
+    },
+    {
+      "path": "packages/pdf/dist/index.js",
+      "sha256": "793223a93b006ae5257c9b76dc9ec12d5316e9aa7f0f0d8bb6c14afa83f2b773",
+      "bytes": 12396
+    },
+    {
+      "path": "packages/pdf/dist/index.js.map",
+      "sha256": "0b1afed3f7ab2cc8f656790918716dc8eb9c012bd890c1ffb1498a8de68f9ed1",
+      "bytes": 28064
+    },
+    {
+      "path": "packages/pdf/dist/pdf-syjMPdBL.js",
+      "sha256": "33bf1472ab00dafa3e0e6ec6e6a08834b504a8f0be9ba400c2c829705a01600a",
+      "bytes": 604016
+    },
+    {
+      "path": "packages/pdf/dist/pdf.worker.min-DmO9Xdfo.js",
+      "sha256": "55b4e8fdcd786a52f95b8d64b1d1ffbdd4e9f804cf5599e0887a1492f322e19a",
+      "bytes": 1438273
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "sha256": "5586b0ec381bffa3b11844a0c3156eb015e7e71670952d4b572e0fb094d3f25a",
+      "bytes": 3853
+    },
+    {
+      "path": "apps/demo/dist/build-info.json",
+      "sha256": "4c5aa438d55f2dad571a6aca67a176aa0f4d61f5b1dadc3b2b9baa359a7ac34b",
+      "bytes": 876
+    },
+    {
+      "path": "apps/demo/dist/assets/index-BT7uluqb.js",
+      "sha256": "b0a74f455201c96117708ec29750930255e50e8d4f5216f55bf80f8740d9605f",
+      "bytes": 145197
+    },
+    {
+      "path": "apps/demo/dist/assets/index-D5zSLHLT.css",
+      "sha256": "28368a57749f016bc98571bedb5e90a142ad116f6139ec0056474559ac85683e",
+      "bytes": 32017
+    },
+    {
+      "path": "apps/demo/dist/assets/pdf-runtime-CGQe2guw.js",
+      "sha256": "0ca3ff9cc976bb4acc0da00b3330cfd1583ab3687f4f730722be6f49f5e9188d",
+      "bytes": 445612
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/preview-runtime.patch",
+      "sha256": "e17deada7ca93a404c906e79493695620f92c83674510e9b41587a7fb17a60b0",
+      "bytes": 10763
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/preview-runtime-diagnostic.json.gz",
+      "sha256": "0be2d0de942d927c8c7096963ce1b8e9bda564a9a5812579a5f5a7bbbbb96a87",
+      "bytes": 13466
+    }
+  ],
+  "reproduction": [
+    "From packages/core: ../../node_modules/.bin/vitest run test/runtime-lifecycle.spec.ts",
+    "From each listed package directory: ../../node_modules/.bin/vitest run",
+    "Use an isolated current source copy preserving prior changes, reverse only preview-runtime.patch and run the same 18-test file: 15 fail, 3 controls pass.",
+    "Run the development browser command above. For the production upload checks, build the demo, serve it with vite preview, set FILENS_E2E_BASE_URL and select the five upload tests.",
+    "Full commands, successful logs and excluded fixture/matcher diagnostics are in preview-runtime-diagnostic.json.gz."
+  ]
+}

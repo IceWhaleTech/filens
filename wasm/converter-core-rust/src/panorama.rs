@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::fs;
 
@@ -297,6 +297,9 @@ impl SparseFile {
         if end > self.size {
             return None;
         }
+        if length == 0 {
+            return Some(Vec::new());
+        }
         for segment in &self.segments {
             let segment_end = segment.offset + segment.bytes.len() as u64;
             if offset >= segment.offset && end <= segment_end {
@@ -304,7 +307,38 @@ impl SparseFile {
                 return Some(segment.bytes[start..start + length].to_vec());
             }
         }
-        None
+        // Adjacent sparse ranges can satisfy a larger read without fetching
+        // overlapping prefixes again. Verify coverage before allocating.
+        let mut cursor = offset;
+        for segment in &self.segments {
+            if segment.offset > cursor {
+                return None;
+            }
+            cursor = cursor.max(segment.offset + segment.bytes.len() as u64);
+            if cursor >= end {
+                break;
+            }
+        }
+        if cursor < end {
+            return None;
+        }
+        let mut bytes = Vec::with_capacity(length);
+        cursor = offset;
+        for segment in &self.segments {
+            let segment_end = segment.offset + segment.bytes.len() as u64;
+            if segment_end <= cursor {
+                continue;
+            }
+            let stop = segment_end.min(end);
+            bytes.extend_from_slice(
+                &segment.bytes[(cursor - segment.offset) as usize..(stop - segment.offset) as usize],
+            );
+            cursor = stop;
+            if cursor == end {
+                break;
+            }
+        }
+        Some(bytes)
     }
 
     fn need(&self, offset: u64, length: u64) -> RequiredRange {
@@ -318,12 +352,23 @@ impl SparseFile {
 }
 
 fn inspect_insp(file: &SparseFile) -> Result<InspectOutcome, InspectError> {
-    let mut prefix_length = file.size.min(1 << 20);
+    let mut available_prefix = 0;
+    for segment in &file.segments {
+        if segment.offset > available_prefix {
+            break;
+        }
+        available_prefix = available_prefix.max(segment.offset + segment.bytes.len() as u64);
+    }
+    // Inspect the largest already available prefix once. Earlier iterations
+    // have already proved that its smaller prefixes do not contain SOF.
+    let mut prefix_length = available_prefix
+        .max(file.size.min(1 << 20))
+        .min(MAX_RANGE_BYTES);
     let (width, height) = loop {
         let Some(bytes) = file.read(0, prefix_length as usize) else {
-            return Ok(InspectOutcome::NeedRanges(vec![
-                file.need(0, prefix_length),
-            ]));
+            return Ok(InspectOutcome::NeedRanges(
+                vec![file.need(0, prefix_length)],
+            ));
         };
         if let Some(dimensions) = jpeg_dimensions(&bytes) {
             break dimensions;
@@ -340,9 +385,6 @@ fn inspect_insp(file: &SparseFile) -> Result<InspectOutcome, InspectError> {
             .saturating_mul(2)
             .min(file.size)
             .min(MAX_RANGE_BYTES);
-        if file.read(0, next_length as usize).is_none() {
-            return Ok(InspectOutcome::NeedRanges(vec![file.need(0, next_length)]));
-        }
         prefix_length = next_length;
     };
     let insta_info = match inspect_insta_info(file)? {
@@ -506,7 +548,7 @@ fn inspect_iso_bmff(
         (moov_size - header_size as u64) as usize,
     ) else {
         return Ok(InspectOutcome::NeedRanges(vec![
-            file.need(moov_offset, moov_size),
+            file.need(moov_offset, moov_size)
         ]));
     };
     let mut tracks = parse_tracks(&moov_bytes)?;
@@ -537,7 +579,7 @@ fn inspect_iso_bmff(
         if let Some(sample) = djmd {
             let Some(bytes) = file.read(sample.offset, sample.size as usize) else {
                 return Ok(InspectOutcome::NeedRanges(vec![
-                    file.need(sample.offset, sample.size as u64),
+                    file.need(sample.offset, sample.size as u64)
                 ]));
             };
             let calibration = decode_dji_calibration(&bytes);
@@ -763,15 +805,12 @@ fn inspect_insta_info(file: &SparseFile) -> Result<InstaInfoOutcome, InspectErro
         });
     }
     let metadata_offset = file.size - metadata_size;
-    let Some(metadata) = file.read(metadata_offset, metadata_size as usize) else {
-        return Ok(InstaInfoOutcome::NeedRange(
-            file.need(metadata_offset, metadata_size),
-        ));
+    let info = match find_insta_info_frame(file, metadata_offset) {
+        InstaFrameOutcome::Complete(info) => info,
+        InstaFrameOutcome::NeedRange(range) => return Ok(InstaInfoOutcome::NeedRange(range)),
+        InstaFrameOutcome::Unavailable => return Ok(InstaInfoOutcome::Unavailable),
     };
-    let Some(info) = find_insta_info_frame(&metadata) else {
-        return Ok(InstaInfoOutcome::Unavailable);
-    };
-    let fields = protobuf_fields(info).ok_or_else(|| invalid("invalid INSV INFO protobuf"))?;
+    let fields = protobuf_fields(&info).ok_or_else(|| invalid("invalid INSV INFO protobuf"))?;
     let file_group = field_bytes(&fields, 26)
         .and_then(protobuf_fields)
         .map(|group| {
@@ -846,36 +885,103 @@ fn insta_embedded_offset_supported(model: Option<&str>) -> bool {
     matches!(model, Some("Insta360 OneRS"))
 }
 
-fn find_insta_info_frame(metadata: &[u8]) -> Option<&[u8]> {
-    if metadata.len() < 78 {
-        return None;
+enum InstaFrameOutcome {
+    Complete(Vec<u8>),
+    NeedRange(RequiredRange),
+    Unavailable,
+}
+
+// Walk frame footers without reading unrelated thumbnails, IMU or telemetry.
+// A small backward window normally includes both the next footer and its INFO
+// body. Fall back to the bounded metadata block for unusually fragmented files,
+// so the browser's eight-invocation inspection limit still covers old layouts.
+fn insta_info_range(
+    file: &SparseFile,
+    metadata_offset: u64,
+    offset: u64,
+    length: u64,
+) -> RequiredRange {
+    if file.segments.len() >= 6 {
+        return file.need(metadata_offset, file.size - metadata_offset);
     }
-    let mut cursor = metadata.len() - 72;
+    let end = offset + length;
+    let start = end.saturating_sub(length.max(4096)).max(metadata_offset);
+    file.need(start, end - start)
+}
+
+fn find_insta_info_frame(file: &SparseFile, metadata_offset: u64) -> InstaFrameOutcome {
+    let metadata_end = file.size - 72;
+    let mut cursor = metadata_end;
     for _ in 0..64 {
-        if cursor < 6 {
-            break;
+        if cursor < metadata_offset + 6 {
+            return InstaFrameOutcome::Unavailable;
         }
-        let header = &metadata[cursor - 6..cursor];
+        let Some(header) = file.read(cursor - 6, 6) else {
+            return InstaFrameOutcome::NeedRange(insta_info_range(
+                file,
+                metadata_offset,
+                cursor - 6,
+                6,
+            ));
+        };
         let frame_type = header[1];
-        let size = le_u32(header, 2)? as usize;
-        let start = cursor.checked_sub(size + 6)?;
+        let size = le_u32(&header, 2).unwrap() as u64;
+        let Some(start) = cursor
+            .checked_sub(size + 6)
+            .filter(|start| *start >= metadata_offset)
+        else {
+            return InstaFrameOutcome::Unavailable;
+        };
         if frame_type == 1 {
-            return metadata.get(start..start + size);
+            return match file.read(start, size as usize) {
+                Some(info) => InstaFrameOutcome::Complete(info),
+                None => InstaFrameOutcome::NeedRange(insta_info_range(
+                    file,
+                    metadata_offset,
+                    start,
+                    size,
+                )),
+            };
         }
         if frame_type == 0 {
-            let index = metadata.get(start..start + size)?;
+            let Some(index) = file.read(start, size as usize) else {
+                return InstaFrameOutcome::NeedRange(insta_info_range(
+                    file,
+                    metadata_offset,
+                    start,
+                    size,
+                ));
+            };
             for entry in index.chunks_exact(10) {
                 if entry[0] != 1 {
                     continue;
                 }
-                let frame_size = le_u32(entry, 2)? as usize;
-                let offset = le_u32(entry, 6)? as usize;
-                return metadata.get(offset..offset + frame_size);
+                let frame_size = le_u32(entry, 2).unwrap() as u64;
+                let Some(offset) = metadata_offset.checked_add(le_u32(entry, 6).unwrap() as u64)
+                else {
+                    return InstaFrameOutcome::Unavailable;
+                };
+                if !offset
+                    .checked_add(frame_size)
+                    .is_some_and(|end| end <= metadata_end)
+                {
+                    return InstaFrameOutcome::Unavailable;
+                }
+                return match file.read(offset, frame_size as usize) {
+                    Some(info) => InstaFrameOutcome::Complete(info),
+                    None => InstaFrameOutcome::NeedRange(insta_info_range(
+                        file,
+                        metadata_offset,
+                        offset,
+                        frame_size,
+                    )),
+                };
             }
+            return InstaFrameOutcome::Unavailable;
         }
         cursor = start;
     }
-    None
+    InstaFrameOutcome::Unavailable
 }
 
 fn decode_insta_offset_v3(
@@ -1707,6 +1813,37 @@ mod tests {
     use super::*;
 
     #[test]
+    fn reads_adjacent_and_overlapping_sparse_segments_without_filling_holes() {
+        let file = SparseFile {
+            size: 12,
+            segments: vec![
+                Segment {
+                    offset: 0,
+                    bytes: vec![0, 1, 2],
+                },
+                Segment {
+                    offset: 3,
+                    bytes: vec![3, 4, 5],
+                },
+                Segment {
+                    offset: 4,
+                    bytes: vec![4, 5, 6, 7],
+                },
+                Segment {
+                    offset: 10,
+                    bytes: vec![10, 11],
+                },
+            ],
+        };
+        assert_eq!(file.read(1, 7), Some(vec![1, 2, 3, 4, 5, 6, 7]));
+        assert_eq!(file.read(3, 4), Some(vec![3, 4, 5, 6]));
+        assert_eq!(file.read(7, 4), None);
+        assert_eq!(file.read(10, 3), None);
+        assert_eq!(file.read(u64::MAX, 2), None);
+        assert_eq!(file.read(9, 0), Some(vec![]));
+    }
+
+    #[test]
     fn parses_jpeg_dimensions() {
         let jpeg = [
             0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x04, 0x00, 0x08, 0x00, 0x03, 0x01, 0x11,
@@ -1857,6 +1994,151 @@ mod tests {
             protobuf_fields(&[0x0d, 0x00, 0x00, 0x80, 0x3f, 0x12, 0x03, b'a', b'b', b'c']).unwrap();
         assert_eq!(field_f32(&fields, 1), Some(1.0));
         assert_eq!(field_string(&fields, 2).as_deref(), Some("abc"));
+    }
+
+    fn insta_info_fixture(indexed: bool, unknown_frames: usize) -> (Vec<u8>, u64) {
+        fn frame(bytes: &mut Vec<u8>, kind: u8, body: &[u8]) {
+            bytes.extend(body);
+            bytes.extend([0, kind]);
+            bytes.extend((body.len() as u32).to_le_bytes());
+        }
+        let mut bytes = vec![0; 512];
+        let metadata_offset = bytes.len() as u64;
+        frame(&mut bytes, 1, b"\x12\x02X5");
+        for _ in 0..unknown_frames {
+            frame(
+                &mut bytes,
+                2,
+                &vec![0; if unknown_frames == 1 { 2 << 20 } else { 8192 }],
+            );
+        }
+        if indexed {
+            let mut index = vec![1, 0];
+            index.extend(4u32.to_le_bytes());
+            index.extend(0u32.to_le_bytes());
+            frame(&mut bytes, 0, &index);
+        }
+        let mut header = vec![0; 72];
+        header[32..36]
+            .copy_from_slice(&((bytes.len() - metadata_offset as usize + 72) as u32).to_le_bytes());
+        header[36..40].copy_from_slice(&3u32.to_le_bytes());
+        header[40..72].copy_from_slice(b"8db42d694ccc418790edff439fe026bf");
+        bytes.extend(header);
+        (bytes, metadata_offset)
+    }
+
+    #[test]
+    fn inspects_info_without_reading_large_thumbnail_frames() {
+        for indexed in [false, true] {
+            let (bytes, _) = insta_info_fixture(indexed, 1);
+            let complete = SparseFile {
+                size: bytes.len() as u64,
+                segments: vec![Segment {
+                    offset: 0,
+                    bytes: bytes.clone(),
+                }],
+            };
+            let InstaInfoOutcome::Complete(expected) = inspect_insta_info(&complete).unwrap()
+            else {
+                panic!("missing complete INFO");
+            };
+            let start = bytes.len() - (64 << 10);
+            let mut sparse = SparseFile {
+                size: bytes.len() as u64,
+                segments: vec![Segment {
+                    offset: start as u64,
+                    bytes: bytes[start..].to_vec(),
+                }],
+            };
+            let mut requested = 0;
+            for _ in 0..8 {
+                match inspect_insta_info(&sparse).unwrap() {
+                    InstaInfoOutcome::Complete(actual) => {
+                        assert_eq!(actual, expected);
+                        assert_eq!(actual["cameraModel"], "X5");
+                        break;
+                    }
+                    InstaInfoOutcome::NeedRange(range) => {
+                        requested += range.length;
+                        sparse.segments.push(Segment {
+                            offset: range.offset,
+                            bytes: bytes
+                                [range.offset as usize..(range.offset + range.length) as usize]
+                                .to_vec(),
+                        });
+                    }
+                    InstaInfoOutcome::Unavailable => panic!("lost sparse INFO"),
+                }
+            }
+            assert!(matches!(
+                inspect_insta_info(&sparse).unwrap(),
+                InstaInfoOutcome::Complete(_)
+            ));
+            assert!(
+                requested > 0 && requested <= 8192,
+                "read {requested} bytes for INFO"
+            );
+        }
+    }
+
+    #[test]
+    fn falls_back_within_the_sparse_inspection_iteration_budget() {
+        let (bytes, metadata_offset) = insta_info_fixture(false, 12);
+        let mut sparse = SparseFile {
+            size: bytes.len() as u64,
+            segments: vec![Segment {
+                offset: (bytes.len() - 72) as u64,
+                bytes: bytes[bytes.len() - 72..].to_vec(),
+            }],
+        };
+        let mut used_fallback = false;
+        for _ in 0..8 {
+            match inspect_insta_info(&sparse).unwrap() {
+                InstaInfoOutcome::Complete(_) => break,
+                InstaInfoOutcome::NeedRange(range) => {
+                    used_fallback |= range.offset == metadata_offset
+                        && range.length == bytes.len() as u64 - metadata_offset;
+                    sparse.segments.push(Segment {
+                        offset: range.offset,
+                        bytes: bytes[range.offset as usize..(range.offset + range.length) as usize]
+                            .to_vec(),
+                    });
+                }
+                InstaInfoOutcome::Unavailable => panic!("lost fragmented INFO"),
+            }
+        }
+        assert!(used_fallback);
+        assert!(matches!(
+            inspect_insta_info(&sparse).unwrap(),
+            InstaInfoOutcome::Complete(_)
+        ));
+    }
+
+    #[test]
+    fn rejects_insta_info_frames_outside_the_metadata_block() {
+        let (mut bytes, metadata_offset) = insta_info_fixture(false, 1);
+        let footer_size = bytes.len() - 76;
+        bytes[footer_size..footer_size + 4].copy_from_slice(&u32::MAX.to_le_bytes());
+        let file = SparseFile {
+            size: bytes.len() as u64,
+            segments: vec![Segment { offset: 0, bytes }],
+        };
+        assert!(matches!(
+            find_insta_info_frame(&file, metadata_offset),
+            InstaFrameOutcome::Unavailable
+        ));
+
+        let (mut bytes, metadata_offset) = insta_info_fixture(true, 1);
+        let index_offset = bytes.len() - 72 - 6 - 4;
+        bytes[index_offset..index_offset + 4].copy_from_slice(&u32::MAX.to_le_bytes());
+        let file = SparseFile {
+            size: bytes.len() as u64,
+            segments: vec![Segment { offset: 0, bytes }],
+        };
+        assert!(matches!(
+            find_insta_info_frame(&file, metadata_offset),
+            InstaFrameOutcome::Unavailable
+        ));
     }
 
     #[test]

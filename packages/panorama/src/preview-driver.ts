@@ -28,6 +28,7 @@ import { createBrowserCalibratedPanoramaRenderer, createCalibratedPanoramaImageR
 import { PanoramaProcessorError, type PanoramaAssetManifest, type PanoramaProcessor } from './wasm-processor';
 import { createRealtimePanoramaRenderer, createRealtimeStitchCalibration } from './realtime-renderer';
 import { createStaticPanoramaRenderer } from './static-renderer';
+import { bindPanoramaProcessor, checkPanoramaLoad, waitForPanoramaLoad } from './load-task';
 
 type PreviewListenerMap = {
   [K in PreviewEventName]: Set<(payload: PreviewEventMap[K]) => void>;
@@ -113,6 +114,9 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
   private pointerStartLon = 0;
   private pointerStartLat = 0;
   private resizeObserver: ResizeObserver | null = null;
+  private loadController?: AbortController;
+  private removeAbortListener?: () => void;
+  private interactionController?: AbortController;
   private readonly resourceResolver?: PreviewResourceResolver;
   private state: PanoramaPreviewState;
 
@@ -150,6 +154,9 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
+    const controller = this.beginLoad(context);
+    const signal = controller.signal;
+    const processor = this.processor ? bindPanoramaProcessor(this.processor, signal) : undefined;
     this.state = {
       ...this.state,
       loading: true,
@@ -165,15 +172,17 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       streamSyncMs: undefined,
       proxyPreview: false,
       stabilizationAvailable: false,
-      stabilizationMode: 'off'
+      stabilizationMode: 'off',
+      naturalWidth: undefined, naturalHeight: undefined,
+      duration: undefined, currentTime: undefined, paused: true, muted: undefined
     };
     this.emit('loading', this.state);
     this.emit('statechange', this.state);
 
     try {
+      if (context.signal?.aborted) controller.abort();
+      checkPanoramaLoad(signal);
       this.osmoFallbackReason = '';
-      this.disposeScene();
-      this.root.replaceChildren(this.stage, this.hint);
       const scene = new Scene();
       const camera = new PerspectiveCamera(this.scaleToFov(this.state.scale), 1, 1, 1100);
       const isVideo = context.route?.family === 'panorama-video';
@@ -186,8 +195,9 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
         timeline: isVideo,
         volume: isVideo
       };
-      const calibratedVideo = VENDOR_RAW_VIDEO_FORMATS.has(format) && this.processor
-        && await this.tryCalibratedVendor(source, format as 'osv' | 'insv', context.descriptor.name, context.signal, scene);
+      const calibratedVideo = VENDOR_RAW_VIDEO_FORMATS.has(format) && processor
+        && await this.tryCalibratedVendor(source, format as 'osv' | 'insv', context.descriptor.name, signal, scene, processor);
+      checkPanoramaLoad(signal);
       if (calibratedVideo && this.calibratedRenderer?.canvas) {
         this.finishRealtimeScene(this.calibratedRenderer.canvas);
         return;
@@ -208,14 +218,19 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
         return;
       }
       const resolvedSource = format === 'osv'
-        ? await this.resolveOsmoProxy(context.descriptor.name)
-        : await resolvePanoramaSource(source, format, context.signal);
-      if (format === 'insp' && this.processor) {
-        const manifest = await this.processor.open(resolvedSource, { format: 'insp', signal: context.signal });
+        ? await this.resolveOsmoProxy(context.descriptor.name, signal)
+        : await waitForPanoramaLoad(resolvePanoramaSource(source, format, signal), signal);
+      checkPanoramaLoad(signal);
+      if (format === 'insp' && processor) {
+        const manifest = await processor.open(resolvedSource, { format: 'insp', signal });
+        checkPanoramaLoad(signal);
         if (manifest.projection.kind === 'mei-extended') {
-          const texture = await new TextureLoader().loadAsync(this.sourceToUrl(resolvedSource, contentType));
+          const texture = await waitForPanoramaLoad(new TextureLoader().loadAsync(this.sourceToUrl(resolvedSource, contentType)), signal, texture => texture.dispose());
+          checkPanoramaLoad(signal);
+          this.texture = texture;
           texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-          const calibrated = await createCalibratedPanoramaImageRenderer(this.processor, manifest, texture);
+          const calibrated = await waitForPanoramaLoad(createCalibratedPanoramaImageRenderer(processor, manifest, texture), signal, renderer => renderer.close());
+          checkPanoramaLoad(signal);
           if (calibrated.mesh) scene.add(calibrated.mesh);
           this.texture = texture;
           this.calibratedRenderer = calibrated;
@@ -231,17 +246,20 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
             ? ['Experimental calibrated INSP preview uses the image\'s embedded lens calibration, exposure matching, and a content-aware feathered seam.']
             : manifest.warnings;
           if (this.state.warnings.length) this.emit('warnings', this.state.warnings);
+          checkPanoramaLoad(signal);
           this.finishScene(renderer, scene, camera);
           return;
         }
-        this.processor.close();
+        processor.close();
         if (manifest.projection.kind === 'unknown') {
           throw new Error(manifest.warnings[0] || 'INSP contains an unsupported raw dual-fisheye image.');
         }
       }
       const texture = isVideo
-        ? await this.createVideoTexture(resolvedSource, contentType)
-        : await new TextureLoader().loadAsync(this.sourceToUrl(resolvedSource, contentType));
+        ? await waitForPanoramaLoad(this.createVideoTexture(resolvedSource, contentType, signal), signal, texture => texture.dispose())
+        : await waitForPanoramaLoad(new TextureLoader().loadAsync(this.sourceToUrl(resolvedSource, contentType)), signal, texture => texture.dispose());
+      checkPanoramaLoad(signal);
+      this.texture = texture;
       texture.colorSpace = SRGBColorSpace;
       texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
       texture.minFilter = LinearFilter;
@@ -276,8 +294,10 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
         this.root.append(this.notice);
         this.emit('warnings', this.state.warnings);
       }
+      checkPanoramaLoad(signal);
       this.finishScene(renderer, scene, camera);
     } catch (error) {
+      if (signal.aborted) throw new DOMException('Panorama preview was aborted.', 'AbortError');
       const normalizedError = normalizePanoramaLoadError(error, context.descriptor.extension ?? context.route?.sourceFormat);
       this.disposeScene();
       this.state.loading = false;
@@ -290,8 +310,8 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
 
   /** Display a WASM-developed RAW raster with the original sensor calibration. */
   async loadCalibratedImage(source: PreviewSource, manifest: PanoramaAssetManifest, context: PreviewLoadContext): Promise<void> {
-    this.disposeScene();
-    this.root.replaceChildren(this.stage, this.hint);
+    const controller = this.beginLoad(context);
+    const signal = controller.signal;
     this.state = {
       ...this.state, loading: true, error: null, family: 'panorama', title: context.descriptor.name,
       warnings: [...manifest.warnings, 'Experimental RAW panorama preview uses lightweight development; camera color profiles and edits may differ.'], vendor: manifest.vendor, cameraModel: manifest.cameraModel,
@@ -305,25 +325,29 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
     this.emit('loading', this.state);
     this.emit('statechange', this.state);
     try {
+      if (context.signal?.aborted) controller.abort();
+      checkPanoramaLoad(signal);
       const image = document.createElement('img');
       await new Promise<void>((resolve, reject) => {
         const cleanup = () => {
           image.onload = image.onerror = null;
-          context.signal?.removeEventListener('abort', aborted);
+          signal.removeEventListener('abort', aborted);
         };
         const aborted = () => { cleanup(); image.removeAttribute('src'); reject(new DOMException('DNG preview was aborted.', 'AbortError')); };
         image.onload = () => { cleanup(); resolve(); };
         image.onerror = () => { cleanup(); reject(new Error('Failed to load the developed DNG preview.')); };
-        if (context.signal?.aborted) { aborted(); return; }
-        context.signal?.addEventListener('abort', aborted, { once: true });
+        if (signal.aborted) { aborted(); return; }
+        signal.addEventListener('abort', aborted, { once: true });
         image.src = this.sourceToUrl(source, 'image/jpeg');
       });
-      if (context.signal?.aborted) throw new DOMException('DNG preview was aborted.', 'AbortError');
+      checkPanoramaLoad(signal);
       this.calibratedRenderer = createStaticPanoramaRenderer(image, manifest);
       this.state.stitchMode = this.calibratedRenderer.dynamicSeam ? 'static-seam' : 'calibrated-blend';
       if (this.state.warnings.length) this.emit('warnings', this.state.warnings);
+      checkPanoramaLoad(signal);
       this.finishRealtimeScene(this.calibratedRenderer.canvas!);
     } catch (error) {
+      if (signal.aborted) throw new DOMException('Panorama preview was aborted.', 'AbortError');
       this.disposeScene();
       this.state.loading = false;
       this.state.error = error instanceof Error ? error.message : String(error);
@@ -333,12 +357,41 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
   }
 
   destroy(): void {
-    this.disposeScene();
+    this.stopLoad();
+    this.state.loading = false;
     this.stage.replaceChildren();
     this.root.replaceChildren();
     if (this.root.parentElement === this.host) {
       this.host.replaceChildren();
     }
+  }
+
+  private beginLoad(context: PreviewLoadContext): AbortController {
+    this.stopLoad();
+    const controller = new AbortController();
+    this.loadController = controller;
+    const abort = () => controller.abort();
+    controller.signal.addEventListener('abort', () => {
+      this.removeAbortListener?.();
+      if (this.loadController !== controller) return;
+      this.disposeScene();
+      this.state = { ...this.state, loading: false, error: null };
+      this.emit('statechange', this.state);
+    }, { once: true });
+    context.signal?.addEventListener('abort', abort, { once: true });
+    this.removeAbortListener = () => context.signal?.removeEventListener('abort', abort);
+    if (this.root.parentElement !== this.host) this.host.replaceChildren(this.root);
+    this.root.replaceChildren(this.stage, this.hint);
+    return controller;
+  }
+
+  private stopLoad(): void {
+    const controller = this.loadController;
+    this.loadController = undefined;
+    this.removeAbortListener?.();
+    this.removeAbortListener = undefined;
+    controller?.abort();
+    this.disposeScene();
   }
 
   getState(): PanoramaPreviewState {
@@ -387,6 +440,7 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
   }
 
   private bindInteractions(canvas: HTMLCanvasElement): void {
+    const signal = (this.interactionController ??= new AbortController()).signal;
     canvas.addEventListener('pointerdown', (event) => {
       this.pointerDown = true;
       this.pointerStartX = event.clientX;
@@ -394,7 +448,7 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       this.pointerStartLon = this.lon;
       this.pointerStartLat = this.lat;
       canvas.setPointerCapture(event.pointerId);
-    });
+    }, { signal });
     canvas.addEventListener('pointermove', (event) => {
       if (!this.pointerDown) {
         return;
@@ -403,18 +457,18 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       this.lon = this.pointerStartLon - (event.clientX - this.pointerStartX) * 0.1 * direction;
       this.lat = Math.max(-85, Math.min(85, this.pointerStartLat + (event.clientY - this.pointerStartY) * 0.1 * direction));
       this.scheduleFrame();
-    });
+    }, { signal });
     canvas.addEventListener('pointerup', (event) => {
       this.pointerDown = false;
       canvas.releasePointerCapture(event.pointerId);
-    });
+    }, { signal });
     canvas.addEventListener('pointercancel', () => {
       this.pointerDown = false;
-    });
+    }, { signal });
     canvas.addEventListener('wheel', (event) => {
       event.preventDefault();
       this.setScale(this.state.scale + (event.deltaY > 0 ? -0.08 : 0.08));
-    }, { passive: false });
+    }, { passive: false, signal });
   }
 
   private observeResize(): void {
@@ -451,8 +505,8 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       this.animationFrame = 0;
       this.renderFrame();
       // Still photos only need a frame when the view or viewport changes.
-      // Video and calibrated renderers retain their update/state polling.
-      if (this.state.family === 'panorama-video' || this.calibratedRenderer) this.scheduleFrame();
+      // Calibrated photos finish seam analysis before their initial frame too.
+      if (this.state.family === 'panorama-video') this.scheduleFrame();
     });
   }
 
@@ -487,14 +541,17 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
     if (this.renderer && this.scene && this.camera) this.renderer.render(this.scene, this.camera);
   }
 
-  private async tryCalibratedVendor(source: PreviewSource, format: 'osv' | 'insv', name: string | undefined, signal: AbortSignal | undefined, scene: Scene): Promise<boolean> {
+  private async tryCalibratedVendor(source: PreviewSource, format: 'osv' | 'insv', name: string | undefined, signal: AbortSignal, scene: Scene, processor: PanoramaProcessor): Promise<boolean> {
     let manifest: PanoramaAssetManifest | undefined;
     let ordered: { source: PreviewSource; companion?: PreviewSource; primaryName?: string } | undefined;
     try {
-      const companion = format === 'insv' ? await this.resolveInstaCompanion(name) : undefined;
+      const companion = format === 'insv' ? await waitForPanoramaLoad(this.resolveInstaCompanion(name), signal) : undefined;
+      checkPanoramaLoad(signal);
       ordered = orderInstaPair(source, companion, name);
-      const sidecar = format === 'insv' ? await this.resolveInstaSidecar(ordered.primaryName) : undefined;
-      manifest = await this.processor!.open(ordered.source, { format, sidecar, companion: ordered.companion, signal });
+      const sidecar = format === 'insv' ? await waitForPanoramaLoad(this.resolveInstaSidecar(ordered.primaryName), signal) : undefined;
+      checkPanoramaLoad(signal);
+      manifest = await processor.open(ordered.source, { format, sidecar, companion: ordered.companion, signal });
+      checkPanoramaLoad(signal);
       const browserStitchedProxy = manifest.projection.kind === 'unknown'
         && manifest.tracks.length === 1
         && isEquirectangularSize(manifest.tracks[0].width, manifest.tracks[0].height);
@@ -508,12 +565,13 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
           ? [...manifest.warnings, 'INSV calibration metadata was unavailable; using its browser-decodable 2:1 stitched track as a proxy.']
           : manifest.warnings;
         if (this.state.warnings.length) this.emit('warnings', this.state.warnings);
-        this.processor?.close();
+        processor.close();
         return false;
       }
-      const calibrated = await (createRealtimeStitchCalibration(manifest) && !manifest.imu?.imuToCameraConfirmed
-        ? createRealtimePanoramaRenderer(this.processor!, manifest)
-        : createCalibratedPanoramaRenderer(this.processor!, manifest));
+      const calibrated = await waitForPanoramaLoad(createRealtimeStitchCalibration(manifest) && !manifest.imu?.imuToCameraConfirmed
+        ? createRealtimePanoramaRenderer(processor, manifest)
+        : createCalibratedPanoramaRenderer(processor, manifest), signal, renderer => renderer.close());
+      checkPanoramaLoad(signal);
       if (calibrated.mesh) scene.add(calibrated.mesh);
       this.calibratedRenderer = calibrated;
       this.state.vendor = manifest.vendor;
@@ -538,10 +596,12 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       if (this.state.warnings.length) this.emit('warnings', this.state.warnings);
       return true;
     } catch (error) {
-      this.processor?.close();
+      checkPanoramaLoad(signal);
+      processor.close();
       if (format === 'insv' && manifest && ordered && error instanceof PanoramaProcessorError && error.code === 'codec_unsupported') {
         try {
-          const calibrated = await createBrowserCalibratedPanoramaRenderer(manifest, ordered.source, ordered.companion);
+          const calibrated = await waitForPanoramaLoad(createBrowserCalibratedPanoramaRenderer(manifest, ordered.source, ordered.companion), signal, renderer => renderer.close());
+          checkPanoramaLoad(signal);
           if (calibrated.mesh) scene.add(calibrated.mesh);
           this.calibratedRenderer = calibrated;
           this.state.vendor = manifest.vendor;
@@ -567,6 +627,7 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
           this.emit('warnings', this.state.warnings);
           return true;
         } catch (fallbackError) {
+          checkPanoramaLoad(signal);
           error = fallbackError;
         }
       }
@@ -590,6 +651,7 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
   }
 
   private createCalibratedControls(renderer: CalibratedPanoramaRenderer): void {
+    const signal = (this.interactionController ??= new AbortController()).signal;
     const controls = document.createElement('div');
     controls.className = 'panoramav-calibrated-controls';
     const button = document.createElement('button');
@@ -599,14 +661,14 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
     button.addEventListener('click', () => {
       if (renderer.paused) renderer.play(); else renderer.pause();
       this.syncCalibratedPlayback(true);
-    });
+    }, { signal });
     const timeline = document.createElement('input');
     timeline.type = 'range';
     timeline.min = '0';
     timeline.max = String(renderer.duration || 0);
     timeline.step = '0.01';
     timeline.setAttribute('aria-label', 'Panorama video position');
-    timeline.addEventListener('change', () => renderer.seek(Number(timeline.value)));
+    timeline.addEventListener('change', () => renderer.seek(Number(timeline.value)), { signal });
     const time = document.createElement('output');
     controls.append(button, timeline, time);
     this.root.append(controls);
@@ -696,7 +758,7 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
     return this.createdUrl;
   }
 
-  private async createVideoTexture(source: PreviewSource, contentType?: string): Promise<VideoTexture> {
+  private async createVideoTexture(source: PreviewSource, contentType: string | undefined, signal: AbortSignal): Promise<VideoTexture> {
     const video = document.createElement('video');
     video.className = 'panoramav-video-controls';
     video.controls = true;
@@ -705,12 +767,25 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
     video.playsInline = true;
     video.preload = 'metadata';
     video.crossOrigin = 'anonymous';
-    video.src = this.sourceToUrl(source, contentType);
+    this.video = video;
     await new Promise<void>((resolve, reject) => {
-      video.addEventListener('loadeddata', () => resolve(), { once: true });
-      video.addEventListener('error', () => reject(new Error('Failed to load 360 video.')), { once: true });
+      const cleanup = () => {
+        video.removeEventListener('loadeddata', ready);
+        video.removeEventListener('error', failed);
+        signal.removeEventListener('abort', aborted);
+      };
+      const ready = () => { cleanup(); resolve(); };
+      const failed = () => { cleanup(); reject(new Error('Failed to load 360 video.')); };
+      const aborted = () => { cleanup(); reject(new DOMException('Panorama video was aborted.', 'AbortError')); };
+      if (signal.aborted) { aborted(); return; }
+      video.addEventListener('loadeddata', ready);
+      video.addEventListener('error', failed);
+      signal.addEventListener('abort', aborted, { once: true });
+      video.src = this.sourceToUrl(source, contentType);
       video.load();
     });
+    checkPanoramaLoad(signal);
+    const interactionSignal = (this.interactionController ??= new AbortController()).signal;
     const syncState = () => {
       this.state.duration = Number.isFinite(video.duration) ? video.duration : undefined;
       this.state.currentTime = video.currentTime;
@@ -719,7 +794,7 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       this.emit('statechange', this.state);
     };
     for (const event of ['durationchange', 'timeupdate', 'play', 'pause', 'volumechange'] as const) {
-      video.addEventListener(event, syncState);
+      video.addEventListener(event, syncState, { signal: interactionSignal });
     }
     this.video = video;
     this.root.append(video);
@@ -727,18 +802,20 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
     return new VideoTexture(video);
   }
 
-  private async resolveOsmoProxy(name?: string): Promise<PreviewSource> {
+  private async resolveOsmoProxy(name?: string, signal?: AbortSignal): Promise<PreviewSource> {
     const proxyName = String(name ?? '').replace(/\.osv$/i, '.LRF');
     if (!proxyName || proxyName === name || !this.resourceResolver) {
       throw new Error(this.osmoFallbackReason ? `OSV ${this.osmoFallbackReason}` : 'OSV spherical preview requires the matching camera-generated .LRF proxy file. Upload both files together.');
     }
-    const resolved = await this.resourceResolver({
+    const work = Promise.resolve(this.resourceResolver({
       family: 'panorama-video',
       sourceFormat: 'osv',
       source: proxyName,
       name: proxyName.split(/[\\/]/).pop(),
       relation: 'proxy'
-    });
+    }));
+    const resolved = signal ? await waitForPanoramaLoad(work, signal) : await work;
+    checkPanoramaLoad(signal);
     const proxy = previewSourceFromResource(resolved);
     if (!proxy) {
       throw new Error(`OSV spherical preview requires the matching ${proxyName} proxy file. Upload both files together.`);
@@ -751,6 +828,9 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
   }
 
   private disposeScene(): void {
+    this.interactionController?.abort();
+    this.interactionController = undefined;
+    this.pointerDown = false;
     if (this.animationFrame) {
       cancelAnimationFrame(this.animationFrame);
       this.animationFrame = 0;
@@ -762,9 +842,11 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
     this.video?.pause();
     this.video?.removeAttribute('src');
     this.video?.load();
+    this.video?.remove();
     this.geometry?.dispose();
     this.material?.dispose();
     this.renderer?.dispose();
+    this.renderer?.forceContextLoss?.();
     this.calibratedRenderer?.close();
     this.processor?.close();
     this.texture = null;
@@ -782,6 +864,8 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
     this.scene = null;
     this.camera = null;
     this.revokeCreatedUrl();
+    this.stage.replaceChildren();
+    this.root.querySelectorAll('.panoramav-calibrated-controls, .panoramav-notice').forEach(node => node.remove());
   }
 
   private revokeCreatedUrl(): void {
@@ -822,6 +906,8 @@ export function orderInstaPair(source: PreviewSource, companion: PreviewSource |
 function toBlobPart(source: Exclude<PreviewSource, string | Blob>): BlobPart {
   if (ArrayBuffer.isView(source)) {
     const bytes = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+    // Blob snapshots the exact ordinary-buffer slice; avoid a redundant copy.
+    if (bytes.buffer instanceof ArrayBuffer) return bytes as Uint8Array<ArrayBuffer>;
     const copy = new Uint8Array(bytes.byteLength);
     copy.set(bytes);
     return copy.buffer as ArrayBuffer;

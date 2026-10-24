@@ -11,6 +11,9 @@ ESM PPTX parsing and preview core for browser applications.
 
 The package also exports the core runtime types.
 
+Workers can import `openZipArchive` and the `ZipEntry` type from
+`@filens/core/zip`. This entry loads ZIP parsing without viewer code or CSS.
+
 ## Install
 
 ```bash
@@ -48,6 +51,14 @@ await viewer.preview('/samples/sample-deck.pptx');
 - `Uint8Array`
 - `Blob`
 - `File`
+
+For multi-format previews, `createPreviewer()` coordinates registered drivers and
+converters. Opening another file or calling `destroy()` settles superseded
+`preview()` calls, aborts their load signals, and ignores late results and events.
+The signal remains active after the initial load for background resource work.
+Custom drivers must release their own DOM and resources on destruction; work that
+ignores cancellation may still finish. Rejected loads release their sessions and
+expose the error through `getState()` and the `error` event.
 
 ## Viewer Options
 

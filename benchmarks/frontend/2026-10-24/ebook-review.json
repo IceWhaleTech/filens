@@ -1,0 +1,171 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "evidenceSha256": "6cd97eb73cbf36384c958e670e8038b1cf5d1a0565fdbd859cf77362423d649b",
+  "summarySha256": "2331fc82fc0a1c77fe1fbb781d6f7ed115ff1825bff50dce329e363fe6f2dc42",
+  "patchSha256": "a0b4b64b490c83d10ad3e60ddbf7bbf59859c4f1406b148b7f5cbc06835d3d2f",
+  "sourceHashes": {
+    "packages/ebook/src/preview-driver.ts": "360e1408c9e7f1a1e0f1f55c0f66c5ae18a5f4482e94e662728c2703356ec530",
+    "packages/ebook/test/preview-driver.spec.ts": "8c73ebe6f1309e2642e22d5735dc119431160b52a3772a034ae03c20dd21d5e4",
+    "packages/ebook/test/fixtures/books.mjs": "c742daf692d8f0af230d65da9fc823ac672c9b5cc690d03bbf56fe5add5ebdca",
+    "apps/demo/e2e/ebook-lifecycle.e2e.ts": "e307b416528c4374d1db6d636e1957b9ff8f68f40e1539f1186166dddf267dc1",
+    "scripts/benchmark-ebook.mjs": "a2ef19fef07e565017d27d0c023fc31ead74c9a377da053674fc5504fc747052",
+    "scripts/summarize-ebook-benchmark.mjs": "a338ed85b77d55a88a66c00aba7bc0e4ebf8bad387ec89709d6d3fc0159c0f0a"
+  },
+  "currentArtifact": {
+    "engine": "current",
+    "path": "packages/ebook/dist/index.js",
+    "sha256": "c1a17d98f55cd3def5f8a9462a97c67ce8101754462cf6235bfb030a283c8992"
+  },
+  "coreArtifact": {
+    "path": "packages/core/dist/index.js",
+    "sha256": "087860f415a1b58c0a14112d86f5c9ddad57039e0eb3fee5d2533de5f4e273c9"
+  },
+  "versions": {
+    "jszip": "3.10.1"
+  },
+  "baseline": {
+    "engine": "baseline",
+    "path": "tmp/continued-review/ebook-baseline/dist/index.js",
+    "sha256": "ed07ea79a5d134dff65b12ffc8b73548bade5ca3dd3ac1127b280343b132064f",
+    "sourceSha256": "fb4cc10bd8377970921729f4ca2780f33cc92cef839fa9f4d6f334ea924c2ce7",
+    "reproduction": "Reverse ebook.patch, build @filens/ebook, copy dist to tmp/continued-review/ebook-baseline/dist. Restore the patch and rebuild. Run node scripts/benchmark-ebook.mjs --iterations 7 --output <directory>, then node scripts/summarize-ebook-benchmark.mjs --input <directory>/results.json. The harness loads modules/bytes before timing; generated input dates and contents are fixed."
+  },
+  "samples": [
+    {
+      "name": "sample.epub",
+      "format": "epub",
+      "bytes": 1553,
+      "sha256": "e44a308f0d52f96f90973dc29f5ecdaf62b6a4388f3404dd639eb7e407213e19"
+    },
+    {
+      "name": "generated-40-chapters.epub",
+      "format": "epub",
+      "bytes": 44917,
+      "sha256": "c8aa48c62622ce74b6f89134d45c8d964784a7b5dedde4a08384e906f38edc11"
+    },
+    {
+      "name": "generated-200-pages.cbz",
+      "format": "cbz",
+      "bytes": 47327,
+      "sha256": "96726bb946e4d8f3d8dd86ff2994bd338a36b8048e51efc358ea82aaf9306a93"
+    },
+    {
+      "name": "generated-1000-pages.cbz",
+      "format": "cbz",
+      "bytes": 236913,
+      "sha256": "c7c3828dd91081a59466d75293471f17298620ecd6674108907c17eaa2e0b2ae"
+    }
+  ],
+  "comparisons": [
+    {
+      "sample": "sample.epub",
+      "currentMs": 2.399999976158142,
+      "baselineMs": 2.200000047683716,
+      "ratio": 0.916666695641147,
+      "ratio95PercentBootstrapInterval": [
+        0.8148147739337148,
+        1.0454545011205132
+      ],
+      "stableEngineeringReduction": false,
+      "stableEngineeringIncrease": false,
+      "below10MsControl": true,
+      "chapters": 2,
+      "blobs": 0,
+      "completeModelsAndBlobsMatch": true
+    },
+    {
+      "sample": "generated-40-chapters.epub",
+      "currentMs": 16.399999976158142,
+      "baselineMs": 19.299999952316284,
+      "ratio": 1.1768292670959806,
+      "ratio95PercentBootstrapInterval": [
+        1.1111111173078254,
+        1.227848094198456
+      ],
+      "stableEngineeringReduction": true,
+      "stableEngineeringIncrease": false,
+      "below10MsControl": false,
+      "chapters": 40,
+      "blobs": 0,
+      "completeModelsAndBlobsMatch": true
+    },
+    {
+      "sample": "generated-200-pages.cbz",
+      "currentMs": 25.100000023841858,
+      "baselineMs": 34.89999997615814,
+      "ratio": 1.390438244741335,
+      "ratio95PercentBootstrapInterval": [
+        1.291044779306107,
+        1.4297188778284744
+      ],
+      "stableEngineeringReduction": true,
+      "stableEngineeringIncrease": false,
+      "below10MsControl": false,
+      "chapters": 200,
+      "blobs": 200,
+      "completeModelsAndBlobsMatch": true
+    },
+    {
+      "sample": "generated-1000-pages.cbz",
+      "currentMs": 93.59999990463257,
+      "baselineMs": 142.60000002384186,
+      "ratio": 1.5235042753112666,
+      "ratio95PercentBootstrapInterval": [
+        1.4989406783446773,
+        1.5449620812298093
+      ],
+      "stableEngineeringReduction": true,
+      "stableEngineeringIncrease": false,
+      "below10MsControl": false,
+      "chapters": 1000,
+      "blobs": 1000,
+      "completeModelsAndBlobsMatch": true
+    }
+  ],
+  "contentReview": {
+    "fullModelAndBlobSignaturesMatch": true,
+    "chapterPairs": 1242,
+    "imagePairs": 1200,
+    "repetitionsPerEngine": 7,
+    "coverage": "Full JSON book models include every chapter id/title/href/serialized HTML and warning, with deterministic URL aliases. Each generated image is also hashed byte-for-byte with its content type/size after timing. All signatures match for every repetition."
+  },
+  "validation": {
+    "ebookUnitTestsPassed": 16,
+    "vueUnitTestsPassed": 44,
+    "browserTestsPassed": 2,
+    "oldSourceRegressionsReproduced": 5,
+    "builds": [
+      "@filens/ebook (including declaration diagnostics)",
+      "demo",
+      "bundle report"
+    ],
+    "coverage": [
+      "first-chapter replacement on session reload",
+      "stale, destroyed, aborted and already-aborted source reads",
+      "post-resolver abort and partial-resource failure cleanup",
+      "natural image order and first/last page SVG decoding",
+      "200 created URLs released on destruction",
+      "invalid page indices ignored"
+    ],
+    "localMarkdownLinksChecked": 365,
+    "evidenceAndRuntimeHashesChecked": true,
+    "reverseProductionPatchCheck": true,
+    "syntaxAndWhitespaceChecksPassed": true
+  },
+  "behaviorChanges": [
+    "CBZ constructs one typed image Blob per page instead of an untyped intermediate plus wrapper; a shared collator preserves natural sorting.",
+    "At most eight CBZ entries decompress concurrently, in stable page order.",
+    "EPUB parses chapter HTML once for title extraction and resource rewriting.",
+    "Session loads are generation-guarded and cancellable; replacement, failure, abort and destruction clear session-owned resources and stale frames."
+  ],
+  "limitations": [
+    "Engineering A/B against the previous filens build; no external peer comparison or SOTA claim. External totals remain 2,604 / 1,064.",
+    "All book content is still extracted eagerly. This is complete model extraction, not first visible content or image decode/display timing.",
+    "The 200/1000-page comics contain small generated SVGs. These measure page-count and sorting overhead; real photographic comics have not been timed.",
+    "Eight-page batching bounds entry count rather than byte size. No peak memory reduction is claimed.",
+    "The repository two-chapter EPUB is below 10 ms; its small losing median remains in the evidence without a speed claim.",
+    "Cancellation stops subsequent processing at async boundaries; it cannot interrupt an already executing JSZip/DOM operation. Standalone loader callers still own their custom URL lifecycle."
+  ],
+  "conclusion": "Complete extraction: generated 200-page CBZ 34.9 to 25.1 ms, generated 1000-page CBZ 142.6 to 93.6 ms, generated 40-chapter EPUB 19.3 to 16.4 ms. Every complete model and image signature matches. Reload/cancellation lifecycle regressions fixed; no SOTA label."
+}

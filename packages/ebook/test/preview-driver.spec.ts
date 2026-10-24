@@ -121,6 +121,10 @@ describe('EPUB preview driver', () => {
     expect(frame?.getAttribute('sandbox')).toContain('allow-same-origin');
     expect(frame?.srcdoc).toContain('Chapter One');
     expect(renderedStates).toHaveLength(1);
+    for (const index of [NaN, Infinity, 0.5]) {
+      expect(() => session.goToPage?.(index)).not.toThrow();
+      expect(session.getState().chapterIndex).toBe(0);
+    }
 
     session.next?.();
     expect(session.getState()).toMatchObject({
@@ -235,6 +239,115 @@ describe('EPUB preview driver', () => {
     session.destroy();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:epub-fixture');
     host.remove();
+  });
+
+  it('replaces the first chapter when the same session loads another book', async () => {
+    const host = document.createElement('div');
+    const session = createEbookPreviewDriver().createSession(host);
+    const source = await createEpubFixture();
+    await session.load(source, { descriptor: { source, extension: 'epub' } });
+    const firstFrame = host.querySelector('iframe');
+    const comic = await createCbzFixture();
+    await session.load(comic, { descriptor: { source: comic, extension: 'cbz' } });
+
+    expect(host.querySelector('iframe')).not.toBe(firstFrame);
+    expect(host.querySelector('iframe')?.srcdoc).toContain('alt="Page 1"');
+    expect(session.getState().chapterTitle).toBe('Page 1');
+    session.destroy();
+  });
+
+  it.each(['destroy', 'replace', 'abort'] as const)('discards a pending source read on %s', async (action) => {
+    const host = document.createElement('div');
+    const session = createEbookPreviewDriver().createSession(host);
+    const bytes = await createCbzFixture();
+    let finish!: (value: ArrayBuffer) => void;
+    const source = new Blob([bytes]);
+    source.arrayBuffer = () => new Promise(resolve => { finish = resolve; });
+    const controller = new AbortController();
+    const rendered = vi.fn();
+    session.on('rendered', rendered);
+    const pending = session.load(source, { descriptor: { source, extension: 'cbz' }, signal: controller.signal });
+    // Attach rejection handling before cancellation.
+    const outcome = pending.then(() => undefined, error => error);
+    if (action === 'destroy') session.destroy();
+    if (action === 'abort') controller.abort();
+    if (action === 'replace') {
+      const epub = await createEpubFixture();
+      await session.load(epub, { descriptor: { source: epub, extension: 'epub' } });
+    }
+    const createCount = vi.mocked(URL.createObjectURL).mock.calls.length;
+    finish(bytes.buffer as ArrayBuffer);
+    const error = await outcome;
+    if (action === 'abort') expect(error?.name).toBe('AbortError');
+    else expect(error).toBeUndefined();
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(createCount);
+    expect(rendered).toHaveBeenCalledTimes(action === 'replace' ? 1 : 0);
+    if (action === 'replace') expect(host.querySelector('iframe')?.srcdoc).toContain('Chapter One');
+    else expect(host.querySelector('iframe')).toBeNull();
+    session.destroy();
+  });
+
+  it('stops after an aborted asynchronous resource resolver without allocating its URL', async () => {
+    const source = await createExternalAssetEpubFixture();
+    const controller = new AbortController();
+    const createUrl = vi.fn(() => 'blob:late-resource');
+    await expect(loadEpubBook(source, { descriptor: { source }, signal: controller.signal }, createUrl, async () => {
+      controller.abort();
+      return new Blob(['late'], { type: 'image/png' });
+    })).rejects.toMatchObject({ name: 'AbortError' });
+    expect(createUrl).not.toHaveBeenCalled();
+  });
+
+  it('reports an idle state immediately when a pending resource lookup is cancelled', async () => {
+    const source = await createExternalAssetEpubFixture(), host = document.createElement('div');
+    let release!: (value: undefined) => void, entered!: () => void;
+    const started = new Promise<void>(resolve => { entered = resolve; });
+    const session = createEbookPreviewDriver().createSession(host, { resourceResolver: () => {
+      entered(); return new Promise(resolve => { release = resolve; });
+    } });
+    const controller = new AbortController(), states: boolean[] = [];
+    session.on('statechange', state => states.push(state.loading));
+    const pending = session.load(source, { descriptor: { source, extension: 'epub' }, signal: controller.signal })
+      .then(() => 'done', error => error.name);
+    await started; controller.abort();
+    expect(states.at(-1)).toBe(false); expect(host.querySelector('iframe')).toBeNull();
+    release(undefined); expect(await pending).toBe('AbortError'); session.destroy();
+  });
+
+  it.each([loadEpubBook, loadCbzBook])('rejects an already cancelled source before reading it', async load => {
+    const source = new Blob([]);
+    source.arrayBuffer = vi.fn();
+    const controller = new AbortController(); controller.abort();
+    await expect(load(source, { descriptor: { source }, signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
+    expect(source.arrayBuffer).not.toHaveBeenCalled();
+  });
+
+  it('stops allocating CBZ pages when its URL callback cancels the load', async () => {
+    const source = await createCbzFixture();
+    const controller = new AbortController();
+    const createUrl = vi.fn(() => { controller.abort(); return 'blob:first-page'; });
+    await expect(loadCbzBook(source, { descriptor: { source }, signal: controller.signal }, createUrl)).rejects.toMatchObject({ name: 'AbortError' });
+    expect(createUrl).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases partial resources when a chapter resource fails', async () => {
+    const zip = await JSZip.loadAsync(await createExternalAssetEpubFixture());
+    const html = await zip.file('OPS/chapter1.xhtml')!.async('text');
+    zip.file('OPS/chapter1.xhtml', html.replace('</body>', '<img src="missing.png"/></body>'));
+    const source = await zip.generateAsync({ type: 'uint8array' });
+    const host = document.createElement('div');
+    const session = createEbookPreviewDriver().createSession(host, {
+      resourceResolver: ({ source }) => {
+        if (source.endsWith('missing.png')) throw new Error('Resource failed');
+        return new Blob(['image'], { type: 'image/png' });
+      }
+    });
+    const revokeCount = vi.mocked(URL.revokeObjectURL).mock.calls.length;
+    await expect(session.load(source, { descriptor: { source, extension: 'epub' } })).rejects.toThrow('Resource failed');
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(revokeCount + 1);
+    expect(session.getState()).toMatchObject({ loading: false, error: 'Resource failed', chapterCount: 0 });
+    expect(host.querySelector('iframe')).toBeNull();
+    session.destroy();
   });
 });
 

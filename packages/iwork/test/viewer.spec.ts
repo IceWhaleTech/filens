@@ -10,6 +10,7 @@ vi.mock('../src/worker/client', () => ({
   IworkWorkerClient: class {
     parse = parseMock;
     parseSheet = parseSheetMock;
+    cancel(): void {}
     destroy(): void {}
   }
 }));

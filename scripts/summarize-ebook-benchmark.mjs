@@ -1,0 +1,42 @@
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const args = process.argv.slice(2);
+const option = (key, fallback) => args.includes(key) ? args[args.indexOf(key) + 1] : fallback;
+const input = option('--input', 'tmp/continued-review/ebook-final/results.json');
+const bytes = fs.readFileSync(input), result = JSON.parse(bytes);
+assert.equal(result.engineering, true);
+assert.equal(result.runs.length, result.samples.length * result.iterations * 2);
+const median = values => { const sorted = [...values].sort((a, b) => a - b), mid = sorted.length >> 1; return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2; };
+let seed = 12345;
+const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32);
+const samples = result.samples.map(sample => {
+  const runs = engine => result.runs.filter(run => run.sample === sample.name && run.engine === engine).sort((a, b) => a.iteration - b.iteration);
+  const current = runs('current'), baseline = runs('baseline');
+  for (const group of [current, baseline]) {
+    assert.equal(group.length, result.iterations);
+    group.forEach((run, index) => {
+      assert.equal(run.iteration, index);
+      assert(!run.failure && !run.errors.length && Number.isFinite(run.durationMs) && run.durationMs > 0);
+    });
+  }
+  const a = current.map(run => run.durationMs), b = baseline.map(run => run.durationMs), distribution = [];
+  for (const run of [...current, ...baseline]) for (const key of ['modelSha256', 'blobsSha256', 'blobCount', 'chapters']) assert.equal(run[key], baseline[0][key], `${sample.name}: ${key} changed`);
+  for (let repeat = 0; repeat < 10000; repeat++) {
+    const indices = a.map(() => Math.floor(random() * a.length));
+    distribution.push(median(indices.map(index => b[index])) / median(indices.map(index => a[index])));
+  }
+  distribution.sort((a, b) => a - b);
+  const interval = [distribution[250], distribution[9750]];
+  return { sample: sample.name, currentMs: median(a), baselineMs: median(b), ratio: median(b) / median(a), ratio95PercentBootstrapInterval: interval,
+    stableEngineeringReduction: interval[0] > 1, stableEngineeringIncrease: interval[1] < 1, below10MsControl: median(b) <= 10,
+    chapters: current[0].chapters, blobs: current[0].blobCount, completeModelsAndBlobsMatch: true };
+});
+const report = { engineering: true, scopedSota: false, sourceSha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+  iterations: result.iterations, runs: result.runs.length, cpu: result.cpu, browser: result.browser,
+  method: '10,000 paired bootstrap resamples of complete-extraction median ratios, seed 12345. Rendering and image decode are outside timing. Generated SVG comics exercise page count/sorting rather than photographic throughput. No peer/SOTA ranking; baseline controls at or below 10 ms receive no speed claim.', samples };
+const output = option('--output', path.join(path.dirname(input), 'summary.json'));
+fs.writeFileSync(output, JSON.stringify(report, null, 2) + '\n');
+console.log(JSON.stringify(report, null, 2));

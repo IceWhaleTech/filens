@@ -1,0 +1,360 @@
+{
+  "date": "2026-10-24T11:06:37.763314+00:00",
+  "engineering": true,
+  "scopedSota": false,
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "outcome": "Browser WASI output uses owned reusable storage and geometric growth while preserving logical file lengths and isolated results. Zero-length sparse writes, invalid seek origins and exclusive creation now follow their file-operation contracts. Shared frontend host only; no backend conversion logic added.",
+  "measurements": {
+    "finalRuns": 84,
+    "repeatsPerCaseEngine": 7,
+    "excludedDiagnosticRuns": 24,
+    "cpu": "Apple M4 Pro",
+    "browser": "147.0.7727.15",
+    "method": "Fresh Chromium context per invocation, alternating old/new order. Main imports, source bytes and compiled WASM ready before timing. IO cases execute an actual generated WASM producer through createWasmCoreRunner, including fresh instantiation, host writes and output extraction. Conversion cases use the unchanged real document converter-core.wasm via createWasmConverterClient. Hashing, full package-part validation, macro-removal checks and PNG decoding are after timing. No rendering/paint, peak-memory or peer/SOTA claim. Ignore speed claims for baseline median at or below 10 ms.",
+    "samples": [
+      {
+        "sample": "wasi-65536-4096",
+        "kind": "io",
+        "baselineMs": 0.5,
+        "currentMs": 0.5,
+        "ratio": null,
+        "pairedBootstrapRatio95": null,
+        "below10MsControl": true,
+        "stableEngineeringReduction": false,
+        "identicalCompleteOutputBytes": true,
+        "outputBytes": 65536,
+        "outputSha256": "f8a38b49873588eea0fa55c178b2ad20a05eb7f3eccf55623323405fdec79fe9",
+        "scopedSota": false
+      },
+      {
+        "sample": "wasi-8388608-16384",
+        "kind": "io",
+        "baselineMs": 140.39999997615814,
+        "currentMs": 2.399999976158142,
+        "ratio": 58.50000057121118,
+        "pairedBootstrapRatio95": [
+          55.880000019073485,
+          58.54166724822588
+        ],
+        "below10MsControl": false,
+        "stableEngineeringReduction": true,
+        "identicalCompleteOutputBytes": true,
+        "outputBytes": 8388608,
+        "outputSha256": "a4b6c5fd40371b12b326890a7e5e4ea0a78a51c3bce6a667d44077f08a93e008",
+        "scopedSota": false
+      },
+      {
+        "sample": "wasi-33554432-65536",
+        "kind": "io",
+        "baselineMs": 701.0999999046326,
+        "currentMs": 9,
+        "ratio": 77.89999998940363,
+        "pairedBootstrapRatio95": [
+          73.31914911452544,
+          82.32183862104175
+        ],
+        "below10MsControl": false,
+        "stableEngineeringReduction": true,
+        "identicalCompleteOutputBytes": true,
+        "outputBytes": 33554432,
+        "outputSha256": "75f70fb5828f5ef1f98f142224ad27620b88f9fb684c720c1bc47162084d3663",
+        "scopedSota": false
+      },
+      {
+        "sample": "generated-4-images.docm",
+        "kind": "conversion",
+        "baselineMs": 122.5,
+        "currentMs": 98.20000004768372,
+        "ratio": 1.2474541745470138,
+        "pairedBootstrapRatio95": [
+          1.23333333357416,
+          1.2676200194377139
+        ],
+        "below10MsControl": false,
+        "stableEngineeringReduction": true,
+        "identicalCompleteOutputBytes": true,
+        "outputBytes": 3592805,
+        "outputSha256": "4eabc99d1709e85286eec51db722afbbaaa19eb34f4a0f3a5a1435de2ae94e23",
+        "imagesDecodedPerRun": 4,
+        "imagePayloadsPreserved": true,
+        "macrosRemoved": true,
+        "normalizedRelationshipSemanticsPreserved": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "generated-16-images.docm",
+        "kind": "conversion",
+        "baselineMs": 687.4000000953674,
+        "currentMs": 363.89999997615814,
+        "ratio": 1.8889804895312015,
+        "pairedBootstrapRatio95": [
+          1.8729899157599872,
+          1.9284321921022267
+        ],
+        "below10MsControl": false,
+        "stableEngineeringReduction": true,
+        "identicalCompleteOutputBytes": true,
+        "outputBytes": 14366707,
+        "outputSha256": "c9ceb40b28255c7e58605d4bf9ca9e1ade6c0bcc381e1a780b71e8c7ae3891c9",
+        "imagesDecodedPerRun": 16,
+        "imagePayloadsPreserved": true,
+        "macrosRemoved": true,
+        "normalizedRelationshipSemanticsPreserved": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "rich-text.rtf",
+        "kind": "conversion",
+        "baselineMs": 10.5,
+        "currentMs": 10.399999976158142,
+        "ratio": 1.009615386929914,
+        "pairedBootstrapRatio95": [
+          0.9904761882055373,
+          1.029126220671303
+        ],
+        "below10MsControl": false,
+        "stableEngineeringReduction": false,
+        "identicalCompleteOutputBytes": true,
+        "outputBytes": 3267,
+        "outputSha256": "de3f1a74a35cf2083fc8764ef35f080e023974ad7c2679e74ede6b04ba3b38c0",
+        "scopedSota": false
+      }
+    ],
+    "equivalence": "Every final output SHA-256 and complete byte count match between old/current in every repeat. DOCM also validates all preserved parts, relationship semantics, macro removal, main content type, complete PNG payloads and decoded dimensions; checks occur after timing."
+  },
+  "validation": {
+    "converterClientUnitPassed": 32,
+    "newActualWasmIoTests": 10,
+    "oldSourceFailed": 3,
+    "oldSourcePassed": 7,
+    "oldSourceFailures": [
+      "Zero-byte writes extend files beyond EOF",
+      "Invalid seek origin accepted",
+      "Exclusive creation truncates an existing file"
+    ],
+    "vueUnitPassed": 44,
+    "converterBuildPassed": true,
+    "demoBuildPassed": true,
+    "bundleSizesUpdated": true,
+    "developmentBrowserPassed": 5,
+    "productionBrowserPassed": 5,
+    "browserCoverage": [
+      "Demo DOCM upload converts and renders four decodable preserved pictures and text labels",
+      "PPM sample, P3/P6 and 16-bit P6 pixel checks",
+      "Ordinary real Pentax DNG flat preview",
+      "Synthetic ONE RS and X5 DNG: developed image orientation, static seam readiness, resize and switch back to ordinary RAW"
+    ],
+    "coldStartupTestAdjustment": "Initial five-second waits fail twice with tracing and once without tracing (two calibrated DNG cases each); standalone readiness succeeds. Only initial calibrated-RAW readiness wait is increased to twenty seconds; image direction, seam and replacement assertions remain. Final five tests pass in development and production.",
+    "noCameraOriginalRequired": true,
+    "incrementalPatchReverseRestoresBaseline": true,
+    "buildWarnings": [
+      "Existing demo vendor chunk size warning",
+      "Existing Vue test multiple Three.js instances warning"
+    ],
+    "finalBindingsChecked": 43,
+    "localMarkdownPathsChecked": 402,
+    "gitDiffCheckPassed": true
+  },
+  "diagnostics": {
+    "measurementRecords": 24,
+    "initialFailures": 4,
+    "initialFailureElapsedTimesUnavailable": true,
+    "reason": "Initial DOCM validation incorrectly required source relationship serialization to remain byte-identical. Four initial failures lack elapsed time; corrected runs validate relationship semantics. All groups remain excluded from final seven-repeat conclusions.",
+    "browserLogsPreservedInCompressedDiagnostic": true
+  },
+  "limits": [
+    "Generated image-rich DOCM inputs and one real RTF on one Chromium/Apple M4 Pro machine; no peer/SOTA ranking and no x2t remeasurement.",
+    "Large synthetic WASI writes isolate host I/O and are separate from real document conversion. Neither includes preview paint; PNG decode and validation run after timing.",
+    "Geometric file buffers retain spare capacity below roughly one additional logical file size. During growth old and new allocations may coexist; no total/peak memory reduction claim.",
+    "No stable RTF speed gain. The sub-10ms 64KiB control receives no speed claim.",
+    "Calibration checks use public synthetic ONE RS/X5 DNG data; camera-original DNG quality is not re-evaluated."
+  ],
+  "artifacts": [
+    {
+      "path": "benchmarks/frontend/2026-10-24/converter-io.json.gz",
+      "sha256": "5e066dc313e6990fb00814e014481c5b1252d6932f73f24cd8e1b341f297b340"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/converter-io-summary.json",
+      "sha256": "ddc10fdd451353adb6f2009fa4ed416da86da8cc98b6de87b2178671df1d4d62"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/converter-io-diagnostic.json.gz",
+      "sha256": "9573a99bebdd8d68354822b8ec47bbeb89f17ac4abe0fab51c23d9a6e9a90508"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/converter-io.patch",
+      "sha256": "c529928f6c84683426da50d6b3c978816a2e0dd62fde968ded0483117bc16940"
+    }
+  ],
+  "baseline": {
+    "source": {
+      "path": "tmp/continued-review/converter-io-baseline/src/wasm-client.ts",
+      "sha256": "1e3cca2d2cad6d8b9b2d0d7264ecaed9371db7e768b133946fbc2629e8d89151"
+    },
+    "runtime": {
+      "path": "tmp/continued-review/converter-io-baseline/dist/index.js",
+      "sha256": "cbd8f90f4151fced4c6fd4d89da5fc0b1b3ea932c17ae038a90b29bfbf6dee5d"
+    },
+    "rawResults": {
+      "path": "tmp/continued-review/converter-io-final/results.json",
+      "sha256": "11f48a78b8544cf631cb5b68848504508064aca8e60ed14c57b02421210fc189"
+    }
+  },
+  "current": {
+    "source": {
+      "path": "packages/converter-client/src/wasm-client.ts",
+      "sha256": "6cc852e89e2e6d357741d15890caf8f4fc4f9ddd7ac22c992265f13f6c988526"
+    },
+    "runtime": {
+      "path": "packages/converter-client/dist/index.js",
+      "sha256": "1fbbc65bbf794a90bdd8a40636544417b262513ea3e1abc48adb73d95f8622fc"
+    }
+  },
+  "runtimeAndHarnessArtifacts": [
+    {
+      "path": "packages/converter-client/dist/index.js",
+      "sha256": "1fbbc65bbf794a90bdd8a40636544417b262513ea3e1abc48adb73d95f8622fc"
+    },
+    {
+      "path": "tmp/continued-review/converter-io-baseline/dist/index.js",
+      "sha256": "cbd8f90f4151fced4c6fd4d89da5fc0b1b3ea932c17ae038a90b29bfbf6dee5d"
+    },
+    {
+      "path": "wasm/converter-core/dist/converter-core.wasm",
+      "sha256": "0f0ab8885293e76991a337dab6f0977e5015380594e914d89ebe8c976a8cedbf"
+    },
+    {
+      "path": "packages/converter-client/src/wasm-client.ts",
+      "sha256": "6cc852e89e2e6d357741d15890caf8f4fc4f9ddd7ac22c992265f13f6c988526"
+    },
+    {
+      "path": "scripts/benchmark-converter-io.mjs",
+      "sha256": "7861d7ac2722f4e7cf43c78fae04f7edc8680d4d1cea5d3b4e77b9e2afa4b290"
+    },
+    {
+      "path": "packages/converter-client/test/fixtures/wasi.mjs",
+      "sha256": "c46f34a0f6367c41e5f2fd3f6f37518bd886aaad726c64929f6d6189969520d8"
+    },
+    {
+      "path": "packages/converter-client/test/fixtures/office.mjs",
+      "sha256": "7056d03afa6414714010c4ef7bdcb95d2b3caaf1bf473838f97ec54b72264a64"
+    },
+    {
+      "path": "packages/cad/test/fixtures/resources.mjs",
+      "sha256": "cec103113d22ee44a44ec7230ddc318bb6c9367ea3c8a160642a611dc9b62ccc"
+    },
+    {
+      "path": "node_modules/fflate/esm/browser.js",
+      "sha256": "8cc1f687e0159e977addb6b85e274dbd11e622cf151f4fcb7b85d49622ea43e7"
+    },
+    {
+      "path": "apps/demo/public/samples/rich-text.rtf",
+      "sha256": "e5a41719a35733bcb53ac61044c866859f8e253c12af42f286fa92e3b62f1e54"
+    }
+  ],
+  "testAndDocumentationSources": [
+    {
+      "path": "packages/converter-client/test/wasi-io.spec.ts",
+      "sha256": "60ac862f3074bf4c7f2787fa8e9d3d65e06f934e6c874cdb121386d8cb3f913a"
+    },
+    {
+      "path": "packages/converter-client/test/fixtures/wasi.mjs",
+      "sha256": "c46f34a0f6367c41e5f2fd3f6f37518bd886aaad726c64929f6d6189969520d8"
+    },
+    {
+      "path": "packages/converter-client/test/fixtures/office.mjs",
+      "sha256": "7056d03afa6414714010c4ef7bdcb95d2b3caaf1bf473838f97ec54b72264a64"
+    },
+    {
+      "path": "apps/demo/e2e/converter-io.e2e.ts",
+      "sha256": "75ef0bfefb4e7d8d43dbc3b643266b65d372b7825814a7a092f2663fe6ae3738"
+    },
+    {
+      "path": "apps/demo/e2e/panorama-raw.e2e.ts",
+      "sha256": "1443dbdb37fb5c7e19f43a8d964953d04cbecdb7bfc90baf0a487cbd29cc89f2"
+    },
+    {
+      "path": "apps/demo/e2e/ppm.e2e.ts",
+      "sha256": "13b93af0d64607d4d260e7f531c2d08d18e3449735dceb0b6ad3b5c7650764d5"
+    },
+    {
+      "path": "packages/panorama/test/fixtures/dng.ts",
+      "sha256": "b97f4c880247d6d13a1690238a4a60d508bfcc7b1fe4ab97dc9b7edb89642670"
+    },
+    {
+      "path": "scripts/benchmark-converter-io.mjs",
+      "sha256": "7861d7ac2722f4e7cf43c78fae04f7edc8680d4d1cea5d3b4e77b9e2afa4b290"
+    },
+    {
+      "path": "scripts/summarize-converter-io-benchmark.mjs",
+      "sha256": "8974087de968320879b64c1bd7a7c8671f52d7986f3360548adb2c3471f595db"
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "sha256": "d3b9a75d5ecd653a92f23159101acaea0eef833f3171a314e480f1af26af377d"
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "sha256": "b74d107d0d477e05c59a94d1a8f1a2c34149d91f553d31a9fa7aa6a9e4b6b90f"
+    },
+    {
+      "path": "docs/performance-comparison.md",
+      "sha256": "b997a94dc11d326f4ea616d81e62091e8d0171269953d2e4db4169c91e519319"
+    },
+    {
+      "path": "docs/performance-comparison.zh-CN.md",
+      "sha256": "60395151f22c7d01a77d3de4013bbb2b12cec05921e00ee4864a57f9adb5752c"
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "sha256": "130d9f5317b8bf205b594f4e73ff2a5f82494498490f934acd41e2d49bb8bbc2"
+    },
+    {
+      "path": "docs/bundle-sizes.md",
+      "sha256": "22f8623026add7984092a2b0d61b7ade42c826027072ce79666d2c421be03e8e"
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "sha256": "2fa74db47b065944b8b0f96064aeb908ee27c7e664cd0305cc4fd2bf6d17fbe3"
+    }
+  ],
+  "validationLogs": [
+    {
+      "path": "tmp/continued-review/converter-io-unit-final.log",
+      "sha256": "39fa5e724571219e86c1fa32bbc205d1ae853b300e4f3522def856ab8ac754dd"
+    },
+    {
+      "path": "tmp/continued-review/converter-io-vue-unit.log",
+      "sha256": "9c1a09e9db274fdad4b7e5a9a32661547d3bcb38538ee29362e76df6b8ce9bd1"
+    },
+    {
+      "path": "tmp/continued-review/converter-io-before-regressions.log",
+      "sha256": "72fead9d941cdbf2fa72662bcd549b636db2758590c9ea09b5f3091a4b8a0789"
+    },
+    {
+      "path": "tmp/continued-review/converter-io-build.log",
+      "sha256": "e385130362a5138f825ba538623e19880a0b9e9f24aa44adf5cbc7861b17f743"
+    },
+    {
+      "path": "tmp/continued-review/converter-io-demo-build.log",
+      "sha256": "53f1d540e4ab6b5ab46b3362c890dac60a79897a1b6dc786d3bdaeaec05572cd"
+    },
+    {
+      "path": "tmp/continued-review/converter-io-bundle-sizes.log",
+      "sha256": "e404d6ed6fe4385c17469186220263ba8c20b00f4f07f0786e335d9fee4c7d26"
+    },
+    {
+      "path": "tmp/continued-review/converter-io-browser-cold.log",
+      "sha256": "9b15b4b753994d348e54982b6d136db2ecbf7f9b5fe265a253b729aeccc9f650"
+    },
+    {
+      "path": "tmp/continued-review/converter-io-production-browser.log",
+      "sha256": "7d97fd9092baf429828891823b053350055d7d692904f5fe599535a0b8903c2d"
+    }
+  ]
+}

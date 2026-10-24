@@ -60,6 +60,8 @@ type ArchiveEntryRecord = {
 type ArchiveFrame = {
   label: string;
   entries: ArchiveEntryRecord[];
+  resources?: Map<string, ArchiveEntryRecord>;
+  listings?: Map<string, ArchivePreviewState['entries']>;
 };
 
 export const ARCHIVE_FORMAT_ROUTES: FormatDefinition[] = [
@@ -102,6 +104,9 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
   private entryPreviewer: PreviewerInstance | null = null;
   private entryPreviewUnsubscribes: Array<() => void> = [];
   private entryObjectUrl: string | null = null;
+  private loadController: AbortController | null = null;
+  private entryController: AbortController | null = null;
+  private renderVersion = 0;
   private state: ArchivePreviewState = {
     loading: false,
     error: null,
@@ -124,7 +129,18 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
-    this.closeEntryPreview(false);
+    this.stopLoad();
+    const controller = new AbortController(), signal = controller.signal;
+    this.loadController = controller;
+    const abort = () => controller.abort();
+    context.signal?.addEventListener('abort', abort, { once: true });
+    signal.addEventListener('abort', () => {
+      context.signal?.removeEventListener('abort', abort);
+      if (this.loadController !== controller) return;
+      this.stopLoad();
+      this.state = { ...this.state, loading: false, error: null, warnings: [], route: '/', entries: [] };
+      this.emit('statechange', this.state);
+    }, { once: true });
     this.state = {
       ...this.state,
       loading: true,
@@ -139,10 +155,15 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     this.emit('statechange', this.state);
 
     try {
-      const bytes = new Uint8Array(await sourceToArrayBuffer(source, context));
+      if (context.signal?.aborted) controller.abort();
+      checkArchiveLoadAborted(signal);
+      const bytes = new Uint8Array(await sourceToArrayBuffer(source, { ...context, signal }));
+      checkArchiveLoadAborted(signal);
       const label = context.descriptor.name ?? 'archive';
       const format = detectArchiveFormat(label, context.route?.sourceFormat ?? context.descriptor.extension);
-      this.archiveStack = [await readArchive(bytes, format, label)];
+      const archive = await readArchive(bytes, format, label, signal);
+      checkArchiveLoadAborted(signal);
+      this.archiveStack = [archive];
 
       this.state = {
         ...this.state,
@@ -150,10 +171,14 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
         error: null
       };
       this.setRoute('/');
-      this.render();
       this.emit('rendered', this.state);
       this.emit('statechange', this.state);
     } catch (error) {
+      if (signal.aborted) {
+        if (context.signal?.aborted) checkArchiveLoadAborted(signal);
+        return;
+      }
+      this.stopLoad();
       const normalizedError = error instanceof Error ? error : new Error(String(error));
       this.state.loading = false;
       this.state.error = normalizedError.message;
@@ -164,12 +189,20 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
   }
 
   destroy(): void {
+    this.stopLoad();
+    this.state = { ...this.state, loading: false, error: null, warnings: [], route: '/', entries: [] };
+    if (this.root.parentElement === this.host) this.host.replaceChildren();
+    for (const handlers of Object.values(this.listeners)) handlers.clear();
+  }
+
+  private stopLoad(): void {
+    const controller = this.loadController;
+    this.loadController = null;
+    controller?.abort();
     this.closeEntryPreview(false);
     this.archiveStack = [];
+    this.renderVersion++;
     this.root.replaceChildren();
-    if (this.root.parentElement === this.host) {
-      this.host.replaceChildren();
-    }
   }
 
   getState(): ArchivePreviewState {
@@ -188,9 +221,11 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
   }
 
   private render(): void {
+    const version = ++this.renderVersion;
+    const isCurrent = () => version === this.renderVersion && Boolean(this.loadController && !this.loadController.signal.aborted);
     const summary = document.createElement('div');
     summary.className = 'archivev-summary';
-    summary.appendChild(this.createBreadcrumbs());
+    summary.appendChild(this.createBreadcrumbs(isCurrent));
     const itemCount = document.createElement('span');
     itemCount.className = 'archivev-item-count';
     itemCount.textContent = `${this.state.entries.length} item${this.state.entries.length === 1 ? '' : 's'}`;
@@ -204,21 +239,23 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     upButton.className = 'archivev-button';
     upButton.textContent = 'Up';
     upButton.disabled = !canNavigateUp(this.state.route);
-    upButton.addEventListener('click', () => this.navigateUp());
+    upButton.addEventListener('click', () => { if (isCurrent()) this.navigateUp(); });
 
     const rootButton = document.createElement('button');
     rootButton.type = 'button';
     rootButton.className = 'archivev-button';
     rootButton.textContent = 'Root';
     rootButton.disabled = this.state.route === '/';
-    rootButton.addEventListener('click', () => this.setRoute('/'));
+    rootButton.addEventListener('click', () => { if (isCurrent()) this.setRoute('/'); });
 
     const closeNestedButton = document.createElement('button');
     closeNestedButton.type = 'button';
     closeNestedButton.className = 'archivev-button';
-    closeNestedButton.textContent = this.activeEntry ? 'Back to archive' : 'Back';
-    closeNestedButton.disabled = this.activeEntry ? false : this.archiveStack.length <= 1;
-    closeNestedButton.addEventListener('click', () => this.activeEntry ? this.closeEntryPreview() : this.popArchive());
+    closeNestedButton.textContent = this.entryController ? 'Back to archive' : 'Back';
+    closeNestedButton.disabled = !this.entryController && this.archiveStack.length <= 1;
+    closeNestedButton.addEventListener('click', () => {
+      if (isCurrent()) this.entryController ? this.closeEntryPreview() : this.popArchive();
+    });
 
     toolbar.append(closeNestedButton, upButton, rootButton);
 
@@ -258,9 +295,9 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
       modified.textContent = entry.modified ? new Date(entry.modified).toLocaleString() : '';
       row.appendChild(modified);
 
-      row.addEventListener('click', () => this.activateEntry(entry));
+      row.addEventListener('click', () => { if (isCurrent()) this.activateEntry(entry); });
       row.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
+        if (isCurrent() && (event.key === 'Enter' || event.key === ' ')) {
           event.preventDefault();
           this.activateEntry(entry);
         }
@@ -272,13 +309,13 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     this.root.replaceChildren(summary, toolbar, table);
   }
 
-  private createBreadcrumbs(): HTMLElement {
+  private createBreadcrumbs(isCurrentRender: () => boolean): HTMLElement {
     const breadcrumbs = document.createElement('nav');
     breadcrumbs.className = 'archivev-breadcrumbs';
     breadcrumbs.setAttribute('aria-label', 'Archive path');
 
     const route = normalizeArchiveRoute(this.state.route);
-    const hasCurrentEntry = this.activeEntry !== null;
+    const hasCurrentEntry = this.entryController !== null;
 
     this.archiveStack.forEach((frame, index) => {
       if (index > 0) breadcrumbs.appendChild(createBreadcrumbSeparator());
@@ -289,6 +326,7 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
       const isCurrentArchive = index === this.archiveStack.length - 1;
       button.disabled = isCurrentArchive && route === '/' && !hasCurrentEntry;
       button.addEventListener('click', () => {
+        if (!isCurrentRender()) return;
         if (isCurrentArchive) {
           this.setRoute('/');
         } else {
@@ -310,7 +348,7 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
       button.textContent = part;
       button.disabled = nextRoute === route && !hasCurrentEntry;
       const targetRoute = nextRoute;
-      button.addEventListener('click', () => this.setRoute(targetRoute));
+      button.addEventListener('click', () => { if (isCurrentRender()) this.setRoute(targetRoute); });
       breadcrumbs.appendChild(button);
     }
     if (this.activeEntry) {
@@ -339,16 +377,23 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
 
   private async openEntryPreview(name: string): Promise<void> {
     const entry = this.findCurrentEntry(name);
-    if (!entry) {
+    const frame = this.archiveStack[this.archiveStack.length - 1];
+    if (!entry || !frame) {
       return;
     }
+    const controller = this.startEntryOperation();
+    if (!controller) return;
+    const signal = controller.signal;
+    const isCurrent = () => this.entryController === controller && !signal.aborted;
 
     this.state = { ...this.state, loading: true, error: null };
     this.emit('loading', this.state);
     this.emit('statechange', this.state);
+    this.render();
 
     try {
-      const source = await entry.read();
+      const source = await waitForArchiveLoad(entry.read(), signal);
+      checkArchiveLoadAborted(signal);
       this.activeEntry = {
         name,
         source,
@@ -360,22 +405,26 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
 
       const previewerFactory = this.options.previewerFactory;
       if (previewerFactory) {
-        this.entryPreviewer = previewerFactory(this.entryPreviewHost, {
-          resourceResolver: this.createEntryResourceResolver()
+        const previewer = previewerFactory(this.entryPreviewHost, {
+          ...this.options,
+          resourceResolver: this.createEntryResourceResolver(frame, entry.name, signal)
         });
+        this.entryPreviewer = previewer;
         this.entryPreviewUnsubscribes = [
-          this.entryPreviewer.on('error', (error) => this.setEntryPreviewError(error)),
-          this.entryPreviewer.on('warnings', (warnings) => {
+          previewer.on('error', (error) => { if (isCurrent()) this.setEntryPreviewError(error); }),
+          previewer.on('warnings', (warnings) => {
+            if (!isCurrent()) return;
             this.state = { ...this.state, warnings };
             this.emit('warnings', warnings);
             this.emit('statechange', this.state);
           })
         ];
-        await this.entryPreviewer.preview(source, {
+        await waitForArchiveLoad(previewer.preview(source, {
           name,
           extension: extensionFromName(name),
           contentType: this.activeEntry.contentType
-        });
+        }), signal);
+        checkArchiveLoadAborted(signal);
       } else {
         this.renderFallbackEntryPreview(this.entryPreviewHost, source, name, this.activeEntry.contentType);
       }
@@ -387,6 +436,7 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
       };
       this.emit('statechange', this.state);
     } catch (error) {
+      if (!isCurrent()) return;
       const normalizedError = error instanceof Error ? error : new Error(String(error));
       this.state = { ...this.state, loading: false, error: normalizedError.message };
       this.emit('error', normalizedError);
@@ -401,20 +451,41 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
   }
 
   private closeEntryPreview(shouldRender = true): void {
+    const controller = this.entryController;
+    this.entryController = null;
+    controller?.abort();
     this.entryPreviewUnsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
     this.entryPreviewer?.destroy();
     this.entryPreviewer = null;
+    for (const media of this.entryPreviewHost?.querySelectorAll('audio, video') ?? []) {
+      const element = media as HTMLMediaElement;
+      element.pause();
+      element.removeAttribute('src');
+      element.load();
+    }
+    this.entryPreviewHost?.replaceChildren();
     this.entryPreviewHost = null;
     this.activeEntry = null;
     if (this.entryObjectUrl) {
       URL.revokeObjectURL(this.entryObjectUrl);
       this.entryObjectUrl = null;
     }
-    if (shouldRender) {
+    if (shouldRender && this.loadController && !this.loadController.signal.aborted) {
       this.state = { ...this.state, loading: false, error: null, warnings: [] };
       this.render();
       this.emit('statechange', this.state);
     }
+  }
+
+  private startEntryOperation(): AbortController | null {
+    this.closeEntryPreview(false);
+    const parent = this.loadController?.signal;
+    if (!parent || parent.aborted) return null;
+    const controller = new AbortController(), abort = () => controller.abort();
+    this.entryController = controller;
+    parent.addEventListener('abort', abort, { once: true });
+    controller.signal.addEventListener('abort', () => parent.removeEventListener('abort', abort), { once: true });
+    return controller;
   }
 
   private popToArchive(index: number): void {
@@ -434,7 +505,7 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
   }
 
   private setRoute(route: string): void {
-    if (this.activeEntry) {
+    if (this.entryController) {
       this.closeEntryPreview(false);
     }
     const current = this.archiveStack[this.archiveStack.length - 1];
@@ -443,11 +514,19 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     }
 
     const normalized = normalizeArchiveRoute(route);
-    const entries = listEntriesForRoute(current.entries, normalized);
+    current.listings ??= new Map();
+    let entries = current.listings.get(normalized);
+    if (!entries) {
+      entries = listEntriesForRoute(current.entries, normalized);
+      current.listings.set(normalized, entries);
+    }
     this.state = {
       ...this.state,
+      loading: false,
+      error: null,
+      warnings: [],
       route: normalized,
-      entries
+      entries: entries.map(entry => ({ ...entry }))
     };
     this.render();
     this.emit('statechange', this.state);
@@ -462,20 +541,27 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     return current.entries.find((entry) => entry.type === 'file' && entry.name === `${routePrefix}${name}`);
   }
 
-  private createEntryResourceResolver(): PreviewResourceResolver {
+  private createEntryResourceResolver(frame: ArchiveFrame, name: string, signal: AbortSignal): PreviewResourceResolver {
     const externalResolver = this.options.resourceResolver;
+    const directory = name.slice(0, name.lastIndexOf('/') + 1);
+    const entries = frame.resources ??= new Map(frame.entries.filter(entry => entry.type === 'file').map(entry => [normalizeZipEntryName(entry.name), entry]));
     return async (request) => {
+      checkArchiveLoadAborted(signal);
       const source = request.source ?? request.name;
-      if (source) {
-        const entry = this.findCurrentEntry(source.replace(/^\/+/, ''));
+      if (source && !/^[a-z][a-z\d+.-]*:/i.test(source)) {
+        const rooted = /^[\\/]/.test(source);
+        const entry = (!rooted ? entries.get(normalizeZipEntryName(directory + source)) : undefined)
+          ?? entries.get(normalizeZipEntryName(source));
         if (entry) {
+          const bytes = await waitForArchiveLoad(entry.read(), signal);
+          checkArchiveLoadAborted(signal);
           return {
-            source: await entry.read(),
+            source: bytes,
             warnings: []
           };
         }
       }
-      return externalResolver ? externalResolver(request) : undefined;
+      return externalResolver ? waitForArchiveLoad(Promise.resolve(externalResolver(request)), signal) : undefined;
     };
   }
 
@@ -527,6 +613,9 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     if (!archiveEntry) {
       return;
     }
+    const controller = this.startEntryOperation();
+    if (!controller) return;
+    const signal = controller.signal;
 
     this.state = {
       ...this.state,
@@ -535,10 +624,16 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     };
     this.emit('loading', this.state);
     this.emit('statechange', this.state);
+    this.render();
 
     try {
       const label = name.split('/').pop() ?? name;
-      this.archiveStack.push(await readArchive(await archiveEntry.read(), detectArchiveFormat(label), label));
+      const bytes = await waitForArchiveLoad(archiveEntry.read(), signal);
+      checkArchiveLoadAborted(signal);
+      const archive = await readArchive(bytes, detectArchiveFormat(label), label, signal);
+      checkArchiveLoadAborted(signal);
+      this.closeEntryPreview(false);
+      this.archiveStack.push(archive);
       this.state = {
         ...this.state,
         loading: false,
@@ -547,6 +642,7 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
       this.setRoute('/');
       this.emit('rendered', this.state);
     } catch (error) {
+      if (signal.aborted) return;
       const normalizedError = error instanceof Error ? error : new Error(String(error));
       this.state.loading = false;
       this.state.error = normalizedError.message;
@@ -598,17 +694,28 @@ export async function createArchiveResourceIndex(
 ): Promise<ArchiveResourceIndex> {
   const label = context.descriptor.name ?? 'archive';
   const format = detectArchiveFormat(label, context.route?.sourceFormat ?? context.descriptor.extension);
-  const archive = await readArchive(new Uint8Array(await sourceToArrayBuffer(source, context)), format, label);
+  const archive = await readArchive(new Uint8Array(await sourceToArrayBuffer(source, context)), format, label, context.signal);
+  checkArchiveLoadAborted(context.signal);
   const root = normalizeZipEntryName(options.root ?? '');
-  const entries = archive.entries.map((entry) => createArchiveResource(entry, options.contentTypes)).sort(compareArchiveEntries);
-  const files = entries.filter((entry) => entry.type === 'file');
-  const exact = new Map(files.map((entry) => [normalizeZipEntryName(entry.name), entry]));
-  const rooted = new Map(
-    files
-      .filter((entry) => root && normalizeZipEntryName(entry.name).startsWith(`${root}/`))
-      .map((entry) => [normalizeZipEntryName(entry.name).slice(root.length + 1), entry])
-  );
-  const basename = createUniqueBasenameMap(files);
+  // readArchive already sorts entries. Build every lookup from the same
+  // normalized path instead of repeating path/URI parsing for each map.
+  const entries: ArchiveResource[] = [];
+  const files: ArchiveResource[] = [];
+  const exact = new Map<string, ArchiveResource>();
+  const rooted = new Map<string, ArchiveResource>();
+  const basename = new Map<string, ArchiveResource | null>();
+  const rootPrefix = root ? `${root}/` : '';
+  for (const record of archive.entries) {
+    const name = normalizeZipEntryName(record.name);
+    const entry = createArchiveResource(record, options.contentTypes, name, context.signal);
+    entries.push(entry);
+    if (entry.type !== 'file') continue;
+    files.push(entry);
+    exact.set(name, entry);
+    if (rootPrefix && name.startsWith(rootPrefix)) rooted.set(name.slice(rootPrefix.length), entry);
+    const base = name.slice(name.lastIndexOf('/') + 1);
+    if (base) basename.set(base, basename.has(base) ? null : entry);
+  }
 
   return {
     entries,
@@ -652,9 +759,11 @@ export async function createZipResourceResolver(
   return index.resolve;
 }
 
-async function readArchive(bytes: Uint8Array, format: string, label: string): Promise<ArchiveFrame> {
+async function readArchive(bytes: Uint8Array, format: string, label: string, signal?: AbortSignal): Promise<ArchiveFrame> {
+  checkArchiveLoadAborted(signal);
   if (isZipFormat(format)) {
-    const zip = await openZipArchive(bytes);
+    const zip = await waitForArchiveLoad(openZipArchive(bytes), signal);
+    checkArchiveLoadAborted(signal);
     return {
       label,
       entries: [...zip.values()].map((entry) => ({
@@ -673,7 +782,8 @@ async function readArchive(bytes: Uint8Array, format: string, label: string): Pr
 
   if (format === 'gz' || format === 'tgz') {
     // ponytail: gzip is expanded in memory; switch to streaming if huge archives become an explicit requirement.
-    const expanded = await decompressGzip(bytes);
+    const expanded = await waitForArchiveLoad(decompressGzip(bytes), signal);
+    checkArchiveLoadAborted(signal);
     if (format === 'tgz' || looksLikeTar(expanded)) {
       return { label, entries: readTarEntries(expanded) };
     }
@@ -689,35 +799,91 @@ async function readArchive(bytes: Uint8Array, format: string, label: string): Pr
 
 function readTarEntries(bytes: Uint8Array): ArchiveEntryRecord[] {
   const entries: ArchiveEntryRecord[] = [];
+  const globalAttributes = new Map<string, string>();
+  let localAttributes = new Map<string, string>();
+  let longName: string | undefined;
   for (let offset = 0; offset + 512 <= bytes.byteLength;) {
     const header = bytes.subarray(offset, offset + 512);
     if (header.every((value) => value === 0)) break;
     if (!hasValidTarChecksum(header)) throw new Error('Invalid TAR header checksum.');
 
-    const size = readTarNumber(header, 124, 12);
     const typeFlag = String.fromCharCode(header[156] ?? 0);
-    const prefix = readTarString(header, 345, 155);
-    const rawName = readTarString(header, 0, 100);
-    const normalizedName = normalizeZipEntryName(prefix ? `${prefix}/${rawName}` : rawName);
+    const extension = ['x', 'g', 'L', 'K'].includes(typeFlag);
+    const attribute = (key: string) => localAttributes.get(key) ?? globalAttributes.get(key);
+    const extendedSize = extension ? undefined : attribute('size');
+    const size = extendedSize ? readPaxNumber(extendedSize, true) : readTarNumber(header, 124, 12);
+    if (!Number.isSafeInteger(size) || size < 0) throw new Error('Invalid TAR entry size.');
     const dataOffset = offset + 512;
     const nextOffset = dataOffset + Math.ceil(size / 512) * 512;
-    if (nextOffset > bytes.byteLength) throw new Error('Truncated TAR entry.');
+    if (!Number.isSafeInteger(nextOffset) || nextOffset > bytes.byteLength) throw new Error('Truncated TAR entry.');
+
+    if (extension) {
+      const data = bytes.subarray(dataOffset, dataOffset + size);
+      if (typeFlag === 'L') {
+        const end = data.indexOf(0);
+        longName = new TextDecoder().decode(end < 0 ? data : data.subarray(0, end));
+      } else if (typeFlag !== 'K') {
+        const attributes = readPaxAttributes(data);
+        for (const [key, value] of attributes) {
+          if (typeFlag === 'g') {
+            if (value) globalAttributes.set(key, value);
+            else globalAttributes.delete(key);
+          } else localAttributes.set(key, value);
+        }
+      }
+      offset = nextOffset;
+      continue;
+    }
+
+    const prefix = readTarString(header, 345, 155);
+    const rawName = readTarString(header, 0, 100);
+    const normalizedName = normalizeZipEntryName(attribute('path') || longName || (prefix ? `${prefix}/${rawName}` : rawName));
+    const extendedModified = attribute('mtime');
+    const modifiedSeconds = extendedModified ? readPaxNumber(extendedModified, false) : readTarNumber(header, 136, 12);
+    localAttributes = new Map();
+    longName = undefined;
 
     if (normalizedName && (typeFlag === '\0' || typeFlag === '0' || typeFlag === '5')) {
       const directory = typeFlag === '5';
       const name = directory ? `${normalizedName.replace(/\/+$/, '')}/` : normalizedName;
-      const modifiedSeconds = readTarNumber(header, 136, 12);
       entries.push({
         name,
         type: directory ? 'directory' : 'file',
         size: directory ? undefined : size,
-        modified: modifiedSeconds > 0 ? modifiedSeconds * 1000 : undefined,
+        modified: extendedModified || modifiedSeconds > 0 ? modifiedSeconds * 1000 : undefined,
         read: async () => directory ? new Uint8Array() : bytes.slice(dataOffset, dataOffset + size)
       });
     }
     offset = nextOffset;
   }
   return entries.sort(compareArchiveEntries);
+}
+
+function readPaxAttributes(bytes: Uint8Array): Map<string, string> {
+  const attributes = new Map<string, string>();
+  const decoder = new TextDecoder();
+  for (let offset = 0; offset < bytes.length;) {
+    const space = bytes.indexOf(32, offset);
+    if (space < 0) throw new Error('Invalid TAR extended header length.');
+    const length = readPaxNumber(decoder.decode(bytes.subarray(offset, space)), true);
+    const end = offset + length;
+    if (end <= space + 1 || end > bytes.length || bytes[end - 1] !== 10) throw new Error('Truncated TAR extended header.');
+    const field = decoder.decode(bytes.subarray(space + 1, end - 1));
+    const equals = field.indexOf('=');
+    if (equals <= 0) throw new Error('Invalid TAR extended header field.');
+    attributes.set(field.slice(0, equals), field.slice(equals + 1));
+    offset = end;
+  }
+  return attributes;
+}
+
+function readPaxNumber(value: string, integer: boolean): number {
+  const result = Number(value);
+  if (!(integer ? /^\d+$/ : /^-?\d+(?:\.\d+)?$/).test(value) ||
+      !Number.isFinite(result) || (integer && !Number.isSafeInteger(result))) {
+    throw new Error('Invalid TAR extended header number.');
+  }
+  return result;
 }
 
 async function decompressGzip(bytes: Uint8Array): Promise<Uint8Array> {
@@ -848,12 +1014,21 @@ function isZipFormat(format: string): boolean {
 }
 
 async function sourceToArrayBuffer(source: PreviewSource, context: PreviewLoadContext): Promise<ArrayBuffer> {
+  const signal = context.signal;
+  checkArchiveLoadAborted(signal);
   if (typeof source === 'string') {
-    const response = await fetch(source, { signal: context.signal });
-    if (!response.ok) {
-      throw new Error(`Failed to load archive source: ${response.status} ${response.statusText}`.trim());
+    const release = (response: Response): void => { void response.body?.cancel().catch(() => {}); };
+    const response = await waitForArchiveLoad(fetch(source, { signal }), signal, release);
+    try {
+      checkArchiveLoadAborted(signal);
+      if (!response.ok) {
+        throw new Error(`Failed to load archive source: ${response.status} ${response.statusText}`.trim());
+      }
+      return await waitForArchiveLoad(response.arrayBuffer(), signal);
+    } catch (error) {
+      release(response);
+      throw error;
     }
-    return response.arrayBuffer();
   }
   if (ArrayBuffer.isView(source)) {
     const bytes = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
@@ -862,12 +1037,42 @@ async function sourceToArrayBuffer(source: PreviewSource, context: PreviewLoadCo
     return copy.buffer as ArrayBuffer;
   }
   if (source instanceof ArrayBuffer) {
-    return source;
+    return source.slice(0);
   }
   if (source instanceof Blob) {
-    return source.arrayBuffer();
+    return waitForArchiveLoad(source.arrayBuffer(), signal);
   }
   return new TextEncoder().encode(String(source)).buffer as ArrayBuffer;
+}
+
+function checkArchiveLoadAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException('Archive preview aborted.', 'AbortError');
+}
+
+function waitForArchiveLoad<T>(pending: Promise<T>, signal?: AbortSignal, discard?: (value: T) => void): Promise<T> {
+  if (!signal) return pending;
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const abort = (): void => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', abort);
+      reject(new DOMException('Archive preview aborted.', 'AbortError'));
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    if (signal.aborted) abort();
+    void pending.then(value => {
+      if (settled) { discard?.(value); return; }
+      settled = true;
+      signal.removeEventListener('abort', abort);
+      resolve(value);
+    }, error => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', abort);
+      reject(error);
+    }).catch(() => { /* Observe failures from discarding a late response. */ });
+  });
 }
 
 function createTableHead(): HTMLTableSectionElement {
@@ -927,9 +1132,11 @@ function normalizeFormat(format: string | undefined): string {
 
 function createArchiveResource(
   entry: ArchiveEntryRecord,
-  contentTypes: Record<string, string> | undefined
+  contentTypes: Record<string, string> | undefined,
+  normalizedName: string,
+  signal?: AbortSignal
 ): ArchiveResource {
-  const contentType = entry.type === 'directory' ? undefined : resolveZipContentType(entry.name, contentTypes);
+  const contentType = entry.type === 'directory' ? undefined : resolveZipContentType(normalizedName, contentTypes, true);
   return {
     name: entry.name,
     type: entry.type,
@@ -937,46 +1144,46 @@ function createArchiveResource(
     modified: entry.modified,
     contentType,
     readAsArrayBuffer: async () => {
-      const bytes = await entry.read();
+      checkArchiveLoadAborted(signal);
+      const bytes = await waitForArchiveLoad(entry.read(), signal);
+      checkArchiveLoadAborted(signal);
       const copy = new Uint8Array(bytes.byteLength);
       copy.set(bytes);
       return copy.buffer;
     },
     readAsBlob: async () => {
-      const bytes = await entry.read();
+      checkArchiveLoadAborted(signal);
+      const bytes = await waitForArchiveLoad(entry.read(), signal);
+      checkArchiveLoadAborted(signal);
       return new Blob([copyBytesToArrayBuffer(bytes)], contentType ? { type: contentType } : undefined);
     },
-    readAsText: async () => new TextDecoder().decode(await entry.read())
-  };
-}
-
-function createUniqueBasenameMap(entries: ArchiveResource[]): Map<string, ArchiveResource> {
-  const candidates = new Map<string, ArchiveResource | null>();
-  for (const entry of entries) {
-    const basename = normalizeZipEntryName(entry.name).split('/').pop();
-    if (!basename) {
-      continue;
+    readAsText: async () => {
+      checkArchiveLoadAborted(signal);
+      const bytes = await waitForArchiveLoad(entry.read(), signal);
+      checkArchiveLoadAborted(signal);
+      return new TextDecoder().decode(bytes);
     }
-    candidates.set(basename, candidates.has(basename) ? null : entry);
-  }
-  return new Map([...candidates.entries()].filter((entry): entry is [string, ArchiveResource] => entry[1] != null));
+  };
 }
 
 function findZipResourceEntry(
   name: string,
   exact: Map<string, ArchiveResource>,
   rooted: Map<string, ArchiveResource>,
-  basename: Map<string, ArchiveResource>
+  basename: Map<string, ArchiveResource | null>
 ): ArchiveResource | undefined {
   const normalized = normalizeZipEntryName(name);
   if (!normalized) {
     return undefined;
   }
-  return exact.get(normalized) ?? rooted.get(normalized) ?? basename.get(normalized.split('/').pop() ?? '');
+  return exact.get(normalized) ?? rooted.get(normalized) ?? basename.get(normalized.slice(normalized.lastIndexOf('/') + 1)) ?? undefined;
 }
 
 function normalizeZipEntryName(name: string): string {
-  const trimmed = String(name ?? '')
+  const source = String(name ?? '');
+  // Ordinary relative paths need neither URI decoding nor segment cleanup.
+  if (!/[\\%?#:]|(?:^|\/)\.\.?(?:\/|$)|\/\/|^\/|\/$|^\s|\s$/.test(source)) return source;
+  const trimmed = source
     .trim()
     .replace(/\\/g, '/')
     .replace(/^[a-z]+:\/\/[^/]+\//i, '')
@@ -1011,27 +1218,43 @@ function decodeUriPart(part: string): string {
   }
 }
 
-function resolveZipContentType(name: string, contentTypes: Record<string, string> | undefined): string | undefined {
-  const normalized = normalizeZipEntryName(name);
+function resolveZipContentType(name: string, contentTypes: Record<string, string> | undefined, alreadyNormalized = false): string | undefined {
+  const normalized = alreadyNormalized ? name : normalizeZipEntryName(name);
   const extension = normalizeFormat(normalized.split('?')[0]?.split('.').pop());
   return contentTypes?.[normalized] ?? contentTypes?.[extension] ?? defaultContentTypeForExtension(extension);
 }
 
 function defaultContentTypeForExtension(extension: string): string | undefined {
   const types: Record<string, string> = {
+    aac: 'audio/aac',
+    avif: 'image/avif',
     bin: 'application/octet-stream',
+    bmp: 'image/bmp',
     css: 'text/css',
     gif: 'image/gif',
+    flac: 'audio/flac',
     gltf: 'model/gltf+json',
     html: 'text/html',
     jpeg: 'image/jpeg',
     jpg: 'image/jpeg',
     json: 'application/json',
     ktx2: 'image/ktx2',
+    m4a: 'audio/mp4',
+    m4v: 'video/mp4',
+    mov: 'video/quicktime',
+    mp3: 'audio/mpeg',
+    mp4: 'video/mp4',
     obj: 'model/obj',
+    oga: 'audio/ogg',
+    ogg: 'audio/ogg',
+    ogv: 'video/ogg',
+    opus: 'audio/ogg',
+    pdf: 'application/pdf',
     png: 'image/png',
     svg: 'image/svg+xml',
     txt: 'text/plain',
+    wav: 'audio/wav',
+    webm: 'video/webm',
     webp: 'image/webp',
     xhtml: 'application/xhtml+xml'
   };

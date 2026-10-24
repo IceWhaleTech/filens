@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { renderAsync } from 'docx-preview';
+import { parseAsync, renderDocument } from 'docx-preview';
 import { createDocxPreviewDriver, createDocxPreviewRoutes } from '../src';
 
 vi.mock('docx-preview', () => ({
-  renderAsync: vi.fn(async (_blob: Blob, container: HTMLElement) => {
+  parseAsync: vi.fn(async () => ({})),
+  renderDocument: vi.fn(async (_document: unknown, container: HTMLElement) => {
     const article = document.createElement('article');
     article.className = 'docx';
     article.textContent = 'Rendered DOCX';
@@ -48,8 +49,9 @@ describe('DOCX preview driver', () => {
     });
 
     expect(host.querySelector('.docxv-document .docx')?.textContent).toBe('Rendered DOCX');
-    expect(vi.mocked(renderAsync)).toHaveBeenCalledWith(
-      expect.any(Blob),
+    expect(vi.mocked(parseAsync)).toHaveBeenCalledWith(expect.any(ArrayBuffer), expect.any(Object));
+    expect(vi.mocked(renderDocument)).toHaveBeenCalledWith(
+      expect.any(Object),
       expect.any(HTMLElement),
       undefined,
       expect.objectContaining({

@@ -1,0 +1,209 @@
+{
+  "method": "70 external runs (five inputs, seven repeats per engine) plus 70 rotating current/previous engineering runs. Complete filens drawings, SVGs and first PNGs are identical across the five inputs. Model normalization and browser checks occur after parsing timers. The synthetic line input also matches every peer layer and coordinate. No new SOTA claim.",
+  "externalComparisonRunsAdded": 70,
+  "successfulFilensExternalRunsAdded": 35,
+  "engineeringComparisonRuns": 70,
+  "diagnosticRuns": 118,
+  "cumulativeExternalComparisonRuns": 2478,
+  "cumulativeSuccessfulFilensRuns": 1022,
+  "sources": {
+    "dxf.json.gz": {
+      "uncompressedSha256": "9213c212ef5f1a10d4712602a757b4317d6089ed86d74ea087f1dfcbf27d75fd",
+      "compressedSha256": "efd4d22e4c42c3a2720f1dd26ee221a0dabe2e8c108d61a3ebdfdc9dd3eb222b",
+      "runs": 70
+    },
+    "dxf-ab.json.gz": {
+      "uncompressedSha256": "33442a73d9c21a9186fd04cf790d7d7ffc1aae25cecac8d3f4db3f873f635b25",
+      "compressedSha256": "1035a80461975ea2b235ca6ca84a9d0fcfae4fc5fa566877085ac0c955335398",
+      "runs": 70
+    },
+    "dxf-diagnostic.json.gz": {
+      "uncompressedSha256": "6cac0217f605c9cb298f439a9bf75232cca0aac4a77978034ce0dec59a2bb581",
+      "compressedSha256": "0d4ad2ff2222010db5af1809953bfc726a1e86d477bf63f735a8451e6856cede",
+      "runs": 118
+    }
+  },
+  "artifacts": {
+    "scripts/benchmark-other-formats.mjs": "65f859edbadabbf78a6c5c3c3b77affe313cc6ad931e79b4eac56b6b29e78b6a",
+    "scripts/summarize-other-format-benchmark.mjs": "31e8b7dbd43d3ba5ee356715b05fef6968146ef6373e6a135e4a02533eaaf496",
+    "packages/cad/src/preview-driver.ts": "8bf9564c206054aeae307ff853eac6bd4ffd91baec01b0b861d42d3e1d90b49a",
+    "packages/cad/test/preview-driver.spec.ts": "dbba70796cc35341d6c6370db21ffff5fb2b387688536076a2c4396a23ef491c",
+    "packages/cad/dist/index.js": "f73e8558465b4bd5eca0e3a02183bed52052dd055b03fafde4b46d2720efe7f6",
+    "packages/cad/dist/index.css": "83a1a06b9ba7add04dc279dd749fe4dff5fa078a1bb31e48f7ded72309bb50fd",
+    "packages/core/dist/index.js": "0d559fcb11687ef1434ea5e0618c05c69214a91b8503e64dd40f562ed9d8856a",
+    "benchmarks/frontend/2026-10-24/dxf.patch": "8f123c400c694f4e3ae13f9f21d521270f1fe61f29e50f2d3ad7a9f39e958ab8",
+    "benchmarks/frontend/2026-10-24/dxf-summary.json": "713d091b45a37e555d0df1d71caf942291bc6a7f88daa05a1c4620c781c8d41b",
+    "benchmarks/frontend/2026-10-24/dxf-ab-summary.json": "f1e1398177a0ad157526cd926ef35160ecb11be56c0af40987c27ed4863bd63f"
+  },
+  "baseline": {
+    "module": "tmp/continued-review/cad-baseline/dist/index.js",
+    "moduleSha256": "9d81937ea7b56b3478de7c1285a7baf3b434df11558cbcd875baf733c8118afd",
+    "sourceSha256": "a106533d7c6aa347c3f180834c5ebd7dc425fe93a82d9eff3d46b3ee2d80f5e1",
+    "reconstruct": "In an isolated checkout of this source state, reverse dxf.patch, run npm run build:cad, and copy packages/cad/dist into tmp/continued-review/cad-baseline/dist. Reapply dxf.patch and rebuild. Run scripts/benchmark-other-formats.mjs --family dxf --iterations 7 --review-dxf --cad-baseline tmp/continued-review/cad-baseline/dist/index.js for the engineering comparison; omit --cad-baseline for peers. Summarize with scripts/summarize-other-format-benchmark.mjs."
+  },
+  "content": [
+    {
+      "sample": "filens-cafe.dxf",
+      "modelSha256": "74f99b5b5ee3c978cac89b1798ad08742fa44660ed32ac88712d0306112af62a",
+      "entities": 223,
+      "svgSha256": "a0b9bdd687c34893f5fe308dc36369c2bcae9835c1a1fa9625280ac1a8246cee",
+      "previousPngSha256": "6cfb2cdaf9432dbcdc7fa94abb02bfcc397e164d9f0834096996f5b400fe292c",
+      "currentPngSha256": "6cfb2cdaf9432dbcdc7fa94abb02bfcc397e164d9f0834096996f5b400fe292c",
+      "identical": true,
+      "interactions": [
+        {
+          "engine": "filens",
+          "zoomed": true,
+          "fitted": true,
+          "hidden": true,
+          "restored": true,
+          "destroyed": true
+        },
+        {
+          "engine": "filens-baseline",
+          "zoomed": true,
+          "fitted": true,
+          "hidden": true,
+          "restored": true,
+          "destroyed": true
+        }
+      ]
+    },
+    {
+      "sample": "api-cw750-details.dxf",
+      "modelSha256": "ca9896755cb3a68fa1391b5f29248174f36d0c2dbd9d50c303187c3ff8b78a77",
+      "entities": 5179,
+      "svgSha256": "d76c2f93ebdc60416be27b271de70dacd5a0d123bcf41895e860123f33e6e1a0",
+      "previousPngSha256": "a2b20bd5f80f2a952d1264fad9fcadd8d70b1adc19f50cd722307605c0b5d2b4",
+      "currentPngSha256": "a2b20bd5f80f2a952d1264fad9fcadd8d70b1adc19f50cd722307605c0b5d2b4",
+      "identical": true,
+      "interactions": [
+        {
+          "engine": "filens",
+          "zoomed": true,
+          "fitted": true,
+          "hidden": true,
+          "restored": true,
+          "destroyed": true
+        },
+        {
+          "engine": "filens-baseline",
+          "zoomed": true,
+          "fitted": true,
+          "hidden": true,
+          "restored": true,
+          "destroyed": true
+        }
+      ]
+    },
+    {
+      "sample": "blocks2.dxf",
+      "modelSha256": "3de283d969d633f1070d6d7586bcebd0a4a78cdcc822363878bedaf48bd81619",
+      "entities": 0,
+      "svgSha256": "da39846c67131aba6f2ff2e5cf37b1308c9d7af644e8710ed7ff6109fc6eb1c7",
+      "previousPngSha256": "de887393235bc1270756d74fd29c0cec4e8ad71e38e0ac094ec6489d0619d86c",
+      "currentPngSha256": "de887393235bc1270756d74fd29c0cec4e8ad71e38e0ac094ec6489d0619d86c",
+      "identical": true,
+      "interactions": [
+        {
+          "engine": "filens",
+          "zoomed": true,
+          "fitted": true,
+          "hidden": true,
+          "restored": true,
+          "destroyed": true
+        },
+        {
+          "engine": "filens-baseline",
+          "zoomed": true,
+          "fitted": true,
+          "hidden": true,
+          "restored": true,
+          "destroyed": true
+        }
+      ]
+    },
+    {
+      "sample": "splines.dxf",
+      "modelSha256": "7719bef69d023635564781bdee2ac526c452f5e35275bd6394ffe14962da28ef",
+      "entities": 2,
+      "svgSha256": "84a768a2cf8a35bba7346db04eb0407f195177f4b9146927c07123592e09f309",
+      "previousPngSha256": "9749a6506a1c32852992f11b868303537f50e847abd3fe1ea09c8ec90c8f9df9",
+      "currentPngSha256": "9749a6506a1c32852992f11b868303537f50e847abd3fe1ea09c8ec90c8f9df9",
+      "identical": true,
+      "interactions": [
+        {
+          "engine": "filens",
+          "zoomed": true,
+          "fitted": true,
+          "hidden": true,
+          "restored": true,
+          "destroyed": true
+        },
+        {
+          "engine": "filens-baseline",
+          "zoomed": true,
+          "fitted": true,
+          "hidden": true,
+          "restored": true,
+          "destroyed": true
+        }
+      ]
+    },
+    {
+      "sample": "generated-20000-lines.dxf",
+      "modelSha256": "e288183376cb635f4e6ad105bf946c8f2684960af7410e0cdfe7d240ebd8bb66",
+      "entities": 20000,
+      "svgSha256": "983d462cf380c9a4cc09c936071ba206e091132b92e5aa652b80c9817baa0a64",
+      "previousPngSha256": "371aafb72b0211e78819cedf0b08da4bd12c224fa1ead5b808032e74090bac7d",
+      "currentPngSha256": "371aafb72b0211e78819cedf0b08da4bd12c224fa1ead5b808032e74090bac7d",
+      "identical": true,
+      "interactions": [
+        {
+          "engine": "filens",
+          "zoomed": true,
+          "fitted": true,
+          "hidden": true,
+          "restored": true,
+          "destroyed": true
+        },
+        {
+          "engine": "filens-baseline",
+          "zoomed": true,
+          "fitted": true,
+          "hidden": true,
+          "restored": true,
+          "destroyed": true
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "cadUnitTests": 47,
+    "largeBlockCases": [
+      {
+        "kind": "INSERT",
+        "entities": 130000,
+        "baselineError": "RangeError: Maximum call stack size exceeded",
+        "current": "All entities and expected bounds retained"
+      },
+      {
+        "kind": "DIMENSION",
+        "entities": 130000,
+        "baselineError": "RangeError: Maximum call stack size exceeded",
+        "current": "All entities and expected bounds retained"
+      },
+      {
+        "kind": "nested INSERT",
+        "entities": 130000,
+        "baselineError": "RangeError: Maximum call stack size exceeded",
+        "current": "All entities and expected bounds retained"
+      }
+    ],
+    "packageBuild": true,
+    "demoBuild": true,
+    "bundleReport": true,
+    "engineeringRunsCannotQualifyForSota": true
+  },
+  "scope": "The 20,000-line parsing engineering result is 23.465 ms versus 31.965 ms, ratio 1.3622 and 95% interval [1.2940, 1.3928]. Peer recheck is 23.395 ms versus 21.705 ms dxf-parser 1.1.2, interval overlapping 1, no SOTA. The real api-cw750-details drawing has no stable before/after gain. filens expands blocks and resolves styles/bounds (5,179 entities), while the peer retains 1,244 top-level records; those real-file timings are diagnostic. Tasks below 10 ms are retained for coverage, not optimization claims."
+}

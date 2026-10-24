@@ -33,6 +33,8 @@ class MockResizeObserver {
 }
 
 beforeAll(() => {
+  vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
+  vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
   Object.defineProperty(globalThis, 'ResizeObserver', {
     value: MockResizeObserver,
     configurable: true
@@ -1593,10 +1595,7 @@ describe('native preview drivers', () => {
       }
     });
     expect(textContainer.querySelector('pre')?.textContent).toBe('hello\nworld');
-    expect(Array.from(textContainer.querySelectorAll('.pptxv-native-text-gutter span')).map((line) => line.textContent)).toEqual([
-      '1',
-      '2'
-    ]);
+    expect(textContainer.querySelector('.pptxv-native-text-gutter')?.textContent).toBe('1\n2');
 
     const codeSession = createTextPreviewDriver().createSession(codeContainer);
     await codeSession.load(new TextEncoder().encode('const answer: number = 42;'), {

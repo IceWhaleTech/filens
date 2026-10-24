@@ -11,7 +11,7 @@ import {
   type WorkbookPreviewState
 } from '@filens/core';
 import { loadXlsxWorkbook, resolveCellValue } from './parser';
-import type { ParsedSheet, ParsedWorkbook } from './types';
+import type { ParsedRow, ParsedSheet, ParsedWorkbook } from './types';
 
 type PreviewListenerMap = {
   [K in PreviewEventName]: Set<(payload: PreviewEventMap[K]) => void>;
@@ -47,6 +47,9 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
   private readonly tabs: HTMLDivElement;
   private readonly grid: HTMLDivElement;
   private workbook: ParsedWorkbook | null = null;
+  private loadGeneration = 0;
+  private loadController?: AbortController;
+  private removeAbortListener?: () => void;
   private state: WorkbookPreviewState;
 
   constructor(private readonly host: HTMLElement, options: PreviewOptions = {}) {
@@ -77,6 +80,23 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
+    const generation = ++this.loadGeneration;
+    this.loadController?.abort();
+    this.removeAbortListener?.();
+    this.releaseWorkbook();
+    const controller = new AbortController();
+    this.loadController = controller;
+    const signal = context.signal;
+    const abort = () => {
+      controller.abort();
+      if (generation === this.loadGeneration) {
+        this.releaseWorkbook();
+        this.state.loading = false;
+        this.emit('statechange', this.state);
+      }
+    };
+    signal?.addEventListener('abort', abort, { once: true });
+    this.removeAbortListener = () => signal?.removeEventListener('abort', abort);
     this.state = {
       ...this.state,
       loading: true,
@@ -88,7 +108,11 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
     this.emit('statechange', this.state);
 
     try {
-      this.workbook = await loadXlsxWorkbook(source, context);
+      if (signal?.aborted) abort();
+      const workbook = await loadXlsxWorkbook(source, { ...context, signal: controller.signal });
+      if (generation !== this.loadGeneration) return;
+      if (controller.signal.aborted) throw new DOMException('Workbook preview aborted.', 'AbortError');
+      this.workbook = workbook;
       this.state = {
         ...this.state,
         loading: false,
@@ -107,8 +131,11 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
       this.emit('rendered', this.state);
       this.emit('statechange', this.state);
     } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      if (generation !== this.loadGeneration) return;
+      this.releaseWorkbook();
       this.state.loading = false;
+      if (controller.signal.aborted) throw new DOMException('Workbook preview aborted.', 'AbortError');
+      const normalizedError = error instanceof Error ? error : new Error(String(error));
       this.state.error = normalizedError.message;
       this.emit('error', normalizedError);
       this.emit('statechange', this.state);
@@ -117,13 +144,17 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
   }
 
   destroy(): void {
+    this.loadGeneration++;
+    this.loadController?.abort();
+    this.removeAbortListener?.();
+    this.releaseWorkbook();
+    this.state.loading = false;
     this.grid.removeEventListener('scroll', this.handleGridScroll);
-    this.tabs.replaceChildren();
-    this.grid.replaceChildren();
     this.root.replaceChildren();
     if (this.root.parentElement === this.host) {
       this.host.replaceChildren();
     }
+    for (const listeners of Object.values(this.listeners)) listeners.clear();
   }
 
   getState(): WorkbookPreviewState {
@@ -154,6 +185,7 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
   }
 
   private goToSheet(index: number): void {
+    if (!Number.isInteger(index) || !this.workbook) return;
     const nextIndex = Math.max(0, Math.min(index, Math.max(this.state.sheets.length - 1, 0)));
     if (nextIndex === this.state.activeSheetIndex) {
       return;
@@ -184,6 +216,7 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
   private renderActiveSheet(): void {
     const sheet = this.workbook?.sheets[this.state.activeSheetIndex];
     this.grid.replaceChildren();
+    this.grid.scrollTop = this.grid.scrollLeft = 0;
     if (!sheet) {
       return;
     }
@@ -205,6 +238,15 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
     // ponytail: rows stay mounted after loading; switch to windowed rows if million-row sheets become a real use case.
     appendSheetRows(body, sheet, renderedRows + 1, Math.min(renderedRows + ROW_BATCH_SIZE, totalRows));
   };
+
+  private releaseWorkbook(): void {
+    this.workbook = null;
+    this.tabs.replaceChildren();
+    this.grid.replaceChildren();
+    this.grid.scrollTop = this.grid.scrollLeft = 0;
+    this.state.activeSheetIndex = 0;
+    this.state.sheets = [];
+  }
 
   private emit<T extends PreviewEventName>(event: T, payload: PreviewEventMap[T]): void {
     for (const handler of this.listeners[event]) {
@@ -254,7 +296,13 @@ export function createSheetTable(sheet: ParsedSheet, rowCount = Math.max(sheet.r
 }
 
 export function appendSheetRows(tbody: HTMLTableSectionElement, sheet: ParsedSheet, firstRow: number, lastRow: number): void {
-  const rowMap = new Map(sheet.rows.map((row) => [row.index, row]));
+  if (firstRow > lastRow) return;
+  // Index only this batch. Preserve unordered/duplicate rows and caller edits
+  // without allocating a complete-sheet map on every scroll.
+  const rowMap = new Map<number, ParsedRow>();
+  for (const row of sheet.rows) {
+    if (row.index >= firstRow && row.index <= lastRow) rowMap.set(row.index, row);
+  }
   const fragment = document.createDocumentFragment();
   for (let rowIndex = firstRow; rowIndex <= lastRow; rowIndex += 1) {
     const row = rowMap.get(rowIndex);

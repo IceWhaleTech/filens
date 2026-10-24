@@ -1,0 +1,75 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "1cb51d9cf88703468620b510b0f08c70465bc3ca950ba99463f0f0e0d27673fa",
+  "iterations": 7,
+  "runs": 70,
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "method": "10,000 paired bootstrap resamples of median ratios, seed 12345. Seven repeats, baseline >10 ms and a 95% interval above 1 required for a stable reduction. HTTP adapter input preparation only: no network, HTTP serialization, server conversion, rendering or peak-memory claim. Every payload hash, snapshot and response checked after timing.",
+  "samples": [
+    {
+      "sample": "uint8array",
+      "bytes": 67108864,
+      "baselineMs": 8.700000047683716,
+      "currentMs": 4.599999904632568,
+      "below10MsControl": true,
+      "ratio": null,
+      "pairedBootstrapRatio95": null,
+      "stableEngineeringReduction": false,
+      "completeUploadedBytesMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "subview",
+      "bytes": 67108864,
+      "baselineMs": 8.800000071525574,
+      "currentMs": 4.600000023841858,
+      "below10MsControl": true,
+      "ratio": null,
+      "pairedBootstrapRatio95": null,
+      "stableEngineeringReduction": false,
+      "completeUploadedBytesMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "arraybuffer",
+      "bytes": 67108864,
+      "baselineMs": 4.5,
+      "currentMs": 4.600000023841858,
+      "below10MsControl": true,
+      "ratio": null,
+      "pairedBootstrapRatio95": null,
+      "stableEngineeringReduction": false,
+      "completeUploadedBytesMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "blob",
+      "bytes": 67108864,
+      "baselineMs": 0.6000000238418579,
+      "currentMs": 0.6000000238418579,
+      "below10MsControl": true,
+      "ratio": null,
+      "pairedBootstrapRatio95": null,
+      "stableEngineeringReduction": false,
+      "completeUploadedBytesMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "base64",
+      "bytes": 8388608,
+      "baselineMs": 262.10000002384186,
+      "currentMs": 19.399999976158142,
+      "below10MsControl": false,
+      "ratio": 13.51030929618313,
+      "pairedBootstrapRatio95": [
+        12.651741276152999,
+        13.803108755900666
+      ],
+      "stableEngineeringReduction": true,
+      "completeUploadedBytesMatch": true,
+      "scopedSota": false
+    }
+  ]
+}

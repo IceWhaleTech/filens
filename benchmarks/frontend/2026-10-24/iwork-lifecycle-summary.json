@@ -1,0 +1,78 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "138a3d731ceae704e2afc7fd8512914bad4216eabced6426338b1f99a58a2471",
+  "iterations": 7,
+  "runs": 84,
+  "browser": "147.0.7727.15",
+  "cpu": "Apple M4 Pro",
+  "method": "10,000 paired bootstrap median-ratio resamples with seed 12345 for healthy-load controls. Cancellation measured from abort to promise settlement; no equivalent-output speed ratio. Includes real Worker startup; excludes input/module loading and paint. No peer/SOTA claim or external-total increment.",
+  "samples": [
+    {
+      "sample": "a.numbers",
+      "healthy": {
+        "baselineMs": 150.59999990463257,
+        "currentMs": 133.09999990463257,
+        "baselineOverCurrent": 1.1314800902519828,
+        "pairedBootstrapRatio95": [
+          1.042630058499883,
+          1.2284843858678465
+        ],
+        "completeModelDomAndResourceChecksMatch": true,
+        "sheetsChecked": 6
+      },
+      "cancellation": {
+        "baselineObsoleteWaitMs": 131.79999995231628,
+        "currentAbortSettlementMs": 0.20000004768371582,
+        "currentWorkerStoppedAndSameViewerRecovered": true,
+        "ratio": null,
+        "reason": "Baseline finishes obsolete output; current cancels it. Different completion semantics, no parse-speed ratio."
+      },
+      "scopedSota": false
+    },
+    {
+      "sample": "a.pages",
+      "healthy": {
+        "baselineMs": 121.39999997615814,
+        "currentMs": 107.60000002384186,
+        "baselineOverCurrent": 1.128252787632514,
+        "pairedBootstrapRatio95": [
+          1.1112132343444667,
+          1.1356877325335206
+        ],
+        "completeModelDomAndResourceChecksMatch": true,
+        "sheetsChecked": 1
+      },
+      "cancellation": {
+        "baselineObsoleteWaitMs": 109.79999995231628,
+        "currentAbortSettlementMs": 0.20000004768371582,
+        "currentWorkerStoppedAndSameViewerRecovered": true,
+        "ratio": null,
+        "reason": "Baseline finishes obsolete output; current cancels it. Different completion semantics, no parse-speed ratio."
+      },
+      "scopedSota": false
+    },
+    {
+      "sample": "filens-weekend.key",
+      "healthy": {
+        "baselineMs": 109.70000004768372,
+        "currentMs": 96.79999995231628,
+        "baselineOverCurrent": 1.1332644638607643,
+        "pairedBootstrapRatio95": [
+          1.1160164278674705,
+          1.1458333333333333
+        ],
+        "completeModelDomAndResourceChecksMatch": true,
+        "sheetsChecked": 1
+      },
+      "cancellation": {
+        "baselineObsoleteWaitMs": 97.90000009536743,
+        "currentAbortSettlementMs": 0.20000004768371582,
+        "currentWorkerStoppedAndSameViewerRecovered": true,
+        "ratio": null,
+        "reason": "Baseline finishes obsolete output; current cancels it. Different completion semantics, no parse-speed ratio."
+      },
+      "scopedSota": false
+    }
+  ]
+}

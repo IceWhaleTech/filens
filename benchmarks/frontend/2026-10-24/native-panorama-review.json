@@ -1,0 +1,198 @@
+{
+  "date": "2026-10-24T03:20:04.520Z",
+  "sourceSha256": "f152ed790afcea18470ae4604fe554fccbaf81b541777823a8e1479fbd4b84ec",
+  "peer": "photo-sphere-viewer",
+  "equivalentReadablePreview": true,
+  "vendorCalibrationEquivalent": false,
+  "seamless": false,
+  "scope": "Readable first preview of this same camera-original X5 INSP, with camera and seam views. filens has visibly lighter seam artifacts in this sample; no quantitative or general stitching-quality SOTA, nor vendor-calibration algorithm speed ranking.",
+  "checks": {
+    "filensNativeX5EmbeddedCalibration": true,
+    "bothUploaded8192x4096": true,
+    "sameVerticalFov75": true,
+    "allFilensFirstPreviewPixelsStable": true,
+    "filensFirstPreviewUnchangedAfterSparseParsing": true,
+    "bothIdleWithoutGlDraws": true,
+    "bothResizeTo768x900": true,
+    "completeCalibrationManifestUnchanged": true
+  },
+  "views": {
+    "filens": [
+      {
+        "yaw": 0,
+        "pitch": 0,
+        "path": "filens-yaw0-pitch0.png",
+        "sha256": "99be96dde59fabeedbb103759d88ff2ea2f98f87c6f68e05871bb1ba9d11af13"
+      },
+      {
+        "yaw": 90,
+        "pitch": 0,
+        "path": "filens-yaw90-pitch0.png",
+        "sha256": "5a5ce999bc869a9acccb9ab709b2b26516b46eaafb25e037eb0f0a9afacc3dc0"
+      },
+      {
+        "yaw": 180,
+        "pitch": 0,
+        "path": "filens-yaw180-pitch0.png",
+        "sha256": "c08608e5c2eb4937857614b4be0a2efd340a9636fb26ced0caff86738f4711c3"
+      },
+      {
+        "yaw": -90,
+        "pitch": 0,
+        "path": "filens-yaw-90-pitch0.png",
+        "sha256": "4fb467d52efe0a8e3b36ec342332dcb2013fcc137dbd6e56b445ce9cd397e596"
+      },
+      {
+        "yaw": 90,
+        "pitch": 50,
+        "path": "filens-yaw90-pitch50.png",
+        "sha256": "35da9a95035ffdfc8e26aa1b2a1bc454e9bc664ed84af977c0830ec115cbdfd2"
+      },
+      {
+        "yaw": 90,
+        "pitch": -50,
+        "path": "filens-yaw90-pitch-50.png",
+        "sha256": "e67688775789ebc3241cf0a7c71d0b12a5989b6e4b3950625cbdd226dd99b15f"
+      },
+      {
+        "yaw": -90,
+        "pitch": 50,
+        "path": "filens-yaw-90-pitch50.png",
+        "sha256": "4596a7067d8179c43ee4225df050466d7e34e575d8a6ab4c5d38a1ee31a03ad7"
+      },
+      {
+        "yaw": -90,
+        "pitch": -50,
+        "path": "filens-yaw-90-pitch-50.png",
+        "sha256": "2eb0d7a5347c01058680cd5d9515766e0a1a01fa33dc176bf5e7cd78e5d60225"
+      }
+    ],
+    "photo-sphere-viewer": [
+      {
+        "yaw": 0,
+        "pitch": 0,
+        "path": "photo-sphere-viewer-yaw0-pitch0.png",
+        "sha256": "185ff70c8964ced9134b8280d79309d943ec15108443bff34d1faa4c765c495a"
+      },
+      {
+        "yaw": 90,
+        "pitch": 0,
+        "path": "photo-sphere-viewer-yaw90-pitch0.png",
+        "sha256": "a0ce70803c5d6d84cf28ec7aa2fd6ae45622a3a572b8e5457dc20bb2b8452198"
+      },
+      {
+        "yaw": 180,
+        "pitch": 0,
+        "path": "photo-sphere-viewer-yaw180-pitch0.png",
+        "sha256": "c50308b51f7b7046fc0855f8d34847fcfa00ca8a54cfe317b46f3eca34ffaca2"
+      },
+      {
+        "yaw": -90,
+        "pitch": 0,
+        "path": "photo-sphere-viewer-yaw-90-pitch0.png",
+        "sha256": "87f11c82741a5e3670908f1cd4884339cbb73e9294b9b08075adbf69746cf9d1"
+      },
+      {
+        "yaw": 90,
+        "pitch": 50,
+        "path": "photo-sphere-viewer-yaw90-pitch50.png",
+        "sha256": "507bc0b8decaa235f202741765462863387f41ce6d3c165c3485bd74f3c2e3f7"
+      },
+      {
+        "yaw": 90,
+        "pitch": -50,
+        "path": "photo-sphere-viewer-yaw90-pitch-50.png",
+        "sha256": "d2eb0c8f1eaf0739c6c878985c37d27fcb0f1e0c936ec964ea9068db292e5f30"
+      },
+      {
+        "yaw": -90,
+        "pitch": 50,
+        "path": "photo-sphere-viewer-yaw-90-pitch50.png",
+        "sha256": "6a15e76639acffb708a180409ec7879f75433bd6e5a9160bc8637b20ad13435e"
+      },
+      {
+        "yaw": -90,
+        "pitch": -50,
+        "path": "photo-sphere-viewer-yaw-90-pitch-50.png",
+        "sha256": "82b882edc4068ba9fbf6092cb81880a9134807a2fc0760d7bed33b87ef3d5864"
+      }
+    ]
+  },
+  "visualFindings": [
+    "Both render the same readable scene at four headings and both seam directions with pitch +50/-50 degrees. Drag, zoom and resize work.",
+    "Native X5 calibration is retained by filens; PSV uses the documented fixed generic dual-fisheye mapping. On this sample PSV visibly repeats scene elements, including people/clothing and the foreground hand-region content, across hard seam discontinuities. filens mainly retains localized blending/ghosting with better scene continuity and visibly lighter artifacts at these reviewed seams. Neither output is seamless; this qualitative sample observation is not a quantitative or general stitching-quality SOTA claim.",
+    "PSV loading fade can still affect first-frame PNGs; the settled eight-direction captures are used for scene review."
+  ],
+  "privacy": "Camera originals and their screenshots stay local. Published records contain only anonymous sample names, dimensions, timings and hashes.",
+  "implementationPatch": {
+    "path": "native-panorama.patch",
+    "sha256": "b6b277532b2f34b7fa5dfcc5815ba159ae5bf896049cb2409fbabf8c734db991"
+  },
+  "metadataReview": {
+    "path": "native-panorama-metadata-review.json",
+    "sha256": "62ed964f4a3cf3abf3bf1b0642190306772f5fc2c77112de351fbbace34130ec"
+  },
+  "sources": [
+    {
+      "path": "packages/panorama/src/calibrated-renderer.ts",
+      "sha256": "9f9e80bbeaa28e37e23c03e9096b1ee67a1921cd7754da8a2c1631c0edec92d8"
+    },
+    {
+      "path": "packages/panorama/src/preview-driver.ts",
+      "sha256": "640e0713036c21b7cf0da76674a0366f7570a4d2ff8292d16811373630783936"
+    },
+    {
+      "path": "packages/panorama/src/wasm-processor.ts",
+      "sha256": "27b4bf4dfaf514e94f1dd8ab2f9561b70e0e25807bb05d1ac33df1083fb012c8"
+    },
+    {
+      "path": "wasm/converter-core-rust/src/panorama.rs",
+      "sha256": "58a3d4eeea6f58487473ad97f678b5af7c62c7cb29f66e7d58e0a59cfe85b485"
+    },
+    {
+      "path": "packages/panorama/test/fixtures/dng.ts",
+      "sha256": "b97f4c880247d6d13a1690238a4a60d508bfcc7b1fe4ab97dc9b7edb89642670"
+    },
+    {
+      "path": "apps/demo/e2e/panorama-still-calibrated.e2e.ts",
+      "sha256": "51dd4c3a84a78ef55d6161b9edc26e2069c40f65f49f3d3947d072387176018f"
+    },
+    {
+      "path": "scripts/benchmark-native-panorama.mjs",
+      "sha256": "58abf012d158417bca4f415dee55da0f750d3b30d6c1a9c83c24c0b30e5b4da7"
+    },
+    {
+      "path": "scripts/summarize-native-panorama-benchmark.mjs",
+      "sha256": "b8752f126469654a9d7195e667e8d8ca5b0b0dce85f6bc9576e1d298b2f062c0"
+    },
+    {
+      "path": "scripts/review-native-panorama-metadata.mjs",
+      "sha256": "f83b284a7628bc3324fcebbb9627cba0df6e1aae59cc439c6bd52e811b0959c9"
+    }
+  ],
+  "validation": {
+    "panoramaUnitTestsPassed": 124,
+    "coreRustTestsPassed": 84,
+    "browserTestsPassed": 9,
+    "browserTestsSkipped": 3,
+    "realOriginals": [
+      "Insta360 X5 INSP",
+      "Insta360 OneRS DNG"
+    ],
+    "x5OriginalDng": "not tested; synthetic and numeric coverage only"
+  },
+  "earlierExploratoryMeasurements": [
+    {
+      "path": "native-panorama-initial.json.gz",
+      "measurements": 14,
+      "includedInExternalTotals": false,
+      "usedForCurrentSota": false
+    },
+    {
+      "path": "native-panorama-before-sparse.json.gz",
+      "measurements": 14,
+      "includedInExternalTotals": false,
+      "usedForCurrentSota": false
+    }
+  ]
+}

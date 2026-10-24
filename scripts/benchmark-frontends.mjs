@@ -18,6 +18,10 @@ const cpuRate = Number(option('--cpu-rate', '1'));
 const familyFilter = option('--family', 'all');
 const sampleFilter = option('--sample', 'all');
 const engineFilter = option('--engine', 'all');
+const pptxBaseline = option('--pptx-baseline', null);
+if (pptxBaseline && (path.isAbsolute(pptxBaseline) || path.relative(repo, path.resolve(repo, pptxBaseline)).startsWith('..'))) {
+  throw new Error('--pptx-baseline must name a module inside the repository.');
+}
 const profiling = args.includes('--profile');
 const reviewContent = args.includes('--review-content');
 const work = path.join(repo, 'tmp/performance-sota');
@@ -77,8 +81,10 @@ const samples = [
 const matrix = [];
 for (const s of samples) {
   if (s.family === 'pptx') {
-    matrix.push({ family: 'pptx-view', sample: s.name, engines: ['filens', 'pptx-preview', 'vue-office'] });
-    matrix.push({ family: 'pptx-model', sample: s.name, engines: ['filens', 'pptxtojson', 'pptx-preview'] });
+    const engineeringEngines = pptxBaseline ? ['filens', 'filens-baseline'] : null;
+    matrix.push({ family: 'pptx-view', sample: s.name, engines: engineeringEngines ?? ['filens', 'pptx-preview', 'vue-office'] });
+    matrix.push({ family: 'pptx-model', sample: s.name, engines: engineeringEngines ?? ['filens', 'pptxtojson', 'pptx-preview'] });
+    if (familyFilter === 'pptx-cancel') matrix.push({ family: 'pptx-cancel', sample: s.name, engines: engineeringEngines ?? ['filens'] });
   } else if (s.family === 'iwork') {
     matrix.push({ family: 'iwork-view', sample: s.name, engines: ['filens'] });
     if (s.name.endsWith('.numbers')) matrix.push({ family: 'numbers-model', sample: s.name, engines: ['filens', 'sheetjs'] });
@@ -130,15 +136,18 @@ const git = require('node:child_process').execFileSync;
 const result = {
   date: new Date().toISOString(), cpu: os.cpus()[0].model, platform: `${os.platform()} ${os.release()} ${os.arch()}`,
   totalMemory: os.totalmem(), browser: browser.version(), iterations, cpuRate, profiling, viewport: { width: 1280, height: 800 },
+  engineering: Boolean(pptxBaseline) || familyFilter === 'pptx-cancel',
   gitHead: git('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim(),
   versions: { 'pptxtojson': '2.2.0', 'pptx-preview': '1.0.7', '@vue-office/pptx': '1.0.1', 'libraw-wasm': '1.6.0', '@photo-sphere-viewer/core': '5.15.1', sheetjs: '0.20.3' },
   method: 'Fresh browser context per run; libraries, workers, WASM and input bytes ready before timer; local File/bytes to model or first preview plus image decoding, document.fonts.ready, two rAFs. Browser process shared; no claim of cold download timings. Deterministically rotated engine order. PPTX: filens mounts visible pages; pptx-preview single-slide mode; vue-office default full DOM. Parser outputs and RAW output quality are recorded separately; this is not a fidelity score. JS heap excludes workers, WASM and GPU. Panorama uses already-stitched JPEGs, not vendor-original stitching.',
   artifacts: ['scripts/benchmark-frontends.mjs', ...['core', 'iwork', 'panorama', 'converter-client', 'xlsx'].map(name => `packages/${name}/dist/index.js`),
     'wasm/converter-core/dist/converter-core.wasm', 'wasm/converter-image/dist/converter-image.wasm',
-    'tmp/performance-sota/package-lock.json', 'tmp/performance-sota/xlsx-0.20.3.full.min.js'].map(hashFile),
+    'tmp/performance-sota/package-lock.json', 'tmp/performance-sota/xlsx-0.20.3.full.min.js',
+    ...(pptxBaseline ? [pptxBaseline] : [])].map(hashFile),
   samples: samples.map(s => ({ ...s, bytes: fs.statSync(path.join(repo, s.path)).size, sha256: sha256(fs.readFileSync(path.join(repo, s.path))) })),
   runs: []
 };
+if (familyFilter === 'pptx-cancel') result.method = 'Engineering cancellation check: fresh context per run, libraries and bytes ready before the timer, simulated local File.arrayBuffer resolves after abort. Measures post-cancellation work through settlement; excludes I/O waiting. The old implementation may still parse the full file. No peer ranking or first-preview claim.';
 const save = () => fs.writeFileSync(path.join(out, 'results.json'), JSON.stringify(result, null, 2) + '\n');
 try {
   const info = await browser.newPage();
@@ -167,7 +176,18 @@ try {
         const cdp = await context.newCDPSession(page);
         if (cpuRate !== 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: cpuRate });
         await page.goto(base);
+        if (engine === 'filens-baseline') await page.evaluate(async ({ module, css }) => {
+          window.pptxBaselineModule = module;
+          const stylesheet = document.querySelector('link[href*="core/dist/index.css"]');
+          await new Promise((resolve, reject) => {
+            stylesheet.onload = resolve;
+            stylesheet.onerror = reject;
+            stylesheet.href = css;
+          });
+        }, { module: `/repo/${pptxBaseline}`, css: `/repo/${path.posix.join(path.posix.dirname(pptxBaseline), 'index.css')}` });
         run.setupMs = await bounded(page.evaluate(async ({ task, engine }) => {
+          const baseline = engine === 'filens-baseline';
+          if (baseline) engine = 'filens';
           const bytes = await (await fetch(`/sample/${task.sample}`)).arrayBuffer();
           window.inputBytes = bytes;
           window.inputFile = new File([bytes], task.sample);
@@ -176,7 +196,7 @@ try {
           const start = performance.now();
           if (engine === 'filens') {
             if (task.family.startsWith('pptx')) {
-              window.lib = await import('@filens/core');
+              window.lib = await import(baseline ? window.pptxBaselineModule : '@filens/core');
               if (task.family === 'pptx-view') window.viewer = window.lib.init(window.host, { fit: 'contain', virtual: true });
             } else if (task.family.includes('iwork') || task.family === 'numbers-model') {
               window.lib = await import('@filens/iwork');
@@ -223,12 +243,32 @@ try {
         const before = await cdp.send('Runtime.getHeapUsage');
         if (profiling) { await cdp.send('Profiler.enable'); await cdp.send('Profiler.start'); }
         const measured = await bounded(page.evaluate(async engine => {
+          if (engine === 'filens-baseline') engine = 'filens';
           const { family, sample } = window.task;
           const stats = {};
           let node;
           const t0 = performance.now();
           window.measureStart = t0;
-          if (family === 'pptx-model') {
+          if (family === 'pptx-cancel') {
+            // Simulate a local file read completing after the user switches
+            // documents. Count the work after cancellation, excluding I/O.
+            let release;
+            const file = new File([], sample);
+            Object.defineProperty(file, 'arrayBuffer', { value: () => new Promise(resolve => { release = resolve; }) });
+            const controller = new AbortController();
+            const pending = window.lib.loadPptx(file, { signal: controller.signal });
+            controller.abort();
+            release(window.inputBytes);
+            try {
+              const model = await pending;
+              stats.cancelOutcome = 'parsed-after-abort';
+              stats.unwantedSlides = model.slides.length;
+            } catch (error) {
+              if (error.name !== 'AbortError') throw error;
+              stats.cancelOutcome = 'aborted';
+              stats.unwantedSlides = 0;
+            }
+          } else if (family === 'pptx-model') {
             const model = engine === 'filens' ? await window.lib.loadPptx(window.inputFile)
               : engine === 'pptx-preview' ? await window.viewer.load(window.inputBytes)
               : await window.lib.parse(window.inputBytes, { imageMode: 'blob', videoMode: 'blob', audioMode: 'blob' });
@@ -403,7 +443,10 @@ try {
           }));
           if (Object.values(run.interactions).some(value => value === false)) throw new Error('iWork archive/navigation/content check failed');
         }
-        if (reviewContent && iteration === 0 && task.family === 'pptx-view' && engine === 'filens') {
+        if (reviewContent && iteration === 0 && task.family === 'pptx-view' && engine.startsWith('filens')) {
+          const content = await page.evaluate(() => window.viewer.getState().presentation);
+          run.modelSha256 = sha256(JSON.stringify(content));
+          run.screenshotSha256 = sha256(fs.readFileSync(path.join(out, `${task.family}-${engine}-${task.sample}.png`)));
           run.interactions = await page.evaluate(async () => {
             const settle = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             const visiblePagesMounted = () => {

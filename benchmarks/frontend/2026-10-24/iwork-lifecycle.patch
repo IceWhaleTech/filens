@@ -1,0 +1,552 @@
+diff --git a/packages/iwork/src/parser/archive.ts b/packages/iwork/src/parser/archive.ts
+--- a/packages/iwork/src/parser/archive.ts
++++ b/packages/iwork/src/parser/archive.ts
+@@ -1,4 +1,4 @@
+-import { openZipArchive, type ZipEntry } from '@filens/core';
++import { openZipArchive, type ZipEntry } from '@filens/core/zip';
+ import { uncompress as snappyUncompress } from 'snappyjs';
+ import type {
+   IworkArchiveDataEntry,
+diff --git a/packages/iwork/src/parser/detect.ts b/packages/iwork/src/parser/detect.ts
+--- a/packages/iwork/src/parser/detect.ts
++++ b/packages/iwork/src/parser/detect.ts
+@@ -1,4 +1,4 @@
+-import { openZipArchive, type ZipEntry } from '@filens/core';
++import { openZipArchive, type ZipEntry } from '@filens/core/zip';
+ import { uncompress as snappyUncompress } from 'snappyjs';
+ import type { DetectIworkTypeOptions, IworkSource, IworkType } from '../types';
+ import { loadSourceBytes } from './load-source';
+diff --git a/packages/iwork/src/parser/load-source.ts b/packages/iwork/src/parser/load-source.ts
+--- a/packages/iwork/src/parser/load-source.ts
++++ b/packages/iwork/src/parser/load-source.ts
+@@ -15,7 +15,9 @@
+       throw new Error(`Failed to fetch iWork source: ${response.status} ${response.statusText}`);
+     }
+ 
+-    return new Uint8Array(await response.arrayBuffer());
++    const bytes = new Uint8Array(await response.arrayBuffer());
++    throwIfAborted(options.signal);
++    return bytes;
+   }
+ 
+   if (ArrayBuffer.isView(source)) {
+@@ -23,12 +25,14 @@
+   }
+ 
+   if (isArrayBufferLike(source)) {
+-    return new Uint8Array(source);
++    return new Uint8Array(source).slice();
+   }
+ 
+   if (isBlobLike(source)) {
+     throwIfAborted(options.signal);
+-    return new Uint8Array(await source.arrayBuffer());
++    const bytes = new Uint8Array(await source.arrayBuffer());
++    throwIfAborted(options.signal);
++    return bytes;
+   }
+ 
+   throw new Error('Unsupported iWork source type.');
+diff --git a/packages/iwork/src/preview-driver.ts b/packages/iwork/src/preview-driver.ts
+--- a/packages/iwork/src/preview-driver.ts
++++ b/packages/iwork/src/preview-driver.ts
+@@ -54,6 +54,7 @@
+   };
+   private readonly unsubscribes: Array<() => void>;
+   private lastState: IworkPreviewState;
++  private destroyed = false;
+ 
+   constructor(private readonly host: HTMLElement, options: PreviewOptions = {}) {
+     this.viewer = createIworkViewer(host, {
+@@ -65,6 +66,11 @@
+     });
+     this.lastState = toIworkPreviewState(this.viewer.getState());
+     this.unsubscribes = [
++      this.viewer.on('loadingchange', (state) => {
++        this.updateState(state);
++        if (state.loading) this.emit('loading', this.lastState);
++        this.emit('statechange', this.lastState);
++      }),
+       this.viewer.on('rendered', (state) => {
+         this.updateState(state);
+         this.emit('rendered', this.lastState);
+@@ -94,22 +100,18 @@
+   }
+ 
+   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
+-    const loadTask = this.viewer.preview(source, { signal: context.signal });
+-    this.updateState({
+-      ...this.viewer.getState(),
+-      loading: true,
+-      error: null
+-    });
+-    this.emit('loading', this.lastState);
+-    this.emit('statechange', this.lastState);
+-    await loadTask;
++    await this.viewer.preview(source, { signal: context.signal });
+   }
+ 
+   destroy(): void {
++    if (this.destroyed) return;
++    this.destroyed = true;
+     for (const unsubscribe of this.unsubscribes) {
+       unsubscribe();
+     }
+     this.viewer.destroy();
++    this.updateState(this.viewer.getState());
++    for (const handlers of Object.values(this.listeners)) handlers.clear();
+   }
+ 
+   getState(): IworkPreviewState {
+@@ -117,6 +119,7 @@
+   }
+ 
+   on<T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void): () => void {
++    if (this.destroyed) return () => {};
+     this.listeners[event].add(handler as never);
+     return () => {
+       this.listeners[event].delete(handler as never);
+diff --git a/packages/iwork/src/types.ts b/packages/iwork/src/types.ts
+--- a/packages/iwork/src/types.ts
++++ b/packages/iwork/src/types.ts
+@@ -13,13 +13,7 @@
+ export type IworkSource = string | ArrayBuffer | Uint8Array | Blob | File;
+ export type IworkTypeHint = IworkType | 'auto';
+ export type IworkFitMode = CoreViewerOptions['fit'] | 'height';
+-export type IworkViewerEventName =
+-  | 'rendered'
+-  | 'error'
+-  | 'warnings'
+-  | 'pagechange'
+-  | 'sheetchange'
+-  | 'scalechange';
++export type IworkViewerEventName = keyof IworkViewerEventMap;
+ 
+ export interface LoadIworkOptions {
+   hint?: IworkTypeHint;
+@@ -199,6 +193,7 @@
+ }
+ 
+ export interface IworkViewerEventMap {
++  loadingchange: IworkViewerState;
+   rendered: IworkViewerState;
+   error: Error;
+   warnings: string[];
+diff --git a/packages/iwork/src/viewer/create-iwork-viewer.ts b/packages/iwork/src/viewer/create-iwork-viewer.ts
+--- a/packages/iwork/src/viewer/create-iwork-viewer.ts
++++ b/packages/iwork/src/viewer/create-iwork-viewer.ts
+@@ -19,6 +19,10 @@
+   const worker = new IworkWorkerClient();
+   const usePagedWidthFitByDefault = options.fit === undefined;
+   let mediaRegistry: MediaRegistry | null = null;
++  let loadController: AbortController | null = null;
++  let renderController: AbortController | null = null;
++  let generation = 0;
++  let destroyed = false;
+   const state: IworkViewerState = {
+     loading: false,
+     error: null,
+@@ -58,7 +62,36 @@
+     warnings: state.warnings.slice()
+   });
+ 
++  const stopLoad = () => {
++    const controller = loadController;
++    loadController = null;
++    controller?.abort();
++    worker.cancel();
++    renderController?.abort();
++    renderController = null;
++    resizeObserver?.disconnect();
++    resizeObserver = null;
++    if (scrollFrame && typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(scrollFrame);
++    scrollFrame = 0;
++    stage.replaceChildren();
++    stage.classList.remove('iworkv-numbers-stage');
++    pageShells = [];
++    mountedPages.clear();
++    visiblePages.clear();
++    sheetLoads.clear();
++    mediaRegistry?.destroy();
++    mediaRegistry = null;
++    Object.assign(state, {
++      document: null, kind: null, loading: false, error: null, warnings: [],
++      currentPage: 0, pageCount: 0, currentSheet: 0, sheetCount: 0
++    });
++    container.scrollTop = 0;
++    container.scrollLeft = 0;
++  };
++
+   const render = () => {
++    renderController?.abort();
++    renderController = new AbortController();
+     stage.innerHTML = '';
+     stage.classList.toggle('iworkv-numbers-stage', state.document?.kind === 'numbers');
+     pageShells = [];
+@@ -111,7 +144,7 @@
+       button.className = 'xlsxv-sheet-tab';
+       button.classList.toggle('is-active', index === state.currentSheet);
+       button.textContent = sheet.name;
+-      button.addEventListener('click', () => goToSheet(index));
++      button.addEventListener('click', () => goToSheet(index), { signal: renderController!.signal });
+       tabs.appendChild(button);
+     });
+ 
+@@ -171,7 +204,7 @@
+           decorateNumbersCells(table, item, mediaRegistry);
+         }
+       }
+-    }, { passive: true });
++    }, { passive: true, signal: renderController!.signal });
+ 
+     preview.replaceChildren(tabs, grid);
+     stage.appendChild(preview);
+@@ -368,18 +401,38 @@
+         }
+       })
+       .finally(() => {
+-        sheetLoads.delete(index);
++        if (sheetLoads.get(index) === task) sheetLoads.delete(index);
+       });
+     sheetLoads.set(index, task);
+   };
+ 
+   const preview: IworkViewerInstance['preview'] = async (source, previewOptions = {}) => {
++    if (destroyed) throw new Error('iWork viewer has been destroyed.');
++    const currentGeneration = ++generation;
++    stopLoad();
++    const controller = new AbortController();
++    loadController = controller;
++    const abort = () => {
++      if (loadController !== controller) return;
++      stopLoad();
++      setStatus();
++      emit('loadingchange', getState());
++    };
++    previewOptions.signal?.addEventListener('abort', abort, { once: true });
++    controller.signal.addEventListener('abort', () => previewOptions.signal?.removeEventListener('abort', abort), { once: true });
++    if (previewOptions.signal?.aborted) {
++      abort();
++      throw new DOMException('The operation was aborted.', 'AbortError');
++    }
+     state.loading = true;
+     state.error = null;
+     setStatus();
++    emit('loadingchange', getState());
+     try {
+-      const bytes = await loadSourceBytes(source, { signal: previewOptions.signal });
+-      const document = await worker.parse(bytes, options.type, resolveSourceName(source));
++      const bytes = await waitForLoad(loadSourceBytes(source, { signal: controller.signal }), controller.signal);
++      if (controller.signal.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
++      const document = await waitForLoad(worker.parse(bytes, options.type, resolveSourceName(source)), controller.signal);
++      if (controller.signal.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
+       state.document = document;
+       state.kind = document.kind;
+       state.warnings = document.warnings.slice();
+@@ -399,19 +452,24 @@
+       render();
+       bindResizeObserver();
+       setStatus();
++      emit('loadingchange', getState());
++      if (loadController !== controller) return;
+       emit('warnings', state.warnings);
+-      emit('rendered', getState());
++      if (loadController === controller) emit('rendered', getState());
+     } catch (error) {
++      if (destroyed || generation !== currentGeneration) return;
++      if (controller.signal.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
+       const normalized = error instanceof Error ? error : new Error(String(error));
+-      state.loading = false;
++      stopLoad();
+       state.error = normalized.message;
+       setStatus();
+-      emit('error', normalized);
++      emit('loadingchange', getState());
++      if (!destroyed && generation === currentGeneration) emit('error', normalized);
+     }
+   };
+ 
+   const setScale = (scale: number) => {
+-    if (state.kind === 'numbers') {
++    if (destroyed || state.kind === 'numbers') {
+       return;
+     }
+     state.fit = 'none';
+@@ -421,7 +479,7 @@
+   };
+ 
+   const fit = (mode: IworkFitMode = 'contain') => {
+-    if (state.kind === 'numbers') {
++    if (destroyed || state.kind === 'numbers') {
+       return;
+     }
+     state.fit = mode;
+@@ -430,6 +488,7 @@
+   };
+ 
+   const on = <T extends IworkViewerEventName>(event: T, handler: EventHandler<T>) => {
++    if (destroyed) return () => {};
+     const handlers = listeners.get(event) ?? new Set<(payload: unknown) => void>();
+     handlers.add(handler as (payload: unknown) => void);
+     listeners.set(event, handlers);
+@@ -439,6 +498,7 @@
+   };
+ 
+   const goToSheet = (index: number) => {
++    if (destroyed || state.kind !== 'numbers') return;
+     state.currentSheet = Math.max(0, Math.min(index, Math.max(state.sheetCount - 1, 0)));
+     state.error = null;
+     render();
+@@ -450,18 +510,14 @@
+   return {
+     preview,
+     destroy() {
++      if (destroyed) return;
++      destroyed = true;
++      ++generation;
+       listeners.clear();
+-      mediaRegistry?.destroy();
+-      mediaRegistry = null;
+-      resizeObserver?.disconnect();
+-      resizeObserver = null;
++      stopLoad();
+       container.removeEventListener('scroll', handleScroll);
+       container.ownerDocument.removeEventListener('scroll', handleScroll, true);
+       container.ownerDocument.defaultView?.removeEventListener('scroll', handleScroll);
+-      if (scrollFrame && typeof cancelAnimationFrame !== 'undefined') {
+-        cancelAnimationFrame(scrollFrame);
+-      }
+-      scrollFrame = 0;
+       worker.destroy();
+       container.classList.remove('iworkv-root', 'is-loading', 'is-error');
+       container.removeAttribute('data-status');
+@@ -470,6 +526,7 @@
+     setScale,
+     fit,
+     goToPage(index: number) {
++      if (destroyed) return;
+       state.currentPage = Math.max(0, Math.min(index, Math.max(state.pageCount - 1, 0)));
+       if (state.document && state.document.kind !== 'numbers') {
+         visiblePages.clear();
+@@ -499,6 +556,17 @@
+     getState,
+     on
+   };
++}
++
++// Blob reads and third-party source promises may not implement cancellation.
++// Settle the caller promptly while still handling any late rejection.
++function waitForLoad<T>(task: Promise<T>, signal: AbortSignal): Promise<T> {
++  return new Promise((resolve, reject) => {
++    const abort = () => reject(new DOMException('The operation was aborted.', 'AbortError'));
++    signal.addEventListener('abort', abort, { once: true });
++    task.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
++    if (signal.aborted) abort();
++  });
+ }
+ 
+ function numbersTableToSheet(table: TableItem, index: number): ParsedSheet {
+diff --git a/packages/iwork/src/worker/client.ts b/packages/iwork/src/worker/client.ts
+--- a/packages/iwork/src/worker/client.ts
++++ b/packages/iwork/src/worker/client.ts
+@@ -10,7 +10,8 @@
+ type WorkerResult = ParsedIworkDocument | ParsedNumbersSheet;
+ 
+ export class IworkWorkerClient {
+-  private readonly worker: Worker;
++  private worker: Worker | null = null;
++  private destroyed = false;
+   private requestId = 0;
+   private readonly pending = new Map<number, { resolve(value: WorkerResult): void; reject(error: Error): void }>();
+ 
+@@ -19,19 +20,28 @@
+       throw new Error('Web Worker is required for iWork preview parsing.');
+     }
+ 
++    this.getWorker();
++  }
++
++  private getWorker(): Worker {
++    if (this.destroyed) throw new Error('iWork parser worker has been destroyed.');
++    if (this.worker) return this.worker;
+     this.worker = new Worker(new URL('./iwork-worker.ts', import.meta.url), {
+       type: 'module'
+     });
+     this.worker.addEventListener('message', this.handleMessage);
+     this.worker.addEventListener('error', this.handleError);
++    return this.worker;
+   }
+ 
+   parse(bytes: Uint8Array, hint?: IworkTypeHint, sourceName?: string): Promise<ParsedIworkDocument> {
++    if (this.pending.size) this.cancel();
+     const id = ++this.requestId;
+-    const payload = bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength ? bytes.buffer : bytes.slice().buffer;
++    const payload = bytes.buffer instanceof ArrayBuffer && bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength
++      ? bytes.buffer : bytes.slice().buffer;
+     return new Promise<ParsedIworkDocument>((resolve, reject) => {
+       this.pending.set(id, { resolve: resolve as (value: WorkerResult) => void, reject });
+-      this.worker.postMessage(
++      this.postRequest(id,
+         {
+           kind: 'document',
+           id,
+@@ -48,16 +58,42 @@
+     const id = ++this.requestId;
+     return new Promise<ParsedNumbersSheet>((resolve, reject) => {
+       this.pending.set(id, { resolve: resolve as (value: WorkerResult) => void, reject });
+-      this.worker.postMessage({ kind: 'sheet', id, index });
++      this.postRequest(id, { kind: 'sheet', id, index });
+     });
+   }
+ 
++  cancel(): void {
++    if (this.pending.size) {
++      this.stopWorker(new DOMException('iWork parsing cancelled.', 'AbortError'));
++    } else if (this.worker) {
++      // Release the old archive while retaining an idle worker for the next file.
++      try { this.worker.postMessage({ kind: 'clear' }); }
++      catch { this.stopWorker(new DOMException('iWork parsing cancelled.', 'AbortError')); }
++    }
++  }
++
+   destroy(): void {
+-    this.worker.removeEventListener('message', this.handleMessage);
+-    this.worker.removeEventListener('error', this.handleError);
+-    this.worker.terminate();
++    this.destroyed = true;
++    this.stopWorker(new DOMException('iWork parser worker terminated.', 'AbortError'));
++  }
++
++  private postRequest(id: number, message: object, transfer: Transferable[] = []): void {
++    try { this.getWorker().postMessage(message, transfer); }
++    catch (error) {
++      const pending = this.pending.get(id);
++      this.pending.delete(id);
++      pending?.reject(error instanceof Error ? error : new Error(String(error)));
++    }
++  }
++
++  private stopWorker(error: Error): void {
++    const worker = this.worker;
++    this.worker = null;
++    worker?.removeEventListener('message', this.handleMessage);
++    worker?.removeEventListener('error', this.handleError);
++    worker?.terminate();
+     for (const entry of this.pending.values()) {
+-      entry.reject(new Error('iWork parser worker terminated.'));
++      entry.reject(error);
+     }
+     this.pending.clear();
+   }
+@@ -85,9 +121,6 @@
+ 
+   private readonly handleError = (event: ErrorEvent) => {
+     const error = new Error(event.message || 'iWork parser worker failed.');
+-    for (const entry of this.pending.values()) {
+-      entry.reject(error);
+-    }
+-    this.pending.clear();
++    this.stopWorker(error);
+   };
+ }
+diff --git a/packages/iwork/src/worker/iwork-worker.ts b/packages/iwork/src/worker/iwork-worker.ts
+--- a/packages/iwork/src/worker/iwork-worker.ts
++++ b/packages/iwork/src/worker/iwork-worker.ts
+@@ -17,7 +17,7 @@
+   index: number;
+ }
+ 
+-type WorkerRequest = DocumentRequest | SheetRequest;
++type WorkerRequest = DocumentRequest | SheetRequest | { kind: 'clear' };
+ 
+ interface ParseResponse {
+   id: number;
+@@ -30,6 +30,10 @@
+ 
+ self.addEventListener('message', async (event: MessageEvent<WorkerRequest>) => {
+   const request = event.data;
++  if (request.kind === 'clear') {
++    context = null;
++    return;
++  }
+   try {
+     if (request.kind === 'sheet') {
+       if (context?.archive.type !== 'numbers') {
+@@ -43,6 +47,7 @@
+       return;
+     }
+ 
++    context = null;
+     const bytes = new Uint8Array(request.bytes);
+     const type = await detectIworkType(bytes, { hint: request.hint });
+     const archivePackage = await loadArchivePackage(bytes, type, { sourceName: request.sourceName });
+@@ -53,6 +58,7 @@
+     );
+     self.postMessage({ id: request.id, document } satisfies ParseResponse);
+   } catch (error) {
++    if (request.kind === 'document') context = null;
+     const response: ParseResponse = {
+       id: request.id,
+       error: error instanceof Error ? error.message : String(error)
+diff --git a/packages/iwork/vite.config.ts b/packages/iwork/vite.config.ts
+--- a/packages/iwork/vite.config.ts
++++ b/packages/iwork/vite.config.ts
+@@ -12,7 +12,7 @@
+     cssCodeSplit: false,
+     sourcemap: true,
+     rollupOptions: {
+-      external: ['@filens/core', '@filens/xlsx']
++      external: ['@filens/core', '@filens/core/zip', '@filens/xlsx']
+     }
+   },
+   test: {
+diff --git a/apps/demo/vite.config.ts b/apps/demo/vite.config.ts
+--- a/apps/demo/vite.config.ts
++++ b/apps/demo/vite.config.ts
+@@ -260,6 +260,7 @@
+       '@filens/cad/style.css': path.resolve(__dirname, '../../packages/cad/src/styles/index.css'),
+       '@filens/cad': path.resolve(__dirname, '../../packages/cad/src/index.ts'),
+       '@filens/core/style.css': path.resolve(__dirname, '../../packages/core/src/styles/index.css'),
++      '@filens/core/zip': path.resolve(__dirname, '../../packages/core/src/zip.ts'),
+       '@filens/core': path.resolve(__dirname, '../../packages/core/src/index.ts'),
+       '@filens/converter-client': path.resolve(__dirname, '../../packages/converter-client/src/index.ts'),
+       '@filens/diagram/style.css': path.resolve(__dirname, '../../packages/diagram/src/styles/index.css'),
+diff --git a/packages/core/package.json b/packages/core/package.json
+--- a/packages/core/package.json
++++ b/packages/core/package.json
+@@ -22,7 +22,11 @@
+       "types": "./dist/index.d.ts",
+       "import": "./dist/index.js"
+     },
+-    "./style.css": "./dist/index.css"
++    "./style.css": "./dist/index.css",
++    "./zip": {
++      "types": "./dist/zip.d.ts",
++      "import": "./dist/zip.js"
++    }
+   },
+   "files": [
+     "dist"
+diff --git a/packages/core/vite.config.ts b/packages/core/vite.config.ts
+--- a/packages/core/vite.config.ts
++++ b/packages/core/vite.config.ts
+@@ -4,9 +4,9 @@
+ export default defineConfig({
+   build: {
+     lib: {
+-      entry: './src/index.ts',
++      entry: { index: './src/index.ts', zip: './src/zip.ts' },
+       formats: ['es'],
+-      fileName: () => 'index.js'
++      fileName: (_format, entryName) => `${entryName}.js`
+     },
+     cssCodeSplit: false,
+     sourcemap: true
+diff --git a/packages/core/src/zip.ts b/packages/core/src/zip.ts
+new file mode 100644
+--- /dev/null
++++ b/packages/core/src/zip.ts
+@@ -0,0 +1,3 @@
++// Worker-safe ZIP access without viewer initialization or CSS imports.
++export { openZipArchive } from './parser/zip';
++export type { ZipEntry } from './parser/zip';

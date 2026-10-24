@@ -1,0 +1,352 @@
+--- a/packages/panorama/src/wasm-processor.ts
++++ b/packages/panorama/src/wasm-processor.ts
+@@ -507,13 +507,30 @@
+ 
+ async function addRanges(reader: RangeReader, cache: Map<string, { offset: number; bytes: Uint8Array }>, requested: RequiredRange[], signal?: AbortSignal): Promise<void> {
+   for (const range of requested) {
+-    if (!Number.isSafeInteger(range.offset) || !Number.isSafeInteger(range.length) || range.offset < 0 || range.length <= 0 || range.length > MAX_RANGE_BYTES || range.offset + range.length > reader.size) {
++    const end = range.offset + range.length;
++    if (!Number.isSafeInteger(range.offset) || !Number.isSafeInteger(range.length) || !Number.isSafeInteger(end) || range.offset < 0 || range.length <= 0 || range.length > MAX_RANGE_BYTES || end > reader.size) {
+       throw new PanoramaProcessorError('resource_limit', 'Panorama inspector requested an invalid source range.');
+     }
+-    const key = `${range.offset}:${range.length}`;
+-    if (!cache.has(key)) cache.set(key, { offset: range.offset, bytes: await reader.read(range.offset, range.length, signal) });
+-    const total = [...cache.values()].reduce((sum, item) => sum + item.bytes.byteLength, 0);
+-    if (total > MAX_TOTAL_BYTES) throw new PanoramaProcessorError('resource_limit', 'Panorama inspection exceeded its 128 MiB range budget.');
++    const cached = [...cache.values()].sort((left, right) => left.offset - right.offset);
++    const missing: RequiredRange[] = [];
++    let cursor = range.offset;
++    for (const item of cached) {
++      if (item.offset > cursor) missing.push({ offset: cursor, length: Math.min(item.offset, end) - cursor });
++      cursor = Math.max(cursor, item.offset + item.bytes.length);
++      if (cursor >= end) break;
++    }
++    if (cursor < end) missing.push({ offset: cursor, length: end - cursor });
++    // The WASM sparse reader joins adjacent segments. Keep only unique bytes,
++    // including when JPEG prefixes grow or the initial head/tail overlap.
++    const total = cached.reduce((sum, item) => sum + item.bytes.length, 0)
++      + missing.reduce((sum, item) => sum + item.length, 0);
++    if (total > MAX_TOTAL_BYTES) {
++      throw new PanoramaProcessorError('resource_limit', 'Panorama inspection exceeded its 128 MiB range budget.');
++    }
++    for (const part of missing) {
++      const bytes = await reader.read(part.offset, part.length, signal);
++      cache.set(`${part.offset}:${part.length}`, { offset: part.offset, bytes });
++    }
+   }
+ }
+ 
+@@ -530,13 +547,17 @@
+     const url = String(source);
+     const probe = await fetchImpl(url, { headers: { Range: 'bytes=0-0' }, signal });
+     const contentRange = probe.headers.get('content-range');
+-    if (probe.status === 206 && contentRange) {
+-      const size = Number(contentRange.match(/\/(\d+)$/)?.[1]);
++    if (probe.status === 206) {
++      const matched = contentRange?.match(/^bytes 0-0\/(\d+)$/i);
++      const size = Number(matched?.[1]);
+       await probe.body?.cancel();
+       if (!Number.isSafeInteger(size) || size <= 0) throw new PanoramaProcessorError('range_unavailable', 'Remote panorama size is unavailable.');
+       return new RangeReader(size, async (offset, length, readSignal) => {
+         const response = await fetchImpl(url, { headers: { Range: `bytes=${offset}-${offset + length - 1}` }, signal: readSignal });
+-        if (response.status !== 206) throw new PanoramaProcessorError('range_unavailable', 'Remote server stopped honoring byte ranges.');
++        if (response.status !== 206 || response.headers.get('content-range')?.toLowerCase() !== `bytes ${offset}-${offset + length - 1}/${size}`) {
++          await response.body?.cancel();
++          throw new PanoramaProcessorError('range_unavailable', 'Remote server returned an inconsistent panorama byte range.');
++        }
+         return new Uint8Array(await response.arrayBuffer());
+       });
+     }
+@@ -549,9 +570,15 @@
+     return new RangeReader(bytes.byteLength, async (offset, length) => bytes.slice(offset, offset + length));
+   }
+ 
+-  read(offset: number, length: number, signal?: AbortSignal) {
++  async read(offset: number, length: number, signal?: AbortSignal): Promise<Uint8Array> {
+     throwIfAborted(signal);
+-    return this.readRange(offset, length, signal);
++    if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || length > this.size - offset) {
++      throw new PanoramaProcessorError('range_unavailable', 'Panorama source range is out of bounds.');
++    }
++    const bytes = await this.readRange(offset, length, signal);
++    throwIfAborted(signal);
++    if (bytes.length !== length) throw new PanoramaProcessorError('range_unavailable', 'Panorama source returned an incomplete byte range.');
++    return bytes;
+   }
+ 
+   close() { this.cleanup?.(); }
+--- a/wasm/converter-core-rust/src/panorama.rs
++++ b/wasm/converter-core-rust/src/panorama.rs
+@@ -297,6 +297,9 @@
+         if end > self.size {
+             return None;
+         }
++        if length == 0 {
++            return Some(Vec::new());
++        }
+         for segment in &self.segments {
+             let segment_end = segment.offset + segment.bytes.len() as u64;
+             if offset >= segment.offset && end <= segment_end {
+@@ -304,7 +307,38 @@
+                 return Some(segment.bytes[start..start + length].to_vec());
+             }
+         }
+-        None
++        // Adjacent sparse ranges can satisfy a larger read without fetching
++        // overlapping prefixes again. Verify coverage before allocating.
++        let mut cursor = offset;
++        for segment in &self.segments {
++            if segment.offset > cursor {
++                return None;
++            }
++            cursor = cursor.max(segment.offset + segment.bytes.len() as u64);
++            if cursor >= end {
++                break;
++            }
++        }
++        if cursor < end {
++            return None;
++        }
++        let mut bytes = Vec::with_capacity(length);
++        cursor = offset;
++        for segment in &self.segments {
++            let segment_end = segment.offset + segment.bytes.len() as u64;
++            if segment_end <= cursor {
++                continue;
++            }
++            let stop = segment_end.min(end);
++            bytes.extend_from_slice(
++                &segment.bytes[(cursor - segment.offset) as usize..(stop - segment.offset) as usize],
++            );
++            cursor = stop;
++            if cursor == end {
++                break;
++            }
++        }
++        Some(bytes)
+     }
+ 
+     fn need(&self, offset: u64, length: u64) -> RequiredRange {
+@@ -318,7 +352,18 @@
+ }
+ 
+ fn inspect_insp(file: &SparseFile) -> Result<InspectOutcome, InspectError> {
+-    let mut prefix_length = file.size.min(1 << 20);
++    let mut available_prefix = 0;
++    for segment in &file.segments {
++        if segment.offset > available_prefix {
++            break;
++        }
++        available_prefix = available_prefix.max(segment.offset + segment.bytes.len() as u64);
++    }
++    // Inspect the largest already available prefix once. Earlier iterations
++    // have already proved that its smaller prefixes do not contain SOF.
++    let mut prefix_length = available_prefix
++        .max(file.size.min(1 << 20))
++        .min(MAX_RANGE_BYTES);
+     let (width, height) = loop {
+         let Some(bytes) = file.read(0, prefix_length as usize) else {
+             return Ok(InspectOutcome::NeedRanges(
+@@ -340,9 +385,6 @@
+             .saturating_mul(2)
+             .min(file.size)
+             .min(MAX_RANGE_BYTES);
+-        if file.read(0, next_length as usize).is_none() {
+-            return Ok(InspectOutcome::NeedRanges(vec![file.need(0, next_length)]));
+-        }
+         prefix_length = next_length;
+     };
+     let insta_info = match inspect_insta_info(file)? {
+@@ -1771,6 +1813,37 @@
+     use super::*;
+ 
+     #[test]
++    fn reads_adjacent_and_overlapping_sparse_segments_without_filling_holes() {
++        let file = SparseFile {
++            size: 12,
++            segments: vec![
++                Segment {
++                    offset: 0,
++                    bytes: vec![0, 1, 2],
++                },
++                Segment {
++                    offset: 3,
++                    bytes: vec![3, 4, 5],
++                },
++                Segment {
++                    offset: 4,
++                    bytes: vec![4, 5, 6, 7],
++                },
++                Segment {
++                    offset: 10,
++                    bytes: vec![10, 11],
++                },
++            ],
++        };
++        assert_eq!(file.read(1, 7), Some(vec![1, 2, 3, 4, 5, 6, 7]));
++        assert_eq!(file.read(3, 4), Some(vec![3, 4, 5, 6]));
++        assert_eq!(file.read(7, 4), None);
++        assert_eq!(file.read(10, 3), None);
++        assert_eq!(file.read(u64::MAX, 2), None);
++        assert_eq!(file.read(9, 0), Some(vec![]));
++    }
++
++    #[test]
+     fn parses_jpeg_dimensions() {
+         let jpeg = [
+             0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x04, 0x00, 0x08, 0x00, 0x03, 0x01, 0x11,
+--- a/scripts/review-native-panorama-metadata.mjs
++++ b/scripts/review-native-panorama-metadata.mjs
+@@ -2,7 +2,7 @@
+ import fs from 'node:fs';
+ import path from 'node:path';
+ import crypto from 'node:crypto';
+-import { createWasmPanoramaProcessor } from '../packages/panorama/dist/index.js';
++import { pathToFileURL } from 'node:url';
+ 
+ const args = process.argv.slice(2);
+ const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
+@@ -10,12 +10,15 @@
+ const baseline = option('--baseline-wasm');
+ if (!input || !baseline) throw new Error('Provide --input and --baseline-wasm.');
+ const current = option('--wasm', 'wasm/converter-core/dist/converter-core.wasm');
++const currentModule = option('--module', 'packages/panorama/dist/index.js');
++const baselineModule = option('--baseline-module', currentModule);
+ const output = option('--output', 'tmp/performance-native-panorama/metadata-review.json');
+ const format = option('--format', 'insp');
+ const bytes = fs.readFileSync(input);
+ const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+ const results = [];
+-for (const wasmPath of [baseline, current]) {
++for (const [wasmPath, modulePath] of [[baseline, baselineModule], [current, currentModule]]) {
++  const { createWasmPanoramaProcessor } = await import(pathToFileURL(path.resolve(modulePath)).href);
+   const reads = [];
+   class TracedBlob extends Blob {
+     slice(start, end, type) { reads.push({ offset: start, length: end - start }); return super.slice(start, end, type); }
+@@ -25,7 +28,8 @@
+   const processor = createWasmPanoramaProcessor({ wasm });
+   const manifest = await processor.open(new TracedBlob([bytes]), { format });
+   processor.close();
+-  results.push({ wasm: { path: wasmPath, sha256: hash(wasmBytes) }, reads,
++  results.push({ wasm: { path: wasmPath, sha256: hash(wasmBytes) },
++    module: { path: modulePath, sha256: hash(fs.readFileSync(modulePath)) }, reads,
+     readBytes: reads.reduce((sum, read) => sum + read.length, 0), manifest,
+     manifestSha256: hash(JSON.stringify(manifest)) });
+ }
+@@ -33,7 +37,7 @@
+ const review = { date: new Date().toISOString(), sampleSha256: hash(bytes), sampleBytes: bytes.length, format,
+   cameraModel: results[1].manifest.cameraModel, width: results[1].manifest.width, height: results[1].manifest.height,
+   completeManifestUnchanged: unchanged,
+-  note: 'Both processors use the current browser range adapter. All complete manifest fields, including intrinsics, distortion and extrinsics, are compared. Only hashes and byte ranges are published.',
++  note: 'All complete manifest fields, including intrinsics, distortion and extrinsics, are compared. The baseline adapter can be supplied separately when the core range ABI changes. Only hashes and byte ranges are published.',
+   results: results.map(({ manifest, ...result }) => result) };
+ fs.mkdirSync(path.dirname(output), { recursive: true });
+ fs.writeFileSync(output, `${JSON.stringify(review, null, 2)}\n`);
+--- a/packages/panorama/test/wasm-processor.spec.ts
++++ b/packages/panorama/test/wasm-processor.spec.ts
+@@ -38,6 +38,80 @@
+         { width: 400, height: 400, sourceRect: { x: 0, y: 0, width: 0.5, height: 1 } },
+         { width: 400, height: 400, sourceRect: { x: 0.5, y: 0, width: 0.5, height: 1 } }
+       ]
++    });
++    processor.close();
++  });
++
++  it('reuses sparse bytes across growing JPEG prefixes without losing embedded calibration', async () => {
++    const wasm = coreWasm();
++    const original = calibratedInsp();
++    const jpegLength = jpeg(800, 400).length;
++    const app = new Uint8Array(65537);
++    app.set([0xff, 0xe2, 0xff, 0xff]);
++    const source = concatBytes(
++      original.subarray(0, 2), ...new Array(80).fill(app), original.subarray(2, jpegLength),
++      new Uint8Array(8 << 20), original.subarray(jpegLength)
++    );
++    const reads: Array<{ offset: number; end: number }> = [];
++    class TracedBlob extends Blob {
++      slice(start = 0, end = this.size, type?: string) {
++        reads.push({ offset: start, end });
++        // jsdom's Blob lacks arrayBuffer(); keep real byte slices in this test.
++        return Object.assign(super.slice(start, end, type), {
++          arrayBuffer: async () => source.slice(start, end).buffer
++        });
++      }
++    }
++    const processor = createWasmPanoramaProcessor({ wasm });
++    const expected = await processor.open(original, { format: 'insp' });
++    const actual = await processor.open(new TracedBlob([source]), { format: 'insp' });
++    expect(actual).toEqual(expected);
++    const ordered = reads.toSorted((left, right) => left.offset - right.offset);
++    for (let index = 1; index < ordered.length; index++) {
++      expect(ordered[index].offset).toBeGreaterThanOrEqual(ordered[index - 1].end);
++    }
++    expect(reads.reduce((sum, range) => sum + range.end - range.offset, 0)).toBe((8 << 20) + (64 << 10));
++    processor.close();
++  });
++
++  it('reuses overlapping initial head/tail ranges of small remote panoramas', async () => {
++    const wasm = coreWasm();
++    const source = calibratedInsp();
++    const requests: string[] = [];
++    const fetchRange = (async (_input, options) => {
++      const range = (options!.headers as Record<string, string>).Range;
++      requests.push(range);
++      const [, start, end] = range.match(/^bytes=(\d+)-(\d+)$/)!;
++      return new Response(source.slice(Number(start), Number(end) + 1).buffer, {
++        status: 206, headers: { 'Content-Range': `bytes ${start}-${end}/${source.length}` }
++      });
++    }) as typeof fetch;
++    const processor = createWasmPanoramaProcessor({ wasm, fetch: fetchRange });
++    await expect(processor.open('https://example.test/original.insp', { format: 'insp' })).resolves.toMatchObject({
++      cameraModel: 'Insta360 OneRS', calibrationSource: 'embedded'
++    });
++    expect(requests).toEqual(['bytes=0-0', `bytes=0-${source.length - 1}`]);
++    processor.close();
++  });
++
++  it.each(['probe', 'shifted', 'resized', 'truncated'])('rejects a %s HTTP byte-range response', async failure => {
++    const wasm = coreWasm();
++    const source = calibratedInsp();
++    const fetchRange = (async (_input, options) => {
++      const range = (options!.headers as Record<string, string>).Range;
++      const [, first, last] = range.match(/^bytes=(\d+)-(\d+)$/)!;
++      const start = Number(first), end = Number(last);
++      const probe = range === 'bytes=0-0';
++      const shifted = failure === 'probe' && probe || failure === 'shifted' && !probe;
++      const size = source.length + (failure === 'resized' && !probe ? 1 : 0);
++      const body = source.slice(start, end + 1 - (failure === 'truncated' && !probe ? 1 : 0));
++      return new Response(body.buffer, {
++        status: 206, headers: { 'Content-Range': `bytes ${start + (shifted ? 1 : 0)}-${end}/${size}` }
++      });
++    }) as typeof fetch;
++    const processor = createWasmPanoramaProcessor({ wasm, fetch: fetchRange });
++    await expect(processor.open('https://example.test/original.insp', { format: 'insp' })).rejects.toMatchObject({
++      code: 'range_unavailable'
+     });
+     processor.close();
+   });
+@@ -353,6 +427,11 @@
+     )).toEqual([{ ...front, sourceTrackId: 1 }, { ...back, sourceTrackId: 1_000_001 }]);
+   });
+ });
++
++function coreWasm(): ArrayBuffer {
++  const bytes = readFileSync(resolve(process.cwd(), '../../wasm/converter-core/dist/converter-core.wasm'));
++  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
++}
+ 
+ function jpeg(width: number, height: number): Uint8Array {
+   return Uint8Array.from([
+--- a/packages/vue/package.json
++++ b/packages/vue/package.json
+@@ -30,8 +30,8 @@
+   "scripts": {
+     "build": "vite build",
+     "dev": "vite build --watch",
+-    "test": "npm.cmd run test:unit",
+-    "test:unit": "npm.cmd run build --workspace @filens/core && npm.cmd run build --workspace @filens/converter-client && npm.cmd run build --workspace @filens/xlsx && npm.cmd run build --workspace @filens/archive && npm.cmd run build --workspace @filens/cad && npm.cmd run build --workspace @filens/ebook && npm.cmd run build --workspace @filens/pdf && npm.cmd run build --workspace @filens/docx && npm.cmd run build --workspace @filens/model3d && npm.cmd run build --workspace @filens/mindmap && npm.cmd run build --workspace @filens/diagram && npm.cmd run build --workspace @filens/panorama && npm.cmd run build --workspace @filens/iwork && npm.cmd run build --workspace @filens/design && npm.cmd run build --workspace @filens/media && npm.cmd run build --workspace @filens/office && npm.cmd run build --workspace @filens/text && node ../../scripts/generate-fixtures.mjs && vitest run"
++    "test": "npm run test:unit",
++    "test:unit": "npm run build --workspace @filens/core && npm run build --workspace @filens/converter-client && npm run build --workspace @filens/xlsx && npm run build --workspace @filens/archive && npm run build --workspace @filens/cad && npm run build --workspace @filens/ebook && npm run build --workspace @filens/pdf && npm run build --workspace @filens/docx && npm run build --workspace @filens/model3d && npm run build --workspace @filens/mindmap && npm run build --workspace @filens/diagram && npm run build --workspace @filens/panorama && npm run build --workspace @filens/iwork && npm run build --workspace @filens/design && npm run build --workspace @filens/media && npm run build --workspace @filens/office && npm run build --workspace @filens/text && node ../../scripts/generate-fixtures.mjs && vitest run"
+   },
+   "peerDependencies": {
+     "@filens/archive": "^0.1.0",

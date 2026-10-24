@@ -1,0 +1,625 @@
+{
+  "date": "2026-10-24",
+  "kind": "native-scalar-volume-correctness-and-preparation",
+  "engineering": true,
+  "scopedSota": false,
+  "scope": "Shared frontend 3D preview library, reusing Three NRRDLoader for scalar decoding/decompression. No backend/Go conversion algorithm or production WASM changes.",
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "changes": [
+    "Read detached ArrayBuffer/view/Blob sources directly rather than converting binary data to Base64/Blob URLs and fetching it back. Preserve exact view boundaries and snapshot ArrayBuffers.",
+    "Inspect primary resolver results without materializing and discarding a URL or Base64 string; retain fallback lookup behavior for model resources.",
+    "Preserve detached raw/gzip/text encoding, default legacy missing encoding to raw, remove only the data-file reference and terminate header assembly before its blank separator.",
+    "Normalize LF/CRLF headers and append a harmless final comment so Three NRRDLoader does not truncate the final metadata field. Preserve every payload byte.",
+    "Normalize multi-byte binary endian after the shared decoder, without modifying caller input; textual samples do not undergo binary byte swapping.",
+    "Require three scalar dimensions, reject nonzero line/byte skips and reject binary data whose decoded voxel count differs from declared dimensions.",
+    "Race detached resolver, Blob, fetch and body reads against cancellation. Observe late errors, release late responses and preserve borrowed string URL ownership."
+  ],
+  "performance": {
+    "finalRuns": 42,
+    "iterations": 7,
+    "excludedSmokeRuns": 6,
+    "summary": "volume-preview-summary.json",
+    "raw": "volume-preview.json.gz",
+    "method": "Fresh Chromium contexts, alternating build order. Imports and in-memory inputs ready before timing. prepareMs measures resolveNhdrBuffer: primary resolver lookup, binary preparation and header/payload assembly. Excludes external input transfer, HTTP/module loading, volume decoding, point construction, GPU/paint and peak memory. Complete source/payload hashes and canonical header fields checked after timing. An actual Three NRRD decode also runs after timing; original headers can decode incorrectly, which is recorded rather than treated as output equivalence. Baselines at or below 10 ms receive no speed claim. No peer/SOTA ranking.",
+    "samples": [
+      {
+        "sample": "generated-32-cubed.nhdr",
+        "bytes": 32768,
+        "currentMs": 0.5,
+        "baselineMs": 2,
+        "below10MsControl": true,
+        "completePreparedPayloadAndCanonicalMetadataMatch": true,
+        "currentCompleteDecodedVoxelsMatchInput": true,
+        "baselineCorrectDecodedRuns": 0,
+        "scopedSota": false
+      },
+      {
+        "sample": "generated-128-cubed.nhdr",
+        "bytes": 2097152,
+        "currentMs": 0.7999999523162842,
+        "baselineMs": 104.39999997615814,
+        "below10MsControl": false,
+        "completePreparedPayloadAndCanonicalMetadataMatch": true,
+        "currentCompleteDecodedVoxelsMatchInput": true,
+        "baselineCorrectDecodedRuns": 0,
+        "scopedSota": false,
+        "ratio": 130.50000774860428,
+        "ratio95PercentBootstrapInterval": [
+          127.62498861923916,
+          137.50000819563914
+        ],
+        "stableEngineeringReduction": true
+      },
+      {
+        "sample": "generated-256-cubed.nhdr",
+        "bytes": 16777216,
+        "currentMs": 3.399999976158142,
+        "baselineMs": 1042.5,
+        "below10MsControl": false,
+        "completePreparedPayloadAndCanonicalMetadataMatch": true,
+        "currentCompleteDecodedVoxelsMatchInput": true,
+        "baselineCorrectDecodedRuns": 0,
+        "scopedSota": false,
+        "ratio": 306.6176492089219,
+        "ratio95PercentBootstrapInterval": [
+          272.88888707499444,
+          341.5483844545704
+        ],
+        "stableEngineeringReduction": true
+      }
+    ],
+    "originalDecodedVoxelFailures": 21,
+    "completeOldNewRenderedEquivalenceClaimed": false
+  },
+  "validation": {
+    "unitByPackage": {
+      "model3d": 178,
+      "vue": 44
+    },
+    "unitPassed": 222,
+    "newTests": 29,
+    "oldSourceFailed": 26,
+    "oldSourcePassedControls": 3,
+    "finalUnhandledErrors": 0,
+    "developmentBrowser": {
+      "passed": 12,
+      "command": "npx playwright test apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/volume-preview-development-browser"
+    },
+    "productionBrowser": {
+      "passed": 9,
+      "command": "FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --grep 'known voxels|non-cooperative volume|real inline|textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/volume-preview-production-browser"
+    },
+    "knownVoxelBrowserVariants": 12,
+    "completePositionAndColorArraysMatchExpected": true,
+    "equivalentEncodingAndByteOrderPixelsMatchWithinScalarType": true,
+    "developmentProductionContentMatch": true,
+    "browserContent": {
+      "development": [
+        {
+          "name": "raw",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "gzip",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "gz",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "ascii",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "text",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "txt",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "hex",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "inline-lf",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "inline-crlf",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "little-raw",
+          "group": "ushort",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "d9db2464e7e92823790709e4d2e957e27357df9ad4761b34b5b16de3978cdf1f",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "big-raw",
+          "group": "ushort",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "d9db2464e7e92823790709e4d2e957e27357df9ad4761b34b5b16de3978cdf1f",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "big-gzip",
+          "group": "ushort",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "d9db2464e7e92823790709e4d2e957e27357df9ad4761b34b5b16de3978cdf1f",
+          "visiblePixels": 8,
+          "glError": 0
+        }
+      ],
+      "production": [
+        {
+          "name": "raw",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "gzip",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "gz",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "ascii",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "text",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "txt",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "hex",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "inline-lf",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "inline-crlf",
+          "group": "uchar",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "ea1a6cf117cbf8bc007cd7273515794871e958b457920955b1089756c25f94a6",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "little-raw",
+          "group": "ushort",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "d9db2464e7e92823790709e4d2e957e27357df9ad4761b34b5b16de3978cdf1f",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "big-raw",
+          "group": "ushort",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "d9db2464e7e92823790709e4d2e957e27357df9ad4761b34b5b16de3978cdf1f",
+          "visiblePixels": 8,
+          "glError": 0
+        },
+        {
+          "name": "big-gzip",
+          "group": "ushort",
+          "voxels": 8,
+          "positionsMatch": true,
+          "colorsMatch": true,
+          "pixelHash": "d9db2464e7e92823790709e4d2e957e27357df9ad4761b34b5b16de3978cdf1f",
+          "visiblePixels": 8,
+          "glError": 0
+        }
+      ]
+    },
+    "browserCoverage": [
+      "Seven detached uchar encodings, inline LF/CRLF, little/big-endian ushort raw and big-endian ushort gzip",
+      "Non-cooperative native Blob read cancellation before releasing held data, followed by a successful reopen",
+      "Actual demo CRLF/raw and gzip NRRD uploads",
+      "Existing glTF/STEP/STL/GLB resource and lifecycle regressions"
+    ],
+    "realStepGeometry": {
+      "fixtures": 3,
+      "imports": 9,
+      "worldSpaceTriangleAndNormalSetsMatch": true
+    },
+    "builds": [
+      "npm run build:model3d",
+      "npm run build:demo"
+    ],
+    "categoryChecks": "npm run test:categories",
+    "bundleReport": "npm run report:bundle-sizes",
+    "sourceMapsMatchFreshOriginalAndFinalSource": true,
+    "incrementalReversePatchRestoresOriginalBytes": true,
+    "gitDiffCheckPassed": true,
+    "temporaryPreviewPortsClosed": [
+      4173,
+      4174
+    ],
+    "warnings": [
+      "Existing duplicate Three.js instance warning in Vue tests",
+      "Existing large demo vendor chunk warning"
+    ]
+  },
+  "limits": [
+    "Preparation timing ends after resource read and NRRD buffer assembly. It excludes decoding, point construction, renderer/GPU/paint, external input transfer, module loading and peak memory.",
+    "The original headers produce incorrect decoded voxels despite preserving raw payload bytes. Do not interpret this as equivalent old/new rendered output or full preview acceleration.",
+    "This is a same-project generated-input A/B comparison, not a peer/SOTA ranking. The 32 KiB control remains below 10 ms and has no speed ratio.",
+    "Known-value and pixel tests cover synthetic uchar/ushort samples plus unit text-float values, not arbitrary medical datasets, every scalar type, orientation or application metadata.",
+    "Existing point thresholding, sampling cap and spacing-based spatial presentation remain. This adds no clinical rendering, new orientation algorithm or full-resolution volume renderer.",
+    "File lists/multiple detached files, four-dimensional data and nonzero line/byte skips remain unsupported. Binary truncation is checked; malformed ASCII token validation remains limited by the upstream decoder.",
+    "Already-running synchronous decoding or copying cannot be interrupted. Non-cooperative asynchronous work may complete later; its result is ignored and rejection observed."
+  ],
+  "baseline": [
+    {
+      "path": "tmp/continued-review/volume-preview-baseline/packages/model3d/src/preview-driver.ts",
+      "bytes": 244792,
+      "sha256": "ba3afb1cc35634bd2dc16dcb75809647399d0604afbff49d4a28a862768346fb"
+    },
+    {
+      "path": "tmp/continued-review/volume-preview-baseline/dist/index.js",
+      "bytes": 977662,
+      "sha256": "6b2011523144a38c8a17be115d934e5be463b2e444df3b54c3f54d53dd036416"
+    },
+    {
+      "path": "tmp/continued-review/volume-preview-baseline/dist/index.js.map",
+      "bytes": 2492041,
+      "sha256": "f4cf051438ee9a8ca01576467580e033e9f7b9438eb4f455ff51154954d28c09"
+    }
+  ],
+  "bindings": [
+    {
+      "path": "packages/model3d/src/preview-driver.ts",
+      "bytes": 247808,
+      "sha256": "c156853bfdcbe2eae08ee70f3e9468524da9bfdaf7c00ad66ff64570d57cbee3"
+    },
+    {
+      "path": "packages/model3d/test/volume-loading.spec.ts",
+      "bytes": 10279,
+      "sha256": "e6c604fdb6eb200f463282468645320e84890aa9a08f728196f0994865393f17"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/volume.mjs",
+      "bytes": 1233,
+      "sha256": "112d9b706b7fab22282d5e00f6bc717e38274d835d6edd983614f884554887c8"
+    },
+    {
+      "path": "packages/model3d/test/preview-driver.spec.ts",
+      "bytes": 153226,
+      "sha256": "1c45d27ef7a6db2400f05f8cf8a31feea13bae02f80196f4feb24d83df6ebcea"
+    },
+    {
+      "path": "packages/model3d/test/lifecycle.spec.ts",
+      "bytes": 8620,
+      "sha256": "a27de263b7940f32d1750835e7611091238c55696ce583dca4340753defad02c"
+    },
+    {
+      "path": "packages/model3d/test/resource-loading.spec.ts",
+      "bytes": 12035,
+      "sha256": "8b567185a81f84c6ae24b58f28fe8d56f9519c6f9441f2a9204cbd1ddfa08867"
+    },
+    {
+      "path": "apps/demo/e2e/volume-preview.e2e.ts",
+      "bytes": 8085,
+      "sha256": "dab15bf85a3e68709bcded2721ae9e2f854ac8f825f6edbe86266172f65b0cf1"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-resources.e2e.ts",
+      "bytes": 12407,
+      "sha256": "c0b8f406cf247e83689d08dc3b04219ba40fec41dc94d8ae38bc46294aeb1def"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-lifecycle.e2e.ts",
+      "bytes": 4831,
+      "sha256": "41ffae4946181a00a312a032d1168bc08d909333aa0258f757ed01a591452281"
+    },
+    {
+      "path": "apps/demo/e2e/cad-wasm.e2e.ts",
+      "bytes": 1540,
+      "sha256": "6f921a2f19906cdf232ea60395f00288c0d8630c5c25cf3d72c8369f90e32b7f"
+    },
+    {
+      "path": "scripts/benchmark-volume-preview.mjs",
+      "bytes": 6868,
+      "sha256": "1ae34b333d5852295e8ba191713df2bb61a767d9ee984e339c3c43a29c8948f4"
+    },
+    {
+      "path": "scripts/summarize-volume-preview-benchmark.mjs",
+      "bytes": 3626,
+      "sha256": "7c3b639b5b1c77049d063954405e426fa0714890ef020290667a4441e2a46865"
+    },
+    {
+      "path": "scripts/test-occt-wasm.mjs",
+      "bytes": 9110,
+      "sha256": "af48b86af8c03677c806fbdb11c325c68f2bb8f61074c5cec2544e616775f584"
+    },
+    {
+      "path": "packages/model3d/dist/index.js",
+      "bytes": 979668,
+      "sha256": "873c1f69f96cd124d5c4a1455a8d646a436efdba800aae32f999acfb2bbc80dd"
+    },
+    {
+      "path": "packages/model3d/dist/index.js.map",
+      "bytes": 2497508,
+      "sha256": "fe3a30e14a2d45da01cee4fe5fc4a383af0a7c0a705e549081a7e108610577f5"
+    },
+    {
+      "path": "packages/model3d/dist/preview-driver.d.ts",
+      "bytes": 12084,
+      "sha256": "baf559e8faa643130ecb50fc1872fecc26dce32b2f26797c02657e019c61fe69"
+    },
+    {
+      "path": "packages/model3d/vendor/occt-import-js/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "packages/model3d/dist/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "bytes": 585770,
+      "sha256": "42c42ba5fe8762aa1cd7bc9b2204d0c94798d0ef98eec9735d9411b29ac0888d"
+    },
+    {
+      "path": "node_modules/three/build/three.module.js",
+      "bytes": 595384,
+      "sha256": "d513a6de314b2c32d0a11a209bc1ec06b528ae95c0f841a1c1761aa9248c814a"
+    },
+    {
+      "path": "node_modules/three/build/three.core.js",
+      "bytes": 1385513,
+      "sha256": "c943c148229a99917d815f772404c48f5447e82c0c450f92403955bc27e8d100"
+    },
+    {
+      "path": "node_modules/three/examples/jsm/loaders/NRRDLoader.js",
+      "bytes": 14553,
+      "sha256": "415470f2e5a183aea1e84645d3e87b0477cc3793c3caeb53836a513560cc4be4"
+    },
+    {
+      "path": "node_modules/three/examples/jsm/libs/fflate.module.js",
+      "bytes": 89384,
+      "sha256": "209a4412eb48ce609edb4391992a792ffcc3983d30ee7e2b0b89a8c470f3cd8a"
+    },
+    {
+      "path": "node_modules/three/examples/jsm/misc/Volume.js",
+      "bytes": 13325,
+      "sha256": "95172f1b7afebd76dd00a95b6f971d9fd42c02f30d2c4efd084bd09e06313b7c"
+    },
+    {
+      "path": "node_modules/three/examples/jsm/misc/VolumeSlice.js",
+      "bytes": 6525,
+      "sha256": "3cfbfc8eec8ddcedc2d6e9db43fa78daf0daa8b50920ce8182709d4cb4dfdc9f"
+    },
+    {
+      "path": "playwright.config.ts",
+      "bytes": 621,
+      "sha256": "5b2993d7ef92a9c75e16315d52a9c0fdc4207cd5576e7abc45e2d43a21c331d4"
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "bytes": 39402,
+      "sha256": "efec1a269851f829ae22bf45d759b75d0ed0c1b8af4113ed24b2d51ed326d257"
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "bytes": 37938,
+      "sha256": "e2f4046fda89156d323f0bca09de75a5c27b00480f7faa93a1486376d9fd786f"
+    },
+    {
+      "path": "docs/performance-comparison.md",
+      "bytes": 35420,
+      "sha256": "e1bc6ac555ecda73f11cb00ddb56c14e9157d03dbf5a502c72f7351a888b75d3"
+    },
+    {
+      "path": "docs/performance-comparison.zh-CN.md",
+      "bytes": 32334,
+      "sha256": "9d48f7c724f9bcca1ae55b3cadff8205f80518a31a075d203a75dcf6f2be39ea"
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "bytes": 94644,
+      "sha256": "7b0fec664ded3e65d557bb86c30d9a90f7e22ae10a8b1f31f0c9246f13d50891"
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "bytes": 3853,
+      "sha256": "d7eed831fc369a1aafa083baf1b4f1d15eab6fc7413fe4cb230737599f23fb1c"
+    },
+    {
+      "path": "apps/demo/dist/build-info.json",
+      "bytes": 876,
+      "sha256": "8582bd17291341a8a61eeabec10b34afde19da3cfc3771c865e24c26682d44c7"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-D5zSLHLT.css",
+      "bytes": 32017,
+      "sha256": "28368a57749f016bc98571bedb5e90a142ad116f6139ec0056474559ac85683e"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-ew0Roysq.js",
+      "bytes": 145197,
+      "sha256": "612392d464fd7fafd47327795f440165b756db8e681be23c3f883f1a1edb105d"
+    },
+    {
+      "path": "apps/demo/dist/assets/vendor-BqbwLxmX.js",
+      "bytes": 1372133,
+      "sha256": "ab5a0500a99edb5f7fccc0e4341fc87a9f8fbbd196a23d97533d71fa73633dcc"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-B1myDZRM.css",
+      "bytes": 496,
+      "sha256": "6cf6d520f26937cc97308ceef86510cb5035e588673832483b15923fac58588d"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-G4WdZqLP.js",
+      "bytes": 111777,
+      "sha256": "e17e107979616d5064eb64520a8b00fa0a5dce2693945cef9d8066a4427b4391"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/volume-preview.patch",
+      "bytes": 11257,
+      "sha256": "70c51a505db63dc003430bb64c0bd61b8859fdf70ca8b7dc52c9a598d751530b"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/volume-preview.json.gz",
+      "bytes": 2597,
+      "sha256": "7e8c2bb863e3232d3580f6636e6af5abfbb6c8ac083fb5736c491c22bec2dfd8"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/volume-preview-summary.json",
+      "bytes": 2145,
+      "sha256": "420348a4245ae2c743913e033a29781076eecb1abc046a85ae7b079b49807d79"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/volume-preview-diagnostic.json.gz",
+      "bytes": 1798437,
+      "sha256": "602828123ced9b60bf4ab03a5ee88a2ecea5e8443804a184ff2f80f9bd4a3a9c"
+    }
+  ],
+  "reproduction": [
+    "Restore diagnostic baselineFiles in an isolated checkout preserving earlier changes, or reverse only volume-preview.patch there. Never reverse it in the current workspace.",
+    "Alternatively restore diagnostic baselineRuntimeFiles at their exact paths, including tmp/continued-review/volume-preview-baseline/dist/index.js used by the benchmark default.",
+    "npm run build:model3d",
+    "Run alone: node scripts/benchmark-volume-preview.mjs --iterations 7 --output tmp/continued-review/volume-preview-reproduced",
+    "node scripts/summarize-volume-preview-benchmark.mjs --input tmp/continued-review/volume-preview-reproduced/results.json",
+    "From packages/model3d and packages/vue: ../../node_modules/.bin/vitest run. In the isolated original model3d source, new test/volume-loading.spec.ts reproduces twenty-six failures and three controls.",
+    "node scripts/test-occt-wasm.mjs",
+    "npm run build:demo",
+    "npx playwright test apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/volume-preview-development-browser",
+    "Serve with npm run preview --workspace @filens/demo -- --host 127.0.0.1 --port 4174, then run: FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --grep 'known voxels|non-cooperative volume|real inline|textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/volume-preview-production-browser"
+  ]
+}

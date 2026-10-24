@@ -151,6 +151,7 @@ function toExactArrayBuffer(bytes: Uint8Array): ArrayBuffer {
 interface TextMeasurementScope {
   context?: CanvasRenderingContext2D | null;
   baselineWidths?: Array<number | undefined>;
+  fontAvailability?: Map<string, boolean>;
 }
 
 // A render is synchronous. Reuse one canvas while building its text, then
@@ -2131,7 +2132,6 @@ const SYNTHETIC_FONT_WEIGHT_PROFILES = [
 const FONT_AVAILABILITY_PROBE_TEXT = 'BESbswy1234567890';
 const FONT_AVAILABILITY_PROBE_SIZE = 32;
 const FONT_AVAILABILITY_EPSILON = 0.1;
-const fontAvailabilityCache = new Map<string, boolean>();
 
 const KNOWN_FONT_FALLBACKS: Record<string, readonly string[]> = {
   aptos: ['Aptos', 'Aptos Narrow', 'Calibri'],
@@ -2395,14 +2395,17 @@ function shouldProbeFontFamily(fontFamily: string): boolean {
 }
 
 function probeExactFontFamilyAvailability(fontFamily: string): boolean {
+  // Fonts can be loaded or removed between renders. Keep probe results only
+  // for this synchronous render, alongside its measurement canvas.
+  const cache = textMeasurementScope && (textMeasurementScope.fontAvailability ??= new Map<string, boolean>());
   const cacheKey = normalizeFontFamilyName(fontFamily).toLowerCase();
-  const cached = fontAvailabilityCache.get(cacheKey);
+  const cached = cache?.get(cacheKey);
   if (cached != null) {
     return cached;
   }
 
   const available = detectExactFontFamilyAvailability(fontFamily);
-  fontAvailabilityCache.set(cacheKey, available);
+  cache?.set(cacheKey, available);
   return available;
 }
 

@@ -1,0 +1,54 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "79499d4bbfcc7bdf1966578cccd30d991077776ebdbe2d84ad1927d28819985a",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "iterations": 7,
+  "runs": 42,
+  "method": "glTF sidecar normalization and complete Three.js model load only. 10,000 paired bootstrap median-ratio resamples, seed 12345, for baseline medians above 10 ms. Smaller controls retain times but omit ratios. Generated geometry; no renderer, GPU, paint, peak-memory or peer/SOTA measurement.",
+  "samples": [
+    {
+      "sample": "generated-1000-triangles.gltf",
+      "bytes": 72000,
+      "currentMs": 4.100000023841858,
+      "baselineMs": 5.899999976158142,
+      "below10MsControl": true,
+      "completePositionsNormalsBoundsMaterialsWarningsMatch": true,
+      "ownedUrlsReleased": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-100000-triangles.gltf",
+      "bytes": 7200000,
+      "currentMs": 11,
+      "baselineMs": 264.2000000476837,
+      "below10MsControl": false,
+      "completePositionsNormalsBoundsMaterialsWarningsMatch": true,
+      "ownedUrlsReleased": true,
+      "scopedSota": false,
+      "ratio": 24.018181822516702,
+      "ratio95PercentBootstrapInterval": [
+        22.836206857837055,
+        24.691588954557364
+      ],
+      "stableEngineeringReduction": true
+    },
+    {
+      "sample": "generated-300000-triangles.gltf",
+      "bytes": 21600000,
+      "currentMs": 15.800000071525574,
+      "baselineMs": 910.0999999046326,
+      "below10MsControl": false,
+      "completePositionsNormalsBoundsMaterialsWarningsMatch": true,
+      "ownedUrlsReleased": true,
+      "scopedSota": false,
+      "ratio": 57.60126555599171,
+      "ratio95PercentBootstrapInterval": [
+        56.20370353827152,
+        58.39240480046149
+      ],
+      "stableEngineeringReduction": true
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "5c42b09fd859d6facf623a8611b4157d1419f2a98f83458149d6b6c8f8059ec2",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "iterations": 7,
+  "runs": 42,
+  "method": "Detached raw NHDR preparation only, excluding decoding, point construction, GPU/paint, input transfer, module loading and peak memory. 10,000 paired bootstrap median-ratio resamples, seed 12345, only for baseline medians above 10 ms. Complete prepared payload/metadata match. Current decoded voxels are separately checked after timing; original header decoding failures are retained. Same-project generated-input comparison, no SOTA ranking.",
+  "samples": [
+    {
+      "sample": "generated-32-cubed.nhdr",
+      "bytes": 32768,
+      "currentMs": 0.5,
+      "baselineMs": 2,
+      "below10MsControl": true,
+      "completePreparedPayloadAndCanonicalMetadataMatch": true,
+      "currentCompleteDecodedVoxelsMatchInput": true,
+      "baselineCorrectDecodedRuns": 0,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-128-cubed.nhdr",
+      "bytes": 2097152,
+      "currentMs": 0.7999999523162842,
+      "baselineMs": 104.39999997615814,
+      "below10MsControl": false,
+      "completePreparedPayloadAndCanonicalMetadataMatch": true,
+      "currentCompleteDecodedVoxelsMatchInput": true,
+      "baselineCorrectDecodedRuns": 0,
+      "scopedSota": false,
+      "ratio": 130.50000774860428,
+      "ratio95PercentBootstrapInterval": [
+        127.62498861923916,
+        137.50000819563914
+      ],
+      "stableEngineeringReduction": true
+    },
+    {
+      "sample": "generated-256-cubed.nhdr",
+      "bytes": 16777216,
+      "currentMs": 3.399999976158142,
+      "baselineMs": 1042.5,
+      "below10MsControl": false,
+      "completePreparedPayloadAndCanonicalMetadataMatch": true,
+      "currentCompleteDecodedVoxelsMatchInput": true,
+      "baselineCorrectDecodedRuns": 0,
+      "scopedSota": false,
+      "ratio": 306.6176492089219,
+      "ratio95PercentBootstrapInterval": [
+        272.88888707499444,
+        341.5483844545704
+      ],
+      "stableEngineeringReduction": true
+    }
+  ]
+}

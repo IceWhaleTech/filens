@@ -1,0 +1,54 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "a1d00b116b513ac8ae8d41afb472ba595b789c854c92ecef439f42b573cc0c79",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "iterations": 7,
+  "runs": 42,
+  "method": "Complete OBJ/MTL and referenced texture decoding from in-memory native sources. Both versions explicitly await HTMLImageElement.decode() through the same TextureLoader observer. 10,000 paired bootstrap median-ratio resamples, seed 12345, only for baseline medians above 10 ms. Generated textures; excludes input transfer, module loading, renderer/GPU/paint and peak memory. No peer/SOTA measurement.",
+  "samples": [
+    {
+      "sample": "generated-128-texture.obj",
+      "bytes": 56228,
+      "currentMs": 2.5,
+      "baselineMs": 3.6999999284744263,
+      "below10MsControl": true,
+      "fullGeometryMaterialsDecodedTexturePixelsMatch": true,
+      "ownedUrlsReleased": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-1024-texture.obj",
+      "bytes": 3588453,
+      "currentMs": 10.800000071525574,
+      "baselineMs": 122.19999992847443,
+      "below10MsControl": false,
+      "fullGeometryMaterialsDecodedTexturePixelsMatch": true,
+      "ownedUrlsReleased": true,
+      "scopedSota": false,
+      "ratio": 11.31481473325702,
+      "ratio95PercentBootstrapInterval": [
+        11.165137643475353,
+        11.42056069008408
+      ],
+      "stableEngineeringReduction": true
+    },
+    {
+      "sample": "generated-2048-texture.obj",
+      "bytes": 14351902,
+      "currentMs": 37.39999997615814,
+      "baselineMs": 476.5,
+      "below10MsControl": false,
+      "fullGeometryMaterialsDecodedTexturePixelsMatch": true,
+      "ownedUrlsReleased": true,
+      "scopedSota": false,
+      "ratio": 12.740641719351887,
+      "ratio95PercentBootstrapInterval": [
+        12.554376640681086,
+        13.25000002803982
+      ],
+      "stableEngineeringReduction": true
+    }
+  ]
+}

@@ -1,0 +1,448 @@
+{
+  "sourceSha256": "1c5b572d13528e513dd58d8d7ac555427247e97b67489bc806cfd38e94f79ef1",
+  "date": "2026-10-24T04:21:43.740Z",
+  "cpu": "Apple M4 Pro",
+  "platform": "darwin 25.6.0 arm64",
+  "browser": "147.0.7727.15",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "devicePixelRatio": 1
+  },
+  "versions": {
+    "pptxtojson": "2.2.0",
+    "pptx-preview": "1.0.7",
+    "@vue-office/pptx": "1.0.1",
+    "libraw-wasm": "1.6.0",
+    "@photo-sphere-viewer/core": "5.15.1",
+    "sheetjs": "0.20.3"
+  },
+  "iterations": 7,
+  "totalRuns": 112,
+  "engineering": true,
+  "filensSuccessfulRuns": 56,
+  "method": "Ratios are peer / filens (higher means filens is faster). Paired bootstrap of per-iteration measurements, 10000 resamples, percentile 95% interval, LCG seed 12345. Small single-machine sample; not an independent benchmark or a global SOTA proof.",
+  "comparisons": [
+    {
+      "family": "pptx-cancel",
+      "sample": "vue-office-test.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 0.48500001430511475,
+      "peerMs": 29.77999997138977,
+      "peerOverFilensRatio": 61.40205998562115,
+      "ratio95PercentBootstrapInterval": [
+        56.194176429290486,
+        65.22825544993728
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "filens-field-notes.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 0.4700000286102295,
+      "peerMs": 11.97000002861023,
+      "peerOverFilensRatio": 25.468083616941517,
+      "ratio95PercentBootstrapInterval": [
+        23.89690633468314,
+        29.295458640195697
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "rich-pptx-shapes.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 0.45500004291534424,
+      "peerMs": 11.129999995231628,
+      "peerOverFilensRatio": 24.461536143860187,
+      "ratio95PercentBootstrapInterval": [
+        21.656863299666448,
+        26.47777488732074
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "rich-pptx-pictures.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 0.5249999761581421,
+      "peerMs": 6.40500009059906,
+      "peerOverFilensRatio": 12.200000726609035,
+      "ratio95PercentBootstrapInterval": [
+        11.268519164439954,
+        13.473117538043784
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "sample-deck.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 0.4549999237060547,
+      "peerMs": 10.860000014305115,
+      "peerOverFilensRatio": 23.868135901756858,
+      "ratio95PercentBootstrapInterval": [
+        22.430105804005073,
+        26.659087485518782
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-SampleShow.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 0.5049999952316284,
+      "peerMs": 8.965000033378601,
+      "peerOverFilensRatio": 17.752475481245547,
+      "ratio95PercentBootstrapInterval": [
+        17.407763509187447,
+        22.588237884548175
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-pie-chart.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 0.4950000047683716,
+      "peerMs": 8.679999947547913,
+      "peerOverFilensRatio": 17.53535326047037,
+      "ratio95PercentBootstrapInterval": [
+        15.105264952088318,
+        19.315215768796193
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 0.5099999904632568,
+      "peerMs": 27.290000081062317,
+      "peerOverFilensRatio": 53.50980508112075,
+      "ratio95PercentBootstrapInterval": [
+        48.49106600979517,
+        60.31916061425769
+      ],
+      "stableLeadInThisComparison": true
+    }
+  ],
+  "timingLeads": [
+    {
+      "family": "pptx-cancel",
+      "sample": "vue-office-test.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Current/previous implementation engineering check; excluded from peer SOTA."
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "filens-field-notes.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Current/previous implementation engineering check; excluded from peer SOTA."
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "rich-pptx-shapes.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Current/previous implementation engineering check; excluded from peer SOTA."
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "rich-pptx-pictures.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Current/previous implementation engineering check; excluded from peer SOTA."
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "sample-deck.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Current/previous implementation engineering check; excluded from peer SOTA."
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-SampleShow.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Current/previous implementation engineering check; excluded from peer SOTA."
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-pie-chart.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Current/previous implementation engineering check; excluded from peer SOTA."
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Current/previous implementation engineering check; excluded from peer SOTA."
+    }
+  ],
+  "aggregates": [],
+  "summary": [
+    {
+      "family": "pptx-cancel",
+      "sample": "vue-office-test.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 0.48500001430511475,
+      "minMs": 0.4599999189376831,
+      "medianProcessingMs": null,
+      "maxMs": 1.3600000143051147,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "vue-office-test.pptx",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 29.77999997138977,
+      "minMs": 27.199999928474426,
+      "medianProcessingMs": null,
+      "maxMs": 32.12000000476837,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.7823486328125,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "filens-field-notes.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 0.4700000286102295,
+      "minMs": 0.434999942779541,
+      "medianProcessingMs": null,
+      "maxMs": 0.5299999713897705,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "filens-field-notes.pptx",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 11.97000002861023,
+      "minMs": 11.47000002861023,
+      "medianProcessingMs": null,
+      "maxMs": 15.43999993801117,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.47060394287109375,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "rich-pptx-shapes.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 0.45500004291534424,
+      "minMs": 0.43999993801116943,
+      "medianProcessingMs": null,
+      "maxMs": 0.5550000667572021,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "rich-pptx-shapes.pptx",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 11.129999995231628,
+      "minMs": 10.945000052452087,
+      "medianProcessingMs": null,
+      "maxMs": 11.924999952316284,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.5779228210449219,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "rich-pptx-pictures.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 0.5249999761581421,
+      "minMs": 0.45500004291534424,
+      "medianProcessingMs": null,
+      "maxMs": 0.8049999475479126,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "rich-pptx-pictures.pptx",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 6.40500009059906,
+      "minMs": 5.975000023841858,
+      "medianProcessingMs": null,
+      "maxMs": 9.129999995231628,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.3066215515136719,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "sample-deck.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 0.4549999237060547,
+      "minMs": 0.4099999666213989,
+      "medianProcessingMs": null,
+      "maxMs": 0.5099999904632568,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "sample-deck.pptx",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 10.860000014305115,
+      "minMs": 10.375,
+      "medianProcessingMs": null,
+      "maxMs": 11.735000014305115,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.5561714172363281,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-SampleShow.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 0.5049999952316284,
+      "minMs": 0.4099999666213989,
+      "medianProcessingMs": null,
+      "maxMs": 0.5349999666213989,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-SampleShow.pptx",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 8.965000033378601,
+      "minMs": 8.465000033378601,
+      "medianProcessingMs": null,
+      "maxMs": 10.084999918937683,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.46363067626953125,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-pie-chart.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 0.4950000047683716,
+      "minMs": 0.42500007152557373,
+      "medianProcessingMs": null,
+      "maxMs": 0.5749999284744263,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-pie-chart.pptx",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 8.679999947547913,
+      "minMs": 8.350000023841858,
+      "medianProcessingMs": null,
+      "maxMs": 8.949999928474426,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.4311408996582031,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 0.5099999904632568,
+      "minMs": 0.46000003814697266,
+      "medianProcessingMs": null,
+      "maxMs": 0.5600000619888306,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    },
+    {
+      "family": "pptx-cancel",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 27.290000081062317,
+      "minMs": 26.81499993801117,
+      "medianProcessingMs": null,
+      "maxMs": 28.52999997138977,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.7302017211914062,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {},
+      "failures": []
+    }
+  ]
+}

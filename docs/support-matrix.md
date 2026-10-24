@@ -49,9 +49,9 @@ Long feature tables can be expanded using their disclosure headings. These table
 | Format | Extensions | Path | Preview coverage | Limits |
 | --- | --- | --- | --- | --- |
 | PowerPoint | `pptx` | Direct | Slides, text, images, tables, and common shapes. | SmartArt and styling are partial; [feature matrix](#pptx). |
-| Word | `docx` | Direct | Document rendering through `docx-preview`. | Layout and font fidelity vary. |
-| Excel / CSV | `xlsx`, `csv` | Direct | Read-only sheets, basic formulas, incremental row loading. | Partial calculation and styling; [workbook matrix](#pdf-docx-and-workbooks). |
-| PDF | `pdf` | Direct | PDF.js canvas pages and page-count state. | Advanced navigation and large-document handling are limited. |
+| Word | `docx` | Direct | Document rendering through `docx-preview`; repeated images reuse resources, with cancellation and safe file replacement. | Layout and font fidelity vary. |
+| Excel / CSV | `xlsx`, `csv` | Direct | Read-only sheets, basic formulas, incremental row loading, cancellation and safe file replacement. | Partial calculation and styling; [workbook matrix](#pdf-docx-and-workbooks). |
+| PDF | `pdf` | Direct | PDF.js engine loads when opening a PDF; canvas preview, page navigation, zoom/fit and on-demand rendering. | Text search/selection layers are unavailable. |
 | Apple iWork | `key`, `pages`, `numbers` | Direct | Native parsing and slide/page/sheet views. | Partial layout and content fidelity; [iWork matrix](#native-iwork). |
 | Other Office, WPS, and OpenDocument | [Conversion extensions](#conversion-support) | Convert | Normalize to `pptx`, `docx`, or `xlsx`. | Fidelity depends on the source; macros are stripped. |
 
@@ -84,12 +84,12 @@ Long feature tables can be expanded using their disclosure headings. These table
 | Format | Extensions | Path | Preview coverage | Limits |
 | --- | --- | --- | --- | --- |
 | Plain text | `txt`, `text`, `log` | Direct | UTF-8 text display. | Read-only. |
-| Code, markup, configuration | Examples: `js`, `ts`, `py`, `go`, `json`, `xml`, `yaml`, `toml`, `ini`, `md`, `tex` | Direct | Language metadata, line numbers, non-wrapping source text. | Markdown, LaTeX, Mermaid, and similar sources are displayed as source. |
-| HTML / XHTML | `html`, `htm`, `shtml`, `xhtml`, `xht`, `xhtm` | Direct | Sandboxed iframe. | Subject to the iframe sandbox. |
-| EPUB | `epub` | Direct | Spine-based XHTML chapters and local/app-resolved assets. | Advanced ebook navigation and themes are unavailable. |
+| Code, markup, configuration | Examples: `js`, `ts`, `py`, `go`, `json`, `xml`, `yaml`, `toml`, `ini`, `md`, `tex` | Direct | Language metadata, line numbers, non-wrapping source text, lightweight highlighting up to 200,000 characters. | Markdown, LaTeX, Mermaid, and similar sources are displayed as source. |
+| HTML / XHTML | `html`, `htm`, `shtml`, `xhtml`, `xht`, `xhtm` | Direct | Sandboxed iframe; URLs, HTML data URLs and inline fragments. | Scripts are disabled by the iframe sandbox. |
+| EPUB | `epub` | Direct | Spine-based XHTML chapters, CSS imports, fonts, background images and SVG image references; local/app-resolved assets. | Advanced ebook navigation and themes are unavailable. |
 | Comic books | `cbz` | Direct | ZIP-based image page sequences. | Additional native comic formats are unavailable. |
 | ZIP-compatible archives | `zip`, `jar`, `war`, `ear`, `apk` | Direct | Listings, directory/nested browsing, entry preview, extraction helpers. | Read-only; no bulk extraction UI. |
-| TAR / GZIP | `tar`, `tgz`, `tar.gz`, `gz` | Direct | TAR/TGZ listings; single-file GZIP extraction. | Read-only. |
+| TAR / GZIP | `tar`, `tgz`, `tar.gz`, `gz` | Direct | TAR/TGZ listings with PAX / GNU long paths; single-file GZIP extraction. | Read-only. |
 | Additional readable inputs | Examples: `fb2`, `eml`, `msg`, `ics`, `vcf` | Convert → `docx` | Content extraction for preview. | Exact pairs follow the conversion manifest. |
 
 | Extension lists | Source of truth |
@@ -154,6 +154,8 @@ Listed pairs normalize files for preview; they do not promise to preserve every 
 | HTTP adapter | Invokes the configured conversion service. | [Adapter APIs](#routes-and-source-loading) |
 | Go/wazero host | Thin shell around the same WASM core: CLI/HTTP, validation, temporary files, result/error mapping, OpenXML output validation. | [Go/wazero example](../examples/go-wazero-converter/README.md) |
 
+<sub>Browser WASI output grows on demand while reads and file sizes expose only valid bytes. Overwrite, append and sparse writes are supported; exclusive creation preserves existing files. Growth retains spare capacity and does not establish lower peak memory. [Checks](../benchmarks/frontend/2026-10-24/converter-io-review.json).</sub>
+
 ### PPM conversion
 
 | Capability | Coverage and boundary |
@@ -194,6 +196,10 @@ Listed pairs normalize files for preview; they do not promise to preserve every 
 The Vue preview enables calibrated DNG inspection when `converter` and
 `panoramaProcessor` are supplied. See [RAW panorama integration](../packages/panorama/README.md).
 
+<sub>Panorama/RAW replacement, cancellation and destruction release owned URLs, canvases and players and ignore late parsing, image and proxy results. Retained old controls cannot affect the next preview. Browser decoding, custom conversion or synchronous WASM already in progress may finish before their output is discarded. [Regression checks](../benchmarks/frontend/2026-10-24/panorama-lifecycle-review.json).</sub>
+
+<sub>The panorama processor keeps cancellation active for subsequent range reads, RAW development and seam/IMU work. Failed companion loading leaves no partial manifest; obsolete requests cannot replace the next source. [Processor checks](../benchmarks/frontend/2026-10-24/panorama-processor-review.json).</sub>
+
 ## Fidelity and feature details
 
 ### PPTX
@@ -205,7 +211,7 @@ The Vue preview enables calibrated DNG inspection when `converter` and
 | --- | --- | --- |
 | Text boxes and placeholder inheritance | Supported | Source-font availability and browser layout affect fidelity. |
 | Images, groups, and tables | Supported | Table text style matrix coverage is partial. |
-| Links and slide navigation actions | Supported | Common link/action cases. |
+| Links and slide navigation actions | Supported | Common link/action cases; rapid page changes retain their destination during smooth scrolling, with manual scrolling able to take over. |
 | Basic diagram-backed SmartArt | Partial | Full SmartArt parity is unavailable. |
 | Preset shapes and adjustment formulas | Partial | Common `a:avLst` adjustments are supported; long-tail presets and OOXML formulas remain incomplete. |
 | Shape text bounds and `bodyPr` behavior | Partial | Custom geometry text rectangles and exact autofit parity remain incomplete. |
@@ -228,6 +234,7 @@ The Vue preview enables calibrated DNG inspection when `converter` and
 | Runtime | Coverage |
 | --- | --- |
 | Detection and parsing | Native `.key`, `.pages`, and `.numbers` parsing through a worker. |
+| Switching and cancellation | Replacement, cancellation and destruction discard obsolete results and release images. Busy parsing Workers terminate and restart on the next load; idle Workers clear the old archive and remain reusable. Caller input buffers remain intact. |
 | Navigation | Keynote slides, Pages continuous pages, Numbers sheets. |
 | Diagnostics | Warning and error events. |
 
@@ -253,10 +260,10 @@ The Vue preview enables calibrated DNG inspection when `converter` and
 
 | Driver | Implemented | Current limits |
 | --- | --- | --- |
-| PDF | PDF.js renders pages to canvases and exposes page count. | Pages render eagerly; rich navigation, text search/selection layers, and large-document virtualization are not implemented by this driver. |
-| DOCX | Rendering through `docx-preview`. | Fidelity depends on renderer coverage, fonts, and source layout. |
+| PDF | PDF.js renders visible/nearby pages and releases distant canvas buffers; page navigation, zoom/fit, resize and cancellation. `virtual: false` renders every page eagerly. | Text search/selection layers are unavailable. Unopened page sizes initially use first-page estimates. Default virtual preview does not advertise full-document printing; eager mode retains that capability. |
+| DOCX | Rendering through `docx-preview`; repeated image references reuse resources within their document part. Switching, cancellation and destruction release embedded image/font URLs and discard obsolete rendering. | Fidelity depends on renderer coverage, fonts and layout. Parsing/rendering already in progress may finish in a detached container. |
 | XLSX | Sheet switching, cell values, cached formula values, and basic arithmetic / `SUM` evaluation when cached values are absent. | Unsupported formulas remain visible as formula text. Charts, merged-cell layout, full style fidelity, and a full calculation engine are unavailable. |
-| CSV | Read-only tables for UTF-8/browser-readable sources. | Rich type inference and workbook styling are unavailable. |
+| CSV | Read-only tables for UTF-8/browser-readable sources; CRLF/CR/LF, quoted multiline text, escaped quotes and empty records. | Rich type inference and workbook styling are unavailable. |
 | Workbook row loading | Rows are appended in batches on scroll. | Loaded rows remain mounted; large-sheet virtualization is unavailable. |
 
 ### DXF CAD
@@ -270,7 +277,8 @@ The Vue preview enables calibrated DNG inspection when `converter` and
 | Common geometry | `POINT`, `LINE`, `XLINE`, `RAY`, `LEADER`, `CIRCLE`, `ARC`, `ELLIPSE`, `SPLINE`, `LWPOLYLINE`, classic `POLYLINE`/`VERTEX`, bulge arcs, common polyline widths, `SOLID`, `TRACE`, `3DFACE`. | Full DXF entity coverage is unavailable. |
 | Solid hatches | Polyline, line-edge, arc-edge, elliptical-arc-edge, spline-edge boundaries; multi-loop even-odd fill for holes. | Patterned/nested hatches remain incomplete. |
 | Blocks and dimensions | Nested `BLOCK`/`INSERT`, `MINSERT` arrays, `DIMENSION` geometry-block expansion; lightweight linear/aligned fallback without geometry blocks. | Advanced block attributes and dimensions remain incomplete. |
-| Raster references | `IMAGE`/`IMAGEDEF` references and clipping for browser-loadable or app-resolved images. | Unresolved local paths produce placeholders and warnings. |
+| Raster references | `IMAGE`/`IMAGEDEF` references and clipping; app resolvers accept URLs, Blob, ArrayBuffer and typed-array slices. Owned image URLs are released on replacement, cancellation, failure and destruction. | Unresolved local paths produce placeholders and warnings. |
+| Loading | Safe file replacement and cancellation; obsolete source/resolver results are discarded. Base64 data URLs decode UTF-8 text. | Already-started synchronous parsing and custom resolver work may finish before its result is discarded. |
 | Text entities | Simple `TEXT`, `MTEXT`, `ATTRIB`, `ATTDEF`: height, rotation, width factor, oblique angle, alignment points, MTEXT attachment/direction, inline formatting cleanup, multiline rendering. | Exact text metrics, advanced MTEXT, annotative scaling, and layout-space text behavior remain incomplete. |
 | Bounds and units | Entity geometry; `$EXTMIN`/`$EXTMAX` or `$LIMMIN`/`$LIMMAX` bounds hints; `$INSUNITS`, `$MEASUREMENT`, `$LTSCALE` metadata. | Layout and xref coverage remain incomplete. |
 | Layers and colors | Names, basic ACI colors, true color, transparency, hidden/off/frozen/locked flags, entity invisibility/color overrides, SVG attributes, Vue layer toggles. | Coverage remains partial. |
@@ -285,6 +293,7 @@ The Vue preview enables calibrated DNG inspection when `converter` and
 | Runtime area | Coverage | Requirement or limit |
 | --- | --- | --- |
 | Three.js viewer | Orbit, zoom, fit, fullscreen. | Import coverage varies by format. |
+| Loading and cleanup | Safe file replacement and cancellation; discard late model results and release geometries, materials, textures and nested resource URLs. | Already-started parsing may finish before its result is discarded. |
 | External materials and data | Sidecar resource loading. | May require `resourceResolver`; some loaders require synchronous resolution. |
 | Inspection controls | Model inspection where supported by the driver. | Object-based previews expose richer controls than some direct-geometry previews. |
 
@@ -297,12 +306,13 @@ The Vue preview enables calibrated DNG inspection when `converter` and
 | `stl`, `obj`, `ply` | ASCII/binary STL; OBJ geometry and common inline vertex colors; ASCII/binary-little-endian PLY with common vertex colors. | OBJ MTL libraries/textures can use app-resolved sidecars. |
 | `gltf`, `glb` | Embedded/data-URI glTF, URL-loaded buffers/textures, single-file GLB. | External buffers/textures can use app resolution. |
 | `3mf`, `amf` | Core 3MF meshes, build/component items, base materials, color-group object/triangle vertex colors; AMF objects. | Unsupported 3MF textures, composite materials, multi-properties, and non-color-palette references emit fallback warnings. |
-| `dae`, `kmz`, `fbx`, `3ds`, `usdz` | Collada, KMZ zipped Collada, FBX, 3DS, USDA-backed USDZ. | DAE/FBX/3DS texture sidecars require synchronous app resolution. |
-| `wrl`, `vrml`, `ldr`, `mpd` | VRML scenes and LDraw models. | VRML textures require synchronous app resolution; LDraw uses uploaded sidecar parts. |
+| `dae`, `kmz`, `fbx`, `3ds`, `usdz` | Collada, KMZ packaged Collada with nested/encoded paths and textures, FBX, 3DS, USDA-backed USDZ. | DAE/FBX/3DS texture sidecars require synchronous app resolution; KMZ uses packaged resources. |
+| `wrl`, `vrml`, `ldr`, `mpd` | VRML scenes; LDraw models with packed MPD definitions and nested local parts/primitives. | VRML textures require synchronous app resolution; external LDraw parts require app-provided resources. |
 | `md2`, `lwo` | MD2 and LightWave Object meshes. | LWO textures require synchronous app resolution. |
 | `gcode`, `gco`, `nc` | Toolpaths. | Supported toolpath subset. |
 | `pcd`, `xyz`, `vtk`, `vox` | Point clouds, VTK polydata meshes, VOX voxel scenes. | Supported data subsets. |
-| `bvh`, `pdb`, `nrrd`, `nhdr` | Motion skeletons, molecular structures, voxel volumes. | Detached NHDR requires one app-resolved external raw file. |
+| `bvh`, `pdb` | Motion skeletons and molecular structures. | Supported subsets depend on the importer. |
+| `nrrd`, `nhdr` | Three-dimensional scalar point volumes; raw, gzip, ASCII, LF/CRLF headers and binary byte order. | Detached NHDR requires one app-resolved data file. File lists, four-dimensional volumes and line/byte skips are unavailable. |
 
 </details>
 
@@ -318,12 +328,24 @@ The Vue preview enables calibrated DNG inspection when `converter` and
 | Sections | Single-plane and box clipping; X/Y/Z controls and bounds-derived offsets/ranges. | Object-based and direct-geometry previews; arbitrary multi-plane sectioning is unavailable. |
 | Materials | Aggregate/per-node summaries: type, color/emissive, opacity, alpha test, depth flags, wireframe, vertex colors, sidedness, roughness/metalness/shininess/size, texture presence. | Material isolation requires an object-based preview. |
 | Camera and export | Perspective/orthographic projection, front/right/top/isometric/free-orbit presets, PNG snapshots. | Controls depend on driver capabilities. |
-| Diagnostics | Resource warnings in state/events. | glTF/OBJ resources, missing OBJ materials/textures, unsupported 3MF materials. |
-| Vue inspector | Tree, summaries, explode, measurement, sections, camera controls, snapshots, material isolation, material cards. | Exposed by the default `Preview` host where the driver supports them. |
+| Diagnostics | Resource warnings in state/events. | glTF/OBJ resources, missing OBJ materials/textures, KMZ textures and LDraw parts, unsupported 3MF materials. |
+| Vue inspector | Tree, summaries, explode, measurement, sections, camera controls, snapshots, material isolation, material cards. | Collapsed by default; expand with the button at the top left of the canvas. Models remain still when idle, with manual orbit and zoom. Features depend on driver support. |
 | Layer-aware isolation | Unavailable. | Material isolation is supported for object-based previews. |
 | Other native formats | Unavailable. | Import coverage is limited to the list above. |
 
 </details>
+
+<sub>glTF sidecar URLs are released after loading, failure or cancellation. Resolvers can return HTTP URLs directly; caller-provided URLs remain caller-owned. STEP can retry after WASM initialization fails. [Resource loading checks](../benchmarks/frontend/2026-10-24/model3d-resources-review.json).</sub>
+
+<sub>Volume previews preserve detached NHDR encoding and fix final-header truncation and byte-order color errors. Cancellation stops waiting for resources; truncated binary data is rejected. [Volume checks](../benchmarks/frontend/2026-10-24/volume-preview-review.json).</sub>
+
+<sub>OBJ preserves UTF-8 material names and resolves texture scale/offset options plus normal, bump and displacement maps. It waits for used images, reports failures and releases owned URLs on completion or cancellation. [OBJ checks](../benchmarks/frontend/2026-10-24/obj-resources-review.json).</sub>
+
+<sub>LDraw preserves packed definitions and containing-file paths, reports missing parts and cycles, and cancels asynchronous dependency loads. Normal smoothing avoids repeated traversal of disconnected surfaces while preserving shading. [LDraw checks](../benchmarks/frontend/2026-10-24/ldraw-resources-review.json).</sub>
+
+<sub>KMZ extracts the selected model and its images, resolves paths relative to KML/DAE, and waits for textures before previewing. Both public APIs release owned image URLs; asynchronous preview supports cancellation and reports missing/broken textures. [KMZ checks](../benchmarks/frontend/2026-10-24/kmz-resources-review.json).</sub>
+
+<sub>3D input reads, GLB parsing, STEP initialization and 3MF archive waits support cancellation. Late scenes are disposed; shared STEP initialization remains usable by other loads. Synchronous parsing itself cannot be interrupted. [Cancellation and rendering checks](../benchmarks/frontend/2026-10-24/model3d-cancel-review.json).</sub>
 
 ### Panoramas and live photo samples
 
@@ -347,13 +369,14 @@ The Vue preview enables calibrated DNG inspection when `converter` and
 
 | Family | Preview coverage | Limits or integration notes |
 | --- | --- | --- |
-| EPUB / CBZ | EPUB spine-based chapters and asset rewriting; CBZ ZIP image sequences. | Advanced navigation, themes, and additional native ebook formats are unavailable. Other readable formats may have conversion routes. |
-| Archives | Read-only browsing, nested archives, entry preview, extraction through package helpers. | Entry previews use the host's previewer factory when provided; helpers expose entries as `resourceResolver` sources. ZIP-compatible aliases are available; bulk extraction UI is unavailable. |
+| EPUB / CBZ | EPUB spine-based chapters; relative CSS imports, fonts/backgrounds, inline styles, encoded paths and SVG image references. Repeated resource lookups are cached and import cycles stop. EPUB/CBZ assets use bounded-batch extraction; CBZ keeps natural page order. Replacement/cancellation/destruction clears session resources. | Books are still extracted in full, not on demand. Advanced navigation, themes, and additional native ebook formats are unavailable. Other readable formats may have conversion routes. |
+| Archives | Read-only browsing, nested archives, entry preview and extraction helpers; replacement, back navigation and cancellation discard old results and release resources. | Host previewer factories retain preview options and resolve bundled sidecars relative to the entry directory. Built-in fallbacks support common images, audio/video and text, with browser-dependent playback. No bulk extraction UI. [Checks](../benchmarks/frontend/2026-10-24/archive-lifecycle-review.json). |
 | Demo ZIP bundles | Primary-file detection with sidecars from the bundle. | Recognized primary files include glTF/GLB/3MF, DXF, mind maps, draw.io/dio, HTML/XHTML, PNG, and common text. |
-| Mind maps | XML/ZIP trees, zoom, fit, SVG node selection, outline/search capability flags. | XMind reads `content.json` / `content.xml`; MindManager reads `Document.xml`. Complex editing and full layout fidelity are unavailable. |
-| Diagrams | Compressed/uncompressed diagrams.net mxGraph and basic Visio XML/ZIP pages; `pages.xml` manifests, common colors, rounded/ellipse/rhombus shapes, dashed lines, arrows, selection, zoom. | Full Visio fidelity and editing are unavailable. |
-| Code / text | UTF-8 display, language metadata, line numbers. | Syntax highlighting, search, and richer editor controls are unavailable. |
-| Audio / video | Browser-native playback. | HLS/DASH streaming and general transcoding are unavailable. Standalone playback does not imply embedded media support in Office/iWork. |
+| Mind maps | XML/ZIP trees, zoom, responsive contain/width/height fitting, SVG node selection, outline/search capability flags; stale file results are discarded, with cancellation and destruction cleanup. | XMind reads `content.json` / `content.xml`; MindManager reads `Document.xml`. Complex editing and full layout fidelity are unavailable. |
+| Diagrams | Compressed/uncompressed diagrams.net mxGraph with default-size fallback; basic Visio XML/ZIP pages including legacy VDX `XForm` / `PageProps` geometry, `Shape` connectors and `pages.xml` manifests; common colors, rounded/ellipse/rhombus shapes, dashed lines, arrows, selection, zoom and responsive fitting. Replaced/cancelled/destroyed sessions discard pending results. | Visio mainly reads cached geometry; full master inheritance, layout fidelity and editing are unavailable. |
+| Code / text | UTF-8 display, language metadata, aligned line numbers; lightweight code highlighting up to 200,000 characters. Verified with 200,000 lines; replacing, cancelling or destroying a load discards pending results. | Full-file decoding and layout remain; no text virtualization, built-in search or richer editor controls. Larger sources skip highlighting. |
+| Browser images / HTML | Replacement, cancellation and destruction release session-owned URLs and ignore old element events. | Image decoding remains browser-dependent; HTML scripts remain sandboxed. |
+| Audio / video | Browser-native playback; replacement/cancellation/destruction stops old players. Failed media sources report errors; optional artwork does not block playback. | Browser codecs only; no HLS/DASH streaming or general transcoding. Artwork reads ID3 APIC only, limited to the first 512 KiB for Blob/File input. Standalone playback does not imply embedded Office/iWork media support. |
 
 ## Integration support
 
@@ -368,6 +391,10 @@ The Vue preview enables calibrated DNG inspection when `converter` and
 | iWork runtime | `detectIworkType()`, `loadIwork()`, `createIworkViewer()`, worker parsing, and page/sheet navigation. |
 | Vue wrappers | `PptxPreview`, `IworkPreview`, and generic `Preview`; direct `src`, toolbar, thumbnails where applicable, source switching, and warning/error emits. Controls depend on driver capabilities. |
 | Converter adapters | Optional WASM, HTTP, and mock adapters. HTTP non-2xx JSON or `X-Preview-*` responses surface as `HttpConversionError` with stable converter metadata. |
+
+<sub>The shared runtime settles superseded preview calls on replacement or destruction, aborts their load signals and ignores late results/events. Failed loads release their sessions and remain visible in state. Custom drivers own their resources; work that ignores cancellation may still finish. [Regression checks](../benchmarks/frontend/2026-10-24/preview-runtime-review.json).</sub>
+
+<sub>HTTP / WASM conversion accepts HTTP(S), Blob URLs, paths starting with `/`, `./` or `../`, inline text and data URLs; binary percent escapes preserve their bytes. Cancellation settles the caller while shared WASM loading remains available to other calls. Failed module loads can be fetched again on the next call; a fixed consumed Response must be replaced. Synchronous WASM execution cannot be interrupted. [Source checks](../benchmarks/frontend/2026-10-24/converter-source-review.json).</sub>
 
 | Routing reference | Scope |
 | --- | --- |

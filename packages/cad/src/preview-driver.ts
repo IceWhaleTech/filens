@@ -438,6 +438,10 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
   private panX = 0;
   private panY = 0;
   private state: CadPreviewState;
+  private loadController: AbortController | null = null;
+  private resourceUrls = new Set<string>();
+  private readonly layerElements = new Map<string, SVGElement[]>();
+  private appliedLayers = new Set<string>();
 
   constructor(private readonly host: HTMLElement, private readonly options: PreviewOptions = {}) {
     this.root = document.createElement('div');
@@ -463,6 +467,21 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
+    this.stopLoad();
+    const controller = new AbortController();
+    this.loadController = controller;
+    const signal = controller.signal;
+    const resourceUrls = this.resourceUrls = new Set();
+    const abort = () => controller.abort();
+    signal.addEventListener('abort', () => {
+      context.signal?.removeEventListener('abort', abort);
+      if (this.loadController === controller) {
+        this.stopLoad();
+        this.state.loading = false;
+        this.emit('statechange', this.state);
+      }
+    }, { once: true });
+    context.signal?.addEventListener('abort', abort, { once: true });
     this.state = {
       ...this.state,
       loading: true,
@@ -474,19 +493,26 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
     this.emit('statechange', this.state);
 
     try {
+      if (context.signal?.aborted) controller.abort();
+      checkCadAborted(signal);
       const format = normalizeFormat(context.route?.sourceFormat ?? context.descriptor.extension);
       if (format !== 'dxf') {
         throw new Error(`CAD preview currently supports browser-native DXF files, got ${format || 'unknown'}.`);
       }
 
-      const parsedDrawing = loadDxfDrawing(await sourceToText(source, context));
+      const text = await sourceToText(source, { ...context, signal });
+      checkCadAborted(signal);
+      const parsedDrawing = loadDxfDrawing(text);
       const resourceResolvedDrawing = await applyCadResourceResolver(
         parsedDrawing,
         this.options.resourceResolver,
         format,
-        context.signal
+        resourceUrls,
+        signal
       );
+      checkCadAborted(signal);
       const drawing = applyCadFontResolver(resourceResolvedDrawing, this.options.fontResolver, format);
+      checkCadAborted(signal);
       const activeLayerIds = drawing.layerStyles.length
         ? drawing.layerStyles.filter((layer) => layer.visible).map((layer) => layer.name)
         : drawing.layers;
@@ -505,6 +531,11 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
       this.emit('rendered', this.state);
       this.emit('statechange', this.state);
     } catch (error) {
+      if (signal.aborted) {
+        if (context.signal?.aborted) checkCadAborted(signal);
+        return;
+      }
+      this.stopLoad();
       const normalizedError = error instanceof Error ? error : new Error(String(error));
       this.state.loading = false;
       this.state.error = normalizedError.message;
@@ -515,10 +546,29 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
   }
 
   destroy(): void {
-    this.root.replaceChildren();
+    this.stopLoad();
+    this.state.loading = false;
     if (this.root.parentElement === this.host) {
       this.host.replaceChildren();
     }
+    for (const listeners of Object.values(this.listeners)) listeners.clear();
+  }
+
+  private stopLoad(): void {
+    const controller = this.loadController;
+    this.loadController = null;
+    controller?.abort();
+    this.root.replaceChildren();
+    this.canvas = null;
+    this.drawing = null;
+    this.layerElements.clear();
+    this.appliedLayers.clear();
+    this.panX = 0;
+    this.panY = 0;
+    this.state.layers = [];
+    this.state.activeLayerIds = [];
+    for (const url of this.resourceUrls) URL.revokeObjectURL(url);
+    this.resourceUrls.clear();
   }
 
   getState(): CadPreviewState {
@@ -593,11 +643,12 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
     this.drawing = drawing;
     const stage = document.createElement('div');
     stage.className = 'cadv-stage';
-    const svg = renderDrawingToSvg(drawing);
+    this.layerElements.clear();
+    const svg = renderDrawingToSvg(drawing, this.layerElements);
     this.canvas = svg;
+    this.appliedLayers = new Set(this.state.activeLayerIds);
     stage.appendChild(svg);
     this.root.replaceChildren(stage);
-    this.applyLayerVisibility();
     this.applyTransform();
   }
 
@@ -606,17 +657,20 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
       return;
     }
     const activeLayers = new Set(this.state.activeLayerIds ?? []);
-    for (const element of this.canvas.querySelectorAll<SVGElement>('[data-layer]')) {
-      const layerId = element.getAttribute('data-layer');
-      const entityVisible = element.getAttribute('data-entity-visible') !== 'false';
-      const visible = entityVisible && (!layerId || activeLayers.has(layerId));
-      if (visible) {
-        element.removeAttribute('display');
-      } else {
-        element.setAttribute('display', 'none');
+    for (const [layerId, elements] of this.layerElements) {
+      if (activeLayers.has(layerId) === this.appliedLayers.has(layerId)) continue;
+      for (const element of elements) {
+        const entityVisible = element.getAttribute('data-entity-visible') !== 'false';
+        const visible = entityVisible && (!layerId || activeLayers.has(layerId));
+        if (visible) {
+          element.removeAttribute('display');
+        } else {
+          element.setAttribute('display', 'none');
+        }
+        element.setAttribute('data-layer-visible', visible ? 'true' : 'false');
       }
-      element.setAttribute('data-layer-visible', visible ? 'true' : 'false');
     }
+    this.appliedLayers = activeLayers;
   }
 
   private applyTransform(): void {
@@ -695,7 +749,7 @@ export function loadDxfDrawing(source: string): CadDrawing {
     if (record.type === 'INSERT' || record.type === 'MINSERT') {
       const insert = parseInsert(record.type, record.values);
       if (insert) {
-        entities.push(...expandInsert(insert, blockMap, warnings));
+        for (const entity of expandInsert(insert, blockMap, warnings)) entities.push(entity);
       }
       index = record.nextIndex;
       continue;
@@ -703,7 +757,7 @@ export function loadDxfDrawing(source: string): CadDrawing {
     if (record.type === 'DIMENSION') {
       const dimensionReference = parseDimensionBlockReference(record.values);
       if (dimensionReference?.blockName && blockMap.has(normalizeBlockName(dimensionReference.blockName))) {
-        entities.push(...expandDimension(dimensionReference, blockMap, warnings));
+        for (const entity of expandDimension(dimensionReference, blockMap, warnings)) entities.push(entity);
       } else {
         const fallbackDimension = parseDimensionPreview(record.values);
         if (fallbackDimension) {
@@ -934,20 +988,20 @@ function readEntityRecord(
   startIndex: number
 ): { type: string | undefined; values: DxfPair[]; nextIndex: number } {
   const type = pairs[startIndex]?.value;
-  const values: DxfPair[] = [];
   let index = startIndex + 1;
   while (index < pairs.length && pairs[index]?.code !== 0) {
-    values.push(pairs[index]!);
     index += 1;
   }
 
   return {
     type,
-    values,
+    values: pairs.slice(startIndex + 1, index),
     nextIndex: index
   };
 }
 
+// Keep common metadata first in entity literals so its stable property layout
+// can be cloned before geometry is added, avoiding repeated spread copies.
 function parseEntity(
   type: string | undefined,
   values: DxfPair[],
@@ -997,9 +1051,9 @@ function parsePoint(values: DxfPair[]): CadPointEntity | undefined {
   const cadPoint = point(readNumber(values, 10), readNumber(values, 20));
   if (!cadPoint) return undefined;
   return {
+    ...entityStyle(values),
     type: 'point',
-    point: cadPoint,
-    ...entityStyle(values)
+    point: cadPoint
   };
 }
 
@@ -1008,10 +1062,10 @@ function parseLine(values: DxfPair[]): CadLineEntity | undefined {
   const end = point(readNumber(values, 11), readNumber(values, 21));
   if (!start || !end) return undefined;
   return {
+    ...entityStyle(values),
     type: 'line',
     start,
-    end,
-    ...entityStyle(values)
+    end
   };
 }
 
@@ -1020,11 +1074,11 @@ function parseConstructionLine(values: DxfPair[], ray: boolean): CadConstruction
   const direction = point(readNumber(values, 11), readNumber(values, 21));
   if (!basePoint || !direction || vectorLength(direction) < 1e-9) return undefined;
   return {
+    ...entityStyle(values),
     type: 'construction-line',
     point: basePoint,
     direction,
-    ray,
-    ...entityStyle(values)
+    ray
   };
 }
 
@@ -1033,10 +1087,10 @@ function parseCircle(values: DxfPair[]): CadCircleEntity | undefined {
   const radius = readNumber(values, 40);
   if (!center || !radius || radius <= 0) return undefined;
   return {
+    ...entityStyle(values),
     type: 'circle',
     center,
-    radius,
-    ...entityStyle(values)
+    radius
   };
 }
 
@@ -1047,12 +1101,12 @@ function parseArc(values: DxfPair[]): CadArcEntity | undefined {
   const endAngle = readNumber(values, 51);
   if (!center || !radius || radius <= 0 || startAngle == null || endAngle == null) return undefined;
   return {
+    ...entityStyle(values),
     type: 'arc',
     center,
     radius,
     startAngle,
-    endAngle,
-    ...entityStyle(values)
+    endAngle
   };
 }
 
@@ -1064,13 +1118,13 @@ function parseEllipse(values: DxfPair[]): CadEllipseEntity | undefined {
     return undefined;
   }
   return {
+    ...entityStyle(values),
     type: 'ellipse',
     center,
     majorAxis,
     ratio,
     startParameter: readNumber(values, 41) ?? 0,
-    endParameter: readNumber(values, 42) ?? Math.PI * 2,
-    ...entityStyle(values)
+    endParameter: readNumber(values, 42) ?? Math.PI * 2
   };
 }
 
@@ -1125,12 +1179,12 @@ function parsePolyline(values: DxfPair[]): CadPolylineEntity | undefined {
   const constantWidth = readNumber(values, 43);
   if (points.length < 2) return undefined;
   return {
+    ...entityStyle(values),
     type: 'polyline',
     points,
     closed: Boolean((readNumber(values, 70) ?? 0) & 1),
     bulges: bulges.some((bulge) => Math.abs(bulge) > 1e-9) ? bulges : undefined,
-    strokeWidth: resolvePolylineStrokeWidth(constantWidth, widths),
-    ...entityStyle(values)
+    strokeWidth: resolvePolylineStrokeWidth(constantWidth, widths)
   };
 }
 
@@ -1140,10 +1194,10 @@ function parseLeader(values: DxfPair[]): CadPolylineEntity | undefined {
     return undefined;
   }
   return {
+    ...entityStyle(values),
     type: 'polyline',
     points,
-    closed: false,
-    ...entityStyle(values)
+    closed: false
   };
 }
 
@@ -1157,9 +1211,9 @@ function parseFace(values: DxfPair[]): CadFaceEntity | undefined {
     return undefined;
   }
   return {
+    ...entityStyle(values),
     type: 'face',
-    points: dedupeConsecutivePoints(points),
-    ...entityStyle(values)
+    points: dedupeConsecutivePoints(points)
   };
 }
 
@@ -1169,11 +1223,11 @@ function parseHatch(values: DxfPair[]): CadHatchEntity | undefined {
     return undefined;
   }
   return {
+    ...entityStyle(values),
     type: 'hatch',
     loops,
     patternName: readString(values, 2),
-    solid: readNumber(values, 70) === 1 || /^solid$/i.test(readString(values, 2) ?? ''),
-    ...entityStyle(values)
+    solid: readNumber(values, 70) === 1 || /^solid$/i.test(readString(values, 2) ?? '')
   };
 }
 
@@ -1376,11 +1430,11 @@ function parseSpline(values: DxfPair[]): CadSplineEntity | undefined {
     return undefined;
   }
   return {
+    ...entityStyle(values),
     type: 'spline',
     points,
     degree: readNumber(values, 71) ?? 3,
-    closed: Boolean((readNumber(values, 70) ?? 0) & 1),
-    ...entityStyle(values)
+    closed: Boolean((readNumber(values, 70) ?? 0) & 1)
   };
 }
 
@@ -1400,6 +1454,7 @@ function parseText(type: string | undefined, values: DxfPair[], textStyles: Map<
   const style = styleName ? textStyles.get(normalizeTextStyleName(styleName)) : undefined;
   const rotation = isMtext ? (readNumber(values, 50) ?? mtextDirectionRotation(values) ?? 0) : (readNumber(values, 50) ?? 0);
   return {
+    ...entityStyle(values),
     type: 'text',
     point: anchor,
     value,
@@ -1409,7 +1464,6 @@ function parseText(type: string | undefined, values: DxfPair[], textStyles: Map<
     obliqueAngle: readNumber(values, 51) ?? 0,
     horizontalAlign,
     verticalAlign,
-    ...entityStyle(values),
     styleName,
     fontFamily: style?.fontFamily,
     fontFile: style?.fontFile
@@ -1428,6 +1482,7 @@ function parseImage(values: DxfPair[], imageDefinitions: Map<string, CadImageDef
   const imageDefHandle = readImageDefinitionHandle(values);
   const imageDefinition = imageDefHandle ? imageDefinitions.get(normalizeHandle(imageDefHandle)) : undefined;
   return {
+    ...entityStyle(values),
     type: 'image',
     point: insertionPoint,
     uVector,
@@ -1439,8 +1494,7 @@ function parseImage(values: DxfPair[], imageDefinitions: Map<string, CadImageDef
     clipBoundary: parseImageClipBoundary(values, width, height),
     brightness: readNumber(values, 281),
     contrast: readNumber(values, 282),
-    fade: readNumber(values, 283),
-    ...entityStyle(values)
+    fade: readNumber(values, 283)
   };
 }
 
@@ -1637,7 +1691,7 @@ function expandNestedBlockInsert(
         scaleY: insert.scaleY,
         rotation: insert.rotation
       };
-      entities.push(...blockEntities.map((entity) => inheritInsertEntityMetadata(transformCadEntity(entity, transform), insert)));
+      for (const entity of blockEntities) entities.push(inheritInsertEntityMetadata(transformCadEntity(entity, transform), insert));
     }
   }
   return entities;
@@ -1685,12 +1739,12 @@ function readClassicPolyline(pairs: DxfPair[], startIndex: number): { entity?: C
 
   return {
     entity: {
+      ...entityStyle(header.values),
       type: 'polyline',
       points,
       closed: Boolean((readNumber(header.values, 70) ?? 0) & 1),
       bulges: bulges.some((bulge) => Math.abs(bulge) > 1e-9) ? bulges : undefined,
       strokeWidth: resolvePolylineStrokeWidth(resolvePolylineVertexWidth(readNumber(header.values, 40), readNumber(header.values, 41)), widths),
-      ...entityStyle(header.values),
       layer: readString(header.values, 8) ?? vertexLayer,
       colorIndex: readNumber(header.values, 62) ?? vertexColorIndex
     },
@@ -1754,13 +1808,13 @@ function parseDimensionPreview(values: DxfPair[]): CadDimensionPreviewEntity | u
   const rawText = readString(values, 1);
   const text = rawText && rawText !== '<>' ? normalizeDxfText(rawText) : formatDimensionMeasurement(distance(start, end));
   return {
+    ...entityStyle(values),
     type: 'dimension',
     start,
     end,
     textPoint,
     text,
-    height: readNumber(values, 140) ?? readNumber(values, 40) ?? Math.max(distance(start, end) * 0.08, 1),
-    ...entityStyle(values)
+    height: readNumber(values, 140) ?? readNumber(values, 40) ?? Math.max(distance(start, end) * 0.08, 1)
   };
 }
 
@@ -1780,7 +1834,7 @@ function expandInsert(insert: CadInsertEntity, blockMap: Map<string, CadBlockDef
         scaleY: insert.scaleY,
         rotation: insert.rotation
       };
-      entities.push(...block.entities.map((entity) => inheritInsertEntityMetadata(transformCadEntity(entity, transform), insert)));
+      for (const entity of block.entities) entities.push(inheritInsertEntityMetadata(transformCadEntity(entity, transform), insert));
     }
   }
   return entities;
@@ -1964,7 +2018,7 @@ function skipEntityValues(pairs: DxfPair[], index: number): number {
   return index;
 }
 
-function renderDrawingToSvg(drawing: CadDrawing): SVGSVGElement {
+function renderDrawingToSvg(drawing: CadDrawing, layerElements: Map<string, SVGElement[]>): SVGSVGElement {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.classList.add('cadv-canvas');
   const width = Math.max(drawing.bounds.maxX - drawing.bounds.minX, 1);
@@ -1991,7 +2045,7 @@ function renderDrawingToSvg(drawing: CadDrawing): SVGSVGElement {
   svg.appendChild(group);
 
   for (const entity of drawing.entities) {
-    const node = renderEntity(entity, drawing.bounds);
+    const node = renderEntity(entity, drawing.bounds, layerElements);
     if (node) {
       group.appendChild(node);
     }
@@ -2009,7 +2063,7 @@ function renderDrawingToSvg(drawing: CadDrawing): SVGSVGElement {
   return svg;
 }
 
-function renderEntity(entity: CadEntity, bounds: CadDrawing['bounds']): SVGElement | null {
+function renderEntity(entity: CadEntity, bounds: CadDrawing['bounds'], layerElements: Map<string, SVGElement[]>): SVGElement | null {
   const applyEntityAttributes = (node: SVGElement, paintTarget: 'stroke' | 'fill' = 'stroke'): SVGElement => {
     node.setAttribute(paintTarget, entity.color ?? DEFAULT_CAD_COLOR);
     if (paintTarget === 'stroke') {
@@ -2023,6 +2077,9 @@ function renderEntity(entity: CadEntity, bounds: CadDrawing['bounds']): SVGEleme
     }
     if (entity.layer) {
       node.setAttribute('data-layer', entity.layer);
+      const elements = layerElements.get(entity.layer);
+      if (elements) elements.push(node);
+      else layerElements.set(entity.layer, [node]);
     }
     if (entity.colorIndex != null) {
       node.setAttribute('data-color-index', String(entity.colorIndex));
@@ -2039,6 +2096,8 @@ function renderEntity(entity: CadEntity, bounds: CadDrawing['bounds']): SVGEleme
     if (entity.visible === false) {
       node.setAttribute('display', 'none');
       node.setAttribute('data-layer-visible', 'false');
+    } else if (entity.layer) {
+      node.setAttribute('data-layer-visible', 'true');
     }
     return node;
   };
@@ -2755,21 +2814,21 @@ function computeBounds(entities: CadEntity[], headerBounds?: CadDrawing['bounds'
     include({ x: headerBounds.maxX, y: headerBounds.maxY });
   }
   for (const entity of entities) {
-    if (entity.type === 'line') { include(entity.start); include(entity.end); }
-    if (entity.type === 'construction-line') include(entity.point);
-    if (entity.type === 'dimension') { include(entity.start); include(entity.end); includeAll(textBoundsPoints(dimensionTextEntity(entity))); }
-    if (entity.type === 'point') include(entity.point);
-    if (entity.type === 'circle' || entity.type === 'arc') {
-      include({ x: entity.center.x - entity.radius, y: entity.center.y - entity.radius });
-      include({ x: entity.center.x + entity.radius, y: entity.center.y + entity.radius });
+    switch (entity.type) {
+      case 'line': include(entity.start); include(entity.end); break;
+      case 'construction-line': case 'point': include(entity.point); break;
+      case 'dimension': include(entity.start); include(entity.end); includeAll(textBoundsPoints(dimensionTextEntity(entity))); break;
+      case 'circle': case 'arc':
+        include({ x: entity.center.x - entity.radius, y: entity.center.y - entity.radius });
+        include({ x: entity.center.x + entity.radius, y: entity.center.y + entity.radius });
+        break;
+      case 'ellipse': includeAll(sampleEllipsePoints(entity, 144)); break;
+      case 'polyline': includeAll(expandStrokeBounds(samplePolylinePoints(entity), entity.strokeWidth)); break;
+      case 'face': case 'spline': includeAll(entity.points); break;
+      case 'hatch': for (const loop of entity.loops) includeAll(loop); break;
+      case 'text': includeAll(textBoundsPoints(entity)); break;
+      case 'image': includeAll(imageBoundaryPoints(entity)); break;
     }
-    if (entity.type === 'ellipse') includeAll(sampleEllipsePoints(entity, 144));
-    if (entity.type === 'polyline') includeAll(expandStrokeBounds(samplePolylinePoints(entity), entity.strokeWidth));
-    if (entity.type === 'face') includeAll(entity.points);
-    if (entity.type === 'hatch') { for (const loop of entity.loops) includeAll(loop); }
-    if (entity.type === 'spline') includeAll(entity.points);
-    if (entity.type === 'text') includeAll(textBoundsPoints(entity));
-    if (entity.type === 'image') includeAll(imageBoundaryPoints(entity));
   }
   if (!count) {
     return {
@@ -2990,15 +3049,34 @@ function entityStyle(values: DxfPair[]): {
   lineTypeScale?: number;
   lineWeight?: number;
 } {
+  let layer: string | undefined, colorIndex: number | undefined, trueColor: number | undefined;
+  let opacity: number | undefined, visible: number | undefined, lineType: string | undefined;
+  let lineTypeScale: number | undefined, lineWeight: number | undefined;
+  let seen = 0;
+  // Common metadata is independent of entity geometry. Read it once rather
+  // than scanning the full record separately for every optional property.
+  // Preserve the first occurrence, including empty/invalid values.
+  for (const pair of values) {
+    switch (pair.code) {
+      case 8: if (!(seen & 1)) { layer = pair.value.trim() || undefined; seen |= 1; } break;
+      case 62: if (!(seen & 2)) { colorIndex = Number(pair.value); seen |= 2; } break;
+      case 420: if (!(seen & 4)) { trueColor = Number(pair.value); seen |= 4; } break;
+      case 440: if (!(seen & 8)) { opacity = Number(pair.value); seen |= 8; } break;
+      case 60: if (!(seen & 16)) { visible = Number(pair.value); seen |= 16; } break;
+      case 6: if (!(seen & 32)) { lineType = pair.value.trim() || undefined; seen |= 32; } break;
+      case 48: if (!(seen & 64)) { lineTypeScale = Number(pair.value); seen |= 64; } break;
+      case 370: if (!(seen & 128)) { lineWeight = Number(pair.value); seen |= 128; } break;
+    }
+  }
   return {
-    layer: readString(values, 8),
-    colorIndex: readNumber(values, 62),
-    trueColor: parseTrueColor(readNumber(values, 420)),
-    opacity: transparencyToOpacity(readNumber(values, 440)),
-    entityVisible: entityVisibility(readNumber(values, 60)),
-    lineType: normalizeLineType(readString(values, 6)),
-    lineTypeScale: normalizeLineTypeScale(readNumber(values, 48)),
-    lineWeight: normalizeLineWeight(readNumber(values, 370))
+    layer,
+    colorIndex: Number.isFinite(colorIndex) ? colorIndex : undefined,
+    trueColor: parseTrueColor(trueColor),
+    opacity: transparencyToOpacity(opacity),
+    entityVisible: entityVisibility(visible),
+    lineType: normalizeLineType(lineType),
+    lineTypeScale: normalizeLineTypeScale(lineTypeScale),
+    lineWeight: normalizeLineWeight(lineWeight)
   };
 }
 
@@ -3576,6 +3654,7 @@ async function applyCadResourceResolver(
   drawing: CadDrawing,
   resourceResolver: PreviewResourceResolver | undefined,
   sourceFormat: string,
+  resourceUrls: Set<string>,
   signal?: AbortSignal
 ): Promise<CadDrawing> {
   if (!resourceResolver) {
@@ -3585,25 +3664,23 @@ async function applyCadResourceResolver(
   const resolverWarnings = new Set<string>();
   const entities: CadEntity[] = [];
   for (const entity of drawing.entities) {
-    if (signal?.aborted) {
-      throw new DOMException('CAD preview aborted.', 'AbortError');
-    }
+    checkCadAborted(signal);
     if (entity.type !== 'image' || !entity.source || isBrowserLoadableImageSource(entity.source)) {
       entities.push(entity);
       continue;
     }
     const unresolvedSource = entity.source;
 
-    const resolved = normalizeResourceResolverResult(
-      await resourceResolver({
-        family: 'cad',
-        sourceFormat,
-        source: unresolvedSource,
-        relation: 'image',
-        handle: entity.imageDefHandle,
-        name: unresolvedSource.split(/[\\/]/).pop() ?? unresolvedSource
-      })
-    );
+    const result = await resourceResolver({
+      family: 'cad',
+      sourceFormat,
+      source: unresolvedSource,
+      relation: 'image',
+      handle: entity.imageDefHandle,
+      name: unresolvedSource.split(/[\\/]/).pop() ?? unresolvedSource
+    });
+    checkCadAborted(signal);
+    const resolved = normalizeResourceResolverResult(result, resourceUrls);
     for (const warning of resolved.warnings) {
       resolverWarnings.add(warning);
     }
@@ -3622,7 +3699,8 @@ async function applyCadResourceResolver(
 }
 
 function normalizeResourceResolverResult(
-  result: Awaited<ReturnType<PreviewResourceResolver>>
+  result: Awaited<ReturnType<PreviewResourceResolver>>,
+  resourceUrls: Set<string>
 ): { source?: string; warnings: string[] } {
   if (!result) {
     return { warnings: [] };
@@ -3633,28 +3711,19 @@ function normalizeResourceResolverResult(
       warnings: []
     };
   }
-  if (result instanceof Blob) {
+  if (result instanceof Blob || ArrayBuffer.isView(result) || result instanceof ArrayBuffer) {
     return {
-      source: URL.createObjectURL(result),
-      warnings: []
-    };
-  }
-  if (ArrayBuffer.isView(result) || result instanceof ArrayBuffer) {
-    const bytes = ArrayBuffer.isView(result)
-      ? new Uint8Array(result.buffer, result.byteOffset, result.byteLength)
-      : new Uint8Array(result);
-    return {
-      source: bytesToDataUrl(bytes),
+      source: normalizeResolvedPreviewSource(result, resourceUrls),
       warnings: []
     };
   }
   return {
-    source: normalizeResolvedPreviewSource(result.source),
+    source: normalizeResolvedPreviewSource(result.source, resourceUrls),
     warnings: result.warnings ?? []
   };
 }
 
-function normalizeResolvedPreviewSource(source: PreviewSource | undefined): string | undefined {
+function normalizeResolvedPreviewSource(source: PreviewSource | undefined, resourceUrls: Set<string>): string | undefined {
   if (!source) {
     return undefined;
   }
@@ -3662,23 +3731,22 @@ function normalizeResolvedPreviewSource(source: PreviewSource | undefined): stri
     return source;
   }
   if (source instanceof Blob) {
-    return URL.createObjectURL(source);
+    const url = URL.createObjectURL(source);
+    resourceUrls.add(url);
+    return url;
   }
   if (ArrayBuffer.isView(source)) {
-    return bytesToDataUrl(new Uint8Array(source.buffer, source.byteOffset, source.byteLength));
+    const bytes = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+    return normalizeResolvedPreviewSource(new Blob([new Uint8Array(bytes)]), resourceUrls);
   }
   if (source instanceof ArrayBuffer) {
-    return bytesToDataUrl(new Uint8Array(source));
+    return normalizeResolvedPreviewSource(new Blob([source]), resourceUrls);
   }
   return undefined;
 }
 
-function bytesToDataUrl(bytes: Uint8Array, contentType = 'application/octet-stream'): string {
-  let binary = '';
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
-  return `data:${contentType};base64,${btoa(binary)}`;
+function checkCadAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException('CAD preview aborted.', 'AbortError');
 }
 
 function applyCadFontResolver(drawing: CadDrawing, fontResolver: PreviewFontResolver | undefined, sourceFormat: string): CadDrawing {
@@ -3841,7 +3909,9 @@ function dataUrlToText(dataUrl: string): string {
   const meta = dataUrl.slice(0, commaIndex).toLowerCase();
   const payload = dataUrl.slice(commaIndex + 1);
   if (meta.includes(';base64')) {
-    return atob(payload);
+    const binary = atob(payload);
+    const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
   }
   return decodeURIComponent(payload);
 }

@@ -1,0 +1,396 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "measurementDate": "2026-10-24T10:03:04.450Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "rawSha256": "7c20f58528cb8d0f7483f204b142b71d0abc6053b09028b97a55ad98e1061aaf",
+  "finalRuns": 42,
+  "currentSuccesses": 21,
+  "baselineSuccesses": 21,
+  "currentFailures": 0,
+  "baselineFailures": 0,
+  "excludedDiagnosticRuns": 6,
+  "externalComparisonTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "changedThisRound": false
+  },
+  "method": "Fresh Chromium context per invocation, rotating build order. Inputs and imports ready before timing. parseMs measures complete binary STL positions/normals/bounds construction only; no session, edge helpers, GPU, layout/paint, file I/O or module loading. Complete position/normal bytes and bounds hashed after timing. Repeat zero of the 1,000-triangle control also renders a fixed initial view after timing, with animation frozen for a deterministic pixel comparison. Generated inputs; not a peer/SOTA or memory measurement.",
+  "statistics": "10,000 paired bootstrap median-ratio resamples, seed 12345. Binary STL parsing only, excluding input loading, session/edge construction, GPU work and paint. Generated models, no peer/SOTA or peak-memory ranking. Baseline medians at or below 10 ms receive no speed claim; all measurements remain.",
+  "measurements": [
+    {
+      "sample": "generated-1000-triangles.stl",
+      "currentMs": 0.5999999046325684,
+      "baselineMs": 0.6000000238418579,
+      "ratio": 1.000000198682181,
+      "ratio95PercentBootstrapInterval": [
+        1,
+        1.2000000476837158
+      ],
+      "below10MsControl": true,
+      "stableEngineeringReduction": false,
+      "completePositionsNormalsAndBoundsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-200000-triangles.stl",
+      "currentMs": 5.100000023841858,
+      "baselineMs": 15.600000023841858,
+      "ratio": 3.058823519787024,
+      "ratio95PercentBootstrapInterval": [
+        2.9038461754484293,
+        3.3200000047683718
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "completePositionsNormalsAndBoundsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-500000-triangles.stl",
+      "currentMs": 11,
+      "baselineMs": 34.10000002384186,
+      "ratio": 3.1000000021674414,
+      "ratio95PercentBootstrapInterval": [
+        3,
+        3.445454543287104
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "completePositionsNormalsAndBoundsMatch": true,
+      "scopedSota": false
+    }
+  ],
+  "changes": [
+    "Use an internal per-load AbortController for all model source/resolver work; replace, cancel and destroy discard obsolete results/errors. Dispose late object results before mounting.",
+    "Clear old scenes before input validation, release canvas controls and animation/resize callbacks, and snapshot raw ArrayBuffer input before the first await.",
+    "Dispose unique geometries, materials, material/uniform textures and skeletons; revoke resource URLs throughout the object subtree.",
+    "Preallocate binary STL position/normal Float32Arrays and write directly, preserving complete geometry, normals and bounds.",
+    "Correct the STEP browser test to count application/wasm responses, excluding the Vite development URL-import JavaScript module."
+  ],
+  "contentReview": {
+    "generatedSamples": [
+      {
+        "name": "generated-1000-triangles.stl",
+        "triangles": 1000,
+        "bytes": 50084,
+        "sha256": "092969226541912c3404745f14726a80752e7d41b0148c894293b826eeb50950"
+      },
+      {
+        "name": "generated-200000-triangles.stl",
+        "triangles": 200000,
+        "bytes": 10000084,
+        "sha256": "f83eead548df7540f43dae9db9e842bc8237f7a1996c914c2653d391af1f873c"
+      },
+      {
+        "name": "generated-500000-triangles.stl",
+        "triangles": 500000,
+        "bytes": 25000084,
+        "sha256": "60357d62ca70f7dc0ad73affcfa43e16e0d6ebbbcbf3c1c110cb37dba70e3436"
+      }
+    ],
+    "completePositionsNormalsAndBoundsMatchEveryRun": true,
+    "smallControlPreviewPngAndMetadataMatch": true,
+    "smallControlPreviewVisuallyChecked": true,
+    "smallControlPreviewObservation": "Nonblank cyan terrain mesh centered on a dark background; old/current rendered PNGs and metadata match exactly.",
+    "previews": [
+      {
+        "engine": "current",
+        "path": "tmp/continued-review/model3d-stl-final/current-1000-triangles.png",
+        "sha256": "0d0daf435d67ee8203ca22a74a15fbe2f847a23922edbe34d3becc5e0ab8f296",
+        "metadata": {
+          "format": "stl",
+          "triangleCount": 1000,
+          "vertexCount": 3000,
+          "hasVertexColors": false,
+          "bounds": {
+            "min": [
+              0,
+              0,
+              -0.0003123748174402863
+            ],
+            "max": [
+              2.875,
+              2.75,
+              0.499960720539093
+            ],
+            "size": [
+              2.875,
+              2.75,
+              0.5002730953565333
+            ]
+          },
+          "materialNames": []
+        }
+      },
+      {
+        "engine": "baseline",
+        "path": "tmp/continued-review/model3d-stl-final/baseline-1000-triangles.png",
+        "sha256": "0d0daf435d67ee8203ca22a74a15fbe2f847a23922edbe34d3becc5e0ab8f296",
+        "metadata": {
+          "format": "stl",
+          "triangleCount": 1000,
+          "vertexCount": 3000,
+          "hasVertexColors": false,
+          "bounds": {
+            "min": [
+              0,
+              0,
+              -0.0003123748174402863
+            ],
+            "max": [
+              2.875,
+              2.75,
+              0.499960720539093
+            ],
+            "size": [
+              2.875,
+              2.75,
+              0.5002730953565333
+            ]
+          },
+          "materialNames": []
+        }
+      }
+    ],
+    "geometry": [
+      {
+        "sample": "generated-1000-triangles.stl",
+        "positionsSha256": "b8aeb5927c4bc2b5fdce10c281a6e8cb394294a442914a947d29fc2d03325329",
+        "normalsSha256": "7bfe69a6c1d23fe69a2693ac4223a65bd7a1d379bc2b421eb96e1485cc0676d4",
+        "bounds": {
+          "min": [
+            0,
+            0,
+            -0.0003123748174402863
+          ],
+          "max": [
+            2.875,
+            2.75,
+            0.499960720539093
+          ]
+        },
+        "triangles": 1000
+      },
+      {
+        "sample": "generated-200000-triangles.stl",
+        "positionsSha256": "a2a505c8c9965a8656faca515b2309caaa0d669efe1073280fb5608a3a08162c",
+        "normalsSha256": "80d786cf3c53233487ccb695b156dadf30f4ed25b7eff0ccdd465616d446b548",
+        "bounds": {
+          "min": [
+            0,
+            0,
+            -0.49999621510505676
+          ],
+          "max": [
+            39.625,
+            39.5,
+            0.4999966025352478
+          ]
+        },
+        "triangles": 200000
+      },
+      {
+        "sample": "generated-500000-triangles.stl",
+        "positionsSha256": "8fc6f3da5dde5ffa65380714f3ee0eb3060e665c2cdc6d568402ce51d1eaa5bb",
+        "normalsSha256": "ad85883ba639797a2ed0802a91cbae5f6ba37392f0f33ad73ab0d4d401fe034c",
+        "bounds": {
+          "min": [
+            0,
+            0,
+            -0.49999621510505676
+          ],
+          "max": [
+            62.5,
+            62.5,
+            0.4999966025352478
+          ]
+        },
+        "triangles": 500000
+      }
+    ]
+  },
+  "validation": {
+    "model3dUnitPassed": 128,
+    "vueUnitPassed": 44,
+    "newLifecycleInputTests": 11,
+    "correctedOldSourceTestsFailed": 11,
+    "oldSourceReproduction": "All eleven corrected lifecycle/input tests fail against an isolated copy of the original source. The first old-source run also had eleven failures, but one was a cross-realm ArrayBuffer test-fixture error; the fixture was corrected to use a jsdom-realm ArrayBuffer. The corrected run establishes the final eleven production regressions.",
+    "browserDevelopmentPassed": 6,
+    "browserProductionPassed": 3,
+    "occtRealFixtures": 3,
+    "occtMatchingGeometrySets": 9,
+    "browserCoverage": [
+      "STL/GLB actual WebGL loading, replacement, cancellation, stale network response and detached controls",
+      "STL demo upload, eight showcase design sample formats, two STEP uploads with one lazy WASM load"
+    ],
+    "model3dBuildPassed": true,
+    "demoBuildPassed": true,
+    "bundleSizesUpdated": true,
+    "incrementalPatchReverseRestoresBaseline": true,
+    "initialFailures": "The first current unit run passed 127/128 due to the ArrayBuffer realm fixture error; the corrected run passes all 128. The first browser run passed 5/6 because the existing STEP test counted Vite URL-import JavaScript as a second WASM download; counting application/wasm responses passes all six. Production STEP loads also pass. No production changes were required for these test-harness corrections.",
+    "localMarkdownLinksChecked": 429,
+    "artifactAndLogBindingsChecked": 35
+  },
+  "limits": [
+    "Same-engine old/new engineering comparison on generated binary STL inputs, not a frontend peer/SOTA ranking or a general 3D speed claim.",
+    "Measures only construction of complete positions, normals and bounds; excludes source loading/snapshot, scene setup, edge helpers, GPU work, module loading, layout and paint.",
+    "The 1,000-triangle control is below 10 ms and receives no speed claim. Every diagnostic and final timing remains recorded.",
+    "Complete geometry equality covers all three generated inputs. Pixel equality covers the 1,000-triangle control only; large models do not have a full rendering-time or pixel claim.",
+    "Already-started third-party parser work may finish before its result is discarded. No worker interruption, format-coverage expansion or on-demand animation rendering is added.",
+    "Resource disposal is verified for shared geometry/material/texture and nested URLs. ImageBitmap.close is not added; no peak-memory or universal native-image-memory reclamation claim."
+  ],
+  "artifacts": [
+    {
+      "path": "benchmarks/frontend/2026-10-24/model3d-stl.json.gz",
+      "sha256": "5d48fa232d83501171ad4860979a88f825ed6deed5c40b55aa402afffb3c3df1"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/model3d-stl-summary.json",
+      "sha256": "381609d9e8a07cb072d7ac777321fbd83ecae0d969faaa44dfa5cd6a70193e2b"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/model3d-stl-diagnostic.json.gz",
+      "sha256": "48b8555ffd602ae163c14696eeb5f002edafef418fb26095027af015f8be571d"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/model3d.patch",
+      "sha256": "0adb3a2ffaefc597e4f416775cb788e0c7d2c558926a38de06d6dd5440afa43e"
+    }
+  ],
+  "baseline": {
+    "source": {
+      "path": "tmp/continued-review/model3d-baseline/src/preview-driver.ts",
+      "sha256": "908098ffc46ffa9073dbdd4224fdab5a85bcf7ca34868f954f838c7425c3ad20"
+    },
+    "runtime": {
+      "path": "tmp/continued-review/model3d-baseline/dist/index.js",
+      "sha256": "1abeca5059e5d7d3b336b7378ef7f3591cbd738243bcadf0e475dc859c1745bf"
+    },
+    "reconstructedSourceSha256": "908098ffc46ffa9073dbdd4224fdab5a85bcf7ca34868f954f838c7425c3ad20"
+  },
+  "current": {
+    "source": {
+      "path": "packages/model3d/src/preview-driver.ts",
+      "sha256": "1ca35dbf7a88beeb4bf09d4ec143f06d31af2b01b093476ad706d5cdcb1d3153"
+    },
+    "runtime": {
+      "path": "packages/model3d/dist/index.js",
+      "sha256": "0a05341e24e789c95ff8c6641718b3627ebd271451420a4b2af3a9af09363e8f"
+    }
+  },
+  "dependencies": [
+    {
+      "path": "packages/core/dist/index.js",
+      "sha256": "e7ea2b2a7cf03f6d69aa00099c1f86e4e0b8c9a3004558818fa052a7676bd155"
+    },
+    {
+      "path": "node_modules/three/build/three.module.js",
+      "sha256": "d513a6de314b2c32d0a11a209bc1ec06b528ae95c0f841a1c1761aa9248c814a"
+    },
+    {
+      "path": "node_modules/three/build/three.core.js",
+      "sha256": "c943c148229a99917d815f772404c48f5447e82c0c450f92403955bc27e8d100"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/mesh.mjs",
+      "sha256": "b45fab599deadb242451d83a021b9f2c47677af32d8808225e6e10464a303c2b"
+    },
+    {
+      "path": "scripts/benchmark-model3d-stl.mjs",
+      "sha256": "23a908143dd7b1ace04409d5115344985984c6f6136567956a0166fafe9aa2ef"
+    }
+  ],
+  "sourceArtifacts": [
+    {
+      "path": "packages/model3d/test/lifecycle.spec.ts",
+      "sha256": "a27de263b7940f32d1750835e7611091238c55696ce583dca4340753defad02c"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/mesh.mjs",
+      "sha256": "b45fab599deadb242451d83a021b9f2c47677af32d8808225e6e10464a303c2b"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-lifecycle.e2e.ts",
+      "sha256": "41ffae4946181a00a312a032d1168bc08d909333aa0258f757ed01a591452281"
+    },
+    {
+      "path": "apps/demo/e2e/cad-wasm.e2e.ts",
+      "sha256": "6f921a2f19906cdf232ea60395f00288c0d8630c5c25cf3d72c8369f90e32b7f"
+    },
+    {
+      "path": "apps/demo/e2e/design-samples.e2e.ts",
+      "sha256": "16bd44e4111372b3c653623fa5df055b273458b7b8b2f42743661d2debff12a7"
+    },
+    {
+      "path": "scripts/benchmark-model3d-stl.mjs",
+      "sha256": "23a908143dd7b1ace04409d5115344985984c6f6136567956a0166fafe9aa2ef"
+    },
+    {
+      "path": "scripts/summarize-model3d-stl-benchmark.mjs",
+      "sha256": "b33da34deb3e528b738fbe2aace959b2f7a0816419ec22ffb1183defc34c1d3c"
+    },
+    {
+      "path": "scripts/test-occt-wasm.mjs",
+      "sha256": "af48b86af8c03677c806fbdb11c325c68f2bb8f61074c5cec2544e616775f584"
+    }
+  ],
+  "localValidationLogs": {
+    "model3dUnit": {
+      "path": "tmp/continued-review/model3d-unit-final.log",
+      "sha256": "f5301a1b7876b6ad0ee3f62926241abff3aededa8d6af3264a3e544295ca5c6d"
+    },
+    "vueUnit": {
+      "path": "tmp/continued-review/model3d-vue-unit.log",
+      "sha256": "9eef0f538e7e195f6ed40c131b031471fe91b3ea7d5c109eda1b96682447b0e4"
+    },
+    "occtGeometry": {
+      "path": "tmp/continued-review/model3d-occt.log",
+      "sha256": "577a079fe542d4844eb845d37ff3191f35cb813fb72d375c92aabb7ecdfae36d"
+    },
+    "browserDevelopment": {
+      "path": "tmp/continued-review/model3d-browser-final.log",
+      "sha256": "e53787799877f17f4fde9446e15d60560fa018ee7d4d388eb1b1c20672e464ee"
+    },
+    "browserProduction": {
+      "path": "tmp/continued-review/model3d-production-browser.log",
+      "sha256": "6c2f815ca6cec7fecf3f783261ddd591f8c7e1614b7dda424c036eb1481312f8"
+    },
+    "model3dBuild": {
+      "path": "tmp/continued-review/model3d-build-final.log",
+      "sha256": "d6e22257ba9f0576039f0829857e3619b1ff4938d98c074b429376d82b70f7f9"
+    },
+    "demoBuild": {
+      "path": "tmp/continued-review/model3d-demo-build.log",
+      "sha256": "382dc0cfedfd2462c00390da21b5fc89d480ff392e4d1b2d572ab5c870b26f98"
+    },
+    "bundleReport": {
+      "path": "tmp/continued-review/model3d-bundle-report.log",
+      "sha256": "cae4ea59b60612acbbf235cf2dbb4518068d7b54342a479a8f38f60970e8c7ba"
+    },
+    "initialOldRegressions": {
+      "path": "tmp/continued-review/model3d-before-regressions.log",
+      "sha256": "95674fbceb2872a5ed9297b1e82284a387c314ad7be8ea5763a640ab02742ce1"
+    },
+    "correctedOldRegressions": {
+      "path": "tmp/continued-review/model3d-before-final-regressions.log",
+      "sha256": "d14773d7a04350a2aa9843740af6b829e71521a47a5b6fac23b988ad173d05c4"
+    },
+    "initialCurrentHarnessFailure": {
+      "path": "tmp/continued-review/model3d-unit.log",
+      "sha256": "0de57e1e1086781ee3a73ddebd171286ec99db073cff866c12551ede0949399e"
+    },
+    "initialBrowserCounterFailure": {
+      "path": "tmp/continued-review/model3d-browser.log",
+      "sha256": "1f14c1c1d7bbb319b701011c1bc3aab06cd71a63ad02ec43a0d914ff036c01b7"
+    }
+  },
+  "reproduction": [
+    "Use isolated source copies preserving earlier changes; reverse model3d.patch only in the baseline copy. Reverse application was verified to restore the original source SHA-256.",
+    "Build @filens/model3d in both copies and copy the complete baseline dist directory to tmp/continued-review/model3d-baseline/dist, including its dynamically loaded OCCT runtime/assets.",
+    "Run node scripts/benchmark-model3d-stl.mjs --iterations 7 --output tmp/continued-review/model3d-stl-reproduced alone.",
+    "Run node scripts/summarize-model3d-stl-benchmark.mjs --input tmp/continued-review/model3d-stl-reproduced/results.json.",
+    "Run model3d and Vue Vitest directly, node scripts/test-occt-wasm.mjs, and Playwright model3d-lifecycle/design-samples/cad-wasm tests. Production checks select STL upload, design sample flow and lazy STEP loading."
+  ]
+}

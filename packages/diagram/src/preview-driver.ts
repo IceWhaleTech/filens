@@ -70,6 +70,7 @@ const DEFAULT_FILL = '#ffffff';
 const DEFAULT_STROKE = '#9db3d1';
 const DEFAULT_TEXT = '#1f2937';
 const DEFAULT_EDGE = '#6b7f99';
+const XML_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 
 export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState> {
   private readonly listeners: PreviewListenerMap = {
@@ -82,7 +83,12 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
   private readonly root: HTMLDivElement;
   private scale: number;
   private fitMode: PreviewFitMode;
+  private canvasSize?: { width: number; height: number };
+  private readonly resizeObserver?: ResizeObserver;
   private document: DiagramDocument | null = null;
+  private loadGeneration = 0;
+  private loadController?: AbortController;
+  private removeAbortListener?: () => void;
   private pageIndex = 0;
   private selectedElementId: string | undefined;
   private state: DiagramPreviewState;
@@ -112,9 +118,34 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
       pageIndex: 0,
       pageCount: 0
     };
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        if (this.fitMode === 'none') return;
+        const previousScale = this.scale;
+        this.applyScale();
+        if (this.scale !== previousScale) this.emit('statechange', this.state);
+      });
+    }
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
+    const generation = ++this.loadGeneration;
+    this.loadController?.abort();
+    this.removeAbortListener?.();
+    this.releaseDocument();
+    const controller = new AbortController();
+    this.loadController = controller;
+    const signal = context.signal;
+    const abort = () => {
+      controller.abort();
+      if (generation === this.loadGeneration) {
+        this.releaseDocument();
+        this.state.loading = false;
+        this.emit('statechange', this.state);
+      }
+    };
+    signal?.addEventListener('abort', abort, { once: true });
+    this.removeAbortListener = () => signal?.removeEventListener('abort', abort);
     this.state = {
       ...this.state,
       loading: true,
@@ -127,16 +158,27 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
     this.emit('statechange', this.state);
 
     try {
+      if (signal?.aborted) controller.abort();
+      checkAborted(controller.signal);
       const format = normalizeFormat(context.route?.sourceFormat ?? context.descriptor.extension);
       if (!DIAGRAM_DIRECT_FORMATS.has(format)) {
-        throw new Error(`Diagram preview currently supports diagrams.net drawio/dio and Visio VSDX files, got ${format || 'unknown'}.`);
+        throw new Error(`Diagram preview currently supports diagrams.net drawio/dio and Visio VDX/VSDX files, got ${format || 'unknown'}.`);
       }
 
-      this.document = format === 'vsdx'
-        ? await loadVsdxDiagram(await sourceToArrayBuffer(source, context))
-        : format === 'vdx'
-          ? loadVdxDiagram(await sourceToText(source, context))
-          : loadDrawioDiagram(await sourceToText(source, context));
+      const loadContext = { ...context, signal: controller.signal };
+      let model: DiagramDocument;
+      if (format === 'vsdx') {
+        const bytes = await sourceToArrayBuffer(source, loadContext);
+        checkAborted(controller.signal);
+        model = await loadVsdxDiagram(bytes, loadContext);
+      } else {
+        const text = await sourceToText(source, loadContext);
+        checkAborted(controller.signal);
+        model = format === 'vdx' ? loadVdxDiagram(text) : loadDrawioDiagram(text);
+      }
+      if (generation !== this.loadGeneration) return;
+      checkAborted(controller.signal);
+      this.document = model;
       this.pageIndex = 0;
       this.selectedElementId = undefined;
       this.state = {
@@ -153,8 +195,11 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
       this.emit('rendered', this.state);
       this.emit('statechange', this.state);
     } catch (error) {
-      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      if (generation !== this.loadGeneration) return;
+      this.releaseDocument();
       this.state.loading = false;
+      checkAborted(controller.signal);
+      const normalizedError = error instanceof Error ? error : new Error(String(error));
       this.state.error = normalizedError.message;
       this.emit('error', normalizedError);
       this.emit('statechange', this.state);
@@ -163,10 +208,15 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
   }
 
   destroy(): void {
-    this.root.replaceChildren();
+    this.loadGeneration++;
+    this.loadController?.abort();
+    this.removeAbortListener?.();
+    this.releaseDocument();
+    this.state.loading = false;
     if (this.root.parentElement === this.host) {
       this.host.replaceChildren();
     }
+    for (const listeners of Object.values(this.listeners)) listeners.clear();
   }
 
   getState(): DiagramPreviewState {
@@ -187,6 +237,7 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
   }
 
   setScale(scale: number): void {
+    if (!Number.isFinite(scale)) return;
     this.scale = Math.max(0.25, Math.min(scale, 3));
     this.fitMode = 'none';
     this.state.scale = this.scale;
@@ -196,9 +247,11 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
 
   fit(mode: PreviewFitMode = 'contain'): void {
     this.fitMode = mode;
-    this.scale = 1;
-    this.state.scale = this.scale;
+    if (mode === 'none') this.scale = 1;
     this.applyScale();
+    this.state.scale = this.scale;
+    this.root.scrollLeft = 0;
+    this.root.scrollTop = 0;
     this.emit('statechange', this.state);
   }
 
@@ -212,7 +265,7 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
   }
 
   goToPage(index: number): void {
-    if (!this.document) {
+    if (!this.document || !Number.isInteger(index)) {
       return;
     }
     const nextIndex = Math.max(0, Math.min(index, this.document.pages.length - 1));
@@ -223,6 +276,8 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
     this.selectedElementId = undefined;
     this.state.pageIndex = this.pageIndex;
     this.state.selectedElementId = undefined;
+    this.root.scrollTop = 0;
+    this.root.scrollLeft = 0;
     this.render();
     this.emit('statechange', this.state);
   }
@@ -243,6 +298,7 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
     }
 
     const bounds = computePageBounds(page);
+    this.canvasSize = bounds;
     const summary = document.createElement('div');
     summary.className = 'diagramv-summary';
     summary.textContent = `${page.name} - ${page.nodes.length} node${page.nodes.length === 1 ? '' : 's'} - ${page.edges.length} edge${page.edges.length === 1 ? '' : 's'}`;
@@ -260,8 +316,11 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
     svg.appendChild(createSvgDefinitions());
     svg.append(renderEdges(page, (id) => this.selectElement(id)), renderNodes(page, (id) => this.selectElement(id)));
     wrapper.appendChild(svg);
+    this.resizeObserver?.disconnect();
     this.root.replaceChildren(summary, wrapper);
     this.applyScale();
+    this.resizeObserver?.observe(this.root);
+    this.resizeObserver?.observe(summary);
     if (this.selectedElementId) {
       this.selectElement(this.selectedElementId, false);
     }
@@ -280,11 +339,36 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
 
   private applyScale(): void {
     const wrapper = this.root.querySelector<HTMLElement>('.diagramv-canvas-wrap');
-    if (!wrapper) {
+    if (!wrapper || !this.canvasSize) {
       return;
     }
-    wrapper.style.transform = `scale(${this.scale})`;
-    wrapper.style.transformOrigin = this.fitMode === 'none' ? '0 0' : 'top left';
+    if (this.fitMode !== 'none') {
+      const width = this.root.clientWidth;
+      const height = this.root.clientHeight - (this.root.firstElementChild as HTMLElement).offsetHeight;
+      // Hidden or detached hosts retain their scale until they have a viewport.
+      if (width > 0 && height > 0) {
+        const widthScale = width / this.canvasSize.width;
+        const heightScale = height / this.canvasSize.height;
+        this.scale = this.fitMode === 'width' ? widthScale : this.fitMode === 'height'
+          ? heightScale : Math.min(widthScale, heightScale);
+      }
+    }
+    this.state.scale = this.scale;
+    // Size the SVG viewport itself so the scroll area follows the rendered size.
+    wrapper.style.width = `${this.canvasSize.width * this.scale}px`;
+    wrapper.style.height = `${this.canvasSize.height * this.scale}px`;
+  }
+
+  private releaseDocument(): void {
+    this.resizeObserver?.disconnect();
+    this.canvasSize = undefined;
+    this.document = null;
+    this.pageIndex = 0;
+    this.selectedElementId = undefined;
+    this.state.pageIndex = 0;
+    this.state.pageCount = 0;
+    this.state.selectedElementId = undefined;
+    this.root.replaceChildren();
   }
 
   private emit<T extends PreviewEventName>(event: T, payload: PreviewEventMap[T]): void {
@@ -316,10 +400,11 @@ export function loadDrawioDiagram(source: string): DiagramDocument {
     throw new Error('draw.io XML is invalid.');
   }
 
+  const context: DiagramParseContext = {};
   const diagramElements = Array.from(document.getElementsByTagName('*')).filter((element) => localName(element) === 'diagram');
   const pages = diagramElements.length
-    ? diagramElements.map((diagram, index) => parseDiagramPage(diagram, index))
-    : [parseDiagramPage(document.documentElement, 0)];
+    ? diagramElements.map((diagram, index) => parseDiagramPage(diagram, index, context))
+    : [parseDiagramPage(document.documentElement, 0, context)];
   if (!pages.some((page) => page.nodes.length || page.edges.length)) {
     throw new Error('draw.io file does not contain supported mxCell geometry.');
   }
@@ -329,18 +414,23 @@ export function loadDrawioDiagram(source: string): DiagramDocument {
   };
 }
 
-export async function loadVsdxDiagram(source: ArrayBuffer): Promise<DiagramDocument> {
+export async function loadVsdxDiagram(source: ArrayBuffer, options: { signal?: AbortSignal } = {}): Promise<DiagramDocument> {
+  checkAborted(options.signal);
   const archive = await JSZip.loadAsync(source);
-  const pageEntries = await readVsdxPageEntries(archive);
+  checkAborted(options.signal);
+  const pageEntries = await readVsdxPageEntries(archive, options.signal);
+  checkAborted(options.signal);
   if (!pageEntries.length) {
     throw new Error('VSDX package is missing visio/pages/page*.xml files.');
   }
 
   const pages: DiagramPage[] = [];
+  const context: DiagramParseContext = {};
   for (let index = 0; index < pageEntries.length; index += 1) {
     const entry = pageEntries[index]!;
     const xml = await entry.file.async('text');
-    const page = parseVisioPage(xml, index, entry.metadata);
+    checkAborted(options.signal);
+    const page = parseVisioPage(xml, index, context, entry.metadata);
     if (page.nodes.length || page.edges.length) {
       pages.push(page);
     }
@@ -362,7 +452,7 @@ interface VsdxPageEntry {
   };
 }
 
-async function readVsdxPageEntries(archive: JSZip): Promise<VsdxPageEntry[]> {
+async function readVsdxPageEntries(archive: JSZip, signal?: AbortSignal): Promise<VsdxPageEntry[]> {
   const fallbackFiles = archive.file(/^visio\/pages\/page\d+\.xml$/i)
     .sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true }));
   const manifest = archive.file('visio/pages/pages.xml');
@@ -371,12 +461,14 @@ async function readVsdxPageEntries(archive: JSZip): Promise<VsdxPageEntry[]> {
   }
 
   const xml = await manifest.async('text');
+  checkAborted(signal);
   const document = new DOMParser().parseFromString(xml, 'application/xml');
   if (document.getElementsByTagName('parsererror')[0]) {
     return fallbackFiles.map((file) => ({ file }));
   }
 
-  const relationships = await readVsdxPageRelationships(archive);
+  const relationships = await readVsdxPageRelationships(archive, signal);
+  checkAborted(signal);
   const pages = Array.from(document.getElementsByTagName('*')).filter((element) => localName(element) === 'page');
   const entries = pages
     .map((page, index): VsdxPageEntry | undefined => {
@@ -401,13 +493,14 @@ async function readVsdxPageEntries(archive: JSZip): Promise<VsdxPageEntry[]> {
   return entries.length ? entries : fallbackFiles.map((file) => ({ file }));
 }
 
-async function readVsdxPageRelationships(archive: JSZip): Promise<Map<string, string>> {
+async function readVsdxPageRelationships(archive: JSZip, signal?: AbortSignal): Promise<Map<string, string>> {
   const relationships = new Map<string, string>();
   const relsFile = archive.file('visio/pages/_rels/pages.xml.rels');
   if (!relsFile) {
     return relationships;
   }
   const xml = await relsFile.async('text');
+  checkAborted(signal);
   const document = new DOMParser().parseFromString(xml, 'application/xml');
   if (document.getElementsByTagName('parsererror')[0]) {
     return relationships;
@@ -435,10 +528,11 @@ export function loadVdxDiagram(source: string): DiagramDocument {
     throw new Error('VDX XML is invalid.');
   }
 
+  const context: DiagramParseContext = { legacy: true };
   const pageElements = Array.from(document.getElementsByTagName('*')).filter((element) => localName(element) === 'page');
   const pages = pageElements.length
-    ? pageElements.map((page, index) => parseVisioPageElement(page, index))
-    : [parseVisioPageElement(document.documentElement, 0)];
+    ? pageElements.map((page, index) => parseVisioPageElement(page, index, context))
+    : [parseVisioPageElement(document.documentElement, 0, context)];
   if (!pages.some((page) => page.nodes.length || page.edges.length)) {
     throw new Error('VDX file does not contain supported shape geometry.');
   }
@@ -448,19 +542,30 @@ export function loadVdxDiagram(source: string): DiagramDocument {
   };
 }
 
-function parseVisioPage(source: string, index: number, metadata?: { id?: string; name?: string }): DiagramPage {
+interface DiagramParseContext {
+  legacy?: boolean;
+  labelDecoder?: HTMLTextAreaElement;
+}
+
+function parseVisioPage(source: string, index: number, context: DiagramParseContext, metadata?: { id?: string; name?: string }): DiagramPage {
   const document = new DOMParser().parseFromString(source, 'application/xml');
   if (document.getElementsByTagName('parsererror')[0]) {
     throw new Error('Visio page XML is invalid.');
   }
-  return parseVisioPageElement(document.documentElement, index, metadata);
+  return parseVisioPageElement(document.documentElement, index, context, metadata);
 }
 
-function parseVisioPageElement(root: Element, index: number, metadata?: { id?: string; name?: string }): DiagramPage {
-  const pageSheet = Array.from(root.getElementsByTagName('*')).find((element) => localName(element) === 'pagesheet');
-  const pageHeight = (visioCellNumber(pageSheet, 'PageHeight') ?? 8.5) * VISIO_UNIT_SCALE;
-  const shapeElements = Array.from(root.getElementsByTagName('*')).filter((element) => localName(element) === 'shape');
-  const connectElements = Array.from(root.getElementsByTagName('*')).filter((element) => localName(element) === 'connect');
+function parseVisioPageElement(root: Element, index: number, context: DiagramParseContext, metadata?: { id?: string; name?: string }): DiagramPage {
+  let pageSheet: Element | undefined;
+  const shapeElements: Element[] = [];
+  const connectElements: Element[] = [];
+  for (const element of Array.from(root.getElementsByTagName('*'))) {
+    const name = localName(element);
+    if (name === 'pagesheet' && !pageSheet) pageSheet = element;
+    else if (name === 'shape') shapeElements.push(element);
+    else if (name === 'connect') connectElements.push(element);
+  }
+  const pageHeight = (visioCellNumber(readVisioCells(pageSheet, !!context.legacy), 'PageHeight') ?? 8.5) * VISIO_UNIT_SCALE;
   const connects = parseVisioConnects(connectElements);
   const nodes: DiagramNode[] = [];
   const edges: DiagramEdge[] = [];
@@ -468,20 +573,22 @@ function parseVisioPageElement(root: Element, index: number, metadata?: { id?: s
   for (const shape of shapeElements) {
     const id = shape.getAttribute('ID') ?? `shape-${nodes.length + edges.length + 1}`;
     const kind = shape.getAttribute('Type') ?? '';
-    const beginX = visioCellNumber(shape, 'BeginX');
-    const endX = visioCellNumber(shape, 'EndX');
-    const label = normalizeLabel(visioText(shape));
-    if (kind === 'Shape' && beginX == null && endX == null) {
-      const node = parseVisioNode(shape, id, label, pageHeight);
+    const cells = readVisioCells(shape, !!context.legacy);
+    const beginX = visioCellNumber(cells, 'BeginX');
+    const endX = visioCellNumber(cells, 'EndX');
+    const connection = connects.get(id);
+    const label = normalizeLabel(visioText(shape), context);
+    if (kind === 'Shape' && beginX == null && endX == null && !connection?.source && !connection?.target) {
+      const node = parseVisioNode(cells, id, label, pageHeight);
       if (node.width > 0 && node.height > 0) {
         nodes.push(node);
       }
       continue;
     }
-    if (kind === 'Shape' || kind === 'Foreign' || kind === 'Group') {
+    if (kind === 'Foreign' || kind === 'Group') {
       continue;
     }
-    const edge = parseVisioEdge(shape, id, label, pageHeight, connects.get(id));
+    const edge = parseVisioEdge(cells, id, label, pageHeight, connection);
     if (edge.points.length || edge.source || edge.target) {
       edges.push(edge);
     }
@@ -495,11 +602,11 @@ function parseVisioPageElement(root: Element, index: number, metadata?: { id?: s
   };
 }
 
-function parseVisioNode(shape: Element, id: string, label: string, pageHeight: number): DiagramNode {
-  const pinX = (visioCellNumber(shape, 'PinX') ?? 0) * VISIO_UNIT_SCALE;
-  const pinY = (visioCellNumber(shape, 'PinY') ?? 0) * VISIO_UNIT_SCALE;
-  const width = Math.max(1, (visioCellNumber(shape, 'Width') ?? 1) * VISIO_UNIT_SCALE);
-  const height = Math.max(1, (visioCellNumber(shape, 'Height') ?? 0.5) * VISIO_UNIT_SCALE);
+function parseVisioNode(cells: VisioCells, id: string, label: string, pageHeight: number): DiagramNode {
+  const pinX = (visioCellNumber(cells, 'PinX') ?? 0) * VISIO_UNIT_SCALE;
+  const pinY = (visioCellNumber(cells, 'PinY') ?? 0) * VISIO_UNIT_SCALE;
+  const width = Math.max(1, (visioCellNumber(cells, 'Width') ?? 1) * VISIO_UNIT_SCALE);
+  const height = Math.max(1, (visioCellNumber(cells, 'Height') ?? 0.5) * VISIO_UNIT_SCALE);
   return {
     id,
     label,
@@ -507,23 +614,23 @@ function parseVisioNode(shape: Element, id: string, label: string, pageHeight: n
     y: pageHeight - pinY - height / 2,
     width,
     height,
-    style: visioShapeStyle(shape)
+    style: visioShapeStyle(cells)
   };
 }
 
 function parseVisioEdge(
-  shape: Element,
+  cells: VisioCells,
   id: string,
   label: string,
   pageHeight: number,
   connects: { source?: string; target?: string } = {}
 ): DiagramEdge {
-  const pinX = visioCellNumber(shape, 'PinX') ?? 0;
-  const pinY = visioCellNumber(shape, 'PinY') ?? 0;
-  const beginX = (visioCellNumber(shape, 'BeginX') ?? pinX) * VISIO_UNIT_SCALE;
-  const beginY = pageHeight - (visioCellNumber(shape, 'BeginY') ?? pinY) * VISIO_UNIT_SCALE;
-  const endX = (visioCellNumber(shape, 'EndX') ?? pinX) * VISIO_UNIT_SCALE;
-  const endY = pageHeight - (visioCellNumber(shape, 'EndY') ?? pinY) * VISIO_UNIT_SCALE;
+  const pinX = visioCellNumber(cells, 'PinX') ?? 0;
+  const pinY = visioCellNumber(cells, 'PinY') ?? 0;
+  const beginX = (visioCellNumber(cells, 'BeginX') ?? pinX) * VISIO_UNIT_SCALE;
+  const beginY = pageHeight - (visioCellNumber(cells, 'BeginY') ?? pinY) * VISIO_UNIT_SCALE;
+  const endX = (visioCellNumber(cells, 'EndX') ?? pinX) * VISIO_UNIT_SCALE;
+  const endY = pageHeight - (visioCellNumber(cells, 'EndY') ?? pinY) * VISIO_UNIT_SCALE;
   return {
     id,
     label,
@@ -554,12 +661,30 @@ function parseVisioConnects(connectElements: Element[]): Map<string, { source?: 
   return result;
 }
 
-function visioCellNumber(shape: Element | undefined, name: string): number | undefined {
-  if (!shape) {
-    return undefined;
+type VisioCells = Map<string, string | null>;
+
+function readVisioCells(shape: Element | undefined, legacy: boolean): VisioCells {
+  const values: VisioCells = new Map();
+  if (!shape) return values;
+  // Keep the first matching Cell, including a missing V attribute, as before.
+  for (const element of Array.from(shape.getElementsByTagName('*'))) {
+    if (localName(element) !== 'cell') continue;
+    const name = element.getAttribute('N');
+    if (name != null && !values.has(name)) values.set(name, element.getAttribute('V'));
   }
-  const cell = Array.from(shape.getElementsByTagName('*')).find((element) => localName(element) === 'cell' && element.getAttribute('N') === name);
-  const parsed = Number(cell?.getAttribute('V'));
+  if (legacy) {
+    for (const section of Array.from(shape.children)) {
+      if (!['xform', 'xform1d', 'pageprops', 'fill', 'line'].includes(localName(section))) continue;
+      for (const property of Array.from(section.children)) {
+        if (!values.has(property.localName)) values.set(property.localName, property.textContent);
+      }
+    }
+  }
+  return values;
+}
+
+function visioCellNumber(cells: VisioCells, name: string): number | undefined {
+  const parsed = Number(cells.get(name));
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
@@ -568,18 +693,14 @@ function visioText(shape: Element): string {
   return text?.textContent ?? '';
 }
 
-function visioShapeStyle(shape: Element): string {
-  const fill = visioColor(visioCellValue(shape, 'FillForegnd'));
-  const stroke = visioColor(visioCellValue(shape, 'LineColor'));
+function visioShapeStyle(cells: VisioCells): string {
+  const fill = visioColor(cells.get('FillForegnd') ?? undefined);
+  const stroke = visioColor(cells.get('LineColor') ?? undefined);
   return [
     fill ? `fillColor=${fill}` : '',
     stroke ? `strokeColor=${stroke}` : '',
     'rounded=1'
   ].filter(Boolean).join(';');
-}
-
-function visioCellValue(shape: Element, name: string): string | undefined {
-  return Array.from(shape.getElementsByTagName('*')).find((element) => localName(element) === 'cell' && element.getAttribute('N') === name)?.getAttribute('V') ?? undefined;
 }
 
 function visioColor(value: string | undefined): string | undefined {
@@ -597,7 +718,7 @@ function visioColor(value: string | undefined): string | undefined {
   return undefined;
 }
 
-function parseDiagramPage(root: Element, index: number): DiagramPage {
+function parseDiagramPage(root: Element, index: number, context: DiagramParseContext): DiagramPage {
   const graphRoot = decodeDrawioDiagramRoot(root);
   const graphModel = localName(graphRoot) === 'mxgraphmodel'
     ? graphRoot
@@ -614,7 +735,7 @@ function parseDiagramPage(root: Element, index: number): DiagramPage {
     if (cell.getAttribute('vertex') === '1' && geometry) {
       nodes.push({
         id,
-        label: normalizeLabel(cell.getAttribute('value') ?? ''),
+        label: normalizeLabel(cell.getAttribute('value') ?? '', context),
         x: numberAttr(geometry, 'x'),
         y: numberAttr(geometry, 'y'),
         width: numberAttr(geometry, 'width', DEFAULT_NODE_WIDTH),
@@ -626,7 +747,7 @@ function parseDiagramPage(root: Element, index: number): DiagramPage {
     if (cell.getAttribute('edge') === '1') {
       edges.push({
         id,
-        label: normalizeLabel(cell.getAttribute('value') ?? ''),
+        label: normalizeLabel(cell.getAttribute('value') ?? '', context),
         source: cell.getAttribute('source') ?? undefined,
         target: cell.getAttribute('target') ?? undefined,
         points: geometry ? parseEdgePoints(geometry) : [],
@@ -905,12 +1026,13 @@ function localName(element: Element): string {
 }
 
 function numberAttr(element: Element, name: string, fallback = 0): number {
-  const parsed = Number(element.getAttribute(name));
+  const value = element.getAttribute(name);
+  const parsed = value === null ? NaN : Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function normalizeLabel(value: string): string {
-  return decodeXmlEntities(value.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+function normalizeLabel(value: string, context: DiagramParseContext): string {
+  return decodeXmlEntities(value.replace(/<[^>]+>/g, ' '), context).replace(/\s+/g, ' ').trim();
 }
 
 type DrawioStyle = Record<string, string>;
@@ -931,8 +1053,13 @@ function parseDrawioStyle(style: string | undefined): DrawioStyle {
   return result;
 }
 
-function decodeXmlEntities(value: string): string {
-  const textarea = document.createElement('textarea');
+function decodeXmlEntities(value: string, context: DiagramParseContext): string {
+  if (!value.includes('&') && !value.includes('\0')) return value;
+  // Common XML entities need one decoding pass; let the browser handle other HTML references.
+  if (!value.includes('\0') && !/&(?!amp;|lt;|gt;|quot;|apos;)/.test(value)) {
+    return value.replace(/&(amp|lt|gt|quot|apos);/g, (_match, name: string) => XML_ENTITIES[name]!);
+  }
+  const textarea = context.labelDecoder ??= document.createElement('textarea');
   textarea.innerHTML = value;
   return textarea.value;
 }
@@ -942,11 +1069,13 @@ function shortenText(text: string): string {
 }
 
 async function sourceToText(source: PreviewSource, context: PreviewLoadContext): Promise<string> {
+  checkAborted(context.signal);
   if (typeof source === 'string') {
     if (source.trimStart().toLowerCase().startsWith('data:')) {
       return readDataUrl(source);
     }
     const response = await fetch(source, { signal: context.signal });
+    checkAborted(context.signal);
     if (!response.ok) {
       throw new Error(`Failed to load diagram source: ${response.status} ${response.statusText}`.trim());
     }
@@ -965,11 +1094,13 @@ async function sourceToText(source: PreviewSource, context: PreviewLoadContext):
 }
 
 async function sourceToArrayBuffer(source: PreviewSource, context: PreviewLoadContext): Promise<ArrayBuffer> {
+  checkAborted(context.signal);
   if (typeof source === 'string') {
     if (source.trimStart().toLowerCase().startsWith('data:')) {
       return bytesToArrayBuffer(readDataUrlBytes(source));
     }
     const response = await fetch(source, { signal: context.signal });
+    checkAborted(context.signal);
     if (!response.ok) {
       throw new Error(`Failed to load diagram source: ${response.status} ${response.statusText}`.trim());
     }
@@ -987,6 +1118,10 @@ async function sourceToArrayBuffer(source: PreviewSource, context: PreviewLoadCo
     return source;
   }
   return bytesToArrayBuffer(new TextEncoder().encode(String(source)));
+}
+
+function checkAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
 }
 
 function readDataUrl(source: string): string {

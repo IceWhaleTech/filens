@@ -1,0 +1,51 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "a6e4863f309af2164e401c0dede740bfda5c21048e2d51f99efced6a5e3f4e6f",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "iterations": 7,
+  "runs": 42,
+  "method": "Complete KMZ model loading plus explicit referenced-image decode. One used 8x8 texture, 0/8/32 unused valid PNG images; targets selective archive decompression. Original exported sync path is the original preview fast path for these root-doc.kml inputs. Excludes input/module transfer, GPU/paint and peak memory. 10,000 paired bootstrap median-ratio resamples, seed 12345, only for baseline medians above 10 ms. Same-project engineering comparison; no peer/SOTA ranking.",
+  "samples": [
+    {
+      "sample": "generated-0-unused-images.kmz",
+      "bytes": 1755,
+      "unusedImages": 0,
+      "unusedDecodedBytes": 0,
+      "currentMs": 4.5,
+      "baselineMs": 5.100000023841858,
+      "below10MsControl": true,
+      "completeGeometryMaterialsDecodedPixelsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-8-unused-images.kmz",
+      "bytes": 28719233,
+      "unusedImages": 8,
+      "unusedDecodedBytes": 28707624,
+      "currentMs": 4.5,
+      "baselineMs": 8.799999952316284,
+      "below10MsControl": true,
+      "completeGeometryMaterialsDecodedPixelsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-32-unused-images.kmz",
+      "bytes": 114871405,
+      "unusedImages": 32,
+      "unusedDecodedBytes": 114830496,
+      "currentMs": 5,
+      "baselineMs": 25.100000023841858,
+      "below10MsControl": false,
+      "completeGeometryMaterialsDecodedPixelsMatch": true,
+      "scopedSota": false,
+      "ratio": 5.020000004768372,
+      "ratio95PercentBootstrapInterval": [
+        3.8076923508968585,
+        5.6170213570040035
+      ],
+      "stableEngineeringReduction": true
+    }
+  ]
+}

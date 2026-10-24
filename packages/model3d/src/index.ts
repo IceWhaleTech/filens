@@ -15,6 +15,7 @@ export {
   loadFbxObjectWithWarnings,
   loadGCodeObject,
   loadKmzObject,
+  loadKmzObjectWithWarnings,
   loadLDrawObject,
   loadLDrawObjectWithWarnings,
   loadLwoObject,
@@ -45,6 +46,8 @@ export {
   listObjMaterialLibraries,
   type ModelGeometry,
   type ModelGeometryLoadResult,
+  type ModelLoadOptions,
   type ModelObjectLoadResult,
+  type LoadKmzObjectOptions,
   type StlGeometry
 } from './preview-driver';

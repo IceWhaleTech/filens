@@ -1,0 +1,308 @@
+diff --git a/packages/diagram/src/preview-driver.ts b/packages/diagram/src/preview-driver.ts
+index 40958d0..158d05b 100644
+--- a/packages/diagram/src/preview-driver.ts
++++ b/packages/diagram/src/preview-driver.ts
+@@ -70,6 +70,7 @@ const DEFAULT_FILL = '#ffffff';
+ const DEFAULT_STROKE = '#9db3d1';
+ const DEFAULT_TEXT = '#1f2937';
+ const DEFAULT_EDGE = '#6b7f99';
++const XML_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+ 
+ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState> {
+   private readonly listeners: PreviewListenerMap = {
+@@ -212,7 +213,7 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
+   }
+ 
+   goToPage(index: number): void {
+-    if (!this.document) {
++    if (!this.document || !Number.isInteger(index)) {
+       return;
+     }
+     const nextIndex = Math.max(0, Math.min(index, this.document.pages.length - 1));
+@@ -223,6 +224,8 @@ export class DiagramPreviewSession implements PreviewSession<DiagramPreviewState
+     this.selectedElementId = undefined;
+     this.state.pageIndex = this.pageIndex;
+     this.state.selectedElementId = undefined;
++    this.root.scrollTop = 0;
++    this.root.scrollLeft = 0;
+     this.render();
+     this.emit('statechange', this.state);
+   }
+@@ -316,10 +319,11 @@ export function loadDrawioDiagram(source: string): DiagramDocument {
+     throw new Error('draw.io XML is invalid.');
+   }
+ 
++  const context: DiagramParseContext = {};
+   const diagramElements = Array.from(document.getElementsByTagName('*')).filter((element) => localName(element) === 'diagram');
+   const pages = diagramElements.length
+-    ? diagramElements.map((diagram, index) => parseDiagramPage(diagram, index))
+-    : [parseDiagramPage(document.documentElement, 0)];
++    ? diagramElements.map((diagram, index) => parseDiagramPage(diagram, index, context))
++    : [parseDiagramPage(document.documentElement, 0, context)];
+   if (!pages.some((page) => page.nodes.length || page.edges.length)) {
+     throw new Error('draw.io file does not contain supported mxCell geometry.');
+   }
+@@ -337,10 +341,11 @@ export async function loadVsdxDiagram(source: ArrayBuffer): Promise<DiagramDocum
+   }
+ 
+   const pages: DiagramPage[] = [];
++  const context: DiagramParseContext = {};
+   for (let index = 0; index < pageEntries.length; index += 1) {
+     const entry = pageEntries[index]!;
+     const xml = await entry.file.async('text');
+-    const page = parseVisioPage(xml, index, entry.metadata);
++    const page = parseVisioPage(xml, index, context, entry.metadata);
+     if (page.nodes.length || page.edges.length) {
+       pages.push(page);
+     }
+@@ -435,10 +440,11 @@ export function loadVdxDiagram(source: string): DiagramDocument {
+     throw new Error('VDX XML is invalid.');
+   }
+ 
++  const context: DiagramParseContext = { legacy: true };
+   const pageElements = Array.from(document.getElementsByTagName('*')).filter((element) => localName(element) === 'page');
+   const pages = pageElements.length
+-    ? pageElements.map((page, index) => parseVisioPageElement(page, index))
+-    : [parseVisioPageElement(document.documentElement, 0)];
++    ? pageElements.map((page, index) => parseVisioPageElement(page, index, context))
++    : [parseVisioPageElement(document.documentElement, 0, context)];
+   if (!pages.some((page) => page.nodes.length || page.edges.length)) {
+     throw new Error('VDX file does not contain supported shape geometry.');
+   }
+@@ -448,19 +454,30 @@ export function loadVdxDiagram(source: string): DiagramDocument {
+   };
+ }
+ 
+-function parseVisioPage(source: string, index: number, metadata?: { id?: string; name?: string }): DiagramPage {
++interface DiagramParseContext {
++  legacy?: boolean;
++  labelDecoder?: HTMLTextAreaElement;
++}
++
++function parseVisioPage(source: string, index: number, context: DiagramParseContext, metadata?: { id?: string; name?: string }): DiagramPage {
+   const document = new DOMParser().parseFromString(source, 'application/xml');
+   if (document.getElementsByTagName('parsererror')[0]) {
+     throw new Error('Visio page XML is invalid.');
+   }
+-  return parseVisioPageElement(document.documentElement, index, metadata);
++  return parseVisioPageElement(document.documentElement, index, context, metadata);
+ }
+ 
+-function parseVisioPageElement(root: Element, index: number, metadata?: { id?: string; name?: string }): DiagramPage {
+-  const pageSheet = Array.from(root.getElementsByTagName('*')).find((element) => localName(element) === 'pagesheet');
+-  const pageHeight = (visioCellNumber(pageSheet, 'PageHeight') ?? 8.5) * VISIO_UNIT_SCALE;
+-  const shapeElements = Array.from(root.getElementsByTagName('*')).filter((element) => localName(element) === 'shape');
+-  const connectElements = Array.from(root.getElementsByTagName('*')).filter((element) => localName(element) === 'connect');
++function parseVisioPageElement(root: Element, index: number, context: DiagramParseContext, metadata?: { id?: string; name?: string }): DiagramPage {
++  let pageSheet: Element | undefined;
++  const shapeElements: Element[] = [];
++  const connectElements: Element[] = [];
++  for (const element of Array.from(root.getElementsByTagName('*'))) {
++    const name = localName(element);
++    if (name === 'pagesheet' && !pageSheet) pageSheet = element;
++    else if (name === 'shape') shapeElements.push(element);
++    else if (name === 'connect') connectElements.push(element);
++  }
++  const pageHeight = (visioCellNumber(readVisioCells(pageSheet, !!context.legacy), 'PageHeight') ?? 8.5) * VISIO_UNIT_SCALE;
+   const connects = parseVisioConnects(connectElements);
+   const nodes: DiagramNode[] = [];
+   const edges: DiagramEdge[] = [];
+@@ -468,20 +485,22 @@ function parseVisioPageElement(root: Element, index: number, metadata?: { id?: s
+   for (const shape of shapeElements) {
+     const id = shape.getAttribute('ID') ?? `shape-${nodes.length + edges.length + 1}`;
+     const kind = shape.getAttribute('Type') ?? '';
+-    const beginX = visioCellNumber(shape, 'BeginX');
+-    const endX = visioCellNumber(shape, 'EndX');
+-    const label = normalizeLabel(visioText(shape));
+-    if (kind === 'Shape' && beginX == null && endX == null) {
+-      const node = parseVisioNode(shape, id, label, pageHeight);
++    const cells = readVisioCells(shape, !!context.legacy);
++    const beginX = visioCellNumber(cells, 'BeginX');
++    const endX = visioCellNumber(cells, 'EndX');
++    const connection = connects.get(id);
++    const label = normalizeLabel(visioText(shape), context);
++    if (kind === 'Shape' && beginX == null && endX == null && !connection?.source && !connection?.target) {
++      const node = parseVisioNode(cells, id, label, pageHeight);
+       if (node.width > 0 && node.height > 0) {
+         nodes.push(node);
+       }
+       continue;
+     }
+-    if (kind === 'Shape' || kind === 'Foreign' || kind === 'Group') {
++    if (kind === 'Foreign' || kind === 'Group') {
+       continue;
+     }
+-    const edge = parseVisioEdge(shape, id, label, pageHeight, connects.get(id));
++    const edge = parseVisioEdge(cells, id, label, pageHeight, connection);
+     if (edge.points.length || edge.source || edge.target) {
+       edges.push(edge);
+     }
+@@ -495,11 +514,11 @@ function parseVisioPageElement(root: Element, index: number, metadata?: { id?: s
+   };
+ }
+ 
+-function parseVisioNode(shape: Element, id: string, label: string, pageHeight: number): DiagramNode {
+-  const pinX = (visioCellNumber(shape, 'PinX') ?? 0) * VISIO_UNIT_SCALE;
+-  const pinY = (visioCellNumber(shape, 'PinY') ?? 0) * VISIO_UNIT_SCALE;
+-  const width = Math.max(1, (visioCellNumber(shape, 'Width') ?? 1) * VISIO_UNIT_SCALE);
+-  const height = Math.max(1, (visioCellNumber(shape, 'Height') ?? 0.5) * VISIO_UNIT_SCALE);
++function parseVisioNode(cells: VisioCells, id: string, label: string, pageHeight: number): DiagramNode {
++  const pinX = (visioCellNumber(cells, 'PinX') ?? 0) * VISIO_UNIT_SCALE;
++  const pinY = (visioCellNumber(cells, 'PinY') ?? 0) * VISIO_UNIT_SCALE;
++  const width = Math.max(1, (visioCellNumber(cells, 'Width') ?? 1) * VISIO_UNIT_SCALE);
++  const height = Math.max(1, (visioCellNumber(cells, 'Height') ?? 0.5) * VISIO_UNIT_SCALE);
+   return {
+     id,
+     label,
+@@ -507,23 +526,23 @@ function parseVisioNode(shape: Element, id: string, label: string, pageHeight: n
+     y: pageHeight - pinY - height / 2,
+     width,
+     height,
+-    style: visioShapeStyle(shape)
++    style: visioShapeStyle(cells)
+   };
+ }
+ 
+ function parseVisioEdge(
+-  shape: Element,
++  cells: VisioCells,
+   id: string,
+   label: string,
+   pageHeight: number,
+   connects: { source?: string; target?: string } = {}
+ ): DiagramEdge {
+-  const pinX = visioCellNumber(shape, 'PinX') ?? 0;
+-  const pinY = visioCellNumber(shape, 'PinY') ?? 0;
+-  const beginX = (visioCellNumber(shape, 'BeginX') ?? pinX) * VISIO_UNIT_SCALE;
+-  const beginY = pageHeight - (visioCellNumber(shape, 'BeginY') ?? pinY) * VISIO_UNIT_SCALE;
+-  const endX = (visioCellNumber(shape, 'EndX') ?? pinX) * VISIO_UNIT_SCALE;
+-  const endY = pageHeight - (visioCellNumber(shape, 'EndY') ?? pinY) * VISIO_UNIT_SCALE;
++  const pinX = visioCellNumber(cells, 'PinX') ?? 0;
++  const pinY = visioCellNumber(cells, 'PinY') ?? 0;
++  const beginX = (visioCellNumber(cells, 'BeginX') ?? pinX) * VISIO_UNIT_SCALE;
++  const beginY = pageHeight - (visioCellNumber(cells, 'BeginY') ?? pinY) * VISIO_UNIT_SCALE;
++  const endX = (visioCellNumber(cells, 'EndX') ?? pinX) * VISIO_UNIT_SCALE;
++  const endY = pageHeight - (visioCellNumber(cells, 'EndY') ?? pinY) * VISIO_UNIT_SCALE;
+   return {
+     id,
+     label,
+@@ -554,12 +573,30 @@ function parseVisioConnects(connectElements: Element[]): Map<string, { source?:
+   return result;
+ }
+ 
+-function visioCellNumber(shape: Element | undefined, name: string): number | undefined {
+-  if (!shape) {
+-    return undefined;
++type VisioCells = Map<string, string | null>;
++
++function readVisioCells(shape: Element | undefined, legacy: boolean): VisioCells {
++  const values: VisioCells = new Map();
++  if (!shape) return values;
++  // Keep the first matching Cell, including a missing V attribute, as before.
++  for (const element of Array.from(shape.getElementsByTagName('*'))) {
++    if (localName(element) !== 'cell') continue;
++    const name = element.getAttribute('N');
++    if (name != null && !values.has(name)) values.set(name, element.getAttribute('V'));
++  }
++  if (legacy) {
++    for (const section of Array.from(shape.children)) {
++      if (!['xform', 'xform1d', 'pageprops', 'fill', 'line'].includes(localName(section))) continue;
++      for (const property of Array.from(section.children)) {
++        if (!values.has(property.localName)) values.set(property.localName, property.textContent);
++      }
++    }
+   }
+-  const cell = Array.from(shape.getElementsByTagName('*')).find((element) => localName(element) === 'cell' && element.getAttribute('N') === name);
+-  const parsed = Number(cell?.getAttribute('V'));
++  return values;
++}
++
++function visioCellNumber(cells: VisioCells, name: string): number | undefined {
++  const parsed = Number(cells.get(name));
+   return Number.isFinite(parsed) ? parsed : undefined;
+ }
+ 
+@@ -568,9 +605,9 @@ function visioText(shape: Element): string {
+   return text?.textContent ?? '';
+ }
+ 
+-function visioShapeStyle(shape: Element): string {
+-  const fill = visioColor(visioCellValue(shape, 'FillForegnd'));
+-  const stroke = visioColor(visioCellValue(shape, 'LineColor'));
++function visioShapeStyle(cells: VisioCells): string {
++  const fill = visioColor(cells.get('FillForegnd') ?? undefined);
++  const stroke = visioColor(cells.get('LineColor') ?? undefined);
+   return [
+     fill ? `fillColor=${fill}` : '',
+     stroke ? `strokeColor=${stroke}` : '',
+@@ -578,10 +615,6 @@ function visioShapeStyle(shape: Element): string {
+   ].filter(Boolean).join(';');
+ }
+ 
+-function visioCellValue(shape: Element, name: string): string | undefined {
+-  return Array.from(shape.getElementsByTagName('*')).find((element) => localName(element) === 'cell' && element.getAttribute('N') === name)?.getAttribute('V') ?? undefined;
+-}
+-
+ function visioColor(value: string | undefined): string | undefined {
+   if (!value || value === 'THEMEGUARD(RGB(255,255,255))') {
+     return undefined;
+@@ -597,7 +630,7 @@ function visioColor(value: string | undefined): string | undefined {
+   return undefined;
+ }
+ 
+-function parseDiagramPage(root: Element, index: number): DiagramPage {
++function parseDiagramPage(root: Element, index: number, context: DiagramParseContext): DiagramPage {
+   const graphRoot = decodeDrawioDiagramRoot(root);
+   const graphModel = localName(graphRoot) === 'mxgraphmodel'
+     ? graphRoot
+@@ -614,7 +647,7 @@ function parseDiagramPage(root: Element, index: number): DiagramPage {
+     if (cell.getAttribute('vertex') === '1' && geometry) {
+       nodes.push({
+         id,
+-        label: normalizeLabel(cell.getAttribute('value') ?? ''),
++        label: normalizeLabel(cell.getAttribute('value') ?? '', context),
+         x: numberAttr(geometry, 'x'),
+         y: numberAttr(geometry, 'y'),
+         width: numberAttr(geometry, 'width', DEFAULT_NODE_WIDTH),
+@@ -626,7 +659,7 @@ function parseDiagramPage(root: Element, index: number): DiagramPage {
+     if (cell.getAttribute('edge') === '1') {
+       edges.push({
+         id,
+-        label: normalizeLabel(cell.getAttribute('value') ?? ''),
++        label: normalizeLabel(cell.getAttribute('value') ?? '', context),
+         source: cell.getAttribute('source') ?? undefined,
+         target: cell.getAttribute('target') ?? undefined,
+         points: geometry ? parseEdgePoints(geometry) : [],
+@@ -905,12 +938,13 @@ function localName(element: Element): string {
+ }
+ 
+ function numberAttr(element: Element, name: string, fallback = 0): number {
+-  const parsed = Number(element.getAttribute(name));
++  const value = element.getAttribute(name);
++  const parsed = value === null ? NaN : Number(value);
+   return Number.isFinite(parsed) ? parsed : fallback;
+ }
+ 
+-function normalizeLabel(value: string): string {
+-  return decodeXmlEntities(value.replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
++function normalizeLabel(value: string, context: DiagramParseContext): string {
++  return decodeXmlEntities(value.replace(/<[^>]+>/g, ' '), context).replace(/\s+/g, ' ').trim();
+ }
+ 
+ type DrawioStyle = Record<string, string>;
+@@ -931,8 +965,13 @@ function parseDrawioStyle(style: string | undefined): DrawioStyle {
+   return result;
+ }
+ 
+-function decodeXmlEntities(value: string): string {
+-  const textarea = document.createElement('textarea');
++function decodeXmlEntities(value: string, context: DiagramParseContext): string {
++  if (!value.includes('&') && !value.includes('\0')) return value;
++  // Common XML entities need one decoding pass; let the browser handle other HTML references.
++  if (!value.includes('\0') && !/&(?!amp;|lt;|gt;|quot;|apos;)/.test(value)) {
++    return value.replace(/&(amp|lt|gt|quot|apos);/g, (_match, name: string) => XML_ENTITIES[name]!);
++  }
++  const textarea = context.labelDecoder ??= document.createElement('textarea');
+   textarea.innerHTML = value;
+   return textarea.value;
+ }

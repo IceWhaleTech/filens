@@ -1,5 +1,6 @@
 import {
   createDefaultPreviewRoutes,
+  openZipArchive,
   type FormatDefinition,
   type Model3dPreviewNode,
   type Model3dPreviewState,
@@ -12,7 +13,6 @@ import {
   type PreviewEventName,
   type PreviewLoadContext,
   type PreviewOptions,
-  type PreviewResourceResolveResult,
   type PreviewResourceResolver,
   type PreviewSnapshotBackground,
   type PreviewSession,
@@ -50,6 +50,8 @@ import {
   SkinnedMesh,
   Scene,
   SkeletonHelper,
+  type Skeleton,
+  type Texture,
   Vector2,
   Vector3,
   WebGLRenderer,
@@ -61,8 +63,8 @@ import { ColladaLoader } from 'three/examples/jsm/loaders/ColladaLoader.js';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
 import { GCodeLoader } from 'three/examples/jsm/loaders/GCodeLoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { KMZLoader } from 'three/examples/jsm/loaders/KMZLoader.js';
-import { LDrawLoader } from 'three/examples/jsm/loaders/LDrawLoader.js';
+import { strFromU8, unzipSync } from 'three/examples/jsm/libs/fflate.module.js';
+import { LDrawLoader } from '../vendor/three/LDrawLoader.js';
 import { LWOLoader } from 'three/examples/jsm/loaders/LWOLoader.js';
 import { MD2Loader } from 'three/examples/jsm/loaders/MD2Loader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
@@ -116,6 +118,10 @@ export interface ModelObjectLoadResult {
 export interface ModelGeometryLoadResult {
   geometry: ModelGeometry;
   warnings: string[];
+}
+
+export interface ModelLoadOptions {
+  signal?: AbortSignal;
 }
 
 interface Model3dPreviewMetadata {
@@ -353,6 +359,8 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
   private displayMode: PreviewDisplayMode = 'solid-edge';
   private snapshotBackground: PreviewSnapshotBackground = 'scene';
   private state: Model3dPreviewRuntimeState;
+  private loadController: AbortController | null = null;
+  private interactionController: AbortController | null = null;
 
   constructor(private readonly host: HTMLElement, private readonly options: PreviewOptions = {}) {
     const initialScale = this.options.initialScale ?? 1;
@@ -405,6 +413,21 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
+    this.stopLoad();
+    const controller = new AbortController();
+    this.loadController = controller;
+    const signal = controller.signal;
+    const abort = () => controller.abort();
+    signal.addEventListener('abort', () => {
+      context.signal?.removeEventListener('abort', abort);
+      if (this.loadController === controller) {
+        this.loadController = null;
+        this.disposeScene();
+        this.state.loading = false;
+        this.emit('statechange', this.state);
+      }
+    }, { once: true });
+    context.signal?.addEventListener('abort', abort, { once: true });
     this.state = {
       ...this.state,
       loading: true,
@@ -434,16 +457,18 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
     this.emit('statechange', this.state);
 
     try {
+      if (context.signal?.aborted) controller.abort();
+      checkModelLoadAborted(signal);
       const format = normalizeFormat(context.route?.sourceFormat ?? context.descriptor.extension);
       if (!MODEL3D_DIRECT_FORMATS.has(format)) {
         throw new Error(`3D preview currently supports browser-WASM STEP/STP plus browser-native STL, OBJ, PLY, glTF, GLB, 3MF, AMF, DAE, FBX, 3DS, USDA-backed USDZ, G-code, VRML, PCD, XYZ, VTK, VOX, LDraw, KMZ, MD2, LWO, BVH, PDB, NRRD, and NHDR files, got ${format || 'unknown'}.`);
       }
 
-      this.disposeScene();
-      const buffer = await sourceToArrayBuffer(source, context);
+      const buffer = await previewSourceToArrayBuffer(source, signal);
+      checkModelLoadAborted(signal);
       if (format === 'step' || format === 'stp') {
-        const object = await loadStepObject(buffer);
-        this.createObjectScene(object);
+        const object = await loadStepObject(buffer, { signal });
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -462,13 +487,13 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
               resourcePath: gltfResourcePathForSource(source),
               resourceResolver: this.options.resourceResolver,
               sourceFormat: format,
-              signal: context.signal
+              signal
             })
           : {
-              object: await loadGlbObject(buffer),
+              object: await loadGlbObject(buffer, { signal }),
               warnings: []
             };
-        this.createObjectScene(result.object);
+        this.createObjectScene(result.object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -493,15 +518,15 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
             resourceBasePath: context.descriptor.name,
             resourceResolver: this.options.resourceResolver,
             sourceFormat: format,
-            signal: context.signal
+            signal
           });
           warnings = result.warnings;
           metadata = collectObjectPreviewMetadata(result.object, format);
-          this.createObjectScene(result.object);
+          this.createObjectScene(result.object, signal);
         } else {
           const geometry = loadObjGeometry(text);
           metadata = collectGeometryPreviewMetadata(geometry, format);
-          this.createScene(geometry);
+          this.createScene(geometry, signal);
         }
         this.state = {
           ...this.state,
@@ -520,7 +545,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       }
       if (format === 'amf') {
         const object = loadAmfObject(buffer);
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -539,9 +564,9 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
           resourcePath: colladaResourcePathForSource(source),
           resourceResolver: this.options.resourceResolver,
           sourceFormat: format,
-          signal: context.signal
+          signal
         });
-        this.createObjectScene(result.object);
+        this.createObjectScene(result.object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -563,9 +588,9 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
           resourcePath: modelResourcePathForSource(source),
           resourceResolver: this.options.resourceResolver,
           sourceFormat: format,
-          signal: context.signal
+          signal
         });
-        this.createObjectScene(result.object);
+        this.createObjectScene(result.object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -587,9 +612,9 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
           resourcePath: modelResourcePathForSource(source),
           resourceResolver: this.options.resourceResolver,
           sourceFormat: format,
-          signal: context.signal
+          signal
         });
-        this.createObjectScene(result.object);
+        this.createObjectScene(result.object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -607,7 +632,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       }
       if (format === 'usdz') {
         const object = await loadUsdzObject(buffer);
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -622,7 +647,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       }
       if (format === 'gcode' || format === 'gco' || format === 'nc') {
         const object = loadGCodeObject(new TextDecoder().decode(buffer));
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -641,9 +666,9 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
           resourcePath: modelResourcePathForSource(source),
           resourceResolver: this.options.resourceResolver,
           sourceFormat: format,
-          signal: context.signal
+          signal
         });
-        this.createObjectScene(result.object);
+        this.createObjectScene(result.object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -661,7 +686,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       }
       if (format === 'pcd') {
         const object = loadPcdObject(buffer);
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -676,7 +701,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       }
       if (format === 'xyz') {
         const object = loadXyzObject(new TextDecoder().decode(buffer));
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -691,7 +716,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       }
       if (format === 'vtk') {
         const object = loadVtkObject(buffer);
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -706,7 +731,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       }
       if (format === 'vox') {
         const object = loadVoxObject(buffer);
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -724,9 +749,9 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
           resourceBasePath: context.descriptor.name,
           resourceResolver: this.options.resourceResolver,
           sourceFormat: format,
-          signal: context.signal
+          signal
         });
-        this.createObjectScene(result.object);
+        this.createObjectScene(result.object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -743,8 +768,8 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
         return;
       }
       if (format === 'kmz') {
-        const result = await loadKmzObjectWithWarnings(buffer);
-        this.createObjectScene(result.object);
+        const result = await loadKmzObjectWithWarnings(buffer, { signal });
+        this.createObjectScene(result.object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -762,7 +787,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       }
       if (format === 'md2') {
         const object = loadMd2Object(buffer);
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -782,9 +807,9 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
           modelName: modelNameForSource(context.descriptor.name),
           resourceResolver: this.options.resourceResolver,
           sourceFormat: format,
-          signal: context.signal
+          signal
         });
-        this.createObjectScene(result.object);
+        this.createObjectScene(result.object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -802,7 +827,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       }
       if (format === 'bvh') {
         const object = loadBvhObject(new TextDecoder().decode(buffer));
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -817,7 +842,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       }
       if (format === 'pdb') {
         const object = loadPdbObject(new TextDecoder().decode(buffer));
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -836,11 +861,12 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
               resourceBasePath: context.descriptor.name,
               resourceResolver: this.options.resourceResolver,
               sourceFormat: format,
-              signal: context.signal
+              signal
             })
           : buffer;
+        checkModelLoadAborted(signal);
         const object = loadNrrdObject(nrrdBuffer);
-        this.createObjectScene(object);
+        this.createObjectScene(object, signal);
         this.state = {
           ...this.state,
           loading: false,
@@ -854,13 +880,13 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
         return;
       }
       const result = format === '3mf'
-        ? await load3mfGeometryWithWarnings(buffer)
+        ? await load3mfGeometryWithWarnings(buffer, { signal })
         : {
             geometry: format === 'ply' ? loadPlyGeometry(buffer) : loadStlGeometry(buffer),
             warnings: []
           };
       const geometry = result.geometry;
-      this.createScene(geometry);
+      this.createScene(geometry, signal);
       this.state = {
         ...this.state,
         loading: false,
@@ -875,6 +901,11 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       this.emit('rendered', this.state);
       this.emit('statechange', this.state);
     } catch (error) {
+      if (signal.aborted) {
+        if (context.signal?.aborted) checkModelLoadAborted(signal);
+        return;
+      }
+      this.stopLoad();
       const normalizedError = error instanceof Error ? error : new Error(String(error));
       this.state.loading = false;
       this.state.error = normalizedError.message;
@@ -885,12 +916,21 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
   }
 
   destroy(): void {
-    this.disposeScene();
+    this.stopLoad();
+    this.state.loading = false;
     this.stage.replaceChildren();
     this.root.replaceChildren();
     if (this.root.parentElement === this.host) {
       this.host.replaceChildren();
     }
+    for (const listeners of Object.values(this.listeners)) listeners.clear();
+  }
+
+  private stopLoad(): void {
+    const controller = this.loadController;
+    this.loadController = null;
+    controller?.abort();
+    this.disposeScene();
   }
 
   getState(): Model3dPreviewState {
@@ -1290,12 +1330,14 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
     await this.root.requestFullscreen?.();
   }
 
-  private createScene(model: ModelGeometry): void {
+  private createScene(model: ModelGeometry, signal: AbortSignal): void {
+    checkModelLoadAborted(signal);
     const renderer = createRendererOrFallback({
       antialias: true,
       alpha: false,
       preserveDrawingBuffer: true
     });
+    this.renderer = renderer;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setClearColor(0x111827, 1);
     renderer.localClippingEnabled = true;
@@ -1307,7 +1349,11 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
     scene.background = new Color(0x111827);
     const camera = this.createCamera();
     const modelGroup = new Group();
+    this.modelGroup = modelGroup;
+    this.scene = scene;
+    this.camera = camera;
     const geometry = new BufferGeometry();
+    this.geometry = geometry;
     geometry.setAttribute('position', new BufferAttribute(model.positions, 3));
     geometry.setAttribute('normal', new BufferAttribute(model.normals, 3));
     if (model.colors) {
@@ -1330,6 +1376,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       metalness: 0.08,
       vertexColors: Boolean(model.colors)
     });
+    this.material = material;
     const mesh = new Mesh(geometry, material);
     modelGroup.add(mesh);
 
@@ -1339,6 +1386,8 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       transparent: true,
       opacity: 0.22
     });
+    this.edgeGeometry = edgeGeometry;
+    this.edgeMaterial = edgeMaterial;
     const edges = new LineSegments(edgeGeometry, edgeMaterial);
     const previewEdges = edges as Model3dObjectNode;
     previewEdges.userData.previewEdgeHelper = true;
@@ -1399,12 +1448,17 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
     this.startAnimation();
   }
 
-  private createObjectScene(object: Object3D): void {
+  private createObjectScene(object: Object3D, signal: AbortSignal): void {
+    if (signal.aborted) {
+      disposeModelResources(object);
+      checkModelLoadAborted(signal);
+    }
     const renderer = createRendererOrFallback({
       antialias: true,
       alpha: false,
       preserveDrawingBuffer: true
     });
+    this.renderer = renderer;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setClearColor(0x111827, 1);
     renderer.localClippingEnabled = true;
@@ -1416,6 +1470,9 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
     scene.background = new Color(0x111827);
     const camera = this.createCamera();
     const modelGroup = new Group();
+    this.modelGroup = modelGroup;
+    this.scene = scene;
+    this.camera = camera;
     modelGroup.add(object);
     scene.add(new AmbientLight(0xffffff, 0.62));
     const key = new DirectionalLight(0xffffff, 1.45);
@@ -1480,6 +1537,9 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
   }
 
   private bindInteractions(canvas: HTMLCanvasElement): void {
+    this.interactionController?.abort();
+    this.interactionController = new AbortController();
+    const signal = this.interactionController.signal;
     canvas.addEventListener('pointerdown', (event) => {
       this.pointerDown = true;
       this.pointerStartX = event.clientX;
@@ -1487,7 +1547,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       this.pointerStartYaw = this.yaw;
       this.pointerStartPitch = this.pitch;
       canvas.setPointerCapture(event.pointerId);
-    });
+    }, { signal });
     canvas.addEventListener('pointermove', (event) => {
       if ((this.state.measurement?.active ?? false) && !this.pointerDown) {
         this.measurementHoverClientX = event.clientX;
@@ -1500,7 +1560,7 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
       this.yaw = this.pointerStartYaw + (event.clientX - this.pointerStartX) * 0.35;
       this.pitch = clamp(this.pointerStartPitch + (event.clientY - this.pointerStartY) * 0.25, -80, 80);
       this.updateCamera();
-    });
+    }, { signal });
     canvas.addEventListener('pointerup', (event) => {
       const moved = Math.hypot(event.clientX - this.pointerStartX, event.clientY - this.pointerStartY);
       this.pointerDown = false;
@@ -1508,19 +1568,19 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
         this.pickMeasurementPoint(event.clientX, event.clientY);
       }
       canvas.releasePointerCapture(event.pointerId);
-    });
+    }, { signal });
     canvas.addEventListener('pointercancel', () => {
       this.pointerDown = false;
-    });
+    }, { signal });
     canvas.addEventListener('pointerleave', () => {
       this.measurementHoverClientX = null;
       this.measurementHoverClientY = null;
       this.clearMeasurementHover();
-    });
+    }, { signal });
     canvas.addEventListener('wheel', (event) => {
       event.preventDefault();
       this.setScale(this.state.scale + (event.deltaY > 0 ? -0.08 : 0.08));
-    }, { passive: false });
+    }, { passive: false, signal });
   }
 
   private observeResize(): void {
@@ -1567,9 +1627,6 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
   private renderFrame(): void {
     if (!this.renderer || !this.scene || !this.camera || !this.modelGroup) {
       return;
-    }
-    if (!(this.state.measurement?.active ?? false) && !(this.state.section?.active ?? false)) {
-      this.modelGroup.rotation.y += 0.002;
     }
     this.updateSectionPlanes();
     this.renderer.render(this.scene, this.camera);
@@ -2559,25 +2616,12 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     window.removeEventListener('resize', this.resize);
-    this.disposeObjectResources();
-    this.geometry?.dispose();
-    this.edgeGeometry?.dispose();
-    this.material?.dispose();
-    this.edgeMaterial?.dispose();
-    this.measurementLineGeometry?.dispose();
-    this.measurementLineMaterial?.dispose();
-    this.measurementPointsGeometry?.dispose();
-    this.measurementPointsMaterial?.dispose();
-    this.sectionPlaneHelperGeometry?.dispose();
-    this.sectionPlaneHelperMaterial?.dispose();
-    this.sectionPlaneOutlineGeometry?.dispose();
-    this.sectionPlaneOutlineMaterial?.dispose();
-    this.sectionPlaneFillGeometry?.dispose();
-    this.sectionPlaneFillMaterial?.dispose();
-    this.sectionBoxFillGeometry?.dispose();
-    this.sectionBoxFillMaterial?.dispose();
-    this.sectionBoxHelperGeometry?.dispose();
-    this.sectionBoxHelperMaterial?.dispose();
+    this.interactionController?.abort();
+    this.interactionController = null;
+    this.pointerDown = false;
+    disposeModelResources(this.modelGroup,
+      [this.geometry, this.edgeGeometry, this.measurementLineGeometry, this.measurementPointsGeometry, this.sectionPlaneHelperGeometry, this.sectionPlaneOutlineGeometry, this.sectionPlaneFillGeometry, this.sectionBoxFillGeometry, this.sectionBoxHelperGeometry],
+      [this.material, this.edgeMaterial, this.measurementLineMaterial, this.measurementPointsMaterial, this.sectionPlaneHelperMaterial, this.sectionPlaneOutlineMaterial, this.sectionPlaneFillMaterial, this.sectionBoxFillMaterial, this.sectionBoxHelperMaterial]);
     if (this.renderer) {
       this.renderer.clippingPlanes = [];
       this.renderer.localClippingEnabled = false;
@@ -2637,38 +2681,83 @@ export class Model3dPreviewSession implements PreviewSession<Model3dPreviewState
     this.state.capabilities.materialFilter = false;
   }
 
-  private disposeObjectResources(): void {
-    const previewObjectUrls = this.modelGroup?.userData?.previewObjectUrls;
-    if (Array.isArray(previewObjectUrls)) {
-      for (const url of previewObjectUrls) {
-        if (typeof url === 'string' && url.startsWith('blob:')) {
-          URL.revokeObjectURL(url);
-        }
-      }
-      delete this.modelGroup?.userData?.previewObjectUrls;
-    }
-    this.modelGroup?.traverse((object) => {
-      const maybeMesh = object as Mesh & {
-        material?: Material | Material[];
-        geometry?: BufferGeometry;
-      };
-      if (maybeMesh.geometry && maybeMesh.geometry !== this.geometry) {
-        maybeMesh.geometry.dispose();
-      }
-      const materials = Array.isArray(maybeMesh.material) ? maybeMesh.material : maybeMesh.material ? [maybeMesh.material] : [];
-      for (const material of materials) {
-        if (material !== this.material) {
-          material.dispose();
-        }
-      }
-    });
-  }
-
   private emit<T extends PreviewEventName>(event: T, payload: PreviewEventMap[T]): void {
     for (const handler of this.listeners[event]) {
       handler(payload as never);
     }
   }
+}
+
+function checkModelLoadAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException('3D preview aborted.', 'AbortError');
+}
+
+function waitForModelLoad<T>(pending: Promise<T>, signal?: AbortSignal, discard?: (value: T) => void): Promise<T> {
+  if (!signal) return pending;
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const abort = (): void => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', abort);
+      reject(new DOMException('3D preview aborted.', 'AbortError'));
+    };
+    signal.addEventListener('abort', abort, { once: true });
+    if (signal.aborted) abort();
+    void pending.then(value => {
+      if (settled) {
+        discard?.(value);
+        return;
+      }
+      settled = true;
+      signal.removeEventListener('abort', abort);
+      resolve(value);
+    }, error => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener('abort', abort);
+      reject(error);
+    }).catch(() => { /* Observe failures from late-result disposal after cancellation. */ });
+  });
+}
+
+function disposeModelResources(
+  root: Object3D | Object3D[] | null,
+  extraGeometries: Array<BufferGeometry | null> = [],
+  extraMaterials: Array<Material | null> = []
+): void {
+  const geometries = new Set(extraGeometries.filter((value): value is BufferGeometry => Boolean(value)));
+  const materials = new Set(extraMaterials.filter((value): value is Material => Boolean(value)));
+  const textures = new Set<Texture>();
+  const skeletons = new Set<Skeleton>();
+  const urls = new Set<string>();
+  for (const objectRoot of Array.isArray(root) ? root : root ? [root] : []) objectRoot.traverse(object => {
+    const node = object as Object3D & { geometry?: BufferGeometry; material?: Material | Material[]; skeleton?: Skeleton };
+    if (node.geometry) geometries.add(node.geometry);
+    for (const material of Array.isArray(node.material) ? node.material : node.material ? [node.material] : []) materials.add(material);
+    if (node.skeleton) skeletons.add(node.skeleton);
+    if (Array.isArray(object.userData.previewObjectUrls)) {
+      for (const url of object.userData.previewObjectUrls) if (typeof url === 'string' && url.startsWith('blob:')) urls.add(url);
+      delete object.userData.previewObjectUrls;
+    }
+  });
+  const collectTexture = (value: unknown): void => {
+    if (value && typeof value === 'object' && (value as Texture).isTexture) textures.add(value as Texture);
+    else if (Array.isArray(value)) value.forEach(collectTexture);
+  };
+  for (const material of materials) {
+    Object.values(material).forEach(collectTexture);
+    const uniforms = (material as Material & { uniforms?: Record<string, { value?: unknown }> }).uniforms;
+    if (uniforms) for (const uniform of Object.values(uniforms)) collectTexture(uniform.value);
+  }
+  for (const skeleton of skeletons) {
+    if (skeleton.boneTexture) textures.delete(skeleton.boneTexture);
+    skeleton.dispose();
+  }
+  for (const geometry of geometries) geometry.dispose();
+  for (const material of materials) material.dispose();
+  for (const texture of textures) texture.dispose();
+  for (const url of urls) URL.revokeObjectURL(url);
 }
 
 export function createModel3dPreviewDriver(): PreviewDriver<Model3dPreviewState> {
@@ -2752,50 +2841,89 @@ export async function loadObjObjectWithWarnings(
   source: string,
   options: LoadObjObjectOptions = {}
 ): Promise<ModelObjectLoadResult> {
+  checkModelLoadAborted(options.signal);
   const materialLibraries = listObjMaterialLibraries(source);
   if (!materialLibraries.length || !options.resourceResolver) {
-    return {
-      object: new OBJLoader().parse(source),
-      warnings: []
-    };
+    return { object: new OBJLoader().parse(source), warnings: [] };
   }
 
   const rewrittenMaterials: string[] = [];
   const warnings: string[] = [];
-  for (const library of materialLibraries) {
-    if (options.signal?.aborted) {
-      throw new DOMException('3D preview aborted.', 'AbortError');
-    }
-    const resolved = normalizeResourceResolverResult(
-      await resolveModelResource(options.resourceResolver, {
+  const objectUrls: string[] = [];
+  let object: Object3D | null = null;
+  let materials: MTLLoader.MaterialCreator | undefined;
+  try {
+    for (const library of materialLibraries) {
+      const resolved = unpackResourceResolverResult(await resolveModelResource(options.resourceResolver, {
         source: joinResourcePath(dirname(options.resourceBasePath ?? ''), library),
         fallbackSource: library,
         relation: 'material',
         sourceFormat: options.sourceFormat ?? 'obj'
-      }),
-      objResourceContentType(library)
-    );
-    warnings.push(...resolved.warnings);
-    if (!resolved.source) {
-      warnings.push(`OBJ material library "${library}" could not be resolved; materials were skipped.`);
-      continue;
+      }, options.signal));
+      checkModelLoadAborted(options.signal);
+      warnings.push(...resolved.warnings);
+      if (!resolved.source) {
+        warnings.push(`OBJ material library "${library}" could not be resolved; materials were skipped.`);
+        continue;
+      }
+      // Decode native text directly: Base64 binary strings corrupt UTF-8 names.
+      const materialText = await previewSourceToText(resolved.source, options.signal);
+      checkModelLoadAborted(options.signal);
+      const rewritten = await rewriteObjMaterialResources(materialText, library, options, objectUrls);
+      warnings.push(...rewritten.warnings);
+      rewrittenMaterials.push(rewritten.text);
     }
-    const materialText = await previewSourceToText(resolved.source);
-    const rewritten = await rewriteObjMaterialResources(materialText, library, options);
-    warnings.push(...rewritten.warnings);
-    rewrittenMaterials.push(rewritten.text);
-  }
 
-  const loader = new OBJLoader();
-  if (rewrittenMaterials.length) {
-    const materials = new MTLLoader().parse(rewrittenMaterials.join('\n'), '');
-    materials.preload();
-    loader.setMaterials(materials);
+    checkModelLoadAborted(options.signal);
+    const loader = new OBJLoader();
+    if (rewrittenMaterials.length) {
+      const manager = new LoadingManager();
+      const texturesReady = new Promise<void>(resolve => { manager.onLoad = resolve; });
+      manager.onError = () => { warnings.push('An OBJ texture failed to load; the preview may be incomplete.'); };
+      // The sentinel also settles texture-free models and synchronous cache hits.
+      manager.itemStart('filens:obj-parse');
+      try {
+        materials = new MTLLoader(manager).parse(rewrittenMaterials.join('\n'), '');
+        loader.setMaterials(materials);
+        // OBJLoader creates only the materials used by its geometry.
+        object = loader.parse(source);
+      } finally {
+        manager.itemEnd('filens:obj-parse');
+      }
+      await waitForModelLoad(texturesReady, options.signal);
+      checkModelLoadAborted(options.signal);
+      disposeUnusedObjMaterials(object, Object.values(materials.materials));
+    } else {
+      object = loader.parse(source);
+    }
+    return { object, warnings };
+  } catch (error) {
+    disposeModelResources(object, [], Object.values(materials?.materials ?? {}));
+    throw error;
+  } finally {
+    for (const url of objectUrls) URL.revokeObjectURL(url);
   }
-  return {
-    object: loader.parse(source),
-    warnings
-  };
+}
+
+function disposeUnusedObjMaterials(object: Object3D, cached: Material[]): void {
+  const retained = new Set<Material>();
+  const textures = new Set<Texture>();
+  object.traverse(node => {
+    const value = (node as Mesh).material;
+    for (const material of Array.isArray(value) ? value : value ? [value] : []) retained.add(material);
+  });
+  for (const material of retained) {
+    for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
+  }
+  // Lines and points can copy a cached MTL material; preserve shared textures.
+  for (const material of cached) {
+    if (retained.has(material)) continue;
+    for (const value of Object.values(material)) if (value?.isTexture && !textures.has(value)) {
+      textures.add(value);
+      value.dispose();
+    }
+    material.dispose();
+  }
 }
 
 export function listObjMaterialLibraries(source: string): string[] {
@@ -2830,12 +2958,14 @@ export function loadPlyGeometry(source: ArrayBuffer): ModelGeometry {
   throw new Error(`Unsupported PLY format "${header.format}".`);
 }
 
-export async function load3mfGeometry(source: ArrayBuffer): Promise<ModelGeometry> {
-  return (await load3mfGeometryWithWarnings(source)).geometry;
+export async function load3mfGeometry(source: ArrayBuffer, options: ModelLoadOptions = {}): Promise<ModelGeometry> {
+  return (await load3mfGeometryWithWarnings(source, options)).geometry;
 }
 
-export async function load3mfGeometryWithWarnings(source: ArrayBuffer): Promise<ModelGeometryLoadResult> {
-  const archive = await JSZip.loadAsync(source);
+export async function load3mfGeometryWithWarnings(source: ArrayBuffer, options: ModelLoadOptions = {}): Promise<ModelGeometryLoadResult> {
+  checkModelLoadAborted(options.signal);
+  const archive = await waitForModelLoad(JSZip.loadAsync(source), options.signal);
+  checkModelLoadAborted(options.signal);
   const modelFile = archive.file('3D/3dmodel.model') ?? archive.file(/(^|\/)3dmodel\.model$/i)[0];
   if (!modelFile) {
     throw new Error('3MF package is missing 3D/3dmodel.model.');
@@ -2851,7 +2981,8 @@ export async function load3mfGeometryWithWarnings(source: ArrayBuffer): Promise<
   ];
   const documents: Document[] = [];
   for (const file of modelFiles) {
-    const xml = await file.async('text');
+    const xml = await waitForModelLoad(file.async('text'), options.signal);
+    checkModelLoadAborted(options.signal);
     const parsed = new DOMParser().parseFromString(xml, 'application/xml');
     const parserError = parsed.getElementsByTagName('parsererror')[0];
     if (parserError) {
@@ -2981,9 +3112,20 @@ export async function load3mfGeometryWithWarnings(source: ArrayBuffer): Promise<
   };
 }
 
-export async function loadGlbObject(source: ArrayBuffer): Promise<Object3D> {
+export async function loadGlbObject(source: ArrayBuffer, options: ModelLoadOptions = {}): Promise<Object3D> {
+  return parseGltfObject(source, '', options.signal);
+}
+
+async function parseGltfObject(source: ArrayBuffer | string, resourcePath: string, signal?: AbortSignal): Promise<Object3D> {
+  checkModelLoadAborted(signal);
   const loader = new GLTFLoader();
-  const gltf = await loader.parseAsync(source, '');
+  const dispose = (gltf: Awaited<ReturnType<GLTFLoader['parseAsync']>>): void =>
+    disposeModelResources(gltf.scenes?.length ? gltf.scenes : [gltf.scene]);
+  const gltf = await waitForModelLoad(loader.parseAsync(source, resourcePath), signal, dispose);
+  if (signal?.aborted) {
+    dispose(gltf);
+    checkModelLoadAborted(signal);
+  }
   return gltf.scene;
 }
 
@@ -3023,149 +3165,194 @@ export function loadColladaObjectWithWarnings(
   };
 }
 
-export function loadKmzObject(source: ArrayBuffer): Object3D {
-  return new KMZLoader().parse(source).scene;
+export interface LoadKmzObjectOptions {
+  signal?: AbortSignal;
 }
 
-export async function loadKmzObjectWithWarnings(source: ArrayBuffer): Promise<ModelObjectLoadResult> {
-  let loaderObject: Object3D | undefined;
-  try {
-    loaderObject = loadKmzObject(source);
-    if (hasRenderableObjectContent(loaderObject)) {
-      return { object: loaderObject, warnings: [] };
+// Keep the synchronous API for existing callers; preview sessions use the selective async path.
+export function loadKmzObject(source: ArrayBuffer): Object3D {
+  const bytes = new Uint8Array(source), names: string[] = [], cache = new Map<string, Uint8Array>();
+  unzipSync(bytes, { filter: entry => { if (!entry.name.endsWith('/')) names.push(entry.name); return false; } });
+  const index = createKmzIndex(names);
+  const read = (name: string): Uint8Array => {
+    let value = cache.get(name);
+    if (!value) {
+      value = unzipSync(bytes, { filter: entry => entry.name === name })[name]!;
+      cache.set(name, value);
     }
-  } catch {
-    // Some KMZ files use a nested or URL-encoded model path that KMZLoader cannot resolve.
-  }
-
-  let archive: JSZip;
-  try {
-    archive = await JSZip.loadAsync(source);
-  } catch (error) {
-    if (loaderObject) {
-      return {
-        object: loaderObject,
-        warnings: [`KMZ archive could not be inspected: ${error instanceof Error ? error.message : String(error)}`]
-      };
-    }
-    throw error;
-  }
-  const entries = Object.values(archive.files).filter((entry) => !entry.dir);
-  const kmlEntry = findKmzEntry(entries, (name) => /(^|\/)doc\.kml$/i.test(name))
-    ?? findKmzEntry(entries, (name) => /\.kml$/i.test(name));
-  const kmlText = kmlEntry ? await kmlEntry.async('text') : undefined;
-  const modelHref = kmlText ? findKmzModelHref(kmlText) : undefined;
-  const modelEntry = (modelHref ? findKmzEntry(entries, (name) => isKmzPathMatch(name, modelHref, kmlEntry?.name)) : undefined)
-    ?? findKmzEntry(entries, (name) => /\.dae$/i.test(name));
-  if (!modelEntry) {
-    if (loaderObject) {
-      return {
-        object: loaderObject,
-        warnings: ['KMZ archive does not contain a Collada (.dae) model with renderable geometry.']
-      };
-    }
-    throw new Error('KMZ archive does not contain a Collada (.dae) model.');
-  }
-
+    return value;
+  };
+  const kmlName = findKmzKml(index);
   const warnings: string[] = [];
-  const objectUrls: string[] = [];
-  const resourceBytes = new Map<string, Uint8Array>();
-  for (const entry of entries) {
-    if (/\.(?:png|jpe?g|gif|webp|bmp|tga|dds)$/i.test(entry.name)) {
-      resourceBytes.set(entry.name, await entry.async('uint8array'));
+  const modelName = selectKmzModel(index, kmlName, kmlName ? strFromU8(read(kmlName)) : undefined, warnings);
+  return parseKmzCollada(strFromU8(read(modelName)), modelName, index, read, warnings).object;
+}
+
+export async function loadKmzObjectWithWarnings(
+  source: ArrayBuffer,
+  options: LoadKmzObjectOptions = {}
+): Promise<ModelObjectLoadResult> {
+  checkModelLoadAborted(options.signal);
+  const archive = await waitForModelLoad(openZipArchive(new Uint8Array(source)), options.signal);
+  checkModelLoadAborted(options.signal);
+  const index = createKmzIndex([...archive.values()].filter(entry => !entry.directory).map(entry => entry.name));
+  const kmlName = findKmzKml(index);
+  const kml = kmlName ? await waitForModelLoad(archive.get(kmlName)!.text(), options.signal) : undefined;
+  checkModelLoadAborted(options.signal);
+  const warnings: string[] = [];
+  const modelName = selectKmzModel(index, kmlName, kml, warnings);
+  const dae = await waitForModelLoad(archive.get(modelName)!.text(), options.signal);
+  checkModelLoadAborted(options.signal);
+  const document = new DOMParser().parseFromString(dae, 'application/xml');
+  if (document.getElementsByTagName('parsererror').length) throw new Error('KMZ Collada XML is invalid.');
+  const resources = new Map<string, Uint8Array>();
+  // Extract image declarations only; unrelated archive files stay compressed.
+  for (const image of Array.from(document.getElementsByTagName('*'))) {
+    if (image.localName !== 'image') continue;
+    const href = Array.from(image.children).find(child => child.localName === 'init_from')?.textContent?.trim();
+    if (!href) continue;
+    const name = findKmzResource(index, href, modelName);
+    if (name && !resources.has(name)) {
+      resources.set(name, await waitForModelLoad(archive.get(name)!.bytes(), options.signal));
+      checkModelLoadAborted(options.signal);
     }
   }
+  const parsed = parseKmzCollada(dae, modelName, index, name => resources.get(name), warnings, options.signal);
+  try {
+    await waitForModelLoad(parsed.ready, options.signal);
+    checkModelLoadAborted(options.signal);
+    return { object: parsed.object, warnings };
+  } catch (error) {
+    parsed.release();
+    disposeModelResources(parsed.object);
+    throw error;
+  } finally {
+    parsed.release();
+  }
+}
+
+function parseKmzCollada(
+  dae: string,
+  modelName: string,
+  index: Map<string, string>,
+  read: (name: string) => Uint8Array | undefined,
+  warnings: string[],
+  signal?: AbortSignal
+): { object: Object3D; ready: Promise<void>; release: () => void } {
+  checkModelLoadAborted(signal);
   const manager = new LoadingManager();
-  manager.setURLModifier((url) => {
-    const resource = findKmzEntry(entries, (name) => isKmzPathMatch(name, url, modelEntry.name));
-    const bytes = resource ? resourceBytes.get(resource.name) : undefined;
-    if (!resource || !bytes) {
-      return url;
+  const objectUrls: string[] = [];
+  const textures = new Map<string, string>();
+  let object: Object3D | undefined;
+  const release = (): void => {
+    for (const url of objectUrls.splice(0)) URL.revokeObjectURL(url);
+    if (object?.userData.previewObjectUrls === objectUrls) delete object.userData.previewObjectUrls;
+  };
+  const ready = new Promise<void>(resolve => { manager.onLoad = () => { release(); resolve(); }; });
+  manager.onError = () => { warnings.push('A KMZ texture failed to load; the preview may be incomplete.'); };
+  manager.setURLModifier(url => {
+    checkModelLoadAborted(signal);
+    const name = findKmzResource(index, url, modelName);
+    const cached = textures.get(name ?? url);
+    if (cached) return cached;
+    const bytes = name ? read(name) : undefined;
+    if (bytes) {
+      const snapshot = new Uint8Array(bytes.byteLength); snapshot.set(bytes);
+      const resourceUrl = URL.createObjectURL(new Blob([snapshot.buffer], { type: mimeTypeForKmzEntry(name!) }));
+      textures.set(name!, resourceUrl); objectUrls.push(resourceUrl);
+      return resourceUrl;
     }
-    const blobBytes = new Uint8Array(bytes.byteLength);
-    blobBytes.set(bytes);
-    const resourceUrl = URL.createObjectURL(new Blob([blobBytes.buffer], { type: mimeTypeForKmzEntry(resource.name) }));
-    objectUrls.push(resourceUrl);
-    return resourceUrl;
+    // Explicit external/data/blob URLs remain borrowed from the document.
+    if (/^[a-z][a-z\d+.-]*:/i.test(url) && !/^file:/i.test(url)) return url;
+    warnings.push(`KMZ texture "${url}" could not be resolved; dependent appearance may be missing.`);
+    // A neutral white pixel preserves the material color without fetching application HTML.
+    return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1" height="1"%3E%3Cpath fill="white" d="M0 0h1v1H0z"/%3E%3C/svg%3E';
   });
-  const dae = await modelEntry.async('text');
-  const object = new ColladaLoader(manager).parse(dae, `${directoryName(modelEntry.name)}/`).scene;
-  if (objectUrls.length) {
-    object.userData.previewObjectUrls = objectUrls;
+  manager.itemStart('filens:kmz-parse');
+  try {
+    // Resolve against modelName ourselves so paths are decoded exactly once.
+    object = new ColladaLoader(manager).parse(dae, '').scene;
+    if (objectUrls.length) object.userData.previewObjectUrls = objectUrls;
+    if (!hasRenderableObjectContent(object)) warnings.push('KMZ Collada model contains no renderable geometry.');
+  } catch (error) {
+    release();
+    throw error;
+  } finally {
+    manager.itemEnd('filens:kmz-parse');
   }
-  if (!hasRenderableObjectContent(object)) {
-    warnings.push('KMZ Collada model contains no renderable geometry.');
-  }
-  return { object, warnings };
+  return { object, ready, release };
 }
 
 function hasRenderableObjectContent(object: Object3D): boolean {
   let renderable = false;
-  object.traverse((node) => {
-    const candidate = node as Object3D & { geometry?: BufferGeometry };
-    if (candidate.geometry?.getAttribute('position')?.count) {
-      renderable = true;
-    }
+  object.traverse(node => {
+    if ((node as Mesh).geometry?.getAttribute('position')?.count) renderable = true;
   });
   return renderable;
 }
 
-function findKmzEntry(entries: JSZip.JSZipObject[], predicate: (name: string) => boolean): JSZip.JSZipObject | undefined {
-  return entries.find((entry) => predicate(entry.name));
-}
-
-function findKmzModelHref(source: string): string | undefined {
-  const document = new DOMParser().parseFromString(source, 'application/xml');
-  const parserError = document.getElementsByTagName('parsererror')[0];
-  if (parserError) {
-    return undefined;
-  }
-  for (const element of Array.from(document.getElementsByTagName('*'))) {
-    if (element.localName?.toLowerCase() !== 'href') {
-      continue;
-    }
-    const value = element.textContent?.trim();
-    if (value && /\.dae(?:[?#].*)?$/i.test(value)) {
-      return value;
-    }
-  }
-  return undefined;
-}
-
-function isKmzPathMatch(name: string, href: string, relativeTo?: string): boolean {
-  const normalizedName = normalizeKmzPath(name);
-  const normalizedHref = normalizeKmzPath(href);
-  const candidates = [normalizedHref];
-  if (relativeTo) {
-    candidates.push(normalizeKmzPath(`${directoryName(relativeTo)}/${normalizedHref}`));
-  }
-  return candidates.some((candidate) => normalizedName === candidate || normalizedName.endsWith(`/${candidate}`));
-}
-
 function normalizeKmzPath(value: string): string {
-  let normalized = value.trim().replace(/\\/g, '/').split(/[?#]/, 1)[0] ?? '';
-  try {
-    normalized = decodeURIComponent(normalized);
-  } catch {
-    // Keep the original path when a producer emitted malformed percent escapes.
-  }
-  normalized = normalized.replace(/^\.\//, '').replace(/^\/+/, '');
   const parts: string[] = [];
-  for (const part of normalized.split('/')) {
+  for (const part of value.replace(/\\/g, '/').split('/')) {
     if (!part || part === '.') continue;
-    if (part === '..') {
-      parts.pop();
-      continue;
-    }
-    parts.push(part);
+    if (part === '..') parts.pop();
+    else parts.push(part);
   }
   return parts.join('/');
 }
 
-function directoryName(value: string): string {
-  const normalized = normalizeKmzPath(value);
-  const slash = normalized.lastIndexOf('/');
-  return slash >= 0 ? normalized.slice(0, slash) : '';
+function createKmzIndex(names: string[]): Map<string, string> {
+  return new Map(names.map(name => [normalizeKmzPath(name), name]));
+}
+
+function findKmzResource(index: Map<string, string>, href: string, relativeTo = ''): string | undefined {
+  let path = href.trim().replace(/\\/g, '/').split(/[?#]/, 1)[0] ?? '';
+  if (/^[a-z][a-z\d+.-]*:/i.test(path)) return undefined;
+  try { path = decodeURIComponent(path); } catch { /* Preserve malformed producer escapes. */ }
+  const directory = relativeTo.slice(0, relativeTo.lastIndexOf('/') + 1);
+  const candidates = [...new Set([
+    ...(path.startsWith('/') ? [] : [normalizeKmzPath(directory + path)]), normalizeKmzPath(path)
+  ])];
+  for (const candidate of candidates) {
+    const exact = index.get(candidate);
+    if (exact) return exact;
+  }
+  // Case/suffix fallbacks must be unambiguous; never let an earlier basename shadow an exact path.
+  for (const candidate of candidates) {
+    const matches = [...index].filter(([name]) => name.toLowerCase() === candidate.toLowerCase());
+    if (matches.length === 1) return matches[0]![1];
+  }
+  const suffix = candidates[candidates.length - 1]!.toLowerCase();
+  const matches = [...index].filter(([name]) => name.toLowerCase().endsWith('/' + suffix));
+  return matches.length === 1 ? matches[0]![1] : undefined;
+}
+
+function findKmzKml(index: Map<string, string>): string | undefined {
+  return index.get('doc.kml') ?? [...index.values()].find(name => /^doc\.kml$/i.test(name))
+    ?? [...index.values()].find(name => /(^|\/)doc\.kml$/i.test(name))
+    ?? [...index.values()].find(name => /\.kml$/i.test(name));
+}
+
+function selectKmzModel(index: Map<string, string>, kmlName: string | undefined, kml: string | undefined, warnings: string[]): string {
+  const href = kml ? findKmzModelHref(kml) : undefined;
+  const selected = href ? findKmzResource(index, href, kmlName) : undefined;
+  const fallback = [...index.values()].find(name => /\.dae$/i.test(name));
+  if (href && !selected && fallback) warnings.push(`KMZ model "${href}" could not be resolved; using "${fallback}".`);
+  const model = selected ?? fallback;
+  if (!model) throw new Error('KMZ archive does not contain a Collada (.dae) model.');
+  return model;
+}
+
+function findKmzModelHref(source: string): string | undefined {
+  const document = new DOMParser().parseFromString(source, 'application/xml');
+  if (document.getElementsByTagName('parsererror').length) return undefined;
+  for (const model of Array.from(document.getElementsByTagName('*'))) {
+    if (model.localName?.toLowerCase() !== 'model') continue;
+    const link = Array.from(model.children).find(child => child.localName.toLowerCase() === 'link');
+    const value = link && Array.from(link.children).find(child => child.localName.toLowerCase() === 'href')?.textContent?.trim();
+    if (value && /\.dae(?:[?#].*)?$/i.test(value)) return value;
+  }
+  return undefined;
 }
 
 function mimeTypeForKmzEntry(name: string): string {
@@ -3295,11 +3482,27 @@ export function loadPdbObject(source: string): Object3D {
 }
 
 export function loadNrrdObject(source: ArrayBuffer): Object3D {
-  const volume = new NRRDLoader().parse(source as unknown as string);
+  const prepared = prepareNrrdHeader(source);
+  const volume = new NRRDLoader().parse(prepared.buffer as unknown as string);
+  const voxelCount = volume.xLength * volume.yLength * volume.zLength;
+  if (!Number.isSafeInteger(voxelCount) || voxelCount < 1 || volume.data.length !== voxelCount) {
+    throw new Error('NRRD voxel data length does not match its dimensions.');
+  }
+  if ((prepared.encoding === 'raw' || prepared.encoding === 'gz' || prepared.encoding === 'gzip') && prepared.endian) {
+    const nativeEndian = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1 ? 'little' : 'big';
+    if (prepared.endian !== nativeEndian) {
+      const bytes = new Uint8Array(volume.data.buffer, volume.data.byteOffset, volume.data.byteLength);
+      const width = volume.data.BYTES_PER_ELEMENT;
+      for (let offset = 0; offset < bytes.length; offset += width) {
+        for (let left = offset, right = offset + width - 1; left < right; left++, right--) {
+          const value = bytes[left]!; bytes[left] = bytes[right]!; bytes[right] = value;
+        }
+      }
+    }
+  }
   const [minValue, maxValue] = volume.computeMinMax();
   const range = maxValue - minValue;
   const lowerThreshold = minValue <= 0 && maxValue > 0 ? 0 : range > 0 ? minValue + range * 0.5 : minValue;
-  const voxelCount = volume.data.length;
   const maxPoints = 60000;
   const stride = Math.max(1, Math.ceil(voxelCount / maxPoints));
   const spacing = volume.spacing.length >= 3 ? volume.spacing : [1, 1, 1];
@@ -3348,6 +3551,7 @@ export async function resolveNhdrBuffer(
   source: string,
   options: ResolveNhdrBufferOptions = {}
 ): Promise<ArrayBuffer> {
+  checkModelLoadAborted(options.signal);
   const reference = listNhdrDataFileReference(source);
   if (!reference) {
     return new TextEncoder().encode(source).buffer;
@@ -3356,23 +3560,20 @@ export async function resolveNhdrBuffer(
   if (!resourceResolver) {
     throw new Error(`NHDR references external data file "${reference}" but no resourceResolver was provided.`);
   }
-  if (options.signal?.aborted) {
-    throw new DOMException('3D preview aborted.', 'AbortError');
-  }
   const baseDir = dirname(options.resourceBasePath ?? '');
-  const resolved = normalizeResourceResolverResult(
+  const resolved = unpackResourceResolverResult(
     await resolveModelResource(resourceResolver, {
       source: joinResourcePath(baseDir, reference),
       fallbackSource: reference,
       relation: 'volume',
       sourceFormat: options.sourceFormat ?? 'nhdr'
-    }),
-    'application/octet-stream'
+    }, options.signal)
   );
   if (!resolved.source) {
     throw new Error(`NHDR external data file "${reference}" could not be resolved.`);
   }
   const dataBuffer = await previewSourceToArrayBuffer(resolved.source, options.signal);
+  checkModelLoadAborted(options.signal);
   return mergeNhdrHeaderAndData(source, dataBuffer);
 }
 
@@ -3444,14 +3645,22 @@ export async function loadUsdzObject(source: ArrayBuffer): Promise<Object3D> {
   return new USDZLoader().parse(source);
 }
 
-export async function loadStepObject(source: ArrayBuffer): Promise<Object3D> {
-  occtImporterPromise ??= Promise.all([
-    import('../vendor/occt-import-js/occt-import-js.js'),
-    import('../vendor/occt-import-js/occt-import-js.wasm?url')
-  ]).then(([{ default: createOcctImporter }, { default: wasmUrl }]) =>
-    createOcctImporter({ locateFile: () => wasmUrl })
-  );
-  const importer = await occtImporterPromise;
+export async function loadStepObject(source: ArrayBuffer, options: ModelLoadOptions = {}): Promise<Object3D> {
+  checkModelLoadAborted(options.signal);
+  if (!occtImporterPromise) {
+    const attempt = Promise.all([
+      import('../vendor/occt-import-js/occt-import-js.js'),
+      import('../vendor/occt-import-js/occt-import-js.wasm?url')
+    ]).then(([{ default: createOcctImporter }, { default: wasmUrl }]) =>
+      createOcctImporter({ locateFile: () => wasmUrl })
+    );
+    occtImporterPromise = attempt;
+    void attempt.catch(() => {
+      if (occtImporterPromise === attempt) occtImporterPromise = null;
+    });
+  }
+  const importer = await waitForModelLoad(occtImporterPromise, options.signal);
+  checkModelLoadAborted(options.signal);
   const result = importer.ReadStepFile(new Uint8Array(source), { linearUnit: 'millimeter' });
   if (!result.success || !result.root || !result.meshes?.length) {
     throw new Error('OpenCascade could not read this STEP file.');
@@ -3570,39 +3779,30 @@ export async function loadLDrawObjectWithWarnings(
   source: string,
   options: LoadLDrawObjectOptions = {}
 ): Promise<ModelObjectLoadResult> {
-  const loader = new LDrawLoader() as LDrawLoader & {
-    setPartsLibraryPath(path: string): LDrawLoader;
-    parse(text: string, onLoad: (group: Group) => void, onError?: (error: unknown) => void): void;
-  };
-  loader.setConditionalLineMaterial(LDrawConditionalLineMaterial);
-  loader.setMaterials([]);
-
+  checkModelLoadAborted(options.signal);
   const warnings: string[] = [];
-  const objectUrls: string[] = [];
-  const fileMap = options.resourceResolver
-    ? await buildLDrawFileMap(source, options, warnings, objectUrls)
-    : undefined;
-  if (fileMap && Object.keys(fileMap).length > 0) {
-    loader.setFileMap(fileMap);
-    loader.setPartsLibraryPath('');
-  }
-
   try {
-    const object = await new Promise<Object3D>((resolve, reject) => {
-      loader.parse(source, (group: Group) => resolve(group), (error: unknown) => reject(error));
+    const packed = await prepareLDrawSource(source, options, warnings);
+    checkModelLoadAborted(options.signal);
+    const loader = new LDrawLoader() as LDrawLoader & {
+      parse(text: string, onLoad: (group: Group) => void, onError?: (error: unknown) => void): void;
+    };
+    loader.setConditionalLineMaterial(LDrawConditionalLineMaterial);
+    loader.setMaterials([]);
+    const pending = new Promise<Object3D>((resolve, reject) => {
+      loader.parse(packed, (group: Group) => resolve(group), (error: unknown) => reject(error));
     });
+    const object = await waitForModelLoad(pending, options.signal, disposeModelResources);
+    if (options.signal?.aborted) {
+      disposeModelResources(object);
+      checkModelLoadAborted(options.signal);
+    }
     return { object, warnings };
   } catch (error) {
-    if (warnings.length) {
-      const normalizedError = error instanceof Error ? error : new Error(String(error));
-      normalizedError.message = `${normalizedError.message} Warnings: ${warnings.join(' ')}`;
-      throw normalizedError;
+    if (warnings.length && !(error && typeof error === 'object' && 'name' in error && error.name === 'AbortError')) {
+      throw new Error(`${error instanceof Error ? error.message : String(error)} Warnings: ${warnings.join(' ')}`);
     }
     throw error;
-  } finally {
-    for (const url of objectUrls) {
-      URL.revokeObjectURL(url);
-    }
   }
 }
 
@@ -3621,26 +3821,32 @@ export async function loadGltfObjectWithWarnings(
   source: ArrayBuffer | string,
   options: LoadGltfObjectOptions = {}
 ): Promise<ModelObjectLoadResult> {
-  const text = typeof source === 'string' ? source : new TextDecoder().decode(source);
-  const json = parseGltfJson(text);
-  const externalResources = listExternalGltfResources(json);
-  const resolved = externalResources.length && options.resourceResolver
-    ? await resolveExternalGltfResources(json, externalResources, options)
-    : {
-        json,
-        warnings: []
-      };
-  const remainingExternalResources = listExternalGltfResources(resolved.json);
-  if (remainingExternalResources.length && !options.resourcePath) {
-    throw new Error(`glTF references external resources that are not bundled with this preview: ${remainingExternalResources.join(', ')}.`);
-  }
+  checkModelLoadAborted(options.signal);
+  const objectUrls: string[] = [];
+  try {
+    const text = typeof source === 'string' ? source : new TextDecoder().decode(source);
+    const json = parseGltfJson(text);
+    const externalResources = listExternalGltfResources(json);
+    const resolved = externalResources.length && options.resourceResolver
+      ? await resolveExternalGltfResources(json, externalResources, options, objectUrls)
+      : {
+          json,
+          warnings: [],
+          unresolvedResources: externalResources
+        };
+    const remainingExternalResources = resolved.unresolvedResources;
+    if (remainingExternalResources.length && !options.resourcePath) {
+      throw new Error(`glTF references external resources that are not bundled with this preview: ${remainingExternalResources.join(', ')}.`);
+    }
 
-  const loader = new GLTFLoader();
-  const gltf = await loader.parseAsync(JSON.stringify(resolved.json), options.resourcePath ?? '');
-  return {
-    object: gltf.scene,
-    warnings: resolved.warnings
-  };
+    checkModelLoadAborted(options.signal);
+    return {
+      object: await parseGltfObject(JSON.stringify(resolved.json), options.resourcePath ?? '', options.signal),
+      warnings: resolved.warnings
+    };
+  } finally {
+    for (const url of objectUrls) URL.revokeObjectURL(url);
+  }
 }
 
 export function listExternalGltfResources(gltf: unknown): string[] {
@@ -3666,39 +3872,46 @@ export function listExternalGltfResources(gltf: unknown): string[] {
 async function resolveExternalGltfResources(
   gltf: unknown,
   externalResources: string[],
-  options: LoadGltfObjectOptions
-): Promise<{ json: unknown; warnings: string[] }> {
+  options: LoadGltfObjectOptions,
+  objectUrls: string[]
+): Promise<{ json: unknown; warnings: string[]; unresolvedResources: string[] }> {
   const root = cloneGltfJson(gltf);
   const warnings: string[] = [];
+  const replacements = new Map<string, string>();
+  const unresolvedResources: string[] = [];
   for (const uri of externalResources) {
-    if (options.signal?.aborted) {
-      throw new DOMException('3D preview aborted.', 'AbortError');
-    }
+    checkModelLoadAborted(options.signal);
+    const result = await waitForModelLoad(Promise.resolve(options.resourceResolver?.({
+      family: 'model3d',
+      sourceFormat: options.sourceFormat ?? 'gltf',
+      source: uri,
+      relation: gltfResourceRelation(root, uri),
+      name: uri.split(/[\\/]/).pop() ?? uri
+    })), options.signal);
+    checkModelLoadAborted(options.signal);
     const resolved = normalizeResourceResolverResult(
-      await options.resourceResolver?.({
-        family: 'model3d',
-        sourceFormat: options.sourceFormat ?? 'gltf',
-        source: uri,
-        relation: gltfResourceRelation(root, uri),
-        name: uri.split(/[\\/]/).pop() ?? uri
-      }),
-      gltfResourceContentType(uri)
+      result,
+      gltfResourceContentType(uri),
+      objectUrls
     );
     warnings.push(...resolved.warnings);
     if (resolved.source) {
-      rewriteGltfResourceUri(root, uri, resolved.source);
-    }
+      replacements.set(uri, resolved.source);
+    } else unresolvedResources.push(uri);
   }
+  rewriteGltfResourceUris(root, replacements);
   return {
     json: root,
-    warnings
+    warnings,
+    unresolvedResources
   };
 }
 
 async function rewriteObjMaterialResources(
   materialText: string,
   materialLibraryPath: string,
-  options: LoadObjObjectOptions
+  options: LoadObjObjectOptions,
+  objectUrls: string[]
 ): Promise<{ text: string; warnings: string[] }> {
   const materialDir = dirname(joinResourcePath(dirname(options.resourceBasePath ?? ''), materialLibraryPath));
   const rewrittenLines: string[] = [];
@@ -3712,14 +3925,17 @@ async function rewriteObjMaterialResources(
     if (options.signal?.aborted) {
       throw new DOMException('3D preview aborted.', 'AbortError');
     }
+    const result = await resolveModelResource(options.resourceResolver, {
+      source: joinResourcePath(materialDir, parsed.path),
+      fallbackSource: parsed.path,
+      relation: 'texture',
+      sourceFormat: options.sourceFormat ?? 'obj'
+    }, options.signal);
+    checkModelLoadAborted(options.signal);
     const resolved = normalizeResourceResolverResult(
-      await resolveModelResource(options.resourceResolver, {
-        source: joinResourcePath(materialDir, parsed.path),
-        fallbackSource: parsed.path,
-        relation: 'texture',
-        sourceFormat: options.sourceFormat ?? 'obj'
-      }),
-      objResourceContentType(parsed.path)
+      result,
+      objResourceContentType(parsed.path),
+      objectUrls
     );
     warnings.push(...resolved.warnings);
     if (!resolved.source) {
@@ -3742,89 +3958,175 @@ async function resolveModelResource(
     fallbackSource: string;
     relation: string;
     sourceFormat: string;
-  }
+  },
+  signal?: AbortSignal
 ): Promise<Awaited<ReturnType<PreviewResourceResolver>>> {
-  const primary = await resourceResolver({
+  checkModelLoadAborted(signal);
+  const primary = await waitForModelLoad(Promise.resolve(resourceResolver({
     family: 'model3d',
     sourceFormat: request.sourceFormat,
     source: request.source,
     relation: request.relation,
     name: request.source.split(/[\\/]/).pop() ?? request.source
-  });
-  if (normalizeResourceResolverResult(primary, objResourceContentType(request.source)).source) {
+  })), signal);
+  checkModelLoadAborted(signal);
+  if (unpackResourceResolverResult(primary).source) {
     return primary;
   }
   if (request.fallbackSource === request.source) {
     return primary;
   }
-  return resourceResolver({
+  return waitForModelLoad(Promise.resolve(resourceResolver({
     family: 'model3d',
     sourceFormat: request.sourceFormat,
     source: request.fallbackSource,
     relation: request.relation,
     name: request.fallbackSource.split(/[\\/]/).pop() ?? request.fallbackSource
-  });
+  })), signal);
 }
 
-async function buildLDrawFileMap(
-  source: string,
-  options: LoadLDrawObjectOptions,
-  warnings: string[],
-  objectUrls: string[]
-): Promise<Record<string, string>> {
-  const resourceResolver = options.resourceResolver;
-  if (!resourceResolver) {
-    return {};
-  }
+interface LDrawSourceFile {
+  name: string;
+  text: string;
+  directory: string;
+  definitions: Map<string, LDrawSourceFile>;
+}
 
-  const references = listLDrawSubfileReferences(source);
+function splitLDrawSource(source: string, defaultName: string): Array<{ name: string; text: string }> {
+  const files: Array<{ name: string; text: string }> = [];
+  let name = defaultName;
+  let lines: string[] = [];
+  let named = false;
+  let ended = false;
+  for (const line of source.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n').split('\n')) {
+    const match = /^\s*0\s+FILE\s+(.+?)\s*$/i.exec(line);
+    if (match) {
+      if (named) {
+        files.push({ name, text: lines.join('\n') + '\n' });
+        lines = [];
+      }
+      name = match[1]!;
+      named = true;
+      ended = false;
+    } else if (/^\s*0\s+NOFILE\s*$/i.test(line)) {
+      ended = true;
+    } else if (!ended) {
+      lines.push(line);
+    }
+  }
+  files.push({ name, text: lines.join('\n') + '\n' });
+  return files;
+}
+
+async function prepareLDrawSource(source: string, options: LoadLDrawObjectOptions, warnings: string[]): Promise<string> {
   const baseDir = dirname(options.resourceBasePath ?? '');
-  const fileMap: Record<string, string> = {};
-
-  for (const reference of references) {
-    if (options.signal?.aborted) {
-      throw new DOMException('3D preview aborted.', 'AbortError');
+  const files = new Map<string, LDrawSourceFile>();
+  const loaded = new Map<string, LDrawSourceFile>();
+  const references = new Map<string, LDrawSourceFile>();
+  const relativeName = (path: string): string => baseDir && path.startsWith(`${baseDir}/`) ? path.slice(baseDir.length + 1) : path;
+  const register = (text: string, directory: string, reference?: string, path?: string): LDrawSourceFile => {
+    const parts = splitLDrawSource(text, reference ?? '__filens_main__.ldr');
+    const definitions = new Map<string, LDrawSourceFile>();
+    let first!: LDrawSourceFile;
+    for (let index = 0; index < parts.length; index++) {
+      const part = parts[index]!;
+      const declared = normalizeLDrawReference(part.name);
+      const name = index === 0 && path ? relativeName(path) : normalizeLDrawReference(reference ? relativeName(joinResourcePath(directory, declared)) : declared);
+      const key = name.toLowerCase();
+      let file = files.get(key);
+      // Packed definitions take precedence over externally supplied definitions.
+      if (!file) {
+        file = { name, text: part.text, directory: index === 0 && reference ? directory : dirname(joinResourcePath(directory, declared)), definitions };
+        files.set(key, file);
+      }
+      definitions.set(declared.toLowerCase(), file);
+      if (index === 0) {
+        first = file;
+        if (reference) definitions.set(reference.toLowerCase(), file);
+      }
     }
-
-    const normalizedReference = normalizeLDrawReference(reference);
-    const resolved = normalizeResourceResolverResult(
-      await resolveModelResource(resourceResolver, {
-        source: joinResourcePath(baseDir, normalizedReference),
-        fallbackSource: normalizedReference,
-        relation: 'part',
-        sourceFormat: options.sourceFormat ?? 'ldr'
-      }),
-      'text/plain'
-    );
-    warnings.push(...resolved.warnings);
-
-    if (!resolved.source) {
-      warnings.push(`LDraw part "${reference}" could not be resolved; dependent geometry may be missing.`);
-      continue;
+    return first;
+  };
+  const main = register(source, baseDir);
+  const active = new Set<LDrawSourceFile>();
+  const complete = new Set<LDrawSourceFile>();
+  const visit = async (file: LDrawSourceFile): Promise<void> => {
+    checkModelLoadAborted(options.signal);
+    if (active.has(file)) throw new Error(`Cyclic LDraw part reference: "${file.name}".`);
+    if (complete.has(file)) return;
+    active.add(file);
+    const lines = file.text.split('\n');
+    for (let index = 0; index < lines.length; index++) {
+      const match = /^(\s*1\s+(?:\S+\s+){13})(.+?)\s*$/.exec(lines[index]!);
+      if (!match) continue;
+      const reference = normalizeLDrawReference(match[2]!);
+      const key = reference.toLowerCase();
+      let target = file.definitions.get(key) ?? main.definitions.get(key);
+      if (!target && options.resourceResolver) {
+        const libraryPart = /^(?:parts\/s|p\/48)\//i.test(reference);
+        const candidates = [...new Set([
+          joinResourcePath(libraryPart ? baseDir : file.directory, reference),
+          joinResourcePath(baseDir, reference),
+          reference
+        ])];
+        const lookupKey = candidates[0]!.toLowerCase();
+        target = references.get(lookupKey);
+        for (const candidate of candidates) {
+          if (target) break;
+          target = loaded.get(candidate.toLowerCase());
+          if (target) break;
+          const result = unpackResourceResolverResult(await waitForModelLoad(Promise.resolve(options.resourceResolver({
+            family: 'model3d', sourceFormat: options.sourceFormat ?? 'ldr', source: candidate,
+            relation: 'part', name: candidate.split('/').pop() ?? candidate
+          })), options.signal));
+          checkModelLoadAborted(options.signal);
+          warnings.push(...result.warnings);
+          if (!result.source) continue;
+          const text = await previewSourceToText(result.source, options.signal);
+          checkModelLoadAborted(options.signal);
+          target = register(text, dirname(candidate), reference, candidate);
+          loaded.set(candidate.toLowerCase(), target);
+          break;
+        }
+        if (!target) {
+          warnings.push(`LDraw part "${match[2]}" could not be resolved; dependent geometry may be missing.`);
+          // Keep available geometry without letting the loader fetch application HTML.
+          target = register('0 !LDRAW_ORG Subpart\n', file.directory, reference, candidates[0]);
+        }
+        references.set(lookupKey, target);
+      }
+      if (target) {
+        lines[index] = `${match[1]}${target.name}`;
+        await visit(target);
+      }
     }
-
-    fileMap[normalizedReference] = resolved.source;
-    const lower = normalizedReference.toLowerCase();
-    if (!(lower in fileMap)) {
-      fileMap[lower] = resolved.source;
-    }
-    if (resolved.source.startsWith('blob:')) {
-      objectUrls.push(resolved.source);
-    }
-  }
-
-  return fileMap;
+    file.text = lines.join('\n');
+    active.delete(file);
+    complete.add(file);
+  };
+  await visit(main);
+  checkModelLoadAborted(options.signal);
+  // Feed native text to the public MPD parser; geometry remains Three's responsibility.
+  return [...new Set(files.values())].map(file => `0 FILE ${file.name}\n${file.text}`).join('\n');
 }
 
 function parseObjMaterialMapLine(line: string): { prefix: string; path: string } | undefined {
-  const match = /^(\s*map_\S+\s+(?:-(?:\w+)\s+\S+\s+)*)(.+?)\s*$/i.exec(line);
-  if (!match?.[1] || !match[2]) {
-    return undefined;
+  const match = /^(\s*(?:map_\S+|bump|norm|disp)\s+)(.+?)\s*$/i.exec(line);
+  if (!match?.[1] || !match[2]) return undefined;
+  let prefix = match[1];
+  let path = match[2];
+  // Match Three's supported option arities; filenames can contain spaces.
+  const counts: Record<string, number> = { '-bm': 1, '-mm': 2, '-s': 3, '-o': 3 };
+  while (true) {
+    const option = /^(\S+)\s+/.exec(path);
+    const count = option && counts[option[1]!];
+    if (!count) break;
+    const values = new RegExp(`^\\S+(?:\\s+\\S+){${count}}\\s+`).exec(path);
+    if (!values) break;
+    prefix += values[0];
+    path = path.slice(values[0].length);
   }
-  return {
-    prefix: match[1],
-    path: match[2].trim()
-  };
+  return path ? { prefix, path } : undefined;
 }
 
 function listNhdrDataFileReference(source: string): string | undefined {
@@ -3850,19 +4152,16 @@ function mergeNhdrHeaderAndData(source: string, dataBuffer: ArrayBuffer): ArrayB
   const lines = source.split(/\r?\n/);
   const rewrittenLines: string[] = [];
   let replacedDataFile = false;
-  let replacedEncoding = false;
+  let hasEncoding = false;
 
   for (const rawLine of lines) {
+    if (!rawLine.trim()) break;
     if (/^\s*data\s*file\s*:/i.test(rawLine) || /^\s*datafile\s*:/i.test(rawLine)) {
-      rewrittenLines.push('encoding: raw');
       replacedDataFile = true;
-      replacedEncoding = true;
       continue;
     }
     if (/^\s*encoding\s*:/i.test(rawLine)) {
-      rewrittenLines.push('encoding: raw');
-      replacedEncoding = true;
-      continue;
+      hasEncoding = true;
     }
     rewrittenLines.push(rawLine);
   }
@@ -3870,17 +4169,50 @@ function mergeNhdrHeaderAndData(source: string, dataBuffer: ArrayBuffer): ArrayB
   if (!replacedDataFile) {
     return new TextEncoder().encode(source).buffer;
   }
-  if (!replacedEncoding) {
+  if (!hasEncoding) {
     rewrittenLines.push('encoding: raw');
   }
 
   const normalizedHeader = rewrittenLines.join('\n').replace(/\s+$/, '');
-  const headerBytes = new TextEncoder().encode(`${normalizedHeader}\n\n`);
+  const headerBytes = new TextEncoder().encode(`${normalizedHeader}\n#\n\n`);
   const dataBytes = new Uint8Array(dataBuffer);
   const merged = new Uint8Array(headerBytes.byteLength + dataBytes.byteLength);
   merged.set(headerBytes, 0);
   merged.set(dataBytes, headerBytes.byteLength);
   return merged.buffer;
+}
+
+function prepareNrrdHeader(source: ArrayBuffer): { buffer: ArrayBuffer; encoding?: string; endian?: string } {
+  const bytes = new Uint8Array(source);
+  let lineStart = 0;
+  for (let index = 0; index < bytes.length; index++) {
+    if (bytes[index] !== 10) continue;
+    const lineEnd = bytes[index - 1] === 13 ? index - 1 : index;
+    if (lineEnd !== lineStart) { lineStart = index + 1; continue; }
+    const header = new TextDecoder().decode(bytes.subarray(0, lineStart));
+    const fields = new Map(header.split(/\r?\n/).flatMap(line => {
+      const match = /^([^:#]+):\s*(.*)$/.exec(line);
+      return match ? [[match[1]!.trim().toLowerCase(), match[2]!.trim().toLowerCase()] as const] : [];
+    }));
+    for (const field of ['line skip', 'byte skip']) {
+      if (fields.has(field) && fields.get(field) !== '0') throw new Error(`NRRD ${field} is not supported for preview.`);
+    }
+    if (fields.get('dimension') !== '3') throw new Error('NRRD preview requires three scalar dimensions.');
+    const encoding = fields.get('encoding');
+    if (!['raw', 'gz', 'gzip', 'ascii', 'text', 'txt', 'hex'].includes(encoding ?? '')) {
+      throw new Error(`NRRD encoding "${encoding ?? ''}" is not supported for preview.`);
+    }
+    const endian = fields.get('endian');
+    if (endian && endian !== 'little' && endian !== 'big') throw new Error(`Unsupported NRRD endian "${endian}".`);
+    // Three's loader drops the last header character and only accepts LF separators.
+    // A trailing comment protects the final metadata field; payload bytes stay untouched.
+    if (!header.includes('\r') && /\n#[^\n]*\n$/.test(header)) return { buffer: source, encoding, endian };
+    const normalized = new TextEncoder().encode(`${header.replace(/\r\n/g, '\n').trimEnd()}\n#\n\n`);
+    const buffer = new Uint8Array(normalized.length + bytes.length - index - 1);
+    buffer.set(normalized); buffer.set(bytes.subarray(index + 1), normalized.length);
+    return { buffer: buffer.buffer, encoding, endian };
+  }
+  return { buffer: source };
 }
 
 function resolveLwoTextureUrl(
@@ -4133,29 +4465,10 @@ function resolve3dsTextureUrl(
   return url;
 }
 
-function listLDrawSubfileReferences(source: string): string[] {
-  const references = new Set<string>();
-  for (const rawLine of source.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('0')) {
-      continue;
-    }
-    const parts = line.split(/\s+/);
-    if (parts[0] !== '1' || parts.length < 15) {
-      continue;
-    }
-    const reference = parts.slice(14).join(' ').trim();
-    if (reference) {
-      references.add(reference);
-    }
-  }
-  return [...references];
-}
-
 function normalizeLDrawReference(reference: string): string {
-  const normalized = reference.replace(/\\/g, '/').replace(/^\.?\//, '');
-  if (normalized.startsWith('s/')) return `parts/${normalized}`;
-  if (normalized.startsWith('48/')) return `p/${normalized}`;
+  const normalized = reference.replace(/\\/g, '/').replace(/^\.\//, '');
+  if (/^s\//i.test(normalized)) return `parts/${normalized}`;
+  if (/^48\//i.test(normalized)) return `p/${normalized}`;
   return normalized;
 }
 
@@ -4163,7 +4476,7 @@ function cloneGltfJson(gltf: unknown): unknown {
   return JSON.parse(JSON.stringify(gltf)) as unknown;
 }
 
-function rewriteGltfResourceUri(gltf: unknown, originalUri: string, resolvedUri: string): void {
+function rewriteGltfResourceUris(gltf: unknown, replacements: Map<string, string>): void {
   if (!gltf || typeof gltf !== 'object') {
     return;
   }
@@ -4172,14 +4485,12 @@ function rewriteGltfResourceUri(gltf: unknown, originalUri: string, resolvedUri:
     images?: Array<{ uri?: unknown; bufferView?: unknown }>;
   };
   for (const buffer of root.buffers ?? []) {
-    if (buffer.uri === originalUri) {
-      buffer.uri = resolvedUri;
-    }
+    const uri = typeof buffer.uri === 'string' ? replacements.get(buffer.uri.trim()) : undefined;
+    if (uri !== undefined) buffer.uri = uri;
   }
   for (const image of root.images ?? []) {
-    if (image.bufferView == null && image.uri === originalUri) {
-      image.uri = resolvedUri;
-    }
+    const uri = typeof image.uri === 'string' ? replacements.get(image.uri.trim()) : undefined;
+    if (image.bufferView == null && uri !== undefined) image.uri = uri;
   }
 }
 
@@ -4200,38 +4511,24 @@ function gltfResourceRelation(gltf: unknown, uri: string): string {
   return 'resource';
 }
 
-async function sourceToArrayBuffer(source: PreviewSource, context: PreviewLoadContext): Promise<ArrayBuffer> {
-  if (typeof source === 'string') {
-    const response = await fetch(source, { signal: context.signal });
-    if (!response.ok) {
-      throw new Error(`Failed to load 3D source: ${response.status} ${response.statusText}`.trim());
-    }
-    return response.arrayBuffer();
-  }
-  if (source instanceof Blob) {
-    return source.arrayBuffer();
-  }
-  if (ArrayBuffer.isView(source)) {
-    const copy = new Uint8Array(source.byteLength);
-    copy.set(new Uint8Array(source.buffer, source.byteOffset, source.byteLength));
-    return copy.buffer;
-  }
-  if (source instanceof ArrayBuffer) {
-    return source;
-  }
-  throw new Error('Unsupported 3D source type.');
-}
-
 async function previewSourceToArrayBuffer(source: PreviewSource, signal?: AbortSignal): Promise<ArrayBuffer> {
+  checkModelLoadAborted(signal);
   if (typeof source === 'string') {
-    const response = await fetch(source, { signal });
-    if (!response.ok) {
-      throw new Error(`Failed to load 3D source: ${response.status} ${response.statusText}`.trim());
+    const release = (response: Response): void => { void response.body?.cancel().catch(() => {}); };
+    const response = await waitForModelLoad(fetch(source, { signal }), signal, release);
+    try {
+      checkModelLoadAborted(signal);
+      if (!response.ok) {
+        throw new Error(`Failed to load 3D source: ${response.status} ${response.statusText}`.trim());
+      }
+      return await waitForModelLoad(response.arrayBuffer(), signal);
+    } catch (error) {
+      release(response);
+      throw error;
     }
-    return response.arrayBuffer();
   }
   if (source instanceof Blob) {
-    return source.arrayBuffer();
+    return waitForModelLoad(source.arrayBuffer(), signal);
   }
   if (ArrayBuffer.isView(source)) {
     const copy = new Uint8Array(source.byteLength);
@@ -4239,7 +4536,7 @@ async function previewSourceToArrayBuffer(source: PreviewSource, signal?: AbortS
     return copy.buffer;
   }
   if (source instanceof ArrayBuffer) {
-    return source;
+    return source.slice(0);
   }
   throw new Error('Unsupported 3D source type.');
 }
@@ -4285,28 +4582,28 @@ function parseBinaryStl(bytes: Uint8Array): StlGeometry {
     throw new Error('Binary STL triangle data is truncated.');
   }
 
-  const positions: number[] = [];
-  const normals: number[] = [];
+  if (!triangleCount) throw new Error('No STL triangles found.');
+  const positions = new Float32Array(triangleCount * 9);
+  const normals = new Float32Array(triangleCount * 9);
   let offset = 84;
   for (let triangle = 0; triangle < triangleCount; triangle += 1) {
-    const normal: [number, number, number] = [
-      view.getFloat32(offset, true),
-      view.getFloat32(offset + 4, true),
-      view.getFloat32(offset + 8, true)
-    ];
+    const nx = view.getFloat32(offset, true);
+    const ny = view.getFloat32(offset + 4, true);
+    const nz = view.getFloat32(offset + 8, true);
     offset += 12;
     for (let vertex = 0; vertex < 3; vertex += 1) {
-      positions.push(view.getFloat32(offset, true), view.getFloat32(offset + 4, true), view.getFloat32(offset + 8, true));
-      normals.push(...normal);
+      const index = triangle * 9 + vertex * 3;
+      positions[index] = view.getFloat32(offset, true);
+      positions[index + 1] = view.getFloat32(offset + 4, true);
+      positions[index + 2] = view.getFloat32(offset + 8, true);
+      normals[index] = nx;
+      normals[index + 1] = ny;
+      normals[index + 2] = nz;
       offset += 12;
     }
     offset += 2;
   }
-
-  if (!positions.length) {
-    throw new Error('No STL triangles found.');
-  }
-  return geometryFromArrays(positions, normals);
+  return { positions, normals, triangleCount, bounds: computeBounds(positions) };
 }
 
 interface ObjFaceVertex {
@@ -4884,7 +5181,7 @@ function geometryFromArrays(positions: number[], normals: number[], colors?: num
   };
 }
 
-function computeBounds(positions: number[]): ModelGeometry['bounds'] {
+function computeBounds(positions: ArrayLike<number>): ModelGeometry['bounds'] {
   let minX = Number.POSITIVE_INFINITY;
   let minY = Number.POSITIVE_INFINITY;
   let minZ = Number.POSITIVE_INFINITY;
@@ -6917,46 +7214,29 @@ function modelNameForSource(name: string | undefined): string {
 
 function normalizeResourceResolverResult(
   result: Awaited<ReturnType<PreviewResourceResolver>>,
-  contentType: string
+  contentType: string,
+  objectUrls?: string[]
 ): { source?: string; warnings: string[] } {
+  const resolved = unpackResourceResolverResult(result);
+  return { source: normalizeResolvedPreviewSource(resolved.source, contentType, objectUrls), warnings: resolved.warnings };
+}
+
+function unpackResourceResolverResult(
+  result: Awaited<ReturnType<PreviewResourceResolver>>
+): { source?: PreviewSource; warnings: string[] } {
   if (!result) {
     return { warnings: [] };
   }
-  if (typeof result === 'string') {
-    return {
-      source: result,
-      warnings: []
-    };
-  }
-  if (result instanceof Blob) {
-    return {
-      source: URL.createObjectURL(result),
-      warnings: []
-    };
-  }
-  if (ArrayBuffer.isView(result) || result instanceof ArrayBuffer) {
-    const bytes = ArrayBuffer.isView(result)
-      ? new Uint8Array(result.buffer, result.byteOffset, result.byteLength)
-      : new Uint8Array(result);
-    return {
-      source: bytesToDataUrl(bytes, contentType),
-      warnings: []
-    };
-  }
-  return normalizeResourceResolveResult(result, contentType);
-}
-
-function normalizeResourceResolveResult(
-  result: PreviewResourceResolveResult,
-  contentType: string
-): { source?: string; warnings: string[] } {
+  const isSource = (value: unknown): value is PreviewSource => typeof value === 'string' || value instanceof Blob
+    || ArrayBuffer.isView(value) || value instanceof ArrayBuffer;
+  if (isSource(result)) return { source: result, warnings: [] };
   return {
-    source: normalizeResolvedPreviewSource(result.source, contentType),
+    source: isSource(result.source) ? result.source : undefined,
     warnings: result.warnings ?? []
   };
 }
 
-function normalizeResolvedPreviewSource(source: PreviewSource | undefined, contentType: string): string | undefined {
+function normalizeResolvedPreviewSource(source: PreviewSource | undefined, contentType: string, objectUrls?: string[]): string | undefined {
   if (!source) {
     return undefined;
   }
@@ -6964,48 +7244,26 @@ function normalizeResolvedPreviewSource(source: PreviewSource | undefined, conte
     return source;
   }
   if (source instanceof Blob) {
-    return URL.createObjectURL(source);
+    const url = URL.createObjectURL(source);
+    objectUrls?.push(url);
+    return url;
   }
-  if (ArrayBuffer.isView(source)) {
-    return bytesToDataUrl(new Uint8Array(source.buffer, source.byteOffset, source.byteLength), contentType);
-  }
-  if (source instanceof ArrayBuffer) {
-    return bytesToDataUrl(new Uint8Array(source), contentType);
+  if (ArrayBuffer.isView(source) || source instanceof ArrayBuffer) {
+    const bytes = ArrayBuffer.isView(source)
+      ? new Uint8Array(source.buffer, source.byteOffset, source.byteLength)
+      : new Uint8Array(source);
+    if (!objectUrls) return bytesToDataUrl(bytes, contentType);
+    // Blob snapshots exactly the view, without a JS Base64 string or a second decode.
+    // SharedArrayBuffer-backed views need a regular ArrayBuffer for BlobPart.
+    const part = bytes.buffer instanceof ArrayBuffer
+      ? new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength) : new Uint8Array(bytes);
+    return normalizeResolvedPreviewSource(new Blob([part], { type: contentType }), contentType, objectUrls);
   }
   return undefined;
 }
 
-async function previewSourceToText(source: PreviewSource): Promise<string> {
-  if (typeof source === 'string') {
-    if (source.startsWith('data:')) {
-      return decodeDataUrlText(source);
-    }
-    const response = await fetch(source);
-    if (!response.ok) {
-      throw new Error(`Failed to load OBJ material resource: ${response.status} ${response.statusText}`.trim());
-    }
-    return response.text();
-  }
-  if (source instanceof Blob) {
-    return source.text();
-  }
-  if (ArrayBuffer.isView(source)) {
-    return new TextDecoder().decode(new Uint8Array(source.buffer, source.byteOffset, source.byteLength));
-  }
-  if (source instanceof ArrayBuffer) {
-    return new TextDecoder().decode(source);
-  }
-  return String(source);
-}
-
-function decodeDataUrlText(source: string): string {
-  const commaIndex = source.indexOf(',');
-  if (commaIndex < 0) {
-    return '';
-  }
-  const metadata = source.slice(0, commaIndex).toLowerCase();
-  const payload = source.slice(commaIndex + 1);
-  return metadata.endsWith(';base64') ? atob(payload) : decodeURIComponent(payload);
+async function previewSourceToText(source: PreviewSource, signal?: AbortSignal): Promise<string> {
+  return new TextDecoder().decode(await previewSourceToArrayBuffer(source, signal));
 }
 
 function gltfResourceContentType(uri: string): string {

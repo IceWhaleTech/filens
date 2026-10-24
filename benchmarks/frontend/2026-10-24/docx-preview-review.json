@@ -1,0 +1,631 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "measurementDate": "2026-10-24T09:49:50.061Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "renderer": {
+    "name": "docx-preview",
+    "version": "0.3.7",
+    "sameForBothBuilds": true
+  },
+  "rawSha256": "59f2af1ba903dab5bc801e6077088c27ed41c518dcbb641e8ac0a445a0c70249",
+  "finalRuns": 70,
+  "currentSuccesses": 35,
+  "baselineSuccesses": 35,
+  "currentFailures": 0,
+  "baselineFailures": 0,
+  "excludedDiagnosticRuns": 80,
+  "externalComparisonTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "changedThisRound": false
+  },
+  "method": "Fresh Chromium context per invocation, rotating engine order. Inputs/imports ready before timing. loadMs includes session construction, input snapshot/read, docx-preview parsing and DOM/resource task completion. Excludes image decode readiness, paint, file I/O and module download. After timing, decode every image, canonicalize complete DOM using all resource payload hashes, check teardown and compare first/last viewport screenshots in repeat zero. Same underlying renderer; no peer/SOTA or memory claim.",
+  "statistics": "10,000 paired bootstrap resamples of load median ratios, seed 12345. Same docx-preview engine before/after resource reuse and lifecycle/input fixes. Excludes image decode readiness, paint, file I/O and module download. Losing/non-improving controls remain; baseline medians at or below 10 ms receive no speed claim. No peer/SOTA ranking.",
+  "measurements": [
+    {
+      "sample": "filens-aurora-guide.docx",
+      "currentMs": 18.399999976158142,
+      "baselineMs": 21.200000047683716,
+      "ratio": 1.1521739171279175,
+      "ratio95PercentBootstrapInterval": [
+        1.1135135148022626,
+        1.6960000038146972
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "currentResourceUrls": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "baselineResourceUrls": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "pages": 3,
+      "images": 3,
+      "tables": 2,
+      "completeDomAndImagePayloadsMatch": true,
+      "firstAndLastViewportsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "rich-docx-images.docx",
+      "currentMs": 15.300000071525574,
+      "baselineMs": 16.09999990463257,
+      "ratio": 1.052287570546869,
+      "ratio95PercentBootstrapInterval": [
+        0.7515923570747999,
+        1.071895418267334
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": false,
+      "currentResourceUrls": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "baselineResourceUrls": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "pages": 1,
+      "images": 6,
+      "tables": 0,
+      "completeDomAndImagePayloadsMatch": true,
+      "firstAndLastViewportsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "rich-docx-tables.docx",
+      "currentMs": 8.100000023841858,
+      "baselineMs": 8.300000071525574,
+      "ratio": 1.0246913638388924,
+      "ratio95PercentBootstrapInterval": [
+        1,
+        1.0370370310411423
+      ],
+      "below10MsControl": true,
+      "stableEngineeringReduction": false,
+      "currentResourceUrls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "baselineResourceUrls": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pages": 1,
+      "images": 0,
+      "tables": 3,
+      "completeDomAndImagePayloadsMatch": true,
+      "firstAndLastViewportsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-400-images.docx",
+      "currentMs": 25.09999990463257,
+      "baselineMs": 208.60000002384186,
+      "ratio": 8.310757004638143,
+      "ratio95PercentBootstrapInterval": [
+        8.263999996185303,
+        8.466135490334405
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "currentResourceUrls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "baselineResourceUrls": [
+        400,
+        400,
+        400,
+        400,
+        400,
+        400,
+        400
+      ],
+      "pages": 20,
+      "images": 400,
+      "tables": 0,
+      "completeDomAndImagePayloadsMatch": true,
+      "firstAndLastViewportsMatch": true,
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-400-images-blob.docx",
+      "currentMs": 24.899999976158142,
+      "baselineMs": 210.59999990463257,
+      "ratio": 8.457831329569597,
+      "ratio95PercentBootstrapInterval": [
+        8.2650602517502,
+        8.58467743970632
+      ],
+      "below10MsControl": false,
+      "stableEngineeringReduction": true,
+      "currentResourceUrls": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "baselineResourceUrls": [
+        400,
+        400,
+        400,
+        400,
+        400,
+        400,
+        400
+      ],
+      "pages": 20,
+      "images": 400,
+      "tables": 0,
+      "completeDomAndImagePayloadsMatch": true,
+      "firstAndLastViewportsMatch": true,
+      "scopedSota": false
+    }
+  ],
+  "samples": [
+    {
+      "name": "filens-aurora-guide.docx",
+      "kind": "typed",
+      "bytes": 601507,
+      "sha256": "3dd79b9a3ad29476dd80d91e79553c52706b2cdfa916771641ec43454f9763a1"
+    },
+    {
+      "name": "rich-docx-images.docx",
+      "kind": "typed",
+      "bytes": 132875,
+      "sha256": "72f40baa1b89e4849e817121dbbf148ed78e51be9bf04d8e6f4bc1494aa517b7"
+    },
+    {
+      "name": "rich-docx-tables.docx",
+      "kind": "typed",
+      "bytes": 32010,
+      "sha256": "5e23ecb6ec09b5db467ddeb22110c2aab83d1218662e8f7c8db444f085e081cc"
+    },
+    {
+      "name": "generated-400-images.docx",
+      "kind": "typed",
+      "bytes": 234537,
+      "sha256": "3965ba48e0f13fb9a36d20ffc133adced2c5ca736fec6adf48e8af3c887506b2"
+    },
+    {
+      "name": "generated-400-images-blob.docx",
+      "kind": "blob",
+      "bytes": 234537,
+      "sha256": "3965ba48e0f13fb9a36d20ffc133adced2c5ca736fec6adf48e8af3c887506b2"
+    }
+  ],
+  "completeDomAndResourceBytesCheckedForEveryRun": true,
+  "allImagesDecodedAfterTiming": true,
+  "firstAndLastViewportPairsIdentical": 10,
+  "generatedLastImageVisible": 400,
+  "viewportReview": [
+    {
+      "sample": "filens-aurora-guide.docx",
+      "engines": [
+        {
+          "engine": "current",
+          "views": [
+            {
+              "view": "first",
+              "sha256": "59e6492c60dbc8e1a03f47ba0ee65550e9d18215be66e3c7ddf0859a9c80bb04",
+              "path": "tmp/continued-review/docx-final/filens-aurora-guide.docx-current-first.png",
+              "scrollGap": 2618,
+              "lastImageVisible": false
+            },
+            {
+              "view": "last",
+              "sha256": "e157e04e93f4f9ba4a0482f4d79a1ba9b911563a640691540b0327cefeb57cf2",
+              "path": "tmp/continued-review/docx-final/filens-aurora-guide.docx-current-last.png",
+              "scrollGap": 0,
+              "lastImageVisible": false
+            }
+          ]
+        },
+        {
+          "engine": "baseline",
+          "views": [
+            {
+              "view": "first",
+              "sha256": "59e6492c60dbc8e1a03f47ba0ee65550e9d18215be66e3c7ddf0859a9c80bb04",
+              "path": "tmp/continued-review/docx-final/filens-aurora-guide.docx-baseline-first.png",
+              "scrollGap": 2618,
+              "lastImageVisible": false
+            },
+            {
+              "view": "last",
+              "sha256": "e157e04e93f4f9ba4a0482f4d79a1ba9b911563a640691540b0327cefeb57cf2",
+              "path": "tmp/continued-review/docx-final/filens-aurora-guide.docx-baseline-last.png",
+              "scrollGap": 0,
+              "lastImageVisible": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sample": "rich-docx-images.docx",
+      "engines": [
+        {
+          "engine": "current",
+          "views": [
+            {
+              "view": "first",
+              "sha256": "5c6ece3187b44f94d1002327721a3e1b25adebb85989eb9e9d5e90580160b716",
+              "path": "tmp/continued-review/docx-final/rich-docx-images.docx-current-first.png",
+              "scrollGap": 334,
+              "lastImageVisible": true
+            },
+            {
+              "view": "last",
+              "sha256": "a21ea8a5fdc99de617002030057bd5de12ca5a72aaa2ffb7a40e43587d3f4c96",
+              "path": "tmp/continued-review/docx-final/rich-docx-images.docx-current-last.png",
+              "scrollGap": 0,
+              "lastImageVisible": true
+            }
+          ]
+        },
+        {
+          "engine": "baseline",
+          "views": [
+            {
+              "view": "first",
+              "sha256": "5c6ece3187b44f94d1002327721a3e1b25adebb85989eb9e9d5e90580160b716",
+              "path": "tmp/continued-review/docx-final/rich-docx-images.docx-baseline-first.png",
+              "scrollGap": 334,
+              "lastImageVisible": true
+            },
+            {
+              "view": "last",
+              "sha256": "a21ea8a5fdc99de617002030057bd5de12ca5a72aaa2ffb7a40e43587d3f4c96",
+              "path": "tmp/continued-review/docx-final/rich-docx-images.docx-baseline-last.png",
+              "scrollGap": 0,
+              "lastImageVisible": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sample": "rich-docx-tables.docx",
+      "engines": [
+        {
+          "engine": "current",
+          "views": [
+            {
+              "view": "first",
+              "sha256": "485c7b31bb299e2201814d8bee33517a46f6295e68c74c06fe21649175a6096d",
+              "path": "tmp/continued-review/docx-final/rich-docx-tables.docx-current-first.png",
+              "scrollGap": 334,
+              "lastImageVisible": false
+            },
+            {
+              "view": "last",
+              "sha256": "10a10782b826b48cee709212b33dd6431e7407cda782336cce1868bc496d794d",
+              "path": "tmp/continued-review/docx-final/rich-docx-tables.docx-current-last.png",
+              "scrollGap": 0,
+              "lastImageVisible": false
+            }
+          ]
+        },
+        {
+          "engine": "baseline",
+          "views": [
+            {
+              "view": "first",
+              "sha256": "485c7b31bb299e2201814d8bee33517a46f6295e68c74c06fe21649175a6096d",
+              "path": "tmp/continued-review/docx-final/rich-docx-tables.docx-baseline-first.png",
+              "scrollGap": 334,
+              "lastImageVisible": false
+            },
+            {
+              "view": "last",
+              "sha256": "10a10782b826b48cee709212b33dd6431e7407cda782336cce1868bc496d794d",
+              "path": "tmp/continued-review/docx-final/rich-docx-tables.docx-baseline-last.png",
+              "scrollGap": 0,
+              "lastImageVisible": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sample": "generated-400-images.docx",
+      "engines": [
+        {
+          "engine": "current",
+          "views": [
+            {
+              "view": "first",
+              "sha256": "b0442fffd3eb0f6a141512007e8789175e0980d8f3ec1425aae492dfc4d8c73b",
+              "path": "tmp/continued-review/docx-final/generated-400-images.docx-current-first.png",
+              "scrollGap": 23528,
+              "lastImageVisible": false
+            },
+            {
+              "view": "last",
+              "sha256": "097f71cec9c54cc118ae31815a5c39d23a8a0a673b678a39596eef6f1bab2db1",
+              "path": "tmp/continued-review/docx-final/generated-400-images.docx-current-last.png",
+              "scrollGap": 0,
+              "lastImageVisible": true
+            }
+          ]
+        },
+        {
+          "engine": "baseline",
+          "views": [
+            {
+              "view": "first",
+              "sha256": "b0442fffd3eb0f6a141512007e8789175e0980d8f3ec1425aae492dfc4d8c73b",
+              "path": "tmp/continued-review/docx-final/generated-400-images.docx-baseline-first.png",
+              "scrollGap": 23528,
+              "lastImageVisible": false
+            },
+            {
+              "view": "last",
+              "sha256": "097f71cec9c54cc118ae31815a5c39d23a8a0a673b678a39596eef6f1bab2db1",
+              "path": "tmp/continued-review/docx-final/generated-400-images.docx-baseline-last.png",
+              "scrollGap": 0,
+              "lastImageVisible": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sample": "generated-400-images-blob.docx",
+      "engines": [
+        {
+          "engine": "current",
+          "views": [
+            {
+              "view": "first",
+              "sha256": "b0442fffd3eb0f6a141512007e8789175e0980d8f3ec1425aae492dfc4d8c73b",
+              "path": "tmp/continued-review/docx-final/generated-400-images-blob.docx-current-first.png",
+              "scrollGap": 23528,
+              "lastImageVisible": false
+            },
+            {
+              "view": "last",
+              "sha256": "097f71cec9c54cc118ae31815a5c39d23a8a0a673b678a39596eef6f1bab2db1",
+              "path": "tmp/continued-review/docx-final/generated-400-images-blob.docx-current-last.png",
+              "scrollGap": 0,
+              "lastImageVisible": true
+            }
+          ]
+        },
+        {
+          "engine": "baseline",
+          "views": [
+            {
+              "view": "first",
+              "sha256": "b0442fffd3eb0f6a141512007e8789175e0980d8f3ec1425aae492dfc4d8c73b",
+              "path": "tmp/continued-review/docx-final/generated-400-images-blob.docx-baseline-first.png",
+              "scrollGap": 23528,
+              "lastImageVisible": false
+            },
+            {
+              "view": "last",
+              "sha256": "097f71cec9c54cc118ae31815a5c39d23a8a0a673b678a39596eef6f1bab2db1",
+              "path": "tmp/continued-review/docx-final/generated-400-images-blob.docx-baseline-last.png",
+              "scrollGap": 0,
+              "lastImageVisible": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "diagnostics": "Retain all ten exploratory runs and 70 runs before correcting last-viewport scroll settling. content-visibility initially left the generated last screenshot at image 392; final repeated settling verifies the bottom gap and image 400 visibility. Timing/production code is unchanged between groups. Both timing groups are excluded from final claims; failed, slow and non-improving measurements are retained.",
+  "changes": [
+    "Use per-load attached containers and an internal AbortController; superseded or destroyed loads cannot overwrite active DOM/state or emit late error/rendered events.",
+    "Abort obsolete network work; discard late parser/render results and reset scroll for new documents.",
+    "Scope resource caches to the parsed document and relation ID/part, preserving header/body distinctions and font keys. Repeated image/font/numbering references share their resource promise.",
+    "Release all session-owned resource URLs on replacement, cancellation, failure and destruction; release resources which resolve after cancellation.",
+    "Pass snapshotted input bytes directly to docx-preview/JSZip; preserve input slices and mutation safety without a Blob/FileReader round trip. Blob input retains its existing renderer path."
+  ],
+  "limits": [
+    "Same-engine old/new engineering comparison, not a frontend peer/SOTA ranking.",
+    "The 8.31x case is generated and repeats one 256x256 PNG 400 times over 20 pages; it is not a general DOCX speed claim. Blob input is a separate representation of the same generated file.",
+    "Timing excludes image decode readiness, paint, initial file I/O and module loading; no first-visible-time or peak-memory claim.",
+    "Already-started docx-preview parser/render work may finish in a detached container; no worker-level interruption or on-demand document rendering is added.",
+    "Real rich-docx-images has no stable gain. The tables control remains below 10 ms and gets no speed claim.",
+    "Resource-loader integration is verified against docx-preview 0.3.7. Actual documents cover images, tables and repeated references; numbering/font URL teardown also has focused mocked unit coverage.",
+    "Visual equivalence covers first and last viewports, while canonical DOM and resource payload checks cover the complete document; not every page has a pixel comparison."
+  ],
+  "validation": {
+    "docxUnitPassed": 17,
+    "vueUnitPassed": 44,
+    "newLifecycleAndSnapshotTests": 15,
+    "finalOldSourceRegressionsFailed": 10,
+    "additionalOldSourceTestsExcluded": 5,
+    "initialOldSourceTestsFailed": 9,
+    "initialOldSourceTestsPassed": 1,
+    "oldSourceReproduction": "An isolated source copy reproduces all ten final lifecycle regressions. Five additional current snapshot/error-cleanup tests are excluded from this before-version run. The initial newer-file assertion was strengthened to require the entire active text/count, rather than the first article alone.",
+    "browserDevelopmentPassed": 11,
+    "browserProductionPassed": 2,
+    "browserCoverage": [
+      "Actual three bundled DOCX documents with decoded images and tables, resource cleanup on switching/destruction",
+      "Delayed real network response cannot overwrite a newer document",
+      "Cancellation while a real resource URL is created releases the late URL",
+      "Repeated-image DOCX upload through the demo in development and production",
+      "Existing business-family regressions, with Office navigation also in production"
+    ],
+    "builds": [
+      "@filens/docx including declaration generation",
+      "Production demo",
+      "Bundle report"
+    ],
+    "reversePatchMatchesFreshBaselineSourceSnapshot": true,
+    "runtimeAndHarnessHashesMatchFinalRawArtifacts": true,
+    "knownWarnings": "Existing duplicate Three.js import warning in Vue tests and production vendor chunk size warning remain; checks pass.",
+    "localMarkdownLinksChecked": 419,
+    "localMarkdownLinkFailures": 0,
+    "historicalDiagnosticHarnessAndRelocatedScreenshotHashesMatch": true
+  },
+  "baselineSourceSnapshot": {
+    "path": "tmp/continued-review/docx-baseline/src/preview-driver.ts",
+    "sha256": "1840ee4c518c83ca730b016ff5dbfdf995f0a1e82d3367cb610255a3898b2e98"
+  },
+  "runtimeArtifacts": [
+    {
+      "engine": "baseline",
+      "path": "tmp/continued-review/docx-baseline/dist/index.js",
+      "sha256": "eb2879dca36afe8d9a2c99d2306bae15dc22add6ba6c7c1e3b093495e84d0855"
+    },
+    {
+      "engine": "current",
+      "path": "packages/docx/dist/index.js",
+      "sha256": "dd47d6881d698adbc3e1681ee6cacd7747a59aa949116416bf422aaa3afa9fa3"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "sha256": "e7ea2b2a7cf03f6d69aa00099c1f86e4e0b8c9a3004558818fa052a7676bd155"
+    },
+    {
+      "path": "packages/docx/dist/index.css",
+      "sha256": "e136e1b35036b09e14c9dce8be90292beb7e015afa02c7f09d5c2414ce912562"
+    },
+    {
+      "path": "scripts/benchmark-docx-preview.mjs",
+      "sha256": "4554283f8e19d8006a48cb66761299f7b5faf4614bfb188fc95492978cb86159"
+    },
+    {
+      "path": "packages/docx/test/fixtures/document.mjs",
+      "sha256": "d50e70d957b6e5b8d3f5d5677323a4b33fa1ec9187de68b739ae46799e7d3efc"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "packages/docx/src/preview-driver.ts",
+      "sha256": "0a340fd8500b2ad4bcc8c6b184a42f7c19c5f58335202645801ebf139cabbd91"
+    },
+    {
+      "path": "packages/docx/test/preview-driver.spec.ts",
+      "sha256": "9eac00c6b0c12b26f630c4bd6adf43f82d69d900d4c8025ea08037d785a1d4cb"
+    },
+    {
+      "path": "packages/docx/test/lifecycle.spec.ts",
+      "sha256": "59f0b2e6aff09ce9dc48761233762c103bbff0dd8676e360207d868f9ad84a13"
+    },
+    {
+      "path": "packages/docx/test/fixtures/document.mjs",
+      "sha256": "d50e70d957b6e5b8d3f5d5677323a4b33fa1ec9187de68b739ae46799e7d3efc"
+    },
+    {
+      "path": "apps/demo/e2e/docx-lifecycle.e2e.ts",
+      "sha256": "e78a7c0a291be48a575016c31687b3cce7f4e1e19cc13398448293bd2bc919bb"
+    },
+    {
+      "path": "scripts/benchmark-docx-preview.mjs",
+      "sha256": "4554283f8e19d8006a48cb66761299f7b5faf4614bfb188fc95492978cb86159"
+    },
+    {
+      "path": "scripts/summarize-docx-preview-benchmark.mjs",
+      "sha256": "02367b9ac4b56d3450627950f1908e900b1d199b2c879b5365998b9f5d2f7f02"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/docx-preview.patch",
+      "sha256": "7dca2524ce84ba43e9c353b1ae89903495e99c64a4d0cd37a11c1ad67ff105f8"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/docx-preview.json.gz",
+      "sha256": "d65489e09a278338a2c2a83c3f7022fd3080780ff687bfeb7946601854d7859d"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/docx-preview-summary.json",
+      "sha256": "ca9d905ed4e8d3e13277d49adb4208decbabc3398c79c90a3c22d2c74dfbd1fe"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/docx-preview-diagnostic.json.gz",
+      "sha256": "ccffd75ce642dc3537579370ac28af4ca755650c0326014f4ffec50f32cdb82e"
+    }
+  ],
+  "localValidationLogs": {
+    "docxUnit": {
+      "path": "tmp/continued-review/docx-unit.log",
+      "sha256": "1ed2dae7f978978c487da12da4037226c6f0019c2d94b2664270fd4a5784ecf3"
+    },
+    "vueUnit": {
+      "path": "tmp/continued-review/docx-vue-unit.log",
+      "sha256": "a5f3dd5533a22c7710c06b2971eaac038de9c6bcb0bdc25766c8c7cdf48274de"
+    },
+    "browserDevelopment": {
+      "path": "tmp/continued-review/docx-browser.log",
+      "sha256": "48c6a82835d44a1b43357e0f0fccf35a08499010a8d1d56e0cf5f85a08122a15"
+    },
+    "browserProduction": {
+      "path": "tmp/continued-review/docx-production-browser.log",
+      "sha256": "5833500fd6d05ee142d5d3d56d8765578b4b6e0ec81dc0aa10b42a8d9cfbc9e5"
+    },
+    "docxBuild": {
+      "path": "tmp/continued-review/docx-build.log",
+      "sha256": "6733e30116a5caa64e9ecbd7cd8eff5a770d1cd2cd83c17b16b258e9e3760b23"
+    },
+    "demoBuild": {
+      "path": "tmp/continued-review/docx-demo-build.log",
+      "sha256": "ef182fa1e112e860794f447dcc1d7543ee93798b7fe51d5b706712b1f4eb4959"
+    },
+    "bundleReport": {
+      "path": "tmp/continued-review/docx-bundle-report.log",
+      "sha256": "059e91077a6b3f6d1b2bf39630f8eda1724188e3c9cd1b2349fe970440f0c623"
+    },
+    "initialOldRegressions": {
+      "path": "tmp/continued-review/docx-before-regressions.log",
+      "sha256": "f6559d78cfc15a6cd31329313562c02f30f1404f982b9c4cc365b586e8506bc9"
+    },
+    "finalOldRegressions": {
+      "path": "tmp/continued-review/docx-before-final-regressions.log",
+      "sha256": "edcfc6057b92261a81b0befcb9cd47331ded7784c9cf34693373fcdab5fa2a8e"
+    }
+  },
+  "reproduction": [
+    "Use isolated source copies preserving earlier changes, reversing docx-preview.patch only in the baseline copy.",
+    "Build @filens/docx in both copies and place baseline index.js in tmp/continued-review/docx-baseline/dist.",
+    "Run node scripts/benchmark-docx-preview.mjs --iterations 7 --output tmp/continued-review/docx-reproduced alone.",
+    "Run node scripts/summarize-docx-preview-benchmark.mjs --input tmp/continued-review/docx-reproduced/results.json.",
+    "Run DOCX/Vue Vitest directly and Playwright docx-lifecycle/business-families tests. Production checks select DOCX upload and supported Office sample navigation."
+  ]
+}

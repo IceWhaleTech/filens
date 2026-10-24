@@ -1,0 +1,306 @@
+--- a/packages/model3d/src/preview-driver.ts
++++ b/packages/model3d/src/preview-driver.ts
+@@ -2687,12 +2687,41 @@
+   }
+ }
+ 
+-function checkModelLoadAborted(signal: AbortSignal): void {
+-  if (signal.aborted) throw new DOMException('3D preview aborted.', 'AbortError');
++function checkModelLoadAborted(signal?: AbortSignal): void {
++  if (signal?.aborted) throw new DOMException('3D preview aborted.', 'AbortError');
++}
++
++function waitForModelLoad<T>(pending: Promise<T>, signal?: AbortSignal, discard?: (value: T) => void): Promise<T> {
++  if (!signal) return pending;
++  return new Promise<T>((resolve, reject) => {
++    let settled = false;
++    const abort = (): void => {
++      if (settled) return;
++      settled = true;
++      signal.removeEventListener('abort', abort);
++      reject(new DOMException('3D preview aborted.', 'AbortError'));
++    };
++    signal.addEventListener('abort', abort, { once: true });
++    if (signal.aborted) abort();
++    void pending.then(value => {
++      if (settled) {
++        discard?.(value);
++        return;
++      }
++      settled = true;
++      signal.removeEventListener('abort', abort);
++      resolve(value);
++    }, error => {
++      if (settled) return;
++      settled = true;
++      signal.removeEventListener('abort', abort);
++      reject(error);
++    }).catch(() => { /* Observe failures from late-result disposal after cancellation. */ });
++  });
+ }
+ 
+ function disposeModelResources(
+-  root: Object3D | null,
++  root: Object3D | Object3D[] | null,
+   extraGeometries: Array<BufferGeometry | null> = [],
+   extraMaterials: Array<Material | null> = []
+ ): void {
+@@ -2701,7 +2730,7 @@
+   const textures = new Set<Texture>();
+   const skeletons = new Set<Skeleton>();
+   const urls = new Set<string>();
+-  root?.traverse(object => {
++  for (const objectRoot of Array.isArray(root) ? root : root ? [root] : []) objectRoot.traverse(object => {
+     const node = object as Object3D & { geometry?: BufferGeometry; material?: Material | Material[]; skeleton?: Skeleton };
+     if (node.geometry) geometries.add(node.geometry);
+     for (const material of Array.isArray(node.material) ? node.material : node.material ? [node.material] : []) materials.add(material);
+@@ -3504,12 +3533,18 @@
+ }
+ 
+ export async function loadStepObject(source: ArrayBuffer): Promise<Object3D> {
+-  occtImporterPromise ??= Promise.all([
+-    import('../vendor/occt-import-js/occt-import-js.js'),
+-    import('../vendor/occt-import-js/occt-import-js.wasm?url')
+-  ]).then(([{ default: createOcctImporter }, { default: wasmUrl }]) =>
+-    createOcctImporter({ locateFile: () => wasmUrl })
+-  );
++  if (!occtImporterPromise) {
++    const attempt = Promise.all([
++      import('../vendor/occt-import-js/occt-import-js.js'),
++      import('../vendor/occt-import-js/occt-import-js.wasm?url')
++    ]).then(([{ default: createOcctImporter }, { default: wasmUrl }]) =>
++      createOcctImporter({ locateFile: () => wasmUrl })
++    );
++    occtImporterPromise = attempt;
++    void attempt.catch(() => {
++      if (occtImporterPromise === attempt) occtImporterPromise = null;
++    });
++  }
+   const importer = await occtImporterPromise;
+   const result = importer.ReadStepFile(new Uint8Array(source), { linearUnit: 'millimeter' });
+   if (!result.success || !result.root || !result.meshes?.length) {
+@@ -3680,26 +3715,42 @@
+   source: ArrayBuffer | string,
+   options: LoadGltfObjectOptions = {}
+ ): Promise<ModelObjectLoadResult> {
+-  const text = typeof source === 'string' ? source : new TextDecoder().decode(source);
+-  const json = parseGltfJson(text);
+-  const externalResources = listExternalGltfResources(json);
+-  const resolved = externalResources.length && options.resourceResolver
+-    ? await resolveExternalGltfResources(json, externalResources, options)
+-    : {
+-        json,
+-        warnings: []
+-      };
+-  const remainingExternalResources = listExternalGltfResources(resolved.json);
+-  if (remainingExternalResources.length && !options.resourcePath) {
+-    throw new Error(`glTF references external resources that are not bundled with this preview: ${remainingExternalResources.join(', ')}.`);
+-  }
+-
+-  const loader = new GLTFLoader();
+-  const gltf = await loader.parseAsync(JSON.stringify(resolved.json), options.resourcePath ?? '');
+-  return {
+-    object: gltf.scene,
+-    warnings: resolved.warnings
+-  };
++  checkModelLoadAborted(options.signal);
++  const objectUrls: string[] = [];
++  try {
++    const text = typeof source === 'string' ? source : new TextDecoder().decode(source);
++    const json = parseGltfJson(text);
++    const externalResources = listExternalGltfResources(json);
++    const resolved = externalResources.length && options.resourceResolver
++      ? await resolveExternalGltfResources(json, externalResources, options, objectUrls)
++      : {
++          json,
++          warnings: [],
++          unresolvedResources: externalResources
++        };
++    const remainingExternalResources = resolved.unresolvedResources;
++    if (remainingExternalResources.length && !options.resourcePath) {
++      throw new Error(`glTF references external resources that are not bundled with this preview: ${remainingExternalResources.join(', ')}.`);
++    }
++
++    checkModelLoadAborted(options.signal);
++    const loader = new GLTFLoader();
++    const dispose = (gltf: Awaited<ReturnType<GLTFLoader['parseAsync']>>): void =>
++      disposeModelResources(gltf.scenes ?? [gltf.scene]);
++    const gltf = await waitForModelLoad(
++      loader.parseAsync(JSON.stringify(resolved.json), options.resourcePath ?? ''), options.signal, dispose
++    );
++    if (options.signal?.aborted) {
++      dispose(gltf);
++      checkModelLoadAborted(options.signal);
++    }
++    return {
++      object: gltf.scene,
++      warnings: resolved.warnings
++    };
++  } finally {
++    for (const url of objectUrls) URL.revokeObjectURL(url);
++  }
+ }
+ 
+ export function listExternalGltfResources(gltf: unknown): string[] {
+@@ -3725,32 +3776,38 @@
+ async function resolveExternalGltfResources(
+   gltf: unknown,
+   externalResources: string[],
+-  options: LoadGltfObjectOptions
+-): Promise<{ json: unknown; warnings: string[] }> {
++  options: LoadGltfObjectOptions,
++  objectUrls: string[]
++): Promise<{ json: unknown; warnings: string[]; unresolvedResources: string[] }> {
+   const root = cloneGltfJson(gltf);
+   const warnings: string[] = [];
++  const replacements = new Map<string, string>();
++  const unresolvedResources: string[] = [];
+   for (const uri of externalResources) {
+-    if (options.signal?.aborted) {
+-      throw new DOMException('3D preview aborted.', 'AbortError');
+-    }
++    checkModelLoadAborted(options.signal);
++    const result = await waitForModelLoad(Promise.resolve(options.resourceResolver?.({
++      family: 'model3d',
++      sourceFormat: options.sourceFormat ?? 'gltf',
++      source: uri,
++      relation: gltfResourceRelation(root, uri),
++      name: uri.split(/[\\/]/).pop() ?? uri
++    })), options.signal);
++    checkModelLoadAborted(options.signal);
+     const resolved = normalizeResourceResolverResult(
+-      await options.resourceResolver?.({
+-        family: 'model3d',
+-        sourceFormat: options.sourceFormat ?? 'gltf',
+-        source: uri,
+-        relation: gltfResourceRelation(root, uri),
+-        name: uri.split(/[\\/]/).pop() ?? uri
+-      }),
+-      gltfResourceContentType(uri)
++      result,
++      gltfResourceContentType(uri),
++      objectUrls
+     );
+     warnings.push(...resolved.warnings);
+     if (resolved.source) {
+-      rewriteGltfResourceUri(root, uri, resolved.source);
+-    }
+-  }
++      replacements.set(uri, resolved.source);
++    } else unresolvedResources.push(uri);
++  }
++  rewriteGltfResourceUris(root, replacements);
+   return {
+     json: root,
+-    warnings
++    warnings,
++    unresolvedResources
+   };
+ }
+ 
+@@ -4222,7 +4279,7 @@
+   return JSON.parse(JSON.stringify(gltf)) as unknown;
+ }
+ 
+-function rewriteGltfResourceUri(gltf: unknown, originalUri: string, resolvedUri: string): void {
++function rewriteGltfResourceUris(gltf: unknown, replacements: Map<string, string>): void {
+   if (!gltf || typeof gltf !== 'object') {
+     return;
+   }
+@@ -4231,14 +4288,12 @@
+     images?: Array<{ uri?: unknown; bufferView?: unknown }>;
+   };
+   for (const buffer of root.buffers ?? []) {
+-    if (buffer.uri === originalUri) {
+-      buffer.uri = resolvedUri;
+-    }
++    const uri = typeof buffer.uri === 'string' ? replacements.get(buffer.uri.trim()) : undefined;
++    if (uri !== undefined) buffer.uri = uri;
+   }
+   for (const image of root.images ?? []) {
+-    if (image.bufferView == null && image.uri === originalUri) {
+-      image.uri = resolvedUri;
+-    }
++    const uri = typeof image.uri === 'string' ? replacements.get(image.uri.trim()) : undefined;
++    if (image.bufferView == null && uri !== undefined) image.uri = uri;
+   }
+ }
+ 
+@@ -6976,7 +7031,8 @@
+ 
+ function normalizeResourceResolverResult(
+   result: Awaited<ReturnType<PreviewResourceResolver>>,
+-  contentType: string
++  contentType: string,
++  objectUrls?: string[]
+ ): { source?: string; warnings: string[] } {
+   if (!result) {
+     return { warnings: [] };
+@@ -6989,7 +7045,7 @@
+   }
+   if (result instanceof Blob) {
+     return {
+-      source: URL.createObjectURL(result),
++      source: normalizeResolvedPreviewSource(result, contentType, objectUrls),
+       warnings: []
+     };
+   }
+@@ -6998,24 +7054,25 @@
+       ? new Uint8Array(result.buffer, result.byteOffset, result.byteLength)
+       : new Uint8Array(result);
+     return {
+-      source: bytesToDataUrl(bytes, contentType),
++      source: normalizeResolvedPreviewSource(bytes, contentType, objectUrls),
+       warnings: []
+     };
+   }
+-  return normalizeResourceResolveResult(result, contentType);
++  return normalizeResourceResolveResult(result, contentType, objectUrls);
+ }
+ 
+ function normalizeResourceResolveResult(
+   result: PreviewResourceResolveResult,
+-  contentType: string
++  contentType: string,
++  objectUrls?: string[]
+ ): { source?: string; warnings: string[] } {
+   return {
+-    source: normalizeResolvedPreviewSource(result.source, contentType),
++    source: normalizeResolvedPreviewSource(result.source, contentType, objectUrls),
+     warnings: result.warnings ?? []
+   };
+ }
+ 
+-function normalizeResolvedPreviewSource(source: PreviewSource | undefined, contentType: string): string | undefined {
++function normalizeResolvedPreviewSource(source: PreviewSource | undefined, contentType: string, objectUrls?: string[]): string | undefined {
+   if (!source) {
+     return undefined;
+   }
+@@ -7023,13 +7080,20 @@
+     return source;
+   }
+   if (source instanceof Blob) {
+-    return URL.createObjectURL(source);
+-  }
+-  if (ArrayBuffer.isView(source)) {
+-    return bytesToDataUrl(new Uint8Array(source.buffer, source.byteOffset, source.byteLength), contentType);
+-  }
+-  if (source instanceof ArrayBuffer) {
+-    return bytesToDataUrl(new Uint8Array(source), contentType);
++    const url = URL.createObjectURL(source);
++    objectUrls?.push(url);
++    return url;
++  }
++  if (ArrayBuffer.isView(source) || source instanceof ArrayBuffer) {
++    const bytes = ArrayBuffer.isView(source)
++      ? new Uint8Array(source.buffer, source.byteOffset, source.byteLength)
++      : new Uint8Array(source);
++    if (!objectUrls) return bytesToDataUrl(bytes, contentType);
++    // Blob snapshots exactly the view, without a JS Base64 string or a second decode.
++    // SharedArrayBuffer-backed views need a regular ArrayBuffer for BlobPart.
++    const part = bytes.buffer instanceof ArrayBuffer
++      ? new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength) : new Uint8Array(bytes);
++    return normalizeResolvedPreviewSource(new Blob([part], { type: contentType }), contentType, objectUrls);
+   }
+   return undefined;
+ }

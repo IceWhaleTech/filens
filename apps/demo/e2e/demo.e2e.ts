@@ -22,19 +22,27 @@ async function goToSlide(page: Page, index: number): Promise<void> {
   }
 }
 
-test('switches the redesigned preview layouts and formats', async ({ page }) => {
+test('switches preview formats and uses PDF page and zoom controls', async ({ page }) => {
   await page.goto('./?view=preview');
 
   await expect(page.getByRole('heading', { name: '文件预览台' })).toBeVisible();
-  await page.getByRole('button', { name: '演示', exact: true }).click();
-  await expect(page.locator('main.workbench')).toHaveAttribute('data-layout', 'presenter');
-
-  await page.getByRole('button', { name: '对比', exact: true }).click();
-  await expect(page.locator('main.workbench')).toHaveAttribute('data-layout', 'compare');
-  await expect(page.locator('.wb-compare-pane')).toHaveCount(2);
-
   await page.getByRole('button', { name: 'PDF', exact: true }).first().click();
   await expect(page.locator('.wb-file-badge')).toHaveText('PDF');
+  await expect(page.locator('canvas.pdfv-page[data-rendered="true"]').first()).toBeVisible();
+  await page.getByRole('button', { name: '显示工具栏', exact: true }).click();
+  const shell = page.locator('.pptxv-generic-shell');
+  await shell.getByRole('button', { name: 'Next', exact: true }).click();
+  await expect(shell.locator('.pptxv-status').first()).toHaveText('2 / 3');
+  await expect(page.locator('canvas.pdfv-page[data-page-index="1"][data-rendered="true"]')).toBeVisible();
+  await shell.getByRole('button', { name: '+', exact: true }).click();
+  await expect(shell.locator('.pptxv-status').nth(1)).toHaveText('110%');
+  await expect(shell.getByRole('button', { name: 'Width', exact: true })).toBeEnabled();
+  await shell.getByRole('button', { name: 'Width', exact: true }).click();
+  await shell.getByRole('button', { name: 'Prev', exact: true }).click();
+  await expect(shell.locator('.pptxv-status').first()).toHaveText('1 / 3');
+  await page.getByRole('button', { name: 'CSV', exact: true }).click();
+  await expect(page.locator('.xlsxv-table')).toBeVisible();
+  await expect(page.locator('.pdfv-preview')).toHaveCount(0);
 });
 
 test('loads converter-backed built-in samples from asset URLs', async ({ page }) => {

@@ -73,6 +73,9 @@ await add('generated-numeric.csv', 'csv', encode(Array.from({ length: 20000 }, (
 const quote = value => `"${value.replaceAll('"', '""')}"`;
 await add('generated-quoted.csv', 'csv', encode(Array.from({ length: 10000 }, (_, r) => [String(r), quote(`中文, field ${r}`), quote('say "hello"'), quote('line one\nline two'), ''].join(',')).join('\r\n')),
   { generated: '10,000 rows × five fields: UTF-8, comma, escaped quote, multiline field and empty last field' });
+await add('generated-long-fields.csv', 'csv', encode(Array.from({ length: 2048 }, (_, r) => Array.from({ length: 4 }, (_, c) =>
+  quote(`${r}:${c} 中文, "notes"\n${'long text '.repeat(64)}`)).join(',')).join('\r\n')),
+  { generated: '2,048 rows × four long quoted fields: UTF-8, commas, escaped quotes and embedded LF; CRLF records, no trailing newline' });
 await local('sample-nested-archives.zip', 'zip', 'apps/demo/public/samples/sample-nested-archives.zip');
 await add('generated-1000-files.zip', 'zip', zipped(Object.fromEntries(Array.from({ length: 1000 }, (_, i) => [`part-${String(i).padStart(4, '0')}.txt`, encode(`Document ${i}: ` + 'sample content\n'.repeat(80))]))),
   { generated: '1,000 deterministic text files, DEFLATE level 6' });

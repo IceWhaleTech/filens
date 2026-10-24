@@ -402,7 +402,7 @@ async function playDemo(): Promise<void> {
             </a>
           </article>
           <article class="principle">
-            <p class="principle-proof"><strong>≈<!-- bundle-size:converter-core -->318.0<!-- /bundle-size --><span class="proof-unit"> KiB</span></strong><span>{{ t('文档转换 WASM · Brotli', 'document conversion WASM · Brotli') }}</span></p>
+            <p class="principle-proof"><strong>≈<!-- bundle-size:converter-core -->318.3<!-- /bundle-size --><span class="proof-unit"> KiB</span></strong><span>{{ t('文档转换 WASM · Brotli', 'document conversion WASM · Brotli') }}</span></p>
             <h2>{{ t('高性能，极致小巧', 'Fast, tiny, loaded on demand') }}</h2>
             <p>{{ t('按格式分包、按需加载，配合 Worker 解析与页面虚拟化，减少下载与渲染负担。', 'Format-based bundles and lazy loading, with worker parsing and page virtualization to reduce download and rendering work.') }}</p>
             <a :href="`${repo}/blob/main/docs/bundle-sizes.md`" target="_blank" rel="noopener noreferrer">

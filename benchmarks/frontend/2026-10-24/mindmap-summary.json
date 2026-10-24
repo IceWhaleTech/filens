@@ -1,0 +1,144 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "49bb7a0e3f641e8ff214a77ba96846675256899e9cbf300a6860e611a5af8ed2",
+  "iterations": 7,
+  "runs": 56,
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "method": "10,000 paired bootstrap resamples of median ratios, seed 12345. XML-to-model parsing and separate session load through SVG DOM construction; layout/paint excluded. Session measurement follows parser measurement in the same context. Baseline operations at or below 10 ms receive no speed claim. No peer/SOTA ranking.",
+  "samples": [
+    {
+      "sample": "wide-1000-no-ids",
+      "nodeCount": 1000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 2.200000047683716,
+          "baselineMs": 90,
+          "ratio": 40.90909002241026,
+          "ratio95PercentBootstrapInterval": [
+            37.91304428500806,
+            43.04761854753473
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 7.099999904632568,
+          "baselineMs": 91.39999997615814,
+          "ratio": 12.873239606175485,
+          "ratio95PercentBootstrapInterval": [
+            12.066666666666666,
+            14.825396952745626
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "wide-3000-no-ids",
+      "nodeCount": 3000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 4,
+          "baselineMs": 777.2999999523163,
+          "ratio": 194.32499998807907,
+          "ratio95PercentBootstrapInterval": [
+            184.8809555294563,
+            194.375
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 17.299999952316284,
+          "baselineMs": 788.6999999284744,
+          "ratio": 45.589595497245995,
+          "ratio95PercentBootstrapInterval": [
+            43.05347582732043,
+            46.66863911486044
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "wide-3000-explicit-ids",
+      "nodeCount": 3000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 5.300000071525574,
+          "baselineMs": 5.100000023841858,
+          "ratio": 0.9622641424557289,
+          "ratio95PercentBootstrapInterval": [
+            0.925925909573486,
+            1.0192307507145335
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 18.200000047683716,
+          "baselineMs": 18.199999928474426,
+          "ratio": 0.9999999934500391,
+          "ratio95PercentBootstrapInterval": [
+            0.9381443273629655,
+            1.027624302769729
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "small-30-no-ids",
+      "nodeCount": 30,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 0.5,
+          "baselineMs": 0.7000000476837158,
+          "ratio": 1.4000000953674316,
+          "ratio95PercentBootstrapInterval": [
+            1.1666665010982156,
+            1.4000000953674316
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 1,
+          "baselineMs": 1,
+          "ratio": 1,
+          "ratio95PercentBootstrapInterval": [
+            0.8999999761581421,
+            1.222222148636239
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    }
+  ]
+}

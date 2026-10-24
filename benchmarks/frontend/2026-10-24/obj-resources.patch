@@ -1,0 +1,232 @@
+--- a/packages/model3d/src/preview-driver.ts
++++ b/packages/model3d/src/preview-driver.ts
+@@ -2839,50 +2839,89 @@
+   source: string,
+   options: LoadObjObjectOptions = {}
+ ): Promise<ModelObjectLoadResult> {
++  checkModelLoadAborted(options.signal);
+   const materialLibraries = listObjMaterialLibraries(source);
+   if (!materialLibraries.length || !options.resourceResolver) {
+-    return {
+-      object: new OBJLoader().parse(source),
+-      warnings: []
+-    };
++    return { object: new OBJLoader().parse(source), warnings: [] };
+   }
+ 
+   const rewrittenMaterials: string[] = [];
+   const warnings: string[] = [];
+-  for (const library of materialLibraries) {
+-    if (options.signal?.aborted) {
+-      throw new DOMException('3D preview aborted.', 'AbortError');
+-    }
+-    const resolved = normalizeResourceResolverResult(
+-      await resolveModelResource(options.resourceResolver, {
++  const objectUrls: string[] = [];
++  let object: Object3D | null = null;
++  let materials: MTLLoader.MaterialCreator | undefined;
++  try {
++    for (const library of materialLibraries) {
++      const resolved = unpackResourceResolverResult(await resolveModelResource(options.resourceResolver, {
+         source: joinResourcePath(dirname(options.resourceBasePath ?? ''), library),
+         fallbackSource: library,
+         relation: 'material',
+         sourceFormat: options.sourceFormat ?? 'obj'
+-      }),
+-      objResourceContentType(library)
+-    );
+-    warnings.push(...resolved.warnings);
+-    if (!resolved.source) {
+-      warnings.push(`OBJ material library "${library}" could not be resolved; materials were skipped.`);
+-      continue;
+-    }
+-    const materialText = await previewSourceToText(resolved.source);
+-    const rewritten = await rewriteObjMaterialResources(materialText, library, options);
+-    warnings.push(...rewritten.warnings);
+-    rewrittenMaterials.push(rewritten.text);
+-  }
+-
+-  const loader = new OBJLoader();
+-  if (rewrittenMaterials.length) {
+-    const materials = new MTLLoader().parse(rewrittenMaterials.join('\n'), '');
+-    materials.preload();
+-    loader.setMaterials(materials);
+-  }
+-  return {
+-    object: loader.parse(source),
+-    warnings
+-  };
++      }, options.signal));
++      checkModelLoadAborted(options.signal);
++      warnings.push(...resolved.warnings);
++      if (!resolved.source) {
++        warnings.push(`OBJ material library "${library}" could not be resolved; materials were skipped.`);
++        continue;
++      }
++      // Decode native text directly: Base64 binary strings corrupt UTF-8 names.
++      const materialText = await previewSourceToText(resolved.source, options.signal);
++      checkModelLoadAborted(options.signal);
++      const rewritten = await rewriteObjMaterialResources(materialText, library, options, objectUrls);
++      warnings.push(...rewritten.warnings);
++      rewrittenMaterials.push(rewritten.text);
++    }
++
++    checkModelLoadAborted(options.signal);
++    const loader = new OBJLoader();
++    if (rewrittenMaterials.length) {
++      const manager = new LoadingManager();
++      const texturesReady = new Promise<void>(resolve => { manager.onLoad = resolve; });
++      manager.onError = () => { warnings.push('An OBJ texture failed to load; the preview may be incomplete.'); };
++      // The sentinel also settles texture-free models and synchronous cache hits.
++      manager.itemStart('filens:obj-parse');
++      try {
++        materials = new MTLLoader(manager).parse(rewrittenMaterials.join('\n'), '');
++        loader.setMaterials(materials);
++        // OBJLoader creates only the materials used by its geometry.
++        object = loader.parse(source);
++      } finally {
++        manager.itemEnd('filens:obj-parse');
++      }
++      await waitForModelLoad(texturesReady, options.signal);
++      checkModelLoadAborted(options.signal);
++      disposeUnusedObjMaterials(object, Object.values(materials.materials));
++    } else {
++      object = loader.parse(source);
++    }
++    return { object, warnings };
++  } catch (error) {
++    disposeModelResources(object, [], Object.values(materials?.materials ?? {}));
++    throw error;
++  } finally {
++    for (const url of objectUrls) URL.revokeObjectURL(url);
++  }
++}
++
++function disposeUnusedObjMaterials(object: Object3D, cached: Material[]): void {
++  const retained = new Set<Material>();
++  const textures = new Set<Texture>();
++  object.traverse(node => {
++    const value = (node as Mesh).material;
++    for (const material of Array.isArray(value) ? value : value ? [value] : []) retained.add(material);
++  });
++  for (const material of retained) {
++    for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
++  }
++  // Lines and points can copy a cached MTL material; preserve shared textures.
++  for (const material of cached) {
++    if (retained.has(material)) continue;
++    for (const value of Object.values(material)) if (value?.isTexture && !textures.has(value)) {
++      textures.add(value);
++      value.dispose();
++    }
++    material.dispose();
++  }
+ }
+ 
+ export function listObjMaterialLibraries(source: string): string[] {
+@@ -3827,7 +3866,8 @@
+ async function rewriteObjMaterialResources(
+   materialText: string,
+   materialLibraryPath: string,
+-  options: LoadObjObjectOptions
++  options: LoadObjObjectOptions,
++  objectUrls: string[]
+ ): Promise<{ text: string; warnings: string[] }> {
+   const materialDir = dirname(joinResourcePath(dirname(options.resourceBasePath ?? ''), materialLibraryPath));
+   const rewrittenLines: string[] = [];
+@@ -3841,14 +3881,17 @@
+     if (options.signal?.aborted) {
+       throw new DOMException('3D preview aborted.', 'AbortError');
+     }
++    const result = await resolveModelResource(options.resourceResolver, {
++      source: joinResourcePath(materialDir, parsed.path),
++      fallbackSource: parsed.path,
++      relation: 'texture',
++      sourceFormat: options.sourceFormat ?? 'obj'
++    }, options.signal);
++    checkModelLoadAborted(options.signal);
+     const resolved = normalizeResourceResolverResult(
+-      await resolveModelResource(options.resourceResolver, {
+-        source: joinResourcePath(materialDir, parsed.path),
+-        fallbackSource: parsed.path,
+-        relation: 'texture',
+-        sourceFormat: options.sourceFormat ?? 'obj'
+-      }),
+-      objResourceContentType(parsed.path)
++      result,
++      objResourceContentType(parsed.path),
++      objectUrls
+     );
+     warnings.push(...resolved.warnings);
+     if (!resolved.source) {
+@@ -3949,14 +3992,22 @@
+ }
+ 
+ function parseObjMaterialMapLine(line: string): { prefix: string; path: string } | undefined {
+-  const match = /^(\s*map_\S+\s+(?:-(?:\w+)\s+\S+\s+)*)(.+?)\s*$/i.exec(line);
+-  if (!match?.[1] || !match[2]) {
+-    return undefined;
+-  }
+-  return {
+-    prefix: match[1],
+-    path: match[2].trim()
+-  };
++  const match = /^(\s*(?:map_\S+|bump|norm|disp)\s+)(.+?)\s*$/i.exec(line);
++  if (!match?.[1] || !match[2]) return undefined;
++  let prefix = match[1];
++  let path = match[2];
++  // Match Three's supported option arities; filenames can contain spaces.
++  const counts: Record<string, number> = { '-bm': 1, '-mm': 2, '-s': 3, '-o': 3 };
++  while (true) {
++    const option = /^(\S+)\s+/.exec(path);
++    const count = option && counts[option[1]!];
++    if (!count) break;
++    const values = new RegExp(`^\\S+(?:\\s+\\S+){${count}}\\s+`).exec(path);
++    if (!values) break;
++    prefix += values[0];
++    path = path.slice(values[0].length);
++  }
++  return path ? { prefix, path } : undefined;
+ }
+ 
+ function listNhdrDataFileReference(source: string): string | undefined {
+@@ -7132,37 +7183,8 @@
+   return undefined;
+ }
+ 
+-async function previewSourceToText(source: PreviewSource): Promise<string> {
+-  if (typeof source === 'string') {
+-    if (source.startsWith('data:')) {
+-      return decodeDataUrlText(source);
+-    }
+-    const response = await fetch(source);
+-    if (!response.ok) {
+-      throw new Error(`Failed to load OBJ material resource: ${response.status} ${response.statusText}`.trim());
+-    }
+-    return response.text();
+-  }
+-  if (source instanceof Blob) {
+-    return source.text();
+-  }
+-  if (ArrayBuffer.isView(source)) {
+-    return new TextDecoder().decode(new Uint8Array(source.buffer, source.byteOffset, source.byteLength));
+-  }
+-  if (source instanceof ArrayBuffer) {
+-    return new TextDecoder().decode(source);
+-  }
+-  return String(source);
+-}
+-
+-function decodeDataUrlText(source: string): string {
+-  const commaIndex = source.indexOf(',');
+-  if (commaIndex < 0) {
+-    return '';
+-  }
+-  const metadata = source.slice(0, commaIndex).toLowerCase();
+-  const payload = source.slice(commaIndex + 1);
+-  return metadata.endsWith(';base64') ? atob(payload) : decodeURIComponent(payload);
++async function previewSourceToText(source: PreviewSource, signal?: AbortSignal): Promise<string> {
++  return new TextDecoder().decode(await previewSourceToArrayBuffer(source, signal));
+ }
+ 
+ function gltfResourceContentType(uri: string): string {

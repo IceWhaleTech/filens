@@ -71,6 +71,7 @@ export async function createCalibratedPanoramaImageRenderer(processor: PanoramaP
   texture.flipY = panoramaTextureFlipY(manifest.textureOrigin);
   texture.colorSpace = SRGBColorSpace;
   texture.minFilter = LinearFilter;
+  texture.generateMipmaps = false;
   texture.needsUpdate = true;
   const seamTexture = new DataTexture(new Uint8Array(128 * 64).fill(128), 128, 64, RedFormat, UnsignedByteType);
   seamTexture.needsUpdate = true;
@@ -81,7 +82,9 @@ export async function createCalibratedPanoramaImageRenderer(processor: PanoramaP
   geometry.scale(-1, 1, 1);
   const mesh = new Mesh(geometry, material);
   const analyzer = new PanoramaFrameAnalyzer(processor, manifest, lensSources, material, seamTexture);
-  analyzer.acceptImage(texture.image as CanvasImageSource);
+  // Complete the one-time analysis before the first frame. Still images can then
+  // retain that frame until interaction or resize without polling for seam work.
+  await analyzer.acceptImage(texture.image as CanvasImageSource);
 
   return {
     mesh,
@@ -234,19 +237,18 @@ function createStillCalibratedMaterial(manifest: PanoramaAssetManifest, lensSour
         vec4 b = projectLens(body, intrinsics1, size1, sourceRect1, distortion1, quaternion1, xi1, tangential1, thinPrism1, sensorTilt1, lens1);
         if (a.a <= 0.0 && b.a <= 0.0) {
           gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-          return;
-        }
-        if (a.a <= 0.0 || b.a <= 0.0) {
+        } else if (a.a <= 0.0 || b.a <= 0.0) {
           gl_FragColor = vec4((a.a > 0.0 ? a.rgb * exposureGain0 : b.rgb * exposureGain1), 1.0);
-          return;
+        } else {
+          float frontPreference = 1.0 - smoothstep(radians(75.0), radians(105.0), abs(bodyPanoramaUv.x * 6.28318530718 - 3.14159265359));
+          float aWeight = a.a * frontPreference;
+          float bWeight = b.a * (1.0 - frontPreference);
+          float lens1Weight = useDynamicSeam == 1
+            ? texture2D(seamMask, bodyPanoramaUv).r
+            : bWeight / max(aWeight + bWeight, 0.0001);
+          gl_FragColor = vec4(mix(a.rgb * exposureGain0, b.rgb * exposureGain1, lens1Weight), 1.0);
         }
-        float frontPreference = 1.0 - smoothstep(radians(75.0), radians(105.0), abs(bodyPanoramaUv.x * 6.28318530718 - 3.14159265359));
-        float aWeight = a.a * frontPreference;
-        float bWeight = b.a * (1.0 - frontPreference);
-        float lens1Weight = useDynamicSeam == 1
-          ? texture2D(seamMask, bodyPanoramaUv).r
-          : bWeight / max(aWeight + bWeight, 0.0001);
-        gl_FragColor = vec4(mix(a.rgb * exposureGain0, b.rgb * exposureGain1, lens1Weight), 1.0);
+        #include <colorspace_fragment>
       }
     `
   });
@@ -1267,11 +1269,11 @@ class PanoramaFrameAnalyzer {
     });
   }
 
-  acceptImage(image: CanvasImageSource) {
+  async acceptImage(image: CanvasImageSource) {
     if (this.closed || this.busy) return;
     this.busy = true;
     const generation = this.generation;
-    void this.analyze([image, image], generation).catch(() => {
+    await this.analyze([image, image], generation).catch(() => {
       // Static INSP rendering can retain calibrated blending if seam analysis is unavailable.
     }).finally(() => { this.busy = false; });
   }
@@ -1450,7 +1452,7 @@ function framePixels(frame: CanvasImageSource): Uint8ClampedArray {
   const canvas = typeof OffscreenCanvas !== 'undefined'
     ? new OffscreenCanvas(SOURCE_ANALYSIS_SIZE, SOURCE_ANALYSIS_SIZE)
     : Object.assign(document.createElement('canvas'), { width: SOURCE_ANALYSIS_SIZE, height: SOURCE_ANALYSIS_SIZE });
-  const context = canvas.getContext('2d', { willReadFrequently: true });
+  const context = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
   if (!context) throw new Error('A 2D canvas is required for panorama seam analysis.');
   context.drawImage(frame, 0, 0, SOURCE_ANALYSIS_SIZE, SOURCE_ANALYSIS_SIZE);
   return context.getImageData(0, 0, SOURCE_ANALYSIS_SIZE, SOURCE_ANALYSIS_SIZE).data;

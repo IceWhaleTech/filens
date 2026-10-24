@@ -36,6 +36,7 @@ interface PlainTextTemplates {
 
 interface CellStorage {
   offsets: number[];
+  columns: number[];
   buffer: Uint8Array;
   view: DataView;
 }
@@ -76,6 +77,7 @@ interface TableMergeSpan {
 interface TableMergeMap {
   starts: Map<string, TableMergeSpan>;
   covered: Set<string>;
+  columnsByRow: Map<number, number[]>;
 }
 
 interface TableHeaderStyles {
@@ -239,7 +241,10 @@ export function buildTableItem(
     // cellCount counts stored cells, not the last occupied column. Sparse
     // rows can have payloads after holes, including in the final column.
     const rowColumnCount = Math.max(cellCount, totalColumns, columnWidths.length);
-    for (let column = 0; column < rowColumnCount; column += 1) {
+    const sparseColumns = preserveEmptyGrid ? undefined
+      : resolveSparseColumns(rowInfo, rowOffsets, rowColumnCount, mergeMap.columnsByRow.get(row));
+    for (let index = 0; index < (sparseColumns?.length ?? rowColumnCount); index += 1) {
+      const column = sparseColumns ? sparseColumns[index] : index;
       const cellInfo = parseTableCell(archive.type, rowInfo, column, rowOffsets);
       const cellKey = createCellPositionKey(row, column);
       const mergeSpan = mergeMap.starts.get(cellKey);
@@ -456,7 +461,8 @@ function resolveTableMergeMap(
 ): TableMergeMap {
   const mergeMap: TableMergeMap = {
     starts: new Map<string, TableMergeSpan>(),
-    covered: new Set<string>()
+    covered: new Set<string>(),
+    columnsByRow: new Map()
   };
 
   const mergeRegionMap = getRecordValue<Record<string, unknown>>(
@@ -488,7 +494,10 @@ function addMergeSpan(mergeMap: TableMergeMap, resolved: { row: number; column: 
   mergeMap.starts.set(startKey, { rowSpan, colSpan });
 
   for (let rowOffset = 0; rowOffset < rowSpan; rowOffset += 1) {
+    const columns = mergeMap.columnsByRow.get(row + rowOffset) ?? [];
+    mergeMap.columnsByRow.set(row + rowOffset, columns);
     for (let columnOffset = 0; columnOffset < colSpan; columnOffset += 1) {
+      columns.push(column + columnOffset);
       if (rowOffset === 0 && columnOffset === 0) {
         continue;
       }
@@ -1037,8 +1046,11 @@ function resolveColumnHeaderTexts(
     if (tableRow.row >= headerRowCount) {
       break;
     }
-    const cellCount = Number(readField<number>(tableRow.rowInfo, ['cellCount', 'cell_count']) ?? columnCount);
-    for (let column = 0; column < Math.min(cellCount, columnCount); column += 1) {
+    // cellCount is a count of stored records, not the last occupied column.
+    // Header text after a sparse hole still supplies date/number context.
+    const sparseColumns = resolveSparseColumns(tableRow.rowInfo, rowOffsets, columnCount);
+    for (let index = 0; index < (sparseColumns?.length ?? columnCount); index += 1) {
+      const column = sparseColumns ? sparseColumns[index] : index;
       if (headers[column]) {
         continue;
       }
@@ -3712,7 +3724,7 @@ function readOptionalString(value: Record<string, unknown>, keys: string[]): str
   return typeof raw === 'string' && raw.length ? raw : undefined;
 }
 
-function parseTableCell(type: IworkArchiveIndex['type'], rowInfo: Record<string, unknown>, column: number, cache: RowOffsetCache): TableCellInfo {
+function getRowOffsets(rowInfo: Record<string, unknown>, cache: RowOffsetCache): { regular: CellStorage; preBnc: CellStorage } {
   let rowOffsets = cache.get(rowInfo);
   if (!rowOffsets) {
     rowOffsets = {
@@ -3721,6 +3733,25 @@ function parseTableCell(type: IworkArchiveIndex['type'], rowInfo: Record<string,
     };
     cache.set(rowInfo, rowOffsets);
   }
+  return rowOffsets;
+}
+
+function resolveSparseColumns(rowInfo: Record<string, unknown>, cache: RowOffsetCache, columnCount: number, mergedColumns: number[] = []): number[] | undefined {
+  const { regular, preBnc } = getRowOffsets(rowInfo, cache);
+  // Dense rows keep the direct loop. Sparse rows visit only stored records
+  // and merge cells, avoiding a parsed empty object for every grid position.
+  if (regular.columns.length + preBnc.columns.length + mergedColumns.length >= columnCount / 2) return undefined;
+  const columns = new Set<number>();
+  for (const source of [regular.columns, preBnc.columns, mergedColumns]) {
+    for (const column of source) {
+      if (column >= 0 && column < columnCount) columns.add(column);
+    }
+  }
+  return [...columns].sort((left, right) => left - right);
+}
+
+function parseTableCell(type: IworkArchiveIndex['type'], rowInfo: Record<string, unknown>, column: number, cache: RowOffsetCache): TableCellInfo {
+  const rowOffsets = getRowOffsets(rowInfo, cache);
   const offsets = rowOffsets.regular;
   const preOffsets = rowOffsets.preBnc;
   if (type === 'numbers') {
@@ -3768,7 +3799,12 @@ function createCellStorage(rawOffsets: unknown, rawBuffer: unknown): CellStorage
   // A row is immutable during one build. Normalize its buffers and construct
   // one view here instead of allocating a DataView for every scalar read.
   const buffer = rawBuffer instanceof Uint8Array ? rawBuffer : rawBuffer ? Uint8Array.from(rawBuffer as number[]) : new Uint8Array(0);
-  return { offsets: decodeOffsets(rawOffsets), buffer, view: new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength) };
+  const offsets = decodeOffsets(rawOffsets);
+  const columns: number[] = [];
+  for (let column = 0; column < offsets.length; column += 1) {
+    if (offsets[column] !== 65535 && offsets[column] < buffer.length) columns.push(column);
+  }
+  return { offsets, columns, buffer, view: new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength) };
 }
 
 function decodeOffsets(raw: unknown): number[] {

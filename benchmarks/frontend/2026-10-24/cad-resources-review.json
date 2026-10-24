@@ -1,0 +1,706 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "measurementDate": "2026-10-24T10:20:19.398Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "node": "v20.20.2",
+  "rawSha256": "2f00acb07b731b2c288cb7ca6c151da1d18003b302604a5c6f46941da464ec35",
+  "finalRuns": 84,
+  "currentCompletedRuns": 42,
+  "currentCompleteOutputRuns": 42,
+  "baselineCompletedRuns": 42,
+  "baselineCompleteOutputRuns": 28,
+  "baselineIncompleteOutputRuns": 14,
+  "excludedDiagnosticRuns": 24,
+  "externalComparisonTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "changedThisRound": false
+  },
+  "method": "Fresh Chromium context per invocation, alternating build order, inputs/modules ready before timing. loadMs measures session.load through parsing, resource preparation and SVG DOM construction. hideMs/showMs measure synchronous one-layer visibility updates only. Excludes file/module download, image decode readiness, layout and paint. Complete parsed models, normalized SVG/state and resource bytes are checked after timing; initial viewports captured in repeat zero. Binary-resource baselines render placeholders and cannot support a speed ratio. Generated inputs plus a bundled DXF; no peer/SOTA or peak-memory claim.",
+  "statistics": "10,000 paired bootstrap median-ratio resamples, seed 12345. Claim only comparable complete outputs, seven repeats and baseline median above 10 ms with a 95% interval above 1. Binary-resource baselines omit images; their times are diagnostic and receive no ratio. Keep slower loads and sub-10 ms controls. No peer/SOTA ranking; visibility timings exclude layout and paint.",
+  "measurements": [
+    {
+      "sample": "generated-50000-lines.dxf",
+      "comparable": true,
+      "exclusion": null,
+      "completeModelsMatch": true,
+      "normalizedSvgAndStateMatch": true,
+      "initialPixelsMatch": true,
+      "currentDecodedImages": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "baselineDecodedImages": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "metrics": {
+        "loadMs": {
+          "currentMs": 114.79999995231628,
+          "baselineMs": 121.70000004768372,
+          "ratio": 1.0601045304724168,
+          "ratio95PercentBootstrapInterval": [
+            1.0422778265433599,
+            1.0905096667472882
+          ],
+          "below10MsControl": false,
+          "stableEngineeringReduction": true
+        },
+        "hideMs": {
+          "currentMs": 2.100000023841858,
+          "baselineMs": 12.600000023841858,
+          "ratio": 5.999999943233672,
+          "ratio95PercentBootstrapInterval": [
+            5.952380884801991,
+            6.399999976158142
+          ],
+          "below10MsControl": false,
+          "stableEngineeringReduction": true
+        },
+        "showMs": {
+          "currentMs": 0.7000000476837158,
+          "baselineMs": 10.199999928474426,
+          "ratio": 14.571427476649456,
+          "ratio95PercentBootstrapInterval": [
+            12.62499890103946,
+            14.571430128448023
+          ],
+          "below10MsControl": false,
+          "stableEngineeringReduction": true
+        }
+      },
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-100000-lines.dxf",
+      "comparable": true,
+      "exclusion": null,
+      "completeModelsMatch": true,
+      "normalizedSvgAndStateMatch": true,
+      "initialPixelsMatch": true,
+      "currentDecodedImages": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "baselineDecodedImages": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "metrics": {
+        "loadMs": {
+          "currentMs": 204.20000004768372,
+          "baselineMs": 219.39999997615814,
+          "ratio": 1.0744368262728943,
+          "ratio95PercentBootstrapInterval": [
+            1.0584258819344428,
+            1.104616896213317
+          ],
+          "below10MsControl": false,
+          "stableEngineeringReduction": true
+        },
+        "hideMs": {
+          "currentMs": 5.100000023841858,
+          "baselineMs": 29.399999976158142,
+          "ratio": 5.764705850728793,
+          "ratio95PercentBootstrapInterval": [
+            4.7037037200561445,
+            6.979591880426562
+          ],
+          "below10MsControl": false,
+          "stableEngineeringReduction": true
+        },
+        "showMs": {
+          "currentMs": 1.600000023841858,
+          "baselineMs": 21.300000071525574,
+          "ratio": 13.312499846331777,
+          "ratio95PercentBootstrapInterval": [
+            12.687499855645003,
+            14.200000047683716
+          ],
+          "below10MsControl": false,
+          "stableEngineeringReduction": true
+        }
+      },
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-raster-bytes.dxf",
+      "comparable": false,
+      "exclusion": "Old binary-resource output contains placeholders instead of raster images; no performance ratio.",
+      "completeModelsMatch": true,
+      "normalizedSvgAndStateMatch": false,
+      "initialPixelsMatch": false,
+      "currentDecodedImages": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "baselineDecodedImages": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "metrics": {
+        "loadMs": {
+          "currentMs": 3.3000000715255737,
+          "baselineMs": 181,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": false,
+          "stableEngineeringReduction": false
+        },
+        "hideMs": {
+          "currentMs": 0.10000002384185791,
+          "baselineMs": 0.09999990463256836,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": true,
+          "stableEngineeringReduction": false
+        },
+        "showMs": {
+          "currentMs": 0,
+          "baselineMs": 0,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": true,
+          "stableEngineeringReduction": false
+        }
+      },
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-raster-slice.dxf",
+      "comparable": false,
+      "exclusion": "Old binary-resource output contains placeholders instead of raster images; no performance ratio.",
+      "completeModelsMatch": true,
+      "normalizedSvgAndStateMatch": false,
+      "initialPixelsMatch": false,
+      "currentDecodedImages": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "baselineDecodedImages": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "metrics": {
+        "loadMs": {
+          "currentMs": 3.3000000715255737,
+          "baselineMs": 185.10000002384186,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": false,
+          "stableEngineeringReduction": false
+        },
+        "hideMs": {
+          "currentMs": 0.09999990463256836,
+          "baselineMs": 0.09999990463256836,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": true,
+          "stableEngineeringReduction": false
+        },
+        "showMs": {
+          "currentMs": 0,
+          "baselineMs": 0,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": true,
+          "stableEngineeringReduction": false
+        }
+      },
+      "scopedSota": false
+    },
+    {
+      "sample": "generated-raster-blob.dxf",
+      "comparable": true,
+      "exclusion": null,
+      "completeModelsMatch": true,
+      "normalizedSvgAndStateMatch": true,
+      "initialPixelsMatch": true,
+      "currentDecodedImages": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "baselineDecodedImages": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "metrics": {
+        "loadMs": {
+          "currentMs": 2.100000023841858,
+          "baselineMs": 2,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": true,
+          "stableEngineeringReduction": false
+        },
+        "hideMs": {
+          "currentMs": 0.10000002384185791,
+          "baselineMs": 0.09999990463256836,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": true,
+          "stableEngineeringReduction": false
+        },
+        "showMs": {
+          "currentMs": 0,
+          "baselineMs": 0,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": true,
+          "stableEngineeringReduction": false
+        }
+      },
+      "scopedSota": false
+    },
+    {
+      "sample": "filens-cafe.dxf",
+      "comparable": true,
+      "exclusion": null,
+      "completeModelsMatch": true,
+      "normalizedSvgAndStateMatch": true,
+      "initialPixelsMatch": true,
+      "currentDecodedImages": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "baselineDecodedImages": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "metrics": {
+        "loadMs": {
+          "currentMs": 6,
+          "baselineMs": 6.100000023841858,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": true,
+          "stableEngineeringReduction": false
+        },
+        "hideMs": {
+          "currentMs": 0.10000002384185791,
+          "baselineMs": 0.10000002384185791,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": true,
+          "stableEngineeringReduction": false
+        },
+        "showMs": {
+          "currentMs": 0,
+          "baselineMs": 0,
+          "ratio": null,
+          "ratio95PercentBootstrapInterval": null,
+          "below10MsControl": true,
+          "stableEngineeringReduction": false
+        }
+      },
+      "scopedSota": false
+    }
+  ],
+  "changes": [
+    "Capture per-layer SVG nodes while building the SVG; set initial visibility once, then update only changed layers while preserving explicit entity invisibility.",
+    "Use an internal per-load AbortController, discard late source/resolver results and errors, and stop obsolete source fetches. Pre-aborted sources are rejected before reads.",
+    "Replace per-byte Base64 construction with owned Blob URLs for binary raster resources, preserving view offsets and byte snapshots. This also fixes binary resolver results displaying placeholders.",
+    "Track only session-created image URLs and release them on replacement, abort, current failure or destruction; caller-owned string URLs remain untouched.",
+    "Decode base64 DXF data URLs as UTF-8 and clear prior drawing/layer/pan state before a new file; destruction clears listeners and object references."
+  ],
+  "contentReview": {
+    "completeParsedModelsMatchAllRuns": true,
+    "comparableSamples": [
+      "generated-50000-lines.dxf",
+      "generated-100000-lines.dxf",
+      "generated-raster-blob.dxf",
+      "filens-cafe.dxf"
+    ],
+    "comparableCompleteNormalizedSvgAndStateMatchAt": [
+      "load",
+      "one-layer-hidden",
+      "restored"
+    ],
+    "allFourComparableInitialViewportsMatch": true,
+    "binaryBaseline": "Byte-array and sliced-byte raster results become data:application/octet-stream URLs that the previous image-source filter rejects. All fourteen baseline runs show placeholders, while all fourteen current runs decode both images. Their raw timings remain but no ratio, stable reduction or SOTA claim is allowed.",
+    "binaryPayloads": "Each current raster run decodes two 1024x1024 opaque PNGs and verifies every resource SHA-256 and byte length; byte-array slices exclude both padded margins. Browser tests additionally cover ArrayBuffer, Blob and wrapped results with 32x32 PNGs.",
+    "visualInspection": "The current binary-resource viewport shows two complete colored-noise raster panels and a readable Chinese/English label. The old viewport shows two IMAGE placeholders. The 100,000-line generated preview is a dense dark horizontal drawing; complete old/new model and SVG hashes supplement the pixel comparison.",
+    "fixtures": [
+      {
+        "name": "generated-50000-lines.dxf",
+        "lines": 50000,
+        "sourceSha256": "c7d02808643aac8cf9fd809dadda00d1c52b7a5b81b96ef7febc0589b01c3715",
+        "sourceBytes": 2588294
+      },
+      {
+        "name": "generated-100000-lines.dxf",
+        "lines": 100000,
+        "sourceSha256": "2230bdaec621712476adf2ff6b8e52eeb518e03dc677e649a661e77842e0e181",
+        "sourceBytes": 5196044
+      },
+      {
+        "name": "generated-raster-bytes.dxf",
+        "representation": "bytes",
+        "expectedImages": 2,
+        "sourceSha256": "8dbd3795267d828587be980143cf0c664bf711f47cb61982947a115b815bc198",
+        "sourceBytes": 356,
+        "resourceSha256": "d0942bd68c0e8f31db85c11554f270477d759c3daa197b7344a4799e53f86c4c",
+        "resourceBytes": 3588320
+      },
+      {
+        "name": "generated-raster-slice.dxf",
+        "representation": "slice",
+        "expectedImages": 2,
+        "sourceSha256": "8dbd3795267d828587be980143cf0c664bf711f47cb61982947a115b815bc198",
+        "sourceBytes": 356,
+        "resourceSha256": "d0942bd68c0e8f31db85c11554f270477d759c3daa197b7344a4799e53f86c4c",
+        "resourceBytes": 3588320
+      },
+      {
+        "name": "generated-raster-blob.dxf",
+        "representation": "blob",
+        "expectedImages": 2,
+        "sourceSha256": "8dbd3795267d828587be980143cf0c664bf711f47cb61982947a115b815bc198",
+        "sourceBytes": 356,
+        "resourceSha256": "d0942bd68c0e8f31db85c11554f270477d759c3daa197b7344a4799e53f86c4c",
+        "resourceBytes": 3588320
+      },
+      {
+        "name": "filens-cafe.dxf",
+        "bundled": true,
+        "sourceSha256": "c8126a745a35570ce76b9336c42477aa2b46a89a2c115c79fbae08d673e8820a",
+        "sourceBytes": 11415
+      }
+    ],
+    "previews": [
+      {
+        "sample": "generated-50000-lines.dxf",
+        "engine": "current",
+        "path": "tmp/continued-review/cad-resources-final/current-generated-50000-lines.dxf.png",
+        "sha256": "f78092752095cf45e3a996fa033506f84e489eac7f9dc8c7b41a608286ea4a13"
+      },
+      {
+        "sample": "generated-50000-lines.dxf",
+        "engine": "baseline",
+        "path": "tmp/continued-review/cad-resources-final/baseline-generated-50000-lines.dxf.png",
+        "sha256": "f78092752095cf45e3a996fa033506f84e489eac7f9dc8c7b41a608286ea4a13"
+      },
+      {
+        "sample": "generated-100000-lines.dxf",
+        "engine": "current",
+        "path": "tmp/continued-review/cad-resources-final/current-generated-100000-lines.dxf.png",
+        "sha256": "54285de3f8226fe40ceb248b0f2c560d6fe8b397de5241d56233b0b8c48e2e92"
+      },
+      {
+        "sample": "generated-100000-lines.dxf",
+        "engine": "baseline",
+        "path": "tmp/continued-review/cad-resources-final/baseline-generated-100000-lines.dxf.png",
+        "sha256": "54285de3f8226fe40ceb248b0f2c560d6fe8b397de5241d56233b0b8c48e2e92"
+      },
+      {
+        "sample": "generated-raster-bytes.dxf",
+        "engine": "current",
+        "path": "tmp/continued-review/cad-resources-final/current-generated-raster-bytes.dxf.png",
+        "sha256": "ea127c4b328cf87bc5aec3e084ebe1d747fed10347f5e7870a92f1c5f50ed895"
+      },
+      {
+        "sample": "generated-raster-bytes.dxf",
+        "engine": "baseline",
+        "path": "tmp/continued-review/cad-resources-final/baseline-generated-raster-bytes.dxf.png",
+        "sha256": "f033deabe097cf668ee509fb37224237f3b32e2b3b0b35aada841343679f237e"
+      },
+      {
+        "sample": "generated-raster-slice.dxf",
+        "engine": "current",
+        "path": "tmp/continued-review/cad-resources-final/current-generated-raster-slice.dxf.png",
+        "sha256": "ea127c4b328cf87bc5aec3e084ebe1d747fed10347f5e7870a92f1c5f50ed895"
+      },
+      {
+        "sample": "generated-raster-slice.dxf",
+        "engine": "baseline",
+        "path": "tmp/continued-review/cad-resources-final/baseline-generated-raster-slice.dxf.png",
+        "sha256": "f033deabe097cf668ee509fb37224237f3b32e2b3b0b35aada841343679f237e"
+      },
+      {
+        "sample": "generated-raster-blob.dxf",
+        "engine": "current",
+        "path": "tmp/continued-review/cad-resources-final/current-generated-raster-blob.dxf.png",
+        "sha256": "ea127c4b328cf87bc5aec3e084ebe1d747fed10347f5e7870a92f1c5f50ed895"
+      },
+      {
+        "sample": "generated-raster-blob.dxf",
+        "engine": "baseline",
+        "path": "tmp/continued-review/cad-resources-final/baseline-generated-raster-blob.dxf.png",
+        "sha256": "ea127c4b328cf87bc5aec3e084ebe1d747fed10347f5e7870a92f1c5f50ed895"
+      },
+      {
+        "sample": "filens-cafe.dxf",
+        "engine": "current",
+        "path": "tmp/continued-review/cad-resources-final/current-filens-cafe.dxf.png",
+        "sha256": "6cfb2cdaf9432dbcdc7fa94abb02bfcc397e164d9f0834096996f5b400fe292c"
+      },
+      {
+        "sample": "filens-cafe.dxf",
+        "engine": "baseline",
+        "path": "tmp/continued-review/cad-resources-final/baseline-filens-cafe.dxf.png",
+        "sha256": "6cfb2cdaf9432dbcdc7fa94abb02bfcc397e164d9f0834096996f5b400fe292c"
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "group": "initial-separate-layer-index",
+      "sourceSha256": "f9a8408fa4e2b140bf152c149aa7d543fd4a430a55fdb5d9f4eace82a9d7c51c",
+      "runs": 12,
+      "currentRuntimeSha256": "9d37d090da3e47268140a14b993f67e7f2ff2ebbbd884ffdc121c1f1a940d48a"
+    },
+    {
+      "group": "refined-index-during-svg-construction",
+      "sourceSha256": "9cb261ac6134872493f42c7312ce28fe8d070f6aa42212496ef0b4276bf04d4c",
+      "runs": 12,
+      "currentRuntimeSha256": "7ea4733ef15dd55133bedd5dce664b2cb7c7cabee3817b14a09b1d4f6d774ebe"
+    }
+  ],
+  "diagnosticInterpretation": "The first separate-index experiment reduces layer-update work but increases initial 50,000/100,000-line loads from 120.6/220.4 ms to 146.5/252.8 ms. The index was moved into SVG construction before final timing. Both 12-run exploratory groups are retained, including slower/no-gain controls. Only the 84 final seven-repeat runs support final claims.",
+  "validation": {
+    "cadUnitPassed": 63,
+    "vueUnitPassed": 44,
+    "newLifecycleRasterTests": 16,
+    "correctedOldSourceTestsFailed": 15,
+    "correctedOldSourceTestsPassed": 1,
+    "oldSourceReproduction": "A complete isolated source copy with the final tests reproduces fifteen failures against the fresh baseline snapshot; the caller-owned blob-URL control already passes.",
+    "testHarnessCorrection": "The initial current run passed 57/63 with six failures because toHaveBeenCalledExactlyOnceWith is unavailable in Vitest 2. It was replaced with separate call-count/argument assertions. The initial before-version run also contains that harness error and is not authoritative regression evidence; the corrected isolated run establishes 15 genuine failures and one passing control.",
+    "developmentBrowserPassed": 9,
+    "productionBrowserPassed": 2,
+    "browserCoverage": [
+      "Actual PNG decoding and complete payload verification for byte arrays, offset views, ArrayBuffer, Blob and wrapped results; raster layer hide/show and URL teardown",
+      "Late real network response after file replacement and late resolver completion after cancellation",
+      "DXF plus two PNG sidecars uploaded through the production demo, and eight bundled design sample formats"
+    ],
+    "cadBuildPassed": true,
+    "demoBuildPassed": true,
+    "bundleSizesUpdated": true,
+    "incrementalPatchReverseRestoresBaseline": true,
+    "initialDiagnosticPatchRestoresSnapshot": true,
+    "localMarkdownLinksChecked": 437,
+    "artifactAndLogBindingsChecked": 45
+  },
+  "limits": [
+    "Same-engine old/new engineering comparison. Generated layered drawings and PNGs, plus one bundled small DXF; no frontend peer/SOTA ranking or general DXF speed claim.",
+    "loadMs stops at parsed/resolved SVG DOM completion. Layer timings cover synchronous visibility changes, excluding layout, paint, image decode readiness, file I/O and module loading.",
+    "Baseline byte-array/slice images do not render, so their timings cannot support a speed ratio. Blob and real drawing controls are below 10 ms and receive no optimization claim.",
+    "The layer cache retains references to the current drawing nodes until replacement or destruction; no peak-memory reduction is claimed.",
+    "Already-started synchronous parsing and custom resolver tasks may finish before their result is discarded. No worker interruption or resolver-level network cancellation API is added.",
+    "Existing limits for DXF entities, patterned hatches, SHX, advanced text and layout/xrefs remain. This round adds no new native CAD format."
+  ],
+  "artifacts": [
+    {
+      "path": "benchmarks/frontend/2026-10-24/cad-resources.json.gz",
+      "sha256": "3553641ccd410b34805e31e0f07399c1e0e27c2ace483a6341ffce26c8296f2a"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/cad-resources-summary.json",
+      "sha256": "c11673300f972eea190030ef6c865d952ac7485ae63e5ac060fe4973df4be173"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/cad-resources-diagnostic.json.gz",
+      "sha256": "03ae739cd2c7530eb2e7869b223832bc5cf5bf18f2ba5c6008214235adb1a8cc"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/cad-resources.patch",
+      "sha256": "01c27abab131502585856bc6448e645c6186900779abb5297ce59ec4a79132ce"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/cad-resources-initial-index.patch",
+      "sha256": "3e5df9e1c2fb51a628813c12b5a7c4526d00118b069b6b22e1a3cde488ea7a82"
+    }
+  ],
+  "baseline": {
+    "source": {
+      "path": "tmp/continued-review/cad-resources-baseline/src/preview-driver.ts",
+      "sha256": "8bf9564c206054aeae307ff853eac6bd4ffd91baec01b0b861d42d3e1d90b49a"
+    },
+    "runtime": {
+      "path": "tmp/continued-review/cad-resources-baseline/dist/index.js",
+      "sha256": "f73e8558465b4bd5eca0e3a02183bed52052dd055b03fafde4b46d2720efe7f6"
+    }
+  },
+  "initialDiagnostic": {
+    "source": {
+      "path": "tmp/continued-review/cad-resources-initial/preview-driver.ts",
+      "sha256": "d1f1b3145b8daa7ccfc6b43aa27ced5a5ff54589c618797872d374df30cd04dd"
+    },
+    "runtime": {
+      "path": "tmp/continued-review/cad-resources-initial/dist/index.js",
+      "sha256": "9d37d090da3e47268140a14b993f67e7f2ff2ebbbd884ffdc121c1f1a940d48a"
+    }
+  },
+  "current": {
+    "source": {
+      "path": "packages/cad/src/preview-driver.ts",
+      "sha256": "930c783c28d09e986b4a89e8376ae0976a8e896f292be01ce3b92bdfdc46e841"
+    },
+    "runtime": {
+      "path": "packages/cad/dist/index.js",
+      "sha256": "7ea4733ef15dd55133bedd5dce664b2cb7c7cabee3817b14a09b1d4f6d774ebe"
+    }
+  },
+  "dependencies": [
+    {
+      "path": "packages/core/dist/index.js",
+      "sha256": "e7ea2b2a7cf03f6d69aa00099c1f86e4e0b8c9a3004558818fa052a7676bd155"
+    },
+    {
+      "path": "packages/cad/dist/index.css",
+      "sha256": "83a1a06b9ba7add04dc279dd749fe4dff5fa078a1bb31e48f7ded72309bb50fd"
+    },
+    {
+      "path": "scripts/benchmark-cad-resources.mjs",
+      "sha256": "3e8b6a98dddedb1efd204e78f78e69723b502dc6b625df166eea35178a8aa40f"
+    },
+    {
+      "path": "packages/cad/test/fixtures/resources.mjs",
+      "sha256": "cec103113d22ee44a44ec7230ddc318bb6c9367ea3c8a160642a611dc9b62ccc"
+    }
+  ],
+  "sourceArtifacts": [
+    {
+      "path": "packages/cad/test/lifecycle.spec.ts",
+      "sha256": "9cb359a2e27c7632ccb04be0d5ad4db049ff84925eb2cca5576ba3d6837fbf4a"
+    },
+    {
+      "path": "packages/cad/test/fixtures/resources.mjs",
+      "sha256": "cec103113d22ee44a44ec7230ddc318bb6c9367ea3c8a160642a611dc9b62ccc"
+    },
+    {
+      "path": "apps/demo/e2e/cad-resources.e2e.ts",
+      "sha256": "e3a2e706d46b4717ed50f8f24090113384823da24b93570669a0ed7c333a632e"
+    },
+    {
+      "path": "apps/demo/e2e/design-samples.e2e.ts",
+      "sha256": "16bd44e4111372b3c653623fa5df055b273458b7b8b2f42743661d2debff12a7"
+    },
+    {
+      "path": "scripts/benchmark-cad-resources.mjs",
+      "sha256": "3e8b6a98dddedb1efd204e78f78e69723b502dc6b625df166eea35178a8aa40f"
+    },
+    {
+      "path": "scripts/summarize-cad-resources-benchmark.mjs",
+      "sha256": "3784abea0a1c826263e9d1df19329eb2bde8f60331f9471f67356df5e6601a74"
+    },
+    {
+      "path": "apps/demo/public/samples/filens-cafe.dxf",
+      "sha256": "c8126a745a35570ce76b9336c42477aa2b46a89a2c115c79fbae08d673e8820a"
+    }
+  ],
+  "localValidationLogs": {
+    "cadUnit": {
+      "path": "tmp/continued-review/cad-resources-unit-final2.log",
+      "sha256": "2a01da9100b63e75bc375a6e584aff40afce119bc8ce0250fd5e42ede0546409"
+    },
+    "vueUnit": {
+      "path": "tmp/continued-review/cad-resources-vue-unit.log",
+      "sha256": "245676c93d82fa2a3132abd47a92077306a96cff5227e5066970e6127a3e6dd8"
+    },
+    "developmentBrowser": {
+      "path": "tmp/continued-review/cad-resources-browser.log",
+      "sha256": "c5145dde3a10fe61b71527a27a2082b2a335ab529b3caf7277900d6512cfc134"
+    },
+    "productionBrowser": {
+      "path": "tmp/continued-review/cad-resources-production-browser.log",
+      "sha256": "04dd1dcc892c087addc3caa60bfc7eccf87caa5311d7a9e476d40f9e73aaa492"
+    },
+    "cadBuild": {
+      "path": "tmp/continued-review/cad-resources-build-final.log",
+      "sha256": "5db6de8ca962837ddbb60df960ed2ce0949467d69416f4d21670581d7de7777e"
+    },
+    "demoBuild": {
+      "path": "tmp/continued-review/cad-resources-demo-build.log",
+      "sha256": "926546163ad208d3202f8f66943e009c0eb83b769da633d84d7fd3330fddfe78"
+    },
+    "bundleReport": {
+      "path": "tmp/continued-review/cad-resources-bundle-report.log",
+      "sha256": "a9c22a6d3235142b091aa3ff29a993d8b8c877ad1bdc39549a29bd4046759c6b"
+    },
+    "initialBeforeRegressions": {
+      "path": "tmp/continued-review/cad-resources-before-regressions.log",
+      "sha256": "d1a0037cfcad42af0a6d83bfe04c7a70daddf69f3738b95ee0c5123325042bea"
+    },
+    "correctedBeforeRegressions": {
+      "path": "tmp/continued-review/cad-resources-before-final-regressions.log",
+      "sha256": "e0559587b196359d862b29d5ca85b31e5da69a2504b877e740cdb959f0403aad"
+    },
+    "initialCurrentMatcherFailure": {
+      "path": "tmp/continued-review/cad-resources-unit.log",
+      "sha256": "a1ae362ea26dd680e2ec8492e8c3f360644aff12bdc5eb3d11994a4200a3bdfd"
+    },
+    "currentBeforeIndexRefinement": {
+      "path": "tmp/continued-review/cad-resources-unit-layers.log",
+      "sha256": "defbcdbb339fb0f8b61e652fd237cf7f5e0f2f15f8521245ed877cd20239edce"
+    }
+  },
+  "reproduction": [
+    "Use isolated source copies preserving earlier changes; reverse cad-resources.patch only in the baseline copy. Its restored source SHA-256 is verified.",
+    "Build @filens/cad in both copies and place the complete baseline dist in tmp/continued-review/cad-resources-baseline/dist.",
+    "Run node scripts/benchmark-cad-resources.mjs --iterations 7 --output tmp/continued-review/cad-resources-reproduced alone, then node scripts/summarize-cad-resources-benchmark.mjs --input tmp/continued-review/cad-resources-reproduced/results.json.",
+    "To reconstruct the first losing index experiment, apply cad-resources-initial-index.patch to the final current source in another isolated copy and build. Its source restoration is verified.",
+    "Run CAD and Vue Vitest directly and Playwright cad-resources/design-samples. Production checks select the DXF sidecar upload and showcase design sample flow."
+  ]
+}

@@ -68,66 +68,87 @@ export class Previewer implements PreviewerInstance {
 
   async preview(source: PreviewSource | SourceDescriptor, descriptor: Partial<SourceDescriptor> = {}): Promise<void> {
     const token = ++this.requestToken;
-    this.activeAbortController?.abort();
-    this.activeAbortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    this.clearSession();
-
-    const initialDescriptor = normalizeSourceDescriptor(source, descriptor);
-    this.setState({
-      ...createIdleState(),
-      loading: true
-    });
-    this.emit('loading', this.state);
+    const previousController = this.activeAbortController;
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    this.activeAbortController = controller;
 
     try {
-      const resolved = await this.resolveLoadTarget(initialDescriptor, token);
+      // Detach before calling user code: teardown and abort handlers may open another file.
+      try {
+        this.clearSession();
+      } finally {
+        previousController?.abort();
+      }
+      if (token !== this.requestToken) return;
+
+      const initialDescriptor = normalizeSourceDescriptor(source, descriptor);
+      this.setState({ ...createIdleState(), loading: true });
+      this.emit('loading', this.state);
+      if (token !== this.requestToken) return;
+
+      const resolved = await waitForPreviewTask(
+        this.resolveLoadTarget(initialDescriptor, token, controller?.signal), controller?.signal
+      );
       if (token !== this.requestToken || !resolved) {
         return;
       }
 
       const session = resolved.driver.createSession(this.host, this.previewOptions);
-      this.bindSession(session);
+      if (token !== this.requestToken) {
+        session.destroy();
+        return;
+      }
       this.activeSession = session;
+      this.bindSession(session, token);
+      if (token !== this.requestToken) return;
 
-      await session.load(resolved.descriptor.source, {
+      await waitForPreviewTask(session.load(resolved.descriptor.source, {
         descriptor: resolved.descriptor,
         route: resolved.route,
-        signal: this.activeAbortController?.signal
-      });
+        signal: controller?.signal
+      }), controller?.signal);
 
       if (token !== this.requestToken) {
         return;
       }
 
-      this.setState(session.getState());
+      this.setState(this.getState());
     } catch (error) {
-      if (token !== this.requestToken || isAbortError(error)) {
+      if (token !== this.requestToken || controller?.signal.aborted) {
         return;
       }
       const normalizedError = error instanceof Error ? error : new Error(String(error));
-      this.setState({
-        ...this.state,
+      const failedState = {
+        ...this.getState(),
         loading: false,
         error: normalizedError.message
-      });
-      this.emit('error', normalizedError);
-    } finally {
-      if (token === this.requestToken) {
-        this.activeAbortController = null;
+      };
+      try {
+        this.clearSession();
+      } finally {
+        controller?.abort();
       }
+      if (token !== this.requestToken) return;
+      this.activeAbortController = null;
+      this.setState(failedState);
+      this.emit('error', normalizedError);
     }
   }
 
   destroy(): void {
-    this.requestToken += 1;
-    this.activeAbortController?.abort();
+    const token = ++this.requestToken;
+    const controller = this.activeAbortController;
     this.activeAbortController = null;
-    this.clearSession();
-    this.setState(createIdleState());
+    try {
+      this.clearSession();
+    } finally {
+      controller?.abort();
+      if (token === this.requestToken) this.setState(createIdleState());
+    }
   }
 
   getState(): PreviewItemState {
-    return this.activeSession?.getState() ?? this.state;
+    return this.state.error ? this.state : this.activeSession?.getState() ?? this.state;
   }
 
   on<T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void): () => void {
@@ -259,7 +280,8 @@ export class Previewer implements PreviewerInstance {
 
   private async resolveLoadTarget(
     descriptor: SourceDescriptor,
-    token: number
+    token: number,
+    signal?: AbortSignal
   ): Promise<{ descriptor: SourceDescriptor; driver: PreviewDriver; route: FormatRoute } | null> {
     const resolved = this.registry.resolve(descriptor);
     if (!resolved) {
@@ -286,7 +308,7 @@ export class Previewer implements PreviewerInstance {
     const context: PreviewLoadContext = {
       descriptor,
       route: resolved.route,
-      signal: this.activeAbortController?.signal
+      signal
     };
     const conversion = await this.converter.convert(
       {
@@ -324,21 +346,28 @@ export class Previewer implements PreviewerInstance {
     };
   }
 
-  private bindSession(session: PreviewSession): void {
-    this.activeUnsubscribes = [
-      session.on('loading', (state) => this.setStateAndEmit('loading', state)),
-      session.on('rendered', (state) => this.setStateAndEmit('rendered', state)),
-      session.on('statechange', (state) => this.setStateAndEmit('statechange', state)),
-      session.on('warnings', (warnings) => this.emit('warnings', warnings)),
-      session.on('error', (error) => {
-        this.setState({
-          ...this.getState(),
-          loading: false,
-          error: error.message
-        });
-        this.emit('error', error);
-      })
-    ];
+  private bindSession(session: PreviewSession, token: number): void {
+    const isCurrent = () => token === this.requestToken && session === this.activeSession;
+    const bind = <T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void) => {
+      if (!isCurrent()) return;
+      const unsubscribe = session.on(event, (payload) => {
+        if (isCurrent()) handler(payload);
+      });
+      if (isCurrent()) this.activeUnsubscribes.push(unsubscribe);
+      else unsubscribe();
+    };
+    bind('loading', (state) => this.setStateAndEmit('loading', state));
+    bind('rendered', (state) => this.setStateAndEmit('rendered', state));
+    bind('statechange', (state) => this.setStateAndEmit('statechange', state));
+    bind('warnings', (warnings) => this.emit('warnings', warnings));
+    bind('error', (error) => {
+      this.setState({
+        ...this.getState(),
+        loading: false,
+        error: error.message
+      });
+      this.emit('error', error);
+    });
   }
 
   private setStateAndEmit<T extends Extract<PreviewEventName, 'loading' | 'rendered' | 'statechange'>>(
@@ -354,16 +383,20 @@ export class Previewer implements PreviewerInstance {
   }
 
   private clearSession(): void {
-    for (const unsubscribe of this.activeUnsubscribes) {
+    const unsubscribes = this.activeUnsubscribes;
+    const session = this.activeSession;
+    this.activeUnsubscribes = [];
+    this.activeSession = null;
+    for (const unsubscribe of unsubscribes) {
       unsubscribe();
     }
-    this.activeUnsubscribes = [];
-    this.activeSession?.destroy();
-    this.activeSession = null;
+    session?.destroy();
   }
 
   private emit<T extends PreviewEventName>(event: T, payload: PreviewEventMap[T]): void {
+    const token = this.requestToken;
     for (const handler of this.listeners[event]) {
+      if (token !== this.requestToken) break;
       handler(payload as never);
     }
   }
@@ -445,8 +478,18 @@ function inferSourceSize(source: PreviewSource): number | undefined {
   return undefined;
 }
 
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError';
+function waitForPreviewTask<T>(work: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return work;
+  return new Promise<T>((resolve, reject) => {
+    const aborted = () => reject(Object.assign(new Error('Preview load aborted.'), { name: 'AbortError' }));
+    // Always observe work, including when synchronous callbacks already aborted the task.
+    work.then(
+      value => { signal.removeEventListener('abort', aborted); resolve(value); },
+      error => { signal.removeEventListener('abort', aborted); reject(error); }
+    );
+    if (signal.aborted) aborted();
+    else signal.addEventListener('abort', aborted, { once: true });
+  });
 }
 
 function formatDescriptorLabel(descriptor: SourceDescriptor): string {

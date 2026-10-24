@@ -19,7 +19,7 @@
 
 - **Pure frontend preview.** Parse and render files in the browser. Local previews require neither uploads nor a conversion server.
 - **WASM conversion, flexible deployment.** Run the conversion module directly in the browser or use it independently through [CLI / HTTP tools](examples/go-wazero-converter). WASM handles file parsing and conversion; the server manages requests and files.
-- **Load by format, spend less time waiting.** Format-based bundles, lazy loading, worker parsing, and page virtualization reduce download and rendering work. The document conversion WASM is **<!-- bundle-size:converter-core -->318.0<!-- /bundle-size --> KiB Brotli**; UI, shared dependencies, and other modules are measured separately in the [bundle report](docs/bundle-sizes.md).
+- **Load by format, spend less time waiting.** Format-based bundles, lazy loading, worker parsing, and page virtualization reduce download and rendering work. The document conversion WASM is **<!-- bundle-size:converter-core -->318.3<!-- /bundle-size --> KiB Brotli**; UI, shared dependencies, and other modules are measured separately in the [bundle report](docs/bundle-sizes.md).
 
 Native PPTX and iWork previews sit alongside documents, spreadsheets, CAD, 3D, RAW, panoramas, archives, and ebooks. Coverage and fidelity vary by format. See the [support matrix](docs/support-matrix.md) for current capabilities and limitations.
 
@@ -31,11 +31,11 @@ This comparison selects browser-local projects by specialty.
 
 | Frontend project | Native PPTX preview | iWork | Panorama photos / video | Local RAW preview | CAD / 3D | Performance path and focus |
 | --- | --- | --- | --- | --- | --- | --- |
-| **filens** | **✅** | **✅ Keynote / Pages / Numbers** | **✅ Photos / video**<br><sub>◐ Insta360 / DJI distortion and calibration parsing, original-track sync and calibrated DNG stitching</sub> | **◐ Embedded JPEG / lightweight development** | **✅ DXF / STEP / 3D** | **Load by format; fast RAW path; panorama redraws on demand** |
+| **filens** | **✅** | **✅ Keynote / Pages / Numbers** | **✅ Photos / video**<br><sub>◐ X5 original INSP, Insta360 / DJI distortion and calibration parsing, original-track sync and calibrated DNG stitching</sub> | **◐ Embedded JPEG / lightweight development** | **✅ DXF / STEP / 3D** | **Load by format; fast RAW path; panorama redraws on demand** |
 | [vue-office](https://github.com/501351981/vue-office) | ✅ [PPTX core is not open source](https://github.com/501351981/pptx-preview#关于授权) | — | — | — | — | Office document previews |
 | [PPTist](https://github.com/pipipi-pikachu/PPTist) | ✅ Import into presentation model | — | — | — | — | Presentation editing and playback |
 | [SheetJS CE](https://docs.sheetjs.com/docs/miscellany/formats/) | — | ◐ Numbers table data extraction | — | — | — | Workbook parsing; application supplies the UI |
-| [Photo Sphere Viewer](https://github.com/mistic100/Photo-Sphere-Viewer) | — | — | ✅ Photos / video<br><sub>◐ Pre-combined dual-fisheye sources</sub> | — | — | WebGL panoramas, tiles, hotspots, and tours |
+| [Photo Sphere Viewer](https://github.com/mistic100/Photo-Sphere-Viewer) | — | — | ✅ Photos / video<br><sub>◐ Generic dual fisheye; no X5 calibration parsing</sub> | — | — | WebGL panoramas, tiles, hotspots, and tours |
 | [LibRaw-Wasm](https://github.com/ybouane/LibRaw-Wasm) | — | — | — | ✅ WASM decoding and development | — | Full / half-size development; worker-based image processing API |
 | [Online 3D Viewer](https://github.com/kovacsv/Online3DViewer) | — | — | — | — | ✅ STEP / IGES / IFC / 3D | Specialist model viewing, inspection, and export |
 
@@ -64,9 +64,9 @@ The homepage has eight actual preview captures and directly accessible STEP, RAW
 <!-- bundle-sizes:en:start -->
 | Module / core | Raw | gzip | Brotli |
 | --- | ---: | ---: | ---: |
-| Conversion core WASM | 871.2 KiB | 395.2 KiB | **318.0 KiB** |
+| Conversion core WASM | 872.1 KiB | 395.6 KiB | **318.3 KiB** |
 | Image / RAW core WASM | 1072.2 KiB | 293.0 KiB | **210.7 KiB** |
-| Media / panorama preview | 210.4 KiB | 62.2 KiB | **53.0 KiB** |
+| Media / panorama preview | 216.9 KiB | 64.1 KiB | **54.7 KiB** |
 | Optional STEP WASM | 2625.8 KiB | 1020.2 KiB | **797.0 KiB** |
 
 Document, image / RAW, and STEP WASM modules load independently on demand. Media preview and image conversion are measured separately. JS rows include their CSS; shared dependencies and workers are listed separately.
@@ -76,21 +76,22 @@ Document, image / RAW, and STEP WASM modules load independently on demand. Media
 
 | Module / core | Raw | gzip | Brotli |
 | --- | ---: | ---: | ---: |
-| Demo entry | 173.1 KiB | 48.9 KiB | **40.9 KiB** |
-| Shared vendor dependencies | 1776.4 KiB | 504.2 KiB | **414.7 KiB** |
-| PPTX / core runtime | 284.0 KiB | 75.0 KiB | **64.3 KiB** |
-| Vue preview host | 68.7 KiB | 15.9 KiB | **14.0 KiB** |
-| DOCX / XLSX / PDF | 22.9 KiB | 7.3 KiB | **6.5 KiB** |
-| iWork preview | 24.4 KiB | 8.1 KiB | **7.2 KiB** |
-| CAD / mind maps / diagrams | 83.5 KiB | 23.7 KiB | **20.2 KiB** |
-| 3D preview | 105.7 KiB | 28.2 KiB | **24.5 KiB** |
-| Archive preview | 20.1 KiB | 6.4 KiB | **5.7 KiB** |
-| Text / ebooks | 18.0 KiB | 6.2 KiB | **5.4 KiB** |
-| iWork worker | 899.0 KiB | 188.2 KiB | **157.4 KiB** |
+| Demo entry | 173.1 KiB | 48.9 KiB | **40.8 KiB** |
+| Shared vendor dependencies | 1319.8 KiB | 369.6 KiB | **305.2 KiB** |
+| PPTX / core runtime | 288.6 KiB | 76.1 KiB | **65.4 KiB** |
+| Vue preview host | 69.9 KiB | 16.3 KiB | **14.4 KiB** |
+| DOCX / XLSX / PDF | 32.5 KiB | 9.8 KiB | **8.8 KiB** |
+| On-demand PDF engine | 435.2 KiB | 128.1 KiB | **106.9 KiB** |
+| iWork preview | 26.8 KiB | 8.7 KiB | **7.7 KiB** |
+| CAD / mind maps / diagrams | 90.2 KiB | 25.2 KiB | **21.6 KiB** |
+| 3D preview | 133.4 KiB | 37.9 KiB | **32.9 KiB** |
+| Archive preview | 24.7 KiB | 7.9 KiB | **7.0 KiB** |
+| Text / ebooks | 22.9 KiB | 8.2 KiB | **7.3 KiB** |
+| iWork worker | 894.1 KiB | 186.7 KiB | **156.2 KiB** |
 | PDF worker | 1053.3 KiB | 291.1 KiB | **233.1 KiB** |
 | STEP loader | 23.0 KiB | 9.5 KiB | **8.7 KiB** |
 
-Entry, preloaded JS, and CSS total **597.4 KiB Brotli** (2549.5 KiB raw / 718.5 KiB gzip), plus images, video, and samples. Modules share dependencies; these rows are not standalone per-format download totals.
+Entry, preloaded JS, and CSS total **499.0 KiB Brotli** (2131.8 KiB raw / 596.6 KiB gzip), plus images, video, and samples. Modules share dependencies; these rows are not standalone per-format download totals.
 
 </details>
 
@@ -112,13 +113,14 @@ The full recording is linked above. [Chinese captions](apps/demo/public/home/dem
 
 ## Measured performance
 
-**Stable leads against specialized frontend libraries.** Seven runs per configuration; sensor development and preview drawing on five RAW inputs without embedded JPEGs are **1.11–2.14×** faster than the measured LibRaw paths.
+**Stable leads against specialized frontend libraries.** At least seven runs per configuration, with 21 for the X5 original; sensor development and preview drawing on five RAW inputs without embedded JPEGs are **1.11–2.14×** faster than the measured LibRaw paths.
 
 | Measured task | filens | Current peer | Peer time / filens | Result |
 | --- | ---: | --- | ---: | --- |
 | 11.1 MB, 13-slide PPTX parse | **28.5 ms** | pptx-preview 1.0.7: 56.6 ms | **1.99×** | **SOTA\*** |
 | 11.1 MB, 13-slide PPTX first preview | **48.8 ms** | pptx-preview 1.0.7: 71.8 ms | **1.47×** | **SOTA\*** |
 | 3840×1920 panorama JPEG preview | **154.9 ms** | Photo Sphere Viewer 5.15.1: 205.2 ms | **1.32×** | **SOTA\*** |
+| 11904×5952 original X5 INSP panorama preview | **369.4 ms** | Photo Sphere Viewer 5.15.1 dual fisheye: 414.5 ms | **1.12×** | **SOTA\*** |
 | NEF without embedded JPEG → preview canvas | **152.7 ms** | LibRaw-Wasm 1.6.0 half-size: 326.7 ms | **2.14×** | **SOTA\*** |
 | DNG without embedded JPEG → preview canvas | **167.7 ms** | LibRaw-Wasm 1.6.0 fast half-size: 314.4 ms | **1.87×** | **SOTA\*** |
 | STEP geometry import: cube | **46.5 ms** | occt-import-js 0.0.23: 67.6 ms | 1.45× | **SOTA\*** |
@@ -126,7 +128,7 @@ The full recording is linked above. [Chinese captions](apps/demo/public/home/dem
 | XLS → XLSX preview conversion (6 sheets) | **12.3 ms** | x2t WASM v9.3.2+3: 49.1 ms | 4.00× | **SOTA\*** |
 | 20,000×8 numeric CSV → XLSX | **137.6 ms** | x2t WASM v9.3.2+3: 198.8 ms | 1.44× | **SOTA\*** |
 
-<sub>\* Limited to this machine, measured inputs and listed peers, supported by paired bootstrap 95% intervals; downloads and library cold loading excluded. Apple M4 Pro / Chromium 147; **panoramas use SwiftShader software rendering**. RAW measures development and drawing to a common canvas with different intermediate sizes; STEP targets geometry previews; XLSX compares data reading; XLS compares the main displayed content in the same viewer. [Full results, scope and reproduction](docs/performance-comparison.md).</sub>
+<sub>\* Limited to this machine, measured inputs and listed peers, supported by paired bootstrap 95% intervals; downloads and library cold loading excluded. Apple M4 Pro / Chromium 147; **panoramas use SwiftShader software rendering**. On the X5 original, PSV's generic dual-fisheye projection visibly repeats scene content across hard seams; filens has lighter, localized ghosting. The speed label covers readable previews of this original. RAW measures development and drawing to a common canvas with different intermediate sizes; STEP targets geometry previews; XLSX compares data reading; XLS compares the main displayed content in the same viewer. [Full results, scope and reproduction](docs/performance-comparison.md).</sub>
 
 <details>
 <summary>Selection and measurement scope</summary>

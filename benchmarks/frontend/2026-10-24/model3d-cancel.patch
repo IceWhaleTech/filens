@@ -1,0 +1,189 @@
+--- a/packages/model3d/src/preview-driver.ts
++++ b/packages/model3d/src/preview-driver.ts
+@@ -120,6 +120,10 @@
+   warnings: string[];
+ }
+ 
++export interface ModelLoadOptions {
++  signal?: AbortSignal;
++}
++
+ interface Model3dPreviewMetadata {
+   format?: string;
+   objectCount?: number;
+@@ -460,10 +464,10 @@
+         throw new Error(`3D preview currently supports browser-WASM STEP/STP plus browser-native STL, OBJ, PLY, glTF, GLB, 3MF, AMF, DAE, FBX, 3DS, USDA-backed USDZ, G-code, VRML, PCD, XYZ, VTK, VOX, LDraw, KMZ, MD2, LWO, BVH, PDB, NRRD, and NHDR files, got ${format || 'unknown'}.`);
+       }
+ 
+-      const buffer = await sourceToArrayBuffer(source, { ...context, signal });
++      const buffer = await previewSourceToArrayBuffer(source, signal);
+       checkModelLoadAborted(signal);
+       if (format === 'step' || format === 'stp') {
+-        const object = await loadStepObject(buffer);
++        const object = await loadStepObject(buffer, { signal });
+         this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+@@ -486,7 +490,7 @@
+               signal
+             })
+           : {
+-              object: await loadGlbObject(buffer),
++              object: await loadGlbObject(buffer, { signal }),
+               warnings: []
+             };
+         this.createObjectScene(result.object, signal);
+@@ -876,7 +880,7 @@
+         return;
+       }
+       const result = format === '3mf'
+-        ? await load3mfGeometryWithWarnings(buffer)
++        ? await load3mfGeometryWithWarnings(buffer, { signal })
+         : {
+             geometry: format === 'ply' ? loadPlyGeometry(buffer) : loadStlGeometry(buffer),
+             warnings: []
+@@ -2957,12 +2961,14 @@
+   throw new Error(`Unsupported PLY format "${header.format}".`);
+ }
+ 
+-export async function load3mfGeometry(source: ArrayBuffer): Promise<ModelGeometry> {
+-  return (await load3mfGeometryWithWarnings(source)).geometry;
+-}
+-
+-export async function load3mfGeometryWithWarnings(source: ArrayBuffer): Promise<ModelGeometryLoadResult> {
+-  const archive = await JSZip.loadAsync(source);
++export async function load3mfGeometry(source: ArrayBuffer, options: ModelLoadOptions = {}): Promise<ModelGeometry> {
++  return (await load3mfGeometryWithWarnings(source, options)).geometry;
++}
++
++export async function load3mfGeometryWithWarnings(source: ArrayBuffer, options: ModelLoadOptions = {}): Promise<ModelGeometryLoadResult> {
++  checkModelLoadAborted(options.signal);
++  const archive = await waitForModelLoad(JSZip.loadAsync(source), options.signal);
++  checkModelLoadAborted(options.signal);
+   const modelFile = archive.file('3D/3dmodel.model') ?? archive.file(/(^|\/)3dmodel\.model$/i)[0];
+   if (!modelFile) {
+     throw new Error('3MF package is missing 3D/3dmodel.model.');
+@@ -2978,7 +2984,8 @@
+   ];
+   const documents: Document[] = [];
+   for (const file of modelFiles) {
+-    const xml = await file.async('text');
++    const xml = await waitForModelLoad(file.async('text'), options.signal);
++    checkModelLoadAborted(options.signal);
+     const parsed = new DOMParser().parseFromString(xml, 'application/xml');
+     const parserError = parsed.getElementsByTagName('parsererror')[0];
+     if (parserError) {
+@@ -3108,9 +3115,20 @@
+   };
+ }
+ 
+-export async function loadGlbObject(source: ArrayBuffer): Promise<Object3D> {
++export async function loadGlbObject(source: ArrayBuffer, options: ModelLoadOptions = {}): Promise<Object3D> {
++  return parseGltfObject(source, '', options.signal);
++}
++
++async function parseGltfObject(source: ArrayBuffer | string, resourcePath: string, signal?: AbortSignal): Promise<Object3D> {
++  checkModelLoadAborted(signal);
+   const loader = new GLTFLoader();
+-  const gltf = await loader.parseAsync(source, '');
++  const dispose = (gltf: Awaited<ReturnType<GLTFLoader['parseAsync']>>): void =>
++    disposeModelResources(gltf.scenes?.length ? gltf.scenes : [gltf.scene]);
++  const gltf = await waitForModelLoad(loader.parseAsync(source, resourcePath), signal, dispose);
++  if (signal?.aborted) {
++    dispose(gltf);
++    checkModelLoadAborted(signal);
++  }
+   return gltf.scene;
+ }
+ 
+@@ -3630,7 +3648,8 @@
+   return new USDZLoader().parse(source);
+ }
+ 
+-export async function loadStepObject(source: ArrayBuffer): Promise<Object3D> {
++export async function loadStepObject(source: ArrayBuffer, options: ModelLoadOptions = {}): Promise<Object3D> {
++  checkModelLoadAborted(options.signal);
+   if (!occtImporterPromise) {
+     const attempt = Promise.all([
+       import('../vendor/occt-import-js/occt-import-js.js'),
+@@ -3643,7 +3662,8 @@
+       if (occtImporterPromise === attempt) occtImporterPromise = null;
+     });
+   }
+-  const importer = await occtImporterPromise;
++  const importer = await waitForModelLoad(occtImporterPromise, options.signal);
++  checkModelLoadAborted(options.signal);
+   const result = importer.ReadStepFile(new Uint8Array(source), { linearUnit: 'millimeter' });
+   if (!result.success || !result.root || !result.meshes?.length) {
+     throw new Error('OpenCascade could not read this STEP file.');
+@@ -3823,18 +3843,8 @@
+     }
+ 
+     checkModelLoadAborted(options.signal);
+-    const loader = new GLTFLoader();
+-    const dispose = (gltf: Awaited<ReturnType<GLTFLoader['parseAsync']>>): void =>
+-      disposeModelResources(gltf.scenes ?? [gltf.scene]);
+-    const gltf = await waitForModelLoad(
+-      loader.parseAsync(JSON.stringify(resolved.json), options.resourcePath ?? ''), options.signal, dispose
+-    );
+-    if (options.signal?.aborted) {
+-      dispose(gltf);
+-      checkModelLoadAborted(options.signal);
+-    }
+     return {
+-      object: gltf.scene,
++      object: await parseGltfObject(JSON.stringify(resolved.json), options.resourcePath ?? '', options.signal),
+       warnings: resolved.warnings
+     };
+   } finally {
+@@ -4504,28 +4514,6 @@
+   return 'resource';
+ }
+ 
+-async function sourceToArrayBuffer(source: PreviewSource, context: PreviewLoadContext): Promise<ArrayBuffer> {
+-  if (typeof source === 'string') {
+-    const response = await fetch(source, { signal: context.signal });
+-    if (!response.ok) {
+-      throw new Error(`Failed to load 3D source: ${response.status} ${response.statusText}`.trim());
+-    }
+-    return response.arrayBuffer();
+-  }
+-  if (source instanceof Blob) {
+-    return source.arrayBuffer();
+-  }
+-  if (ArrayBuffer.isView(source)) {
+-    const copy = new Uint8Array(source.byteLength);
+-    copy.set(new Uint8Array(source.buffer, source.byteOffset, source.byteLength));
+-    return copy.buffer;
+-  }
+-  if (source instanceof ArrayBuffer) {
+-    return source.slice(0);
+-  }
+-  throw new Error('Unsupported 3D source type.');
+-}
+-
+ async function previewSourceToArrayBuffer(source: PreviewSource, signal?: AbortSignal): Promise<ArrayBuffer> {
+   checkModelLoadAborted(signal);
+   if (typeof source === 'string') {
+@@ -4537,8 +4525,9 @@
+         throw new Error(`Failed to load 3D source: ${response.status} ${response.statusText}`.trim());
+       }
+       return await waitForModelLoad(response.arrayBuffer(), signal);
+-    } finally {
+-      if (signal?.aborted || !response.ok) release(response);
++    } catch (error) {
++      release(response);
++      throw error;
+     }
+   }
+   if (source instanceof Blob) {
+--- a/packages/model3d/src/index.ts
++++ b/packages/model3d/src/index.ts
+@@ -46,6 +46,7 @@
+   listObjMaterialLibraries,
+   type ModelGeometry,
+   type ModelGeometryLoadResult,
++  type ModelLoadOptions,
+   type ModelObjectLoadResult,
+   type LoadKmzObjectOptions,
+   type StlGeometry

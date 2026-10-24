@@ -271,6 +271,67 @@ function renderSingleFormattedText(text: string, format: Record<string, unknown>
 }
 
 describe('Numbers repeated cell styles', () => {
+  function sparseTableArchive() {
+    const archive = createNumbersArchive();
+    const record = (id: number, typeName: string, value: unknown) => {
+      archive.records[String(id)] = { id, archiveId: id, messageIndex: 0, typeId: 1, typeName, value, objectReferences: [], dataReferences: [] };
+    };
+    const tableModel = {
+      numberOfRows: 3, numberOfColumns: 32, numberOfHeaderRows: 1,
+      defaultRowHeight: 22, defaultColumnWidth: 72,
+      baseDataStore: { tiles: { tiles: [{ tile: { identifier: 2 } }] },
+        stringTable: { identifier: 3 }, mergeRegionMap: { identifier: 4 } }
+    };
+    const offsetsAt = (column: number, offset = 0) => createCellOffsets(Array.from({ length: 32 }, (_, i) => i === column ? offset : 65535));
+    const rows = [
+      { tileRowIndex: 0, cellCount: 1, cellOffsets: offsetsAt(31), cellStorageBuffer: createTextCellBuffer(1) },
+      { tileRowIndex: 1, cellCount: 1, cellOffsetsPreBnc: offsetsAt(31), cellStorageBufferPreBnc: createPreBncNumberCellBuffer(44958, 0) },
+      { tileRowIndex: 2, cellCount: 1, cellOffsets: offsetsAt(4), cellStorageBuffer: createTextCellBuffer(2),
+        cellOffsetsPreBnc: offsetsAt(31), cellStorageBufferPreBnc: createPreBncNumberCellBuffer(44959, 0) }
+    ];
+    record(1, 'TST.TableModelArchive', tableModel);
+    record(2, 'TST.Tile', { numrows: 3, rowInfos: rows });
+    record(3, 'TST.TableDataList', { entries: [{ key: 1, string: 'Date' }, { key: 2, string: 'Note' }] });
+    record(4, 'TST.MergeRegionMapArchive', { cellRange: [
+      { origin: { row: 1, column: 6 }, size: { numRows: 2, numColumns: 2 } }
+    ] });
+    const build = () => buildTableItem(archive, { tableModel: { identifier: 1 } },
+      { x: 0, y: 0, width: 2304, height: 66, rotation: 0, flipH: false, flipV: false }, 0)!;
+    return { archive, rows, offsetsAt, build };
+  }
+
+  it('uses sparse headers after holes when formatting cached numeric dates', () => {
+    const { build } = sparseTableArchive();
+    expect(build().cells.filter(cell => cell.column === 31).map(cell => cell.textFrame.paragraphs[0].runs[0].text))
+      .toEqual(['Date', '2023-02-01', '2023-02-02']);
+  });
+
+  it('retains regular/fallback positions and empty merged cells in sparse rows', () => {
+    const { rows, offsetsAt, build } = sparseTableArchive();
+    // An invalid regular offset must not hide the valid legacy cached value.
+    rows[1].cellOffsets = offsetsAt(31, 65000);
+    rows[1].cellStorageBuffer = new Uint8Array(0);
+    const table = build();
+    expect(table.cells.map(cell => [cell.row, cell.column])).toEqual([
+      [0, 31], [1, 6], [1, 7], [1, 31], [2, 4], [2, 6], [2, 7], [2, 31]
+    ]);
+    const merge = table.cells.find(cell => cell.row === 1 && cell.column === 6)!;
+    expect([merge.rowSpan, merge.colSpan, merge.isMergedContinuation]).toEqual([2, 2, false]);
+    expect(table.cells.filter(cell => cell.isMergedContinuation).map(cell => [cell.row, cell.column]))
+      .toEqual([[1, 7], [2, 6], [2, 7]]);
+    rows[2].cellOffsets = offsetsAt(30);
+    expect(build().cells.some(cell => cell.row === 2 && cell.column === 30)).toBe(true);
+    expect(build().cells.some(cell => cell.row === 2 && cell.column === 4)).toBe(false);
+  });
+
+  it('keeps empty Pages grid positions when row storage is sparse', () => {
+    const { archive, build } = sparseTableArchive();
+    archive.type = 'pages';
+    const table = build();
+    expect(table.cells).toHaveLength(96);
+    expect(table.cells.filter(cell => cell.row === 2).map(cell => cell.column)).toEqual(Array.from({ length: 32 }, (_, i) => i));
+  });
+
   it.each(['array', 'unaligned view'])('reads row buffers from %s and observes replacements on rebuild', representation => {
     const archive = createNumbersArchive();
     const record = (id: number, typeName: string, value: unknown) => {

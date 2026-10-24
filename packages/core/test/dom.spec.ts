@@ -725,6 +725,45 @@ describe('renderSlideToElement', () => {
     expect(run?.style.fontWeight).toBe('');
   });
 
+  it('refreshes fallback weight when a font is loaded or removed between renders', () => {
+    const originalCreateElement = document.createElement.bind(document);
+    const targetFont = 'Dynamically Loaded Light';
+    let available = false;
+    const createElementSpy = vi.spyOn(document, 'createElement').mockImplementation(((tagName: string) => {
+      if (tagName.toLowerCase() !== 'canvas') return originalCreateElement(tagName);
+      const context = {
+        font: '',
+        measureText() {
+          const base = this.font.includes('sans-serif') ? 140 : this.font.includes('serif') ? 120 : 100;
+          return { width: base + (available && this.font.includes(targetFont) ? 12 : 0) };
+        }
+      };
+      return { getContext: () => context } as unknown as HTMLCanvasElement;
+    }) as typeof document.createElement);
+    try {
+      const slide = createBaseSlide([{
+        id: 'dynamic-font', kind: 'text', name: 'Dynamic font', order: 1, groupPath: [],
+        transform: { x: 0, y: 0, width: 320, height: 100, rotation: 0, flipH: false, flipV: false },
+        fill: { type: 'none' },
+        textFrame: {
+          verticalAlign: 'top', padding: { top: 0, right: 0, bottom: 0, left: 0 },
+          paragraphs: [{ runs: [{ text: 'Dynamic title', fontSize: 44, fontFamily: targetFont }] }]
+        }
+      }]);
+      const renderWeight = () => {
+        const element = renderSlideToElement(slide, createPresentation(slide));
+        return (element.querySelector('.pptxv-run') as HTMLElement).style.fontWeight;
+      };
+      expect(renderWeight()).toBe('310');
+      available = true;
+      expect(renderWeight()).toBe('');
+      available = false;
+      expect(renderWeight()).toBe('310');
+    } finally {
+      createElementSpy.mockRestore();
+    }
+  });
+
   it('applies a proportional synthetic light font weight when the exact light face is unavailable', () => {
     const originalCreateElement = document.createElement.bind(document);
     const targetFont = 'Mock Light Unavailable';

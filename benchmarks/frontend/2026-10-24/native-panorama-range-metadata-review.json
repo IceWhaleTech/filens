@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-24T03:42:22.848Z",
+  "sampleSha256": "6676287954780dd95bb1f23db0ca9c19fe21faef22102a12454d3451a23b30c2",
+  "sampleBytes": 18362602,
+  "format": "insp",
+  "cameraModel": "Insta360 X5",
+  "width": 11904,
+  "height": 5952,
+  "completeManifestUnchanged": true,
+  "note": "All complete manifest fields, including intrinsics, distortion and extrinsics, are compared. The baseline adapter can be supplied separately when the core range ABI changes. Only hashes and byte ranges are published.",
+  "results": [
+    {
+      "wasm": {
+        "path": "tmp/continued-review/converter-core-before.wasm",
+        "sha256": "8f46d017e7652f6a74c34d989c0d13ade65109bcc28eb10d31ebb7b9bfe72876"
+      },
+      "module": {
+        "path": "tmp/continued-review/panorama-before.js",
+        "sha256": "5aa4b76641f3732927608acd1a0fde6e80de1221dccc1b6a7d76e2db63edd434"
+      },
+      "reads": [
+        {
+          "offset": 0,
+          "length": 1048576
+        },
+        {
+          "offset": 18297066,
+          "length": 65536
+        },
+        {
+          "offset": 0,
+          "length": 2097152
+        },
+        {
+          "offset": 0,
+          "length": 4194304
+        },
+        {
+          "offset": 0,
+          "length": 8388608
+        },
+        {
+          "offset": 13443188,
+          "length": 4096
+        }
+      ],
+      "readBytes": 15798272,
+      "manifestSha256": "15aca6cdfcc13c48137aac539d80308ca5643004e2c323092ca18ba9d298aa2c"
+    },
+    {
+      "wasm": {
+        "path": "wasm/converter-core/dist/converter-core.wasm",
+        "sha256": "0f0ab8885293e76991a337dab6f0977e5015380594e914d89ebe8c976a8cedbf"
+      },
+      "module": {
+        "path": "packages/panorama/dist/index.js",
+        "sha256": "056b1c6510dbb8fe9e96ef8700c4a5d34399e02d0d22cd6f83edb57955a388ae"
+      },
+      "reads": [
+        {
+          "offset": 0,
+          "length": 1048576
+        },
+        {
+          "offset": 18297066,
+          "length": 65536
+        },
+        {
+          "offset": 1048576,
+          "length": 1048576
+        },
+        {
+          "offset": 2097152,
+          "length": 2097152
+        },
+        {
+          "offset": 4194304,
+          "length": 4194304
+        },
+        {
+          "offset": 13443188,
+          "length": 4096
+        }
+      ],
+      "readBytes": 8458240,
+      "manifestSha256": "15aca6cdfcc13c48137aac539d80308ca5643004e2c323092ca18ba9d298aa2c"
+    }
+  ]
+}

@@ -1,0 +1,466 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "evidenceSha256": "79eba28d98d13896a43f0c6e52e27b085f747d910615c0dc0fbabd35a0f472ee",
+  "summarySha256": "c9a088174639d6065e23693a310e66cf4812d295e25a128effd7419a6d05d446",
+  "contentReviewSha256": "233bf05f3fde1b4ec95f42639130f6e7d5a812e053db41dff268bf450a983e1a",
+  "diagnosticSha256": "cac35025901a88ad41fbcd1468cbc146f8eb0402978be43e825a53e9ce5e5b9c",
+  "patchSha256": "d139dcbdee549736efc6c71207543caa49017be75f023a0d07630eb81222ddd5",
+  "sourceHashes": {
+    "packages/diagram/src/preview-driver.ts": "9c6c76a9420216bdacc6295eb78dda71bd1b8521ec4341ec7652b1a90ff6088b",
+    "packages/diagram/test/preview-driver.spec.ts": "9000a98d8e2f61c851279ab740acd6864b1a405dada02369d71ec6db829992a5",
+    "packages/diagram/test/fixtures/diagrams.mjs": "c5523bc1b71cc676c75bf8417f1d71670f41ad546a61b5a128f47f647c526e39",
+    "apps/demo/e2e/diagram-preview.e2e.ts": "3f97c8add15828b0f226ffb54aa1cdf6c0e658d381f648188f361722c4a5e335",
+    "scripts/prepare-diagram-benchmark.mjs": "6c5c4069378c86a7111f5f1879aca2015d36cefde68fef3aa1e5ecd256f90666",
+    "scripts/benchmark-diagram.mjs": "5fc5634255c0390749132c16c60373e4fdb7083cecafd4db2475cee92f4b23ee",
+    "scripts/summarize-diagram-benchmark.mjs": "ca661cfca70286f4dd1a6bfc9cac0360af25c36b480e41d81505319680461892",
+    "scripts/review-diagram.mjs": "45e95786d75b3c9a27296d4f5aecfac3945b67e713aeb7ddb5f8df78c4b68614"
+  },
+  "currentArtifact": {
+    "engine": "current",
+    "path": "packages/diagram/dist/index.js",
+    "sha256": "5e7f4498fb22ecaca8f4d960b992ab5d2bab1baf3d0125d815f876fc6a77dc3f"
+  },
+  "coreArtifact": {
+    "path": "packages/core/dist/index.js",
+    "sha256": "087860f415a1b58c0a14112d86f5c9ddad57039e0eb3fee5d2533de5f4e273c9"
+  },
+  "baseline": {
+    "engine": "baseline",
+    "path": "tmp/continued-review/diagram-baseline/dist/index.js",
+    "sha256": "bfb2aa54cf0747a277f54d74a6146380daa095ef42206fbbae9cc2772aca5fe3",
+    "sourceSha256": "0a0142a5b00ac6c30dfeeef48cc826de3214c438a256787e843687d77f11190f",
+    "reproduction": "Reverse diagram.patch, build @filens/diagram, copy dist to tmp/continued-review/diagram-baseline/dist, restore the patch and rebuild. Run node scripts/prepare-diagram-benchmark.mjs, then node scripts/benchmark-diagram.mjs --iterations 7 --output <directory>, followed by node scripts/summarize-diagram-benchmark.mjs --input <directory>/results.json. Production source was clean before this round; the production patch is relative to repository HEAD."
+  },
+  "samples": [
+    {
+      "name": "drawio-3000-plain",
+      "format": "drawio",
+      "nodeCount": 3000,
+      "sha256": "0275aa2de7c52fd1979b5e59625a73e46f8136481946a860ca73f0b854bfc29b"
+    },
+    {
+      "name": "drawio-3000-html",
+      "format": "drawio",
+      "nodeCount": 3000,
+      "sha256": "81a04a3045dc6e12c8873902d2bf9bd982cb31ae45f866b8d08ef63743216b59"
+    },
+    {
+      "name": "visio-1000",
+      "format": "vdx",
+      "nodeCount": 1000,
+      "sha256": "481114f5b25a9bb5aa0554be0862aba5744b05dc35c76d68d93edf8aa0904ff9"
+    },
+    {
+      "name": "vsdx-3000",
+      "format": "vsdx",
+      "nodeCount": 3000,
+      "sha256": "05daf004a54d44e8310400136eeaf919c86934985eda2d911cac22ba6416c749"
+    },
+    {
+      "name": "drawio-small-30",
+      "format": "drawio",
+      "nodeCount": 30,
+      "sha256": "5f25946d09e5f72720db8c7e1054f4bcb9b85ab2f83e76de2ce43c767130d3b1"
+    },
+    {
+      "name": "blue-box.vsdx",
+      "format": "vsdx",
+      "nodeCount": 1,
+      "sha256": "6c67a8b3ccd2b81b3d9d41b74aa0ef5f31b506a714b761b4b4fb4c76ebeb7a94",
+      "real": true,
+      "url": "https://raw.githubusercontent.com/LibreOffice/libvisio/81bf0a433c276d8ee9befd522f0242cf95beeb7d/src/test/data/blue-box.vsdx"
+    },
+    {
+      "name": "color-boxes.vsdx",
+      "format": "vsdx",
+      "nodeCount": 7,
+      "sha256": "75072b91b5c3023eeea25d2480776e5a1ee8c336ca263adf3a6440e25f35f800",
+      "real": true,
+      "url": "https://raw.githubusercontent.com/LibreOffice/libvisio/81bf0a433c276d8ee9befd522f0242cf95beeb7d/src/test/data/color-boxes.vsdx"
+    },
+    {
+      "name": "testfile1.vsdx",
+      "format": "vsdx",
+      "nodeCount": 12,
+      "sha256": "2ebcf3e9ce4a599c749e5dc7d31030ef4d7d8b69dfbd2565b59b854133cdeec8",
+      "real": true,
+      "url": "https://raw.githubusercontent.com/LibreOffice/libvisio/81bf0a433c276d8ee9befd522f0242cf95beeb7d/src/test/data/testfile1.vsdx"
+    }
+  ],
+  "comparisons": [
+    {
+      "sample": "drawio-3000-plain",
+      "nodeCount": 3000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 10.799999952316284,
+          "baselineMs": 19.5,
+          "ratio": 1.8055555635273701,
+          "ratio95PercentBootstrapInterval": [
+            1.7727272727272727,
+            1.831775694999625
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 19.799999952316284,
+          "baselineMs": 28.899999976158142,
+          "ratio": 1.4595959619069243,
+          "ratio95PercentBootstrapInterval": [
+            1.432835822754433,
+            1.4670050713810097
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "drawio-3000-html",
+      "nodeCount": 3000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 12.800000071525574,
+          "baselineMs": 21.700000047683716,
+          "ratio": 1.6953124942519935,
+          "ratio95PercentBootstrapInterval": [
+            1.6796874906140147,
+            1.6953125100408215
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 22.200000047683716,
+          "baselineMs": 31.300000071525574,
+          "ratio": 1.4099099101034158,
+          "ratio95PercentBootstrapInterval": [
+            1.3839285655365308,
+            1.422727275978435
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "visio-1000",
+      "nodeCount": 1000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 26.600000023841858,
+          "baselineMs": 45.39999997615814,
+          "ratio": 1.7067669148671296,
+          "ratio95PercentBootstrapInterval": [
+            1.67286244760087,
+            1.710526321922124
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 30.199999928474426,
+          "baselineMs": 49,
+          "ratio": 1.6225165601341531,
+          "ratio95PercentBootstrapInterval": [
+            1.6085526296698651,
+            1.6345514953060787
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "vsdx-3000",
+      "nodeCount": 3000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 79.80000007152557,
+          "baselineMs": 141.5,
+          "ratio": 1.7731829558041614,
+          "ratio95PercentBootstrapInterval": [
+            1.7571606463033616,
+            1.7839196001272342
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 86.69999992847443,
+          "baselineMs": 154.5,
+          "ratio": 1.782006921885341,
+          "ratio95PercentBootstrapInterval": [
+            1.7620137304577768,
+            1.7919075144508672
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "drawio-small-30",
+      "nodeCount": 30,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 0.6000000238418579,
+          "baselineMs": 0.8000000715255737,
+          "ratio": 1.3333333995607137,
+          "ratio95PercentBootstrapInterval": [
+            1.1428571915140007,
+            1.500000198682181
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 0.8999999761581421,
+          "baselineMs": 1,
+          "ratio": 1.1111111405455043,
+          "ratio95PercentBootstrapInterval": [
+            1,
+            1.222222148636239
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "blue-box.vsdx",
+      "nodeCount": 1,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 3.4000000953674316,
+          "baselineMs": 3.600000023841858,
+          "ratio": 1.0588235067248764,
+          "ratio95PercentBootstrapInterval": [
+            1.028571435383388,
+            1.088235315773314
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 1.399999976158142,
+          "baselineMs": 1.399999976158142,
+          "ratio": 1,
+          "ratio95PercentBootstrapInterval": [
+            0.9999999148505133,
+            1.1666666004392863
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "color-boxes.vsdx",
+      "nodeCount": 7,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 4,
+          "baselineMs": 4.399999976158142,
+          "ratio": 1.0999999940395355,
+          "ratio95PercentBootstrapInterval": [
+            1.0487804700759535,
+            1.153846125630938
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 2,
+          "baselineMs": 2.399999976158142,
+          "ratio": 1.199999988079071,
+          "ratio95PercentBootstrapInterval": [
+            1.095238116863363,
+            1.199999988079071
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "testfile1.vsdx",
+      "nodeCount": 12,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 4.799999952316284,
+          "baselineMs": 5.800000071525574,
+          "ratio": 1.208333360238208,
+          "ratio95PercentBootstrapInterval": [
+            1.183673465415767,
+            1.2291666987455556
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 2.5,
+          "baselineMs": 2.600000023841858,
+          "ratio": 1.0400000095367432,
+          "ratio95PercentBootstrapInterval": [
+            1,
+            1.0833333540293908
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    }
+  ],
+  "externalInputSources": [
+    {
+      "name": "blue-box.vsdx",
+      "nodeCount": 1,
+      "sha256": "6c67a8b3ccd2b81b3d9d41b74aa0ef5f31b506a714b761b4b4fb4c76ebeb7a94",
+      "url": "https://raw.githubusercontent.com/LibreOffice/libvisio/81bf0a433c276d8ee9befd522f0242cf95beeb7d/src/test/data/blue-box.vsdx",
+      "path": "tmp/continued-review/diagram-inputs/blue-box.vsdx",
+      "bytes": 20964
+    },
+    {
+      "name": "color-boxes.vsdx",
+      "nodeCount": 7,
+      "sha256": "75072b91b5c3023eeea25d2480776e5a1ee8c336ca263adf3a6440e25f35f800",
+      "url": "https://raw.githubusercontent.com/LibreOffice/libvisio/81bf0a433c276d8ee9befd522f0242cf95beeb7d/src/test/data/color-boxes.vsdx",
+      "path": "tmp/continued-review/diagram-inputs/color-boxes.vsdx",
+      "bytes": 24693
+    },
+    {
+      "name": "testfile1.vsdx",
+      "nodeCount": 12,
+      "sha256": "2ebcf3e9ce4a599c749e5dc7d31030ef4d7d8b69dfbd2565b59b854133cdeec8",
+      "url": "https://raw.githubusercontent.com/LibreOffice/libvisio/81bf0a433c276d8ee9befd522f0242cf95beeb7d/src/test/data/testfile1.vsdx",
+      "path": "tmp/continued-review/diagram-inputs/testfile1.vsdx",
+      "bytes": 43669
+    }
+  ],
+  "contentReview": {
+    "timedCompleteModelsAndSvgMatch": true,
+    "repetitionsPerEngine": 7,
+    "completeModelsAndAllPageHtmlMatch": 10,
+    "unchangedPagePairs": 11,
+    "generatedCases": 64,
+    "sourceRepresentationChecks": 23,
+    "correctedCases": [
+      {
+        "name": "legacy-vdx-geometry",
+        "inputSha256": "528ecc428d1a277525717d8e163d9f78d84ab37cc1424a7fd37c1d0eaf5229d5",
+        "referenceInputSha256": "fa9dd4ea1d0784b250f0cd534f5ad1997568b7340a0380bda2c58920bd260cb8",
+        "expectedCompleteModelSha256": "84b4073b57a8bc0dc91a229ac4e4bc78f9b31c52d8c034fd49011bbc04d48587",
+        "expectedFullPageHtmlSha256": [
+          "5deafb606675d6ecb5421ca2bc3b3dcd7e96d76148f28e9893706193316eacb5"
+        ],
+        "matchesPreviouslySupportedEquivalent": true,
+        "baselineOnOriginalInputWasIncorrect": true
+      },
+      {
+        "name": "shape-connector",
+        "inputSha256": "50797d44ae96aa4077fc74b5eecb90c84ad359f571673394af507df00a69b16a",
+        "referenceInputSha256": "fa9dd4ea1d0784b250f0cd534f5ad1997568b7340a0380bda2c58920bd260cb8",
+        "expectedCompleteModelSha256": "84b4073b57a8bc0dc91a229ac4e4bc78f9b31c52d8c034fd49011bbc04d48587",
+        "expectedFullPageHtmlSha256": [
+          "5deafb606675d6ecb5421ca2bc3b3dcd7e96d76148f28e9893706193316eacb5"
+        ],
+        "matchesPreviouslySupportedEquivalent": true,
+        "baselineOnOriginalInputWasIncorrect": true
+      },
+      {
+        "name": "missing-drawio-dimensions",
+        "inputSha256": "a20aa3ac43b8d44a978542dba53c0a3f6a1929b11e56db1f4b176ee532140165",
+        "referenceInputSha256": "f7775a4d63774cf51460bdf1348e5a2a4c05e43f79d6960b0c0819ef18c34f72",
+        "expectedCompleteModelSha256": "f3a3e01254f72a77944b34cfb2e7ac7038c5dde27347d49c30b352a2d5e38fac",
+        "expectedFullPageHtmlSha256": [
+          "ae274d0cefb540ae37ed9823e611c3ba571ef0b5e813ccc46865b0e3a2618364"
+        ],
+        "matchesPreviouslySupportedEquivalent": true,
+        "baselineOnOriginalInputWasIncorrect": true
+      }
+    ],
+    "reproduction": "Run node scripts/prepare-diagram-benchmark.mjs followed by node scripts/review-diagram.mjs with the reconstructed baseline. Unchanged complete models and all pages are compared directly. Legacy geometry, Type=Shape connectors and missing dimensions are compared with equivalent inputs previously displayed correctly. Browser tests also cover connectors without cached endpoints and page interactions."
+  },
+  "validation": {
+    "diagramUnitTestsPassed": 14,
+    "vueUnitTestsPassed": 44,
+    "browserTestsPassed": 3,
+    "oldSourceRegressionsReproduced": 5,
+    "oldSourceRegressionTestCount": 13,
+    "builds": [
+      "@filens/diagram",
+      "@filens/demo"
+    ],
+    "bundleReportPassed": true,
+    "sourceMapMatchesProductionSource": true,
+    "browserCoverage": [
+      "missing draw.io dimensions",
+      "invalid page navigation",
+      "scroll reset after page changes",
+      "legacy VDX coordinates and fill colors",
+      "VDX/VSDX Shape connector geometry and pointer selection",
+      "three pinned real VSDX files"
+    ],
+    "externalBrowserCorpus": "The real-input browser test skips when its untracked manifest is absent; prepare-diagram-benchmark.mjs prepares it. All three browser tests ran and passed in this review."
+  },
+  "diagnostics": {
+    "path": "diagram-diagnostic.json.gz",
+    "runs": 234,
+    "excludedFromFinalConclusions": true,
+    "description": "Ten initial pre-change measurements, 112 indexed-cell measurements and 112 entity-path measurements before the final non-endpoint connection guard. Retained separately; the final report uses 112 measurements of the final production artifact."
+  },
+  "limits": [
+    "Engineering A/B with generated large diagrams and three real small controls; no equivalent peer or SOTA ranking.",
+    "XML/ZIP parsing and a separate source-ready load through SVG DOM construction are measured. Module/network loading, layout, paint and first-visible time are excluded. Session measurements follow parsing in the same context.",
+    "The three real files and the small generated file remain below 10 ms and receive no speed claims.",
+    "Legacy VDX support covers explicit cached XForm/XForm1D/PageProps geometry and basic colors. Visio master inheritance, group transforms, rotations and complete layout fidelity remain limited.",
+    "No cancellation/lifecycle or fit improvement is claimed in this round."
+  ],
+  "externalTotalsUnchanged": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064
+  }
+}

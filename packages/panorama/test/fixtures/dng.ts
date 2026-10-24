@@ -14,6 +14,15 @@ export function dngFixture(kind: 'one-rs' | 'x5' | 'ordinary' = 'one-rs', orient
     values.forEach((value, i) => new DataView(bytes.buffer).setUint32(i * 4, value, true));
     return bytes;
   };
+  const rationals = (...values: number[]) => {
+    const bytes = new Uint8Array(values.length * 8);
+    values.forEach((value, i) => {
+      const view = new DataView(bytes.buffer);
+      view.setInt32(i * 8, Math.round(value * 1_000_000), true);
+      view.setInt32(i * 8 + 4, 1_000_000, true);
+    });
+    return bytes;
+  };
   const model = kind === 'one-rs' ? 'Insta360 OneRS' : kind === 'x5' ? 'Insta360 X5' : 'Synthetic camera';
   const comment = kind === 'one-rs'
     ? 'INSTA3602_150_256_256_0_0_180_150_256_768_0_0_0_512_1024_0'
@@ -27,7 +36,11 @@ export function dngFixture(kind: 'one-rs' | 'x5' | 'ordinary' = 'one-rs', orient
     [277, 3, shorts(1)], [278, 4, longs(height)], [279, 4, longs(width * height * 2)],
     [33421, 3, shorts(2, 2)], [33422, 1, Uint8Array.of(0, 1, 1, 2)],
     [37510, 7, text('ASCII\0\0\0' + comment)], [50706, 1, Uint8Array.of(1, 4, 0, 0)],
-    [50717, 4, longs(65535)]
+    [50717, 4, longs(65535)],
+    // A valid synthetic camera whose channels already represent linear sRGB.
+    // ColorMatrix maps XYZ to camera channels; AsShotNeutral is unity.
+    [50721, 10, rationals(3.2404542, -1.5371385, -0.4985314, -0.9692660, 1.8760108, 0.0415560, 0.0556434, -0.2040259, 1.0572252)],
+    [50728, 5, rationals(1, 1, 1)], [50778, 3, shorts(21)]
   ];
   let cursor = 8 + 2 + tags.length * 12 + 4;
   const offsets = tags.map(([, , bytes]) => { const offset = cursor; if (bytes.length > 4) cursor += bytes.length + bytes.length % 2; return offset; });
@@ -40,7 +53,7 @@ export function dngFixture(kind: 'one-rs' | 'x5' | 'ordinary' = 'one-rs', orient
   tags.forEach(([tag, type, bytes], index) => {
     const start = 10 + index * 12;
     view.setUint16(start, tag, true); view.setUint16(start + 2, type, true);
-    view.setUint32(start + 4, bytes.length / (type === 3 ? 2 : type === 4 ? 4 : 1), true);
+    view.setUint32(start + 4, bytes.length / (type === 3 ? 2 : type === 4 ? 4 : type === 5 || type === 10 ? 8 : 1), true);
     if (bytes.length <= 4) result.set(bytes, start + 8);
     else { view.setUint32(start + 8, offsets[index], true); result.set(bytes, offsets[index]); }
   });

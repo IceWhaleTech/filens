@@ -1,0 +1,125 @@
+{
+  "sourceSha256": "b72fa2b56b9bf4d1fa8c8fdbcff753c0fecca6ec8de394d91707743e77361df0",
+  "method": "Engineering comparison only. Paired bootstrap, 10000 resamples, percentile 95% interval, LCG seed 12345. Synthetic sparse input is an existing grid model, excluding ZIP/Snappy/protobuf and rendering. No peer/SOTA claim.",
+  "date": "2026-10-24T03:55:37.926Z",
+  "cpu": "Apple M4 Pro",
+  "platform": "darwin 25.6.0 arm64",
+  "browser": "147.0.7727.15",
+  "iterations": 7,
+  "totalRuns": 112,
+  "successfulRuns": 112,
+  "comparisons": [
+    {
+      "sample": "apps/demo/public/samples/a.numbers",
+      "currentMs": 34.90000009536743,
+      "baselineMs": 34.799999952316284,
+      "baselineOverCurrent": 0.9971346663960491,
+      "ratio95PercentBootstrapInterval": [
+        0.95810055860341,
+        1.0144092184467903
+      ],
+      "allModelsIdentical": true,
+      "modelSha256": "d93d535f9d1040755334b0e35ed895475d402ce055e149cb0be5439c8e4e9dba",
+      "cells": 6271,
+      "nonempty": 5772
+    },
+    {
+      "sample": "apps/demo/public/samples/a.pages",
+      "currentMs": 20,
+      "baselineMs": 19.90000009536743,
+      "baselineOverCurrent": 0.9950000047683716,
+      "ratio95PercentBootstrapInterval": [
+        0.9851485113456733,
+        1.030000001192093
+      ],
+      "allModelsIdentical": true,
+      "modelSha256": "73146de9a59ec539e604172e7746923dd7a58d8ea5acf8b9ccfd7fd5eff95cc1",
+      "cells": 0,
+      "nonempty": 0
+    },
+    {
+      "sample": "apps/demo/public/samples/filens-weekend.key",
+      "currentMs": 12.300000071525574,
+      "baselineMs": 12.200000047683716,
+      "baselineOverCurrent": 0.9918699168081017,
+      "ratio95PercentBootstrapInterval": [
+        0.9749999940395355,
+        1.0081300831918982
+      ],
+      "allModelsIdentical": true,
+      "modelSha256": "e16dd254811a345c3cef22b7c378330598f58249d13b546434b20809d177fae0",
+      "cells": 0,
+      "nonempty": 0
+    },
+    {
+      "sample": "packages/iwork/vendor/iwork-converter/testdata/a.numbers",
+      "currentMs": 11.299999952316284,
+      "baselineMs": 11.399999976158142,
+      "baselineOverCurrent": 1.008849559669366,
+      "ratio95PercentBootstrapInterval": [
+        0.9734513315413962,
+        1.080357140386287
+      ],
+      "allModelsIdentical": true,
+      "modelSha256": "fc46f85a6eff178f0a1114fba1576733e103dc6923844ff3d9ed902beb0c3aed",
+      "cells": 253,
+      "nonempty": 253
+    },
+    {
+      "sample": "packages/iwork/vendor/iwork-converter/testdata/a.pages",
+      "currentMs": 16.899999976158142,
+      "baselineMs": 17,
+      "baselineOverCurrent": 1.005917161182422,
+      "ratio95PercentBootstrapInterval": [
+        0.9421965316325848,
+        1.0598802397774232
+      ],
+      "allModelsIdentical": true,
+      "modelSha256": "5ebdbaacd17c6ac61b107d94b8c85ad4407aa83e3e0f4c4bf4c105f85ca7276e",
+      "cells": 0,
+      "nonempty": 0
+    },
+    {
+      "sample": "packages/iwork/vendor/iwork-converter/testdata/a.key",
+      "currentMs": 8.899999976158142,
+      "baselineMs": 8.900000095367432,
+      "baselineOverCurrent": 1.0000000133943023,
+      "ratio95PercentBootstrapInterval": [
+        0.9569892624731436,
+        1.0224719155302795
+      ],
+      "allModelsIdentical": true,
+      "modelSha256": "148692d2cb953bb9bb2b65979d885cd3bd6bcb687c4579936851219f94016419",
+      "cells": 0,
+      "nonempty": 0
+    },
+    {
+      "sample": "sparse-1024x1024",
+      "currentMs": 11.100000023841858,
+      "baselineMs": 183.89999997615814,
+      "baselineOverCurrent": 16.567567529833923,
+      "ratio95PercentBootstrapInterval": [
+        16.035714390250494,
+        16.972972934368553
+      ],
+      "allModelsIdentical": true,
+      "modelSha256": "2e959cbe6aed73cd7434bc6237088db6bb70098b8d80b6f0fd323975e4532e47",
+      "cells": 2052,
+      "nonempty": 2048
+    },
+    {
+      "sample": "dense-128x128",
+      "currentMs": 13.399999976158142,
+      "baselineMs": 13.199999928474426,
+      "baselineOverCurrent": 0.9850746232806296,
+      "ratio95PercentBootstrapInterval": [
+        0.9014084443192802,
+        1.0078124925057637
+      ],
+      "allModelsIdentical": true,
+      "modelSha256": "2b33abd931f6ee8c420433c19364f20d66ff5e7d69a14d52a75f68e229e7773e",
+      "cells": 16384,
+      "nonempty": 16384
+    }
+  ]
+}

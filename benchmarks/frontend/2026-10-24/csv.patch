@@ -1,0 +1,138 @@
+diff --git a/packages/xlsx/src/parser.ts b/packages/xlsx/src/parser.ts
+index 2be8794..4de7293 100644
+--- a/packages/xlsx/src/parser.ts
++++ b/packages/xlsx/src/parser.ts
+@@ -79,18 +79,7 @@ export async function loadXlsxWorkbook(source: PreviewSource, context?: PreviewL
+ 
+ export async function loadCsvWorkbook(source: PreviewSource, context?: PreviewLoadContext): Promise<ParsedWorkbook> {
+   const text = await sourceToText(source, context);
+-  const records = parseCsv(text);
+-  const columnCount = records.reduce((max, row) => Math.max(max, row.length), 0);
+-  const columnNames = Array.from({ length: columnCount }, (_, index) => columnIndexToName(index + 1));
+-  const rows: ParsedRow[] = records.map((record, rowIndex) => ({
+-    index: rowIndex + 1,
+-    cells: record.map((value, columnIndex) => ({
+-      ref: `${columnNames[columnIndex]}${rowIndex + 1}`,
+-      row: rowIndex + 1,
+-      column: columnIndex + 1,
+-      value
+-    }))
+-  }));
++  const { rows, columnCount } = parseCsv(text);
+ 
+   return {
+     sheets: [
+@@ -171,51 +160,68 @@ function readDataUrlText(source: string): string {
+   return decodeURIComponent(payload);
+ }
+ 
+-function parseCsv(text: string): string[][] {
++function parseCsv(text: string): Pick<ParsedSheet, 'rows' | 'columnCount'> {
+   text = text.replace(/^\uFEFF/, '');
++  const rows: ParsedRow[] = [];
++  const columnNames: string[] = [];
++  const appendRow = (record: string[]) => {
++    while (columnNames.length < record.length) columnNames.push(columnIndexToName(columnNames.length + 1));
++    const row = rows.length + 1;
++    const suffix = String(row);
++    const cells: ParsedCell[] = new Array(record.length);
++    for (let column = 0; column < record.length; column++) {
++      cells[column] = { ref: columnNames[column] + suffix, row, column: column + 1, value: record[column] };
++    }
++    rows.push({ index: row, cells });
++  };
+   if (!text.includes('"')) {
+     const lines = text.split(/\r\n|\r|\n/);
+     if (text.length && /[\r\n]$/.test(text)) lines.pop();
+-    return lines.map(line => line.split(','));
++    for (const line of lines) appendRow(line.split(','));
++    return { rows, columnCount: columnNames.length };
+   }
+-  const rows: string[][] = [];
+   let row: string[] = [];
+   let cell = '';
+   let index = 0;
++  let start = 0;
++  let recordStart = 0;
+   let quoted = false;
+ 
+   while (index < text.length) {
+-    const char = text[index];
+     if (quoted) {
+-      if (char === '"') {
+-        if (text[index + 1] === '"') {
+-          cell += '"';
+-          index += 2;
+-          continue;
+-        }
++      const quote = text.indexOf('"', index);
++      if (quote < 0) {
++        cell += text.slice(index);
++        start = index = text.length;
++        break;
++      }
++      cell += text.slice(index, quote);
++      index = quote + 1;
++      if (text[index] === '"') {
++        cell += '"';
++        index++;
++      } else {
+         quoted = false;
+-        index += 1;
+-        continue;
+       }
+-      cell += char;
+-      index += 1;
++      start = index;
+       continue;
+     }
+ 
+-    if (char === '"' && cell.length === 0) {
++    const char = text[index];
++    if (char === '"' && cell.length === 0 && index === start) {
+       quoted = true;
+-      index += 1;
++      start = ++index;
+       continue;
+     }
+     if (char === ',') {
+-      row.push(cell);
++      row.push(cell + text.slice(start, index));
+       cell = '';
+-      index += 1;
++      start = ++index;
+       continue;
+     }
+     if (char === '\r' || char === '\n') {
+-      row.push(cell);
+-      rows.push(row);
++      row.push(cell + text.slice(start, index));
++      appendRow(row);
+       row = [];
+       cell = '';
+       if (char === '\r' && text[index + 1] === '\n') {
+@@ -223,18 +229,19 @@ function parseCsv(text: string): string[][] {
+       } else {
+         index += 1;
+       }
++      recordStart = start = index;
+       continue;
+     }
+-    cell += char;
+     index += 1;
+   }
+ 
+-  if (cell.length || row.length || text.length === 0) {
+-    row.push(cell);
+-    rows.push(row);
++  // A quoted empty field still starts a record, even though its decoded value is empty.
++  if (recordStart < text.length || text.length === 0) {
++    row.push(cell + text.slice(start, index));
++    appendRow(row);
+   }
+ 
+-  return rows;
++  return { rows, columnCount: columnNames.length };
+ }
+ 
+ async function readRequiredText(zip: Map<string, ZipEntry>, path: string): Promise<string> {

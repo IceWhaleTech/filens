@@ -1,0 +1,203 @@
+diff --git a/packages/archive/src/preview-driver.ts b/packages/archive/src/preview-driver.ts
+index 8693f36..42be6f2 100644
+--- a/packages/archive/src/preview-driver.ts
++++ b/packages/archive/src/preview-driver.ts
+@@ -600,15 +600,25 @@ export async function createArchiveResourceIndex(
+   const format = detectArchiveFormat(label, context.route?.sourceFormat ?? context.descriptor.extension);
+   const archive = await readArchive(new Uint8Array(await sourceToArrayBuffer(source, context)), format, label);
+   const root = normalizeZipEntryName(options.root ?? '');
+-  const entries = archive.entries.map((entry) => createArchiveResource(entry, options.contentTypes)).sort(compareArchiveEntries);
+-  const files = entries.filter((entry) => entry.type === 'file');
+-  const exact = new Map(files.map((entry) => [normalizeZipEntryName(entry.name), entry]));
+-  const rooted = new Map(
+-    files
+-      .filter((entry) => root && normalizeZipEntryName(entry.name).startsWith(`${root}/`))
+-      .map((entry) => [normalizeZipEntryName(entry.name).slice(root.length + 1), entry])
+-  );
+-  const basename = createUniqueBasenameMap(files);
++  // readArchive already sorts entries. Build every lookup from the same
++  // normalized path instead of repeating path/URI parsing for each map.
++  const entries: ArchiveResource[] = [];
++  const files: ArchiveResource[] = [];
++  const exact = new Map<string, ArchiveResource>();
++  const rooted = new Map<string, ArchiveResource>();
++  const basename = new Map<string, ArchiveResource | null>();
++  const rootPrefix = root ? `${root}/` : '';
++  for (const record of archive.entries) {
++    const name = normalizeZipEntryName(record.name);
++    const entry = createArchiveResource(record, options.contentTypes, name);
++    entries.push(entry);
++    if (entry.type !== 'file') continue;
++    files.push(entry);
++    exact.set(name, entry);
++    if (rootPrefix && name.startsWith(rootPrefix)) rooted.set(name.slice(rootPrefix.length), entry);
++    const base = name.slice(name.lastIndexOf('/') + 1);
++    if (base) basename.set(base, basename.has(base) ? null : entry);
++  }
+ 
+   return {
+     entries,
+@@ -689,29 +699,58 @@ async function readArchive(bytes: Uint8Array, format: string, label: string): Pr
+ 
+ function readTarEntries(bytes: Uint8Array): ArchiveEntryRecord[] {
+   const entries: ArchiveEntryRecord[] = [];
++  const globalAttributes = new Map<string, string>();
++  let localAttributes = new Map<string, string>();
++  let longName: string | undefined;
+   for (let offset = 0; offset + 512 <= bytes.byteLength;) {
+     const header = bytes.subarray(offset, offset + 512);
+     if (header.every((value) => value === 0)) break;
+     if (!hasValidTarChecksum(header)) throw new Error('Invalid TAR header checksum.');
+ 
+-    const size = readTarNumber(header, 124, 12);
+     const typeFlag = String.fromCharCode(header[156] ?? 0);
+-    const prefix = readTarString(header, 345, 155);
+-    const rawName = readTarString(header, 0, 100);
+-    const normalizedName = normalizeZipEntryName(prefix ? `${prefix}/${rawName}` : rawName);
++    const extension = ['x', 'g', 'L', 'K'].includes(typeFlag);
++    const attribute = (key: string) => localAttributes.get(key) ?? globalAttributes.get(key);
++    const extendedSize = extension ? undefined : attribute('size');
++    const size = extendedSize ? readPaxNumber(extendedSize, true) : readTarNumber(header, 124, 12);
++    if (!Number.isSafeInteger(size) || size < 0) throw new Error('Invalid TAR entry size.');
+     const dataOffset = offset + 512;
+     const nextOffset = dataOffset + Math.ceil(size / 512) * 512;
+-    if (nextOffset > bytes.byteLength) throw new Error('Truncated TAR entry.');
++    if (!Number.isSafeInteger(nextOffset) || nextOffset > bytes.byteLength) throw new Error('Truncated TAR entry.');
++
++    if (extension) {
++      const data = bytes.subarray(dataOffset, dataOffset + size);
++      if (typeFlag === 'L') {
++        const end = data.indexOf(0);
++        longName = new TextDecoder().decode(end < 0 ? data : data.subarray(0, end));
++      } else if (typeFlag !== 'K') {
++        const attributes = readPaxAttributes(data);
++        for (const [key, value] of attributes) {
++          if (typeFlag === 'g') {
++            if (value) globalAttributes.set(key, value);
++            else globalAttributes.delete(key);
++          } else localAttributes.set(key, value);
++        }
++      }
++      offset = nextOffset;
++      continue;
++    }
++
++    const prefix = readTarString(header, 345, 155);
++    const rawName = readTarString(header, 0, 100);
++    const normalizedName = normalizeZipEntryName(attribute('path') || longName || (prefix ? `${prefix}/${rawName}` : rawName));
++    const extendedModified = attribute('mtime');
++    const modifiedSeconds = extendedModified ? readPaxNumber(extendedModified, false) : readTarNumber(header, 136, 12);
++    localAttributes = new Map();
++    longName = undefined;
+ 
+     if (normalizedName && (typeFlag === '\0' || typeFlag === '0' || typeFlag === '5')) {
+       const directory = typeFlag === '5';
+       const name = directory ? `${normalizedName.replace(/\/+$/, '')}/` : normalizedName;
+-      const modifiedSeconds = readTarNumber(header, 136, 12);
+       entries.push({
+         name,
+         type: directory ? 'directory' : 'file',
+         size: directory ? undefined : size,
+-        modified: modifiedSeconds > 0 ? modifiedSeconds * 1000 : undefined,
++        modified: extendedModified || modifiedSeconds > 0 ? modifiedSeconds * 1000 : undefined,
+         read: async () => directory ? new Uint8Array() : bytes.slice(dataOffset, dataOffset + size)
+       });
+     }
+@@ -720,6 +759,33 @@ function readTarEntries(bytes: Uint8Array): ArchiveEntryRecord[] {
+   return entries.sort(compareArchiveEntries);
+ }
+ 
++function readPaxAttributes(bytes: Uint8Array): Map<string, string> {
++  const attributes = new Map<string, string>();
++  const decoder = new TextDecoder();
++  for (let offset = 0; offset < bytes.length;) {
++    const space = bytes.indexOf(32, offset);
++    if (space < 0) throw new Error('Invalid TAR extended header length.');
++    const length = readPaxNumber(decoder.decode(bytes.subarray(offset, space)), true);
++    const end = offset + length;
++    if (end <= space + 1 || end > bytes.length || bytes[end - 1] !== 10) throw new Error('Truncated TAR extended header.');
++    const field = decoder.decode(bytes.subarray(space + 1, end - 1));
++    const equals = field.indexOf('=');
++    if (equals <= 0) throw new Error('Invalid TAR extended header field.');
++    attributes.set(field.slice(0, equals), field.slice(equals + 1));
++    offset = end;
++  }
++  return attributes;
++}
++
++function readPaxNumber(value: string, integer: boolean): number {
++  const result = Number(value);
++  if (!(integer ? /^\d+$/ : /^-?\d+(?:\.\d+)?$/).test(value) ||
++      !Number.isFinite(result) || (integer && !Number.isSafeInteger(result))) {
++    throw new Error('Invalid TAR extended header number.');
++  }
++  return result;
++}
++
+ async function decompressGzip(bytes: Uint8Array): Promise<Uint8Array> {
+   return gunzipSync(bytes);
+ }
+@@ -927,9 +993,10 @@ function normalizeFormat(format: string | undefined): string {
+ 
+ function createArchiveResource(
+   entry: ArchiveEntryRecord,
+-  contentTypes: Record<string, string> | undefined
++  contentTypes: Record<string, string> | undefined,
++  normalizedName: string
+ ): ArchiveResource {
+-  const contentType = entry.type === 'directory' ? undefined : resolveZipContentType(entry.name, contentTypes);
++  const contentType = entry.type === 'directory' ? undefined : resolveZipContentType(normalizedName, contentTypes, true);
+   return {
+     name: entry.name,
+     type: entry.type,
+@@ -950,33 +1017,24 @@ function createArchiveResource(
+   };
+ }
+ 
+-function createUniqueBasenameMap(entries: ArchiveResource[]): Map<string, ArchiveResource> {
+-  const candidates = new Map<string, ArchiveResource | null>();
+-  for (const entry of entries) {
+-    const basename = normalizeZipEntryName(entry.name).split('/').pop();
+-    if (!basename) {
+-      continue;
+-    }
+-    candidates.set(basename, candidates.has(basename) ? null : entry);
+-  }
+-  return new Map([...candidates.entries()].filter((entry): entry is [string, ArchiveResource] => entry[1] != null));
+-}
+-
+ function findZipResourceEntry(
+   name: string,
+   exact: Map<string, ArchiveResource>,
+   rooted: Map<string, ArchiveResource>,
+-  basename: Map<string, ArchiveResource>
++  basename: Map<string, ArchiveResource | null>
+ ): ArchiveResource | undefined {
+   const normalized = normalizeZipEntryName(name);
+   if (!normalized) {
+     return undefined;
+   }
+-  return exact.get(normalized) ?? rooted.get(normalized) ?? basename.get(normalized.split('/').pop() ?? '');
++  return exact.get(normalized) ?? rooted.get(normalized) ?? basename.get(normalized.slice(normalized.lastIndexOf('/') + 1)) ?? undefined;
+ }
+ 
+ function normalizeZipEntryName(name: string): string {
+-  const trimmed = String(name ?? '')
++  const source = String(name ?? '');
++  // Ordinary relative paths need neither URI decoding nor segment cleanup.
++  if (!/[\\%?#:]|(?:^|\/)\.\.?(?:\/|$)|\/\/|^\/|\/$|^\s|\s$/.test(source)) return source;
++  const trimmed = source
+     .trim()
+     .replace(/\\/g, '/')
+     .replace(/^[a-z]+:\/\/[^/]+\//i, '')
+@@ -1011,8 +1069,8 @@ function decodeUriPart(part: string): string {
+   }
+ }
+ 
+-function resolveZipContentType(name: string, contentTypes: Record<string, string> | undefined): string | undefined {
+-  const normalized = normalizeZipEntryName(name);
++function resolveZipContentType(name: string, contentTypes: Record<string, string> | undefined, alreadyNormalized = false): string | undefined {
++  const normalized = alreadyNormalized ? name : normalizeZipEntryName(name);
+   const extension = normalizeFormat(normalized.split('?')[0]?.split('.').pop());
+   return contentTypes?.[normalized] ?? contentTypes?.[extension] ?? defaultContentTypeForExtension(extension);
+ }

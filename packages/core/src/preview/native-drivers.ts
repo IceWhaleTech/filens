@@ -282,6 +282,7 @@ abstract class NativePreviewSession<TState extends PreviewItemState> implements 
   };
   protected readonly root: HTMLDivElement;
   protected createdUrl: string | null = null;
+  private elementLoadController: AbortController | null = null;
 
   constructor(protected readonly host: HTMLElement) {
     this.root = document.createElement('div');
@@ -297,11 +298,13 @@ abstract class NativePreviewSession<TState extends PreviewItemState> implements 
   }
 
   destroy(): void {
+    this.stopElementLoad();
     this.revokeCreatedUrl();
     this.root.replaceChildren();
     if (this.root.parentElement === this.host) {
       this.host.replaceChildren();
     }
+    for (const listeners of Object.values(this.listeners)) listeners.clear();
   }
 
   on<T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void): () => void {
@@ -322,6 +325,34 @@ abstract class NativePreviewSession<TState extends PreviewItemState> implements 
     state.error = null;
     this.emit('loading', state);
     this.emit('statechange', state);
+  }
+
+  protected beginElementLoad(state: TState, context: PreviewLoadContext, release: () => void): AbortSignal {
+    this.stopElementLoad();
+    const controller = new AbortController();
+    this.elementLoadController = controller;
+    const abort = () => controller.abort();
+    controller.signal.addEventListener('abort', () => {
+      context.signal?.removeEventListener('abort', abort);
+      release();
+      this.revokeCreatedUrl();
+      this.root.replaceChildren();
+      state.loading = false;
+      if (this.elementLoadController === controller) {
+        this.elementLoadController = null;
+        this.emit('statechange', state);
+      }
+    }, { once: true });
+    context.signal?.addEventListener('abort', abort, { once: true });
+    this.setLoading(state);
+    if (context.signal?.aborted) controller.abort();
+    return controller.signal;
+  }
+
+  protected stopElementLoad(): void {
+    const controller = this.elementLoadController;
+    this.elementLoadController = null;
+    controller?.abort();
   }
 
   protected setError(state: TState, error: unknown): never {
@@ -389,19 +420,24 @@ export class ImagePreviewSession extends NativePreviewSession<ImagePreviewState>
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
-    this.state.family = context.route?.family === 'panorama' ? 'panorama' : 'image';
-    this.state.title = context.descriptor.name;
-    this.setLoading(this.state);
+    this.state = { ...this.state, family: context.route?.family === 'panorama' ? 'panorama' : 'image',
+      title: context.descriptor.name, naturalWidth: undefined, naturalHeight: undefined };
+    const signal = this.beginElementLoad(this.state, context, () => {
+      this.stopPanDrag();
+      this.image?.removeAttribute('src');
+      this.image = null;
+    });
 
     try {
+      checkElementAborted(signal);
       const image = document.createElement('img');
       image.className = 'pptxv-native-image';
       image.alt = context.descriptor.name ?? 'Image preview';
       image.decoding = 'async';
       image.draggable = false;
-      image.src = this.sourceToUrl(source, context.descriptor.contentType);
-      image.addEventListener('dragstart', (event) => event.preventDefault());
+      image.addEventListener('dragstart', (event) => event.preventDefault(), { signal });
       image.addEventListener('load', () => {
+        if (signal.aborted) return;
         this.state.naturalWidth = image.naturalWidth || undefined;
         this.state.naturalHeight = image.naturalHeight || undefined;
         this.state.loading = false;
@@ -409,19 +445,27 @@ export class ImagePreviewSession extends NativePreviewSession<ImagePreviewState>
         this.applyImageStyle();
         this.emit('rendered', this.state);
         this.emit('statechange', this.state);
-      });
+      }, { signal });
       image.addEventListener('error', () => {
+        if (signal.aborted) return;
+        this.stopElementLoad();
         const error = new Error('Failed to load image preview.');
         this.state.loading = false;
         this.state.error = error.message;
         this.emit('error', error);
         this.emit('statechange', this.state);
-      });
+      }, { signal });
       this.image = image;
+      image.src = this.sourceToUrl(source, context.descriptor.contentType);
       this.root.className = 'pptxv-native-preview pptxv-native-preview--image';
       this.root.replaceChildren(image);
       this.applyImageStyle();
     } catch (error) {
+      if (signal.aborted) {
+        if (context.signal?.aborted) checkElementAborted(signal);
+        return;
+      }
+      this.stopElementLoad();
       this.setError(this.state, error);
     }
   }
@@ -438,6 +482,7 @@ export class ImagePreviewSession extends NativePreviewSession<ImagePreviewState>
   }
 
   setScale(scale: number): void {
+    if (!Number.isFinite(scale)) return;
     this.scale = Math.max(0.05, scale);
     this.state.scale = this.scale;
     this.fitMode = 'none';
@@ -458,6 +503,7 @@ export class ImagePreviewSession extends NativePreviewSession<ImagePreviewState>
   }
 
   rotate(degrees = 90): void {
+    if (!Number.isFinite(degrees)) return;
     this.state.rotation = normalizeRotation(this.state.rotation + degrees);
     this.applyImageStyle();
     this.emit('statechange', this.state);
@@ -578,6 +624,9 @@ export class ImagePreviewSession extends NativePreviewSession<ImagePreviewState>
 }
 
 export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
+  private loadGeneration = 0;
+  private loadController: AbortController | null = null;
+  private removeAbortListener: (() => void) | null = null;
   private state: TextPreviewState = {
     loading: false,
     error: null,
@@ -595,6 +644,22 @@ export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
   };
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
+    const generation = ++this.loadGeneration;
+    this.loadController?.abort();
+    this.removeAbortListener?.();
+    const controller = new AbortController();
+    this.loadController = controller;
+    const abort = () => {
+      controller.abort();
+      if (generation === this.loadGeneration) {
+        this.root.replaceChildren();
+        this.state.loading = false;
+        this.emit('statechange', this.state);
+      }
+    };
+    context.signal?.addEventListener('abort', abort, { once: true });
+    const removeAbortListener = () => context.signal?.removeEventListener('abort', abort);
+    this.removeAbortListener = removeAbortListener;
     const isCode = context.route?.family === 'code';
     this.state = {
       ...this.state,
@@ -608,13 +673,19 @@ export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
         codeHighlight: isCode
       },
       language: isCode ? inferLanguage(context.route?.sourceFormat) : undefined,
+      lineCount: undefined,
       wrap: !isCode
     };
+    this.root.replaceChildren();
     this.setLoading(this.state);
 
     try {
-      const text = await readTextSource(source, context);
-      const lineCount = text ? text.split(/\r\n|\r|\n/).length : 0;
+      if (context.signal?.aborted) abort();
+      checkTextAborted(controller.signal);
+      const text = await readTextSource(source, { ...context, signal: controller.signal });
+      if (generation !== this.loadGeneration) return;
+      checkTextAborted(controller.signal);
+      const lineCount = countTextLines(text);
       const shell = document.createElement('div');
       shell.className = 'pptxv-native-text-shell';
       shell.dataset.family = this.state.family;
@@ -626,7 +697,7 @@ export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
       const gutter = document.createElement('div');
       gutter.className = 'pptxv-native-text-gutter';
       gutter.setAttribute('aria-hidden', 'true');
-      gutter.replaceChildren(...renderLineNumbers(lineCount));
+      gutter.textContent = Array.from({ length: lineCount }, (_, index) => String(index + 1)).join('\n');
 
       const pre = document.createElement('pre');
       pre.className = 'pptxv-native-text';
@@ -653,8 +724,29 @@ export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
       this.emit('rendered', this.state);
       this.emit('statechange', this.state);
     } catch (error) {
+      if (generation !== this.loadGeneration) return;
+      this.root.replaceChildren();
+      this.state.loading = false;
+      checkTextAborted(controller.signal);
       this.setError(this.state, error);
+    } finally {
+      removeAbortListener();
+      if (generation === this.loadGeneration) {
+        this.loadController = null;
+        this.removeAbortListener = null;
+      }
     }
+  }
+
+  destroy(): void {
+    this.loadGeneration++;
+    this.loadController?.abort();
+    this.loadController = null;
+    this.removeAbortListener?.();
+    this.removeAbortListener = null;
+    this.state.loading = false;
+    super.destroy();
+    for (const listeners of Object.values(this.listeners)) listeners.clear();
   }
 
   getState(): TextPreviewState {
@@ -663,6 +755,7 @@ export class TextPreviewSession extends NativePreviewSession<TextPreviewState> {
 }
 
 export class HtmlPreviewSession extends NativePreviewSession<PreviewItemState> {
+  private frame: HTMLIFrameElement | null = null;
   private state: PreviewItemState = {
     loading: false,
     error: null,
@@ -684,31 +777,44 @@ export class HtmlPreviewSession extends NativePreviewSession<PreviewItemState> {
       title: context.descriptor.name,
       warnings: []
     };
-    this.setLoading(this.state);
+    const signal = this.beginElementLoad(this.state, context, () => {
+      this.frame?.removeAttribute('src');
+      this.frame = null;
+    });
 
     try {
+      checkElementAborted(signal);
       const frame = document.createElement('iframe');
       frame.className = 'pptxv-native-html-frame';
       frame.title = context.descriptor.name ?? 'HTML preview';
       frame.setAttribute('sandbox', 'allow-same-origin allow-popups');
       frame.referrerPolicy = 'no-referrer';
-      frame.src = this.sourceToHtmlUrl(source, context);
       frame.addEventListener('load', () => {
+        if (signal.aborted) return;
         this.state.loading = false;
         this.state.error = null;
         this.emit('rendered', this.state);
         this.emit('statechange', this.state);
-      });
+      }, { signal });
       frame.addEventListener('error', () => {
+        if (signal.aborted) return;
+        this.stopElementLoad();
         const error = new Error('Failed to load HTML preview.');
         this.state.loading = false;
         this.state.error = error.message;
         this.emit('error', error);
         this.emit('statechange', this.state);
-      });
+      }, { signal });
+      this.frame = frame;
+      frame.src = this.sourceToHtmlUrl(source, context);
       this.root.className = 'pptxv-native-preview pptxv-native-preview--html';
       this.root.replaceChildren(frame);
     } catch (error) {
+      if (signal.aborted) {
+        if (context.signal?.aborted) checkElementAborted(signal);
+        return;
+      }
+      this.stopElementLoad();
       this.setError(this.state, error);
     }
   }
@@ -718,7 +824,7 @@ export class HtmlPreviewSession extends NativePreviewSession<PreviewItemState> {
   }
 
   private sourceToHtmlUrl(source: PreviewSource, context: PreviewLoadContext): string {
-    if (typeof source === 'string' && !isInlineHtml(source)) {
+    if (typeof source === 'string' && (isDataUrl(source) || !isInlineHtml(source))) {
       return source;
     }
 
@@ -773,49 +879,51 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
       currentTime: 0,
       paused: true
     };
-    this.setLoading(this.state);
+    const signal = this.beginElementLoad(this.state, context, () => this.releaseMedia());
 
     try {
-      this.revokeCoverUrl();
+      checkElementAborted(signal);
       const media = document.createElement(family === 'audio' ? 'audio' : 'video');
+      this.media = media;
       media.className = `pptxv-native-media pptxv-native-media--${family === 'audio' ? 'audio' : 'video'}`;
       media.controls = true;
       media.preload = 'metadata';
+      media.muted = this.state.muted;
+      media.volume = this.state.volume;
       const contentType = resolveMediaContentType(context);
       media.dataset.contentType = contentType ?? '';
       media.dataset.sourceFormat = normalizeExtension(context.route?.sourceFormat ?? context.descriptor.extension ?? '');
       const mediaUrl = this.sourceToUrl(source, contentType);
-      if (contentType) {
-        const sourceElement = document.createElement('source');
-        sourceElement.src = mediaUrl;
-        sourceElement.type = contentType;
-        media.appendChild(sourceElement);
-      } else {
-        media.src = mediaUrl;
-      }
       media.addEventListener('loadedmetadata', () => {
+        if (signal.aborted) return;
         this.syncMediaState(media);
         this.state.loading = false;
         this.emit('rendered', this.state);
         this.emit('statechange', this.state);
-      });
+      }, { signal });
       media.addEventListener('timeupdate', () => {
+        if (signal.aborted) return;
         this.syncMediaState(media);
         this.emit('statechange', this.state);
-      });
+      }, { signal });
       media.addEventListener('play', () => {
+        if (signal.aborted) return;
         this.syncMediaState(media);
         this.emit('statechange', this.state);
-      });
+      }, { signal });
       media.addEventListener('pause', () => {
+        if (signal.aborted) return;
         this.syncMediaState(media);
         this.emit('statechange', this.state);
-      });
+      }, { signal });
       media.addEventListener('volumechange', () => {
+        if (signal.aborted) return;
         this.syncMediaState(media);
         this.emit('statechange', this.state);
-      });
-      media.addEventListener('error', () => {
+      }, { signal });
+      const fail = () => {
+        if (signal.aborted) return;
+        this.stopElementLoad();
         const error = new Error(
           contentType
             ? `Failed to load media preview (${contentType}). The browser may not support this codec.`
@@ -825,12 +933,27 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
         this.state.error = error.message;
         this.emit('error', error);
         this.emit('statechange', this.state);
-      });
+      };
+      media.addEventListener('error', fail, { signal });
+      if (contentType) {
+        const sourceElement = document.createElement('source');
+        sourceElement.addEventListener('error', fail, { signal });
+        sourceElement.src = mediaUrl;
+        sourceElement.type = contentType;
+        media.appendChild(sourceElement);
+      } else {
+        media.src = mediaUrl;
+      }
 
-      this.media = media;
       this.root.className = `pptxv-native-preview pptxv-native-preview--${family === 'audio' ? 'audio' : 'video'}`;
+      this.root.replaceChildren(media);
       if (family === 'audio') {
-        const cover = await extractAudioCover(source);
+        // Optional artwork must not delay the player or prevent playback.
+        const cover = await extractAudioCover(source).catch(() => null);
+        if (signal.aborted) {
+          if (context.signal?.aborted) checkElementAborted(signal);
+          return;
+        }
         if (cover) {
           const img = document.createElement('img');
           img.className = 'pptxv-native-audio-cover';
@@ -838,21 +961,17 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
           const blob = new Blob([toBlobPart(cover.bytes)], { type: cover.mimeType });
           this.coverUrl = URL.createObjectURL(blob);
           img.src = this.coverUrl;
-          this.root.replaceChildren(img, media);
-        } else {
-          this.root.replaceChildren(media);
+          this.root.prepend(img);
         }
-      } else {
-        this.root.replaceChildren(media);
       }
     } catch (error) {
+      if (signal.aborted) {
+        if (context.signal?.aborted) checkElementAborted(signal);
+        return;
+      }
+      this.stopElementLoad();
       this.setError(this.state, error);
     }
-  }
-
-  destroy(): void {
-    this.revokeCoverUrl();
-    super.destroy();
   }
 
   getState(): MediaPreviewState {
@@ -873,6 +992,19 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
       URL.revokeObjectURL(this.coverUrl);
       this.coverUrl = null;
     }
+  }
+
+  private releaseMedia(): void {
+    const media = this.media;
+    this.media = null;
+    if (media) {
+      media.pause();
+      media.removeAttribute('src');
+      media.querySelectorAll('source').forEach(source => source.removeAttribute('src'));
+      media.load();
+    }
+    this.state.paused = true;
+    this.revokeCoverUrl();
   }
 }
 
@@ -953,12 +1085,26 @@ function readDataUrl(source: string): string {
   return decodeURIComponent(payload);
 }
 
-function renderLineNumbers(lineCount: number): HTMLSpanElement[] {
-  return Array.from({ length: Math.max(0, lineCount) }, (_, index) => {
-    const line = document.createElement('span');
-    line.textContent = String(index + 1);
-    return line;
-  });
+function checkTextAborted(signal: AbortSignal): void {
+  if (signal.aborted) throw new DOMException('Text preview loading aborted.', 'AbortError');
+}
+
+function checkElementAborted(signal: AbortSignal): void {
+  if (signal.aborted) throw new DOMException('Preview loading aborted.', 'AbortError');
+}
+
+function countTextLines(text: string): number {
+  if (!text) return 0;
+  let count = 1;
+  for (let index = 0; index < text.length; index++) {
+    const code = text.charCodeAt(index);
+    if (code === 10) count++;
+    else if (code === 13) {
+      count++;
+      if (text.charCodeAt(index + 1) === 10) index++;
+    }
+  }
+  return count;
 }
 
 function sourceToHtmlBlobPart(source: PreviewSource): BlobPart {
@@ -977,6 +1123,8 @@ function sourceToHtmlBlobPart(source: PreviewSource): BlobPart {
 function toBlobPart(source: Exclude<PreviewSource, string | Blob>): BlobPart {
   if (ArrayBuffer.isView(source)) {
     const bytes = toUint8Array(source);
+    // Blob snapshots ordinary ArrayBuffer views itself, including their exact slice.
+    if (bytes.buffer instanceof ArrayBuffer) return bytes as Uint8Array<ArrayBuffer>;
     const copy = new Uint8Array(bytes.byteLength);
     copy.set(bytes);
     return copy.buffer as ArrayBuffer;
@@ -989,30 +1137,18 @@ function toUint8Array(source: ArrayBufferView): Uint8Array {
 }
 
 async function extractAudioCover(source: PreviewSource): Promise<{ mimeType: string; bytes: Uint8Array } | null> {
-  const bytes = await sourceToMaybeUint8Array(source);
-  if (!bytes) {
-    return null;
-  }
-  return extractMp3Id3v2Cover(bytes);
-}
-
-async function sourceToMaybeUint8Array(source: PreviewSource): Promise<Uint8Array | null> {
   if (typeof source === 'string') {
     return null;
   }
   if (source instanceof Blob) {
     const head = source.slice(0, Math.min(source.size, 512 * 1024));
-    return new Uint8Array(await head.arrayBuffer());
+    return extractMp3Id3v2Cover(new Uint8Array(await head.arrayBuffer()));
   }
-  if (ArrayBuffer.isView(source)) {
-    const copy = new Uint8Array(source.byteLength);
-    copy.set(new Uint8Array(source.buffer, source.byteOffset, source.byteLength));
-    return copy;
-  }
-  if (source instanceof ArrayBuffer) {
-    return new Uint8Array(source);
-  }
-  return null;
+  // Inspect borrowed bytes synchronously, then retain only artwork. The caller
+  // can mutate or detach its input as soon as load() yields.
+  const bytes = ArrayBuffer.isView(source) ? toUint8Array(source) : new Uint8Array(source);
+  const cover = extractMp3Id3v2Cover(bytes);
+  return cover ? { mimeType: cover.mimeType, bytes: cover.bytes.slice() } : null;
 }
 
 function extractMp3Id3v2Cover(bytes: Uint8Array): { mimeType: string; bytes: Uint8Array } | null {
@@ -1164,8 +1300,7 @@ function isDataUrl(source: string): boolean {
 }
 
 function isInlineHtml(source: string): boolean {
-  const trimmed = source.trimStart().toLowerCase();
-  return trimmed.startsWith('<!doctype html') || trimmed.startsWith('<html') || trimmed.startsWith('data:text/html');
+  return source.trimStart().startsWith('<');
 }
 
 function resolveMediaFamily(context: PreviewLoadContext): MediaPreviewState['family'] {

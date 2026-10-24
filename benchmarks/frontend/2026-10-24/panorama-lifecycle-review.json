@@ -1,0 +1,389 @@
+{
+  "date": "2026-10-24T11:29:38.701996+00:00",
+  "engineering": true,
+  "scopedSota": false,
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "outcome": "Panorama and RAW sessions own their load controller, current DOM/media and listeners. Replacement/abort/destruction settle obsolete loads, release owned resources, close late textures/renderers and reject stale processor work. Ordinary ArrayBuffer views use Blob snapshotting directly, preserving exact slices without a redundant full copy. No backend format logic added.",
+  "measurements": {
+    "finalRuns": 56,
+    "repeatsPerInputEngine": 7,
+    "diagnosticAndFollowupRuns": 22,
+    "cpu": "Apple M4 Pro",
+    "browser": "147.0.7727.15",
+    "method": "Fresh Chromium/SwiftShader context per invocation, alternating old/current. Imports and generated 4096x2048 24-bit BMP input ready before timer. Timer covers public session construction and complete load(), including WebGL context construction, input Blob snapshot, image decoding, geometry and DOM setup. Ends before scheduled upload/drawing; input/source hashing, full Blob hash, two frames, complete canvas pixels and destroy checks occur afterward. Excludes network/module loading. Generated input, no camera/vendor calibration, peer/SOTA or peak-memory claim.",
+    "input": {
+      "bytes": 25165878,
+      "sha256": "925e4e47daedf48be5920eea0e6769da53f5bfc52b653cf96c6d6b848fed1e35",
+      "width": 4096,
+      "height": 2048
+    },
+    "samples": [
+      {
+        "sample": "bmp-24MiB-typed",
+        "baselineMs": 41.800000071525574,
+        "currentMs": 38,
+        "ratio": 1.100000001882252,
+        "pairedBootstrapRatio95": [
+          1.0435779810807146,
+          1.1260053597710944
+        ],
+        "below10MsControl": false,
+        "stableEngineeringReduction": true,
+        "completeBlobAndCanvasPixelsMatch": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "bmp-24MiB-subview",
+        "baselineMs": 41.09999990463257,
+        "currentMs": 41.200000047683716,
+        "ratio": 0.9975728120646745,
+        "pairedBootstrapRatio95": [
+          0.9855421681001962,
+          1.1220779233164602
+        ],
+        "below10MsControl": false,
+        "stableEngineeringReduction": false,
+        "completeBlobAndCanvasPixelsMatch": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "bmp-24MiB-array-buffer",
+        "baselineMs": 37.799999952316284,
+        "currentMs": 37.59999990463257,
+        "ratio": 1.0053191502178456,
+        "pairedBootstrapRatio95": [
+          0.9528535985507132,
+          1.0161290296737493
+        ],
+        "below10MsControl": false,
+        "stableEngineeringReduction": false,
+        "completeBlobAndCanvasPixelsMatch": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "bmp-24MiB-blob",
+        "baselineMs": 17.399999976158142,
+        "currentMs": 35.39999997615814,
+        "ratio": 0.4915254233863565,
+        "pairedBootstrapRatio95": [
+          0.44473007616759574,
+          1.0257142850330898
+        ],
+        "below10MsControl": false,
+        "stableEngineeringReduction": false,
+        "completeBlobAndCanvasPixelsMatch": true,
+        "scopedSota": false
+      }
+    ],
+    "blobFollowup": {
+      "engineering": true,
+      "scopedSota": false,
+      "sourceSha256": "52189f1cc56ba56ab41eedff9637fe71724e24adace11c74c02f156cf104c8a6",
+      "iterations": 7,
+      "runs": 14,
+      "cpu": "Apple M4 Pro",
+      "browser": "147.0.7727.15",
+      "method": "10,000 paired bootstrap resamples of public panorama load median ratios, seed 12345. Seven repeats, baseline above 10 ms and an interval above 1 required for a stable reduction. Includes WebGL context, Blob snapshot, image decoding and DOM setup; excludes scheduled drawing/upload, source/module preparation and post-timer content checks. Complete Blob/pixel equivalence checked in every run. No peer/SOTA or peak-memory claim.",
+      "samples": [
+        {
+          "sample": "bmp-24MiB-blob",
+          "baselineMs": 38.299999952316284,
+          "currentMs": 38,
+          "ratio": 1.0078947355872707,
+          "pairedBootstrapRatio95": [
+            0.43665158216052297,
+            1.0684210532589962
+          ],
+          "below10MsControl": false,
+          "stableEngineeringReduction": false,
+          "completeBlobAndCanvasPixelsMatch": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    "equivalence": "Every final/follow-up repetition retains complete Blob bytes and payload SHA-256, natural dimensions and a complete 640x320 RGBA canvas SHA-256. Input arrays are mutated after timed load to verify snapshot ownership. All page-error arrays are empty; every session releases all owned URLs and its host on destruction.",
+    "controls": "Subview and ArrayBuffer have no stable gain. Original Blob median is higher and its interval overlaps 1; a separate Blob recheck also overlaps 1. Original values and startup outliers remain, with no Blob speed or stable-regression claim."
+  },
+  "validation": {
+    "panoramaUnitPassed": 150,
+    "vueUnitPassed": 44,
+    "newLifecycleTests": 20,
+    "oldSourceSelectedTests": 6,
+    "oldSourceFailed": 5,
+    "oldSourcePassed": 1,
+    "oldSourceNotSelected": 14,
+    "oldSourceNote": "The same final new test file runs against isolated copies restoring this round original two production sources. Select immediate displayed-abort, pre-abort, stale-control and snapshot regressions plus exact-slice control; five fail and the slice control passes. This selected proof does not claim every new test failed on old source.",
+    "panoramaBuildPassed": true,
+    "demoBuildPassed": true,
+    "developmentBrowserPassed": 12,
+    "productionBrowserPassed": 4,
+    "bundleSizesUpdated": true,
+    "browserCoverage": [
+      "Actual GL context loss and URL cleanup on abort, followed by reuse of the same session",
+      "Delayed HTTP image completes after replacement: original promise already rejects, newer image/state remain",
+      "Actual WASM Pentax DNG conversion then abort releases its flat image",
+      "Bundled NASA spherical WebM plays, stops on replacement and ignores retained player events",
+      "Synthetic packed and separate calibrated video playback, pause, drag, zoom and seeking",
+      "Synthetic calibrated still sRGB/idle behavior with delayed or failed seam analysis",
+      "ONE RS and X5 DNG geometry, direction, static seams and switch to ordinary DNG",
+      "Production demo upload of a generated panorama then a flat image releases the old GL context; production synthetic/ordinary DNG paths pass"
+    ],
+    "incrementalPatchReverseRestoresBaseline": true,
+    "sourceMapsMatchSnapshots": [
+      "tmp/continued-review/panorama-lifecycle-baseline/src/preview-driver.ts",
+      "tmp/continued-review/panorama-lifecycle-baseline/src/raw-preview-driver.ts",
+      "packages/panorama/src/load-task.ts",
+      "packages/panorama/src/preview-driver.ts",
+      "packages/panorama/src/raw-preview-driver.ts"
+    ],
+    "buildWarnings": [
+      "Existing demo vendor chunk size warning",
+      "Existing Vue test multiple Three.js instances warning"
+    ],
+    "initialDiagnosticResolutions": [
+      "Existing fixture-path tests require running Vitest from packages/panorama and packages/vue; root-CWD attempts fail with ENOENT.",
+      "The initial new slice test used Blob.arrayBuffer(), unavailable in jsdom. FileReader verifies the same bytes; the fixture failure also left one aborted pending test promise reported as unhandled. Final tests have no unhandled errors.",
+      "Initial standalone browser tests replaced the body while the demo automatic PPTX preview was still loading, so global URL tracking included unrelated media. Starting those tests on the landing page isolates the tested sessions; final checks pass."
+    ],
+    "finalBindingsChecked": 52,
+    "localMarkdownPathsChecked": 413,
+    "canvasHashesDifferFromEmptyAndClear": true,
+    "gitDiffCheckPassed": true
+  },
+  "limits": [
+    "Generated BMP on one Chromium/SwiftShader/Apple M4 Pro machine. No camera-original or vendor calibration speed, first-paint, peer or SOTA ranking is inferred.",
+    "Public load timing includes context setup and image decoding but ends before scheduled texture upload/drawing. Full-pixel checks occur after timing.",
+    "Cancellation stops session ownership and follow-on work. Already-started custom resolver/converter or browser decode tasks may continue, and synchronous WASM is not preempted.",
+    "Redundant ArrayBuffer-view copying is removed, but no total/peak-memory measurement is made. Shared buffer views retain their owned-copy fallback.",
+    "Original slower/non-improving Blob values and cold-start outliers are retained; the separate Blob recheck does not replace final records.",
+    "No private X5 originals or camera-original screenshots were accessed or redistributed. Calibration regression uses synthetic public data; vendor visual ranking is not re-evaluated."
+  ],
+  "artifacts": [
+    {
+      "path": "benchmarks/frontend/2026-10-24/panorama-lifecycle.json.gz",
+      "sha256": "0c7870457ec16340661ba714f826ff38b35a791e640a33212cf3024b3d56a065"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/panorama-lifecycle-summary.json",
+      "sha256": "0c6a9f1dcc6b8d3b9aac62282030398452d0ce9adc4d8b3e4dc8b67c1a9d6313"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/panorama-lifecycle-blob-summary.json",
+      "sha256": "d6b0ce28aa20810d1bfd49944b77246562fba9402776e2f56d0ea61890ae72b2"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/panorama-lifecycle-diagnostic.json.gz",
+      "sha256": "c241f4403b8ffdfc20202f372d90725208ff3bdc6719f6026214ce1cda6abcea"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/panorama-lifecycle.patch",
+      "sha256": "09a3261db74aa9bb9609ca87cc9207637e1713ce7ee1a69e55421ec3ecf6e03e"
+    }
+  ],
+  "baseline": {
+    "runtime": {
+      "path": "tmp/continued-review/panorama-lifecycle-baseline/dist/index.js",
+      "sha256": "056b1c6510dbb8fe9e96ef8700c4a5d34399e02d0d22cd6f83edb57955a388ae"
+    },
+    "sourceMap": {
+      "path": "tmp/continued-review/panorama-lifecycle-baseline/dist/index.js.map",
+      "sha256": "c6504e7ce5a9b43d2227e633f9e2a4121551067e580c28078da3365a1ecfb361"
+    },
+    "sources": [
+      {
+        "path": "tmp/continued-review/panorama-lifecycle-baseline/src/preview-driver.ts",
+        "sha256": "640e0713036c21b7cf0da76674a0366f7570a4d2ff8292d16811373630783936"
+      },
+      {
+        "path": "tmp/continued-review/panorama-lifecycle-baseline/src/raw-preview-driver.ts",
+        "sha256": "31b80273f5ab3a8cefef8366042febab9c70f029802db5bc78b15142bfa30a12"
+      }
+    ]
+  },
+  "current": {
+    "runtime": {
+      "path": "packages/panorama/dist/index.js",
+      "sha256": "e06893d735cb6d65f64bb4e29f2100847357e94348b963dac8a21cedff26190b"
+    },
+    "sourceMap": {
+      "path": "packages/panorama/dist/index.js.map",
+      "sha256": "ae1a7ba9c59bd606aec92705f27a381e600a9a50274ccb26549371f0dd9ece2e"
+    },
+    "sources": [
+      {
+        "path": "packages/panorama/src/preview-driver.ts",
+        "sha256": "f188ecfa2b35866bd00bf9cc9b3e3270e1b198b625da021813da7069180e979e"
+      },
+      {
+        "path": "packages/panorama/src/raw-preview-driver.ts",
+        "sha256": "45d59ed71fcba92e6e5bdd98d1e85a6e1a2007cebc30d2c4632018916ac8de5b"
+      },
+      {
+        "path": "packages/panorama/src/load-task.ts",
+        "sha256": "18fd51ddc0187a3876cbde17a1a21ddabaf2af77f13280995435bd3e9c2895b2"
+      }
+    ]
+  },
+  "rawMeasurements": {
+    "path": "tmp/continued-review/panorama-lifecycle-final/results.json",
+    "sha256": "e6edd7944da7df94fbfb18aaab3471361f5ac766e1228d1423f3232f3157a1de"
+  },
+  "runtimeAndHarnessArtifacts": [
+    {
+      "path": "tmp/continued-review/panorama-lifecycle-baseline/dist/index.js",
+      "sha256": "056b1c6510dbb8fe9e96ef8700c4a5d34399e02d0d22cd6f83edb57955a388ae"
+    },
+    {
+      "path": "packages/panorama/dist/index.js",
+      "sha256": "e06893d735cb6d65f64bb4e29f2100847357e94348b963dac8a21cedff26190b"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "sha256": "c3e534b7e7354a59c58958bf1727c326babc92a3ef915595564f8290f56218dc"
+    },
+    {
+      "path": "packages/core/dist/zip.js",
+      "sha256": "a51a2cc982fd7eedc8915654b2125a4009c8f4f933b74fb52ba7f3378d92d1a1"
+    },
+    {
+      "path": "packages/core/dist/zip-DUJ4pXRK.js",
+      "sha256": "c03af75568c1a61dfe6c33d558b77328d68b2ba9af7ac1e8a80d30a66378a628"
+    },
+    {
+      "path": "scripts/benchmark-panorama-lifecycle.mjs",
+      "sha256": "5cbb39f3a1a991820a6c68c9151f1c7c203629f770a152b2735b2ec309208625"
+    },
+    {
+      "path": "packages/panorama/test/fixtures/bitmap.mjs",
+      "sha256": "f60435c37e020f3c618f56a5c47451515a302fd6f027f08177646f90278857ad"
+    },
+    {
+      "path": "packages/panorama/src/preview-driver.ts",
+      "sha256": "f188ecfa2b35866bd00bf9cc9b3e3270e1b198b625da021813da7069180e979e"
+    },
+    {
+      "path": "packages/panorama/src/raw-preview-driver.ts",
+      "sha256": "45d59ed71fcba92e6e5bdd98d1e85a6e1a2007cebc30d2c4632018916ac8de5b"
+    },
+    {
+      "path": "packages/panorama/src/load-task.ts",
+      "sha256": "18fd51ddc0187a3876cbde17a1a21ddabaf2af77f13280995435bd3e9c2895b2"
+    }
+  ],
+  "blobDiagnosticHarness": {
+    "path": "tmp/continued-review/panorama-lifecycle-blob-diagnostic.mjs",
+    "sha256": "a360d118793ff533d653ca8754ad5ee0c18b1946f69159bc504aa92b15ae049d"
+  },
+  "fixtureTestAndDocumentationSources": [
+    {
+      "path": "packages/panorama/test/lifecycle.spec.ts",
+      "sha256": "77264ea219e05f05c07263cc80f2587c8919c949bdfdbfcd903579f0f06a1f2c"
+    },
+    {
+      "path": "packages/panorama/test/fixtures/bitmap.mjs",
+      "sha256": "f60435c37e020f3c618f56a5c47451515a302fd6f027f08177646f90278857ad"
+    },
+    {
+      "path": "packages/panorama/test/fixtures/dng.ts",
+      "sha256": "b97f4c880247d6d13a1690238a4a60d508bfcc7b1fe4ab97dc9b7edb89642670"
+    },
+    {
+      "path": "apps/demo/e2e/panorama-lifecycle.e2e.ts",
+      "sha256": "a681ff2d010d69749af2ad0fec206b9dc399b69295afab559a4a295aa8660f09"
+    },
+    {
+      "path": "apps/demo/e2e/panorama-raw.e2e.ts",
+      "sha256": "1443dbdb37fb5c7e19f43a8d964953d04cbecdb7bfc90baf0a487cbd29cc89f2"
+    },
+    {
+      "path": "apps/demo/e2e/panorama-still-calibrated.e2e.ts",
+      "sha256": "51dd4c3a84a78ef55d6161b9edc26e2069c40f65f49f3d3947d072387176018f"
+    },
+    {
+      "path": "apps/demo/e2e/panorama-realtime.e2e.ts",
+      "sha256": "e94259c57dcd15e1050961ab882064940ab6c52ab850862c2732ab3a43d4b968"
+    },
+    {
+      "path": "scripts/benchmark-panorama-lifecycle.mjs",
+      "sha256": "5cbb39f3a1a991820a6c68c9151f1c7c203629f770a152b2735b2ec309208625"
+    },
+    {
+      "path": "scripts/summarize-panorama-lifecycle-benchmark.mjs",
+      "sha256": "1b22476ca3af3a97a5890b2a63f117dcfabc4f56411f67c87126d37cc6db9d45"
+    },
+    {
+      "path": "apps/demo/public/samples/raw/pentax-k-r.dng",
+      "sha256": "adc5c155341543e2e5c6de9c0ce87c86cc4629fe90a0f6e68fdf685dcd531b64"
+    },
+    {
+      "path": "apps/demo/public/samples/panorama/nasa-black-hole-360.webm",
+      "sha256": "32973db236c2998ffa5d66d8da78efd6d5d32846269f2fd7a511b47ef169d41d"
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "sha256": "bf53e92024ee112501ca80fe911f68fbf7c8a0afdbf749b01deee2c4e6827b1a"
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "sha256": "9598eda0b11671f1330332d1e2f1bf91b9ab23924f9a33f6623e23f543a86474"
+    },
+    {
+      "path": "docs/performance-comparison.md",
+      "sha256": "5543f43ec240b35e01b4039c12c392d984fa19ed0e9025b42888908cca07bef7"
+    },
+    {
+      "path": "docs/performance-comparison.zh-CN.md",
+      "sha256": "e34ff949557c05b33576f5df82040d61bfaafdc357600c661ee24e45229d97d6"
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "sha256": "31c91adaeefe617a6f2c0febdb2ff0a74095f78a8add5ba93304367b83cd0605"
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "sha256": "f4819b0609f7da2e889ca89d1264e33b489079cff0c09e64c1f1732fc3a8d583"
+    },
+    {
+      "path": "docs/bundle-sizes.md",
+      "sha256": "9b42da0f9aa3b3ef1f3bc443933d85c2ca94594d3a973c507187b6e24ad003cf"
+    }
+  ],
+  "validationLogs": [
+    {
+      "path": "tmp/continued-review/panorama-lifecycle-unit-final.log",
+      "sha256": "2d8ded98b03ee6ea5c13279732581adda2f0a7c175af846603685c7f4d24e914"
+    },
+    {
+      "path": "tmp/continued-review/panorama-lifecycle-vue-unit-final.log",
+      "sha256": "fdc94dc8ba4dd2a348f018bcad456093be7eb89aa266a2ea8970c4eb7bb5828f"
+    },
+    {
+      "path": "tmp/continued-review/panorama-lifecycle-before-regressions-final.log",
+      "sha256": "3d2b8562690490518ed1695f04fff96db4bb9298ff93a60328c87f26d208018d"
+    },
+    {
+      "path": "tmp/continued-review/panorama-lifecycle-build.log",
+      "sha256": "34294d5e2a9c74d30972329fe3453862ac337974ac636f53b5f2377f6f04e6e8"
+    },
+    {
+      "path": "tmp/continued-review/panorama-lifecycle-demo-build.log",
+      "sha256": "044d74f24dd6a8f6a4c9efc85e89633da0382059494630b3fcaf2435f7d63e64"
+    },
+    {
+      "path": "tmp/continued-review/panorama-lifecycle-browser-complete.log",
+      "sha256": "68f9e1c2d07c24bc610fd0a0539907a990849b108c0e7cb8021e27d28a17ed89"
+    },
+    {
+      "path": "tmp/continued-review/panorama-lifecycle-production-browser.log",
+      "sha256": "a9b000edec1cb6fa1bba17f09d72cdacb1acc5ee9963a0ee0afe3f3875497a36"
+    },
+    {
+      "path": "tmp/continued-review/panorama-lifecycle-bundle-sizes.log",
+      "sha256": "8fb973c00626eafdd28a3d0a0f91db83dfa4d7e8995029984e783e859353814b"
+    }
+  ]
+}

@@ -1,0 +1,477 @@
+{
+  "date": "2026-10-24T10:48:10.549608+00:00",
+  "engineering": true,
+  "scopedSota": false,
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "outcome": "Native iWork replacement, abort and destruction stop obsolete work, release media/document references and retire render listeners. Busy Workers terminate and recreate on demand; idle Workers release archive context without a restart. Caller input buffers remain intact. A ZIP-only core entry fixes development Workers loading viewer CSS and reduces bundled Worker startup work.",
+  "measurements": {
+    "finalRuns": 84,
+    "repeatsPerSampleScenarioBuild": 7,
+    "excludedDiagnosticRuns": 96,
+    "cpu": "Apple M4 Pro",
+    "browser": "147.0.7727.15",
+    "healthyControls": [
+      {
+        "sample": "a.numbers",
+        "healthy": {
+          "baselineMs": 150.59999990463257,
+          "currentMs": 133.09999990463257,
+          "baselineOverCurrent": 1.1314800902519828,
+          "pairedBootstrapRatio95": [
+            1.042630058499883,
+            1.2284843858678465
+          ],
+          "completeModelDomAndResourceChecksMatch": true,
+          "sheetsChecked": 6
+        },
+        "cancellation": {
+          "baselineObsoleteWaitMs": 131.79999995231628,
+          "currentAbortSettlementMs": 0.20000004768371582,
+          "currentWorkerStoppedAndSameViewerRecovered": true,
+          "ratio": null,
+          "reason": "Baseline finishes obsolete output; current cancels it. Different completion semantics, no parse-speed ratio."
+        },
+        "scopedSota": false
+      },
+      {
+        "sample": "a.pages",
+        "healthy": {
+          "baselineMs": 121.39999997615814,
+          "currentMs": 107.60000002384186,
+          "baselineOverCurrent": 1.128252787632514,
+          "pairedBootstrapRatio95": [
+            1.1112132343444667,
+            1.1356877325335206
+          ],
+          "completeModelDomAndResourceChecksMatch": true,
+          "sheetsChecked": 1
+        },
+        "cancellation": {
+          "baselineObsoleteWaitMs": 109.79999995231628,
+          "currentAbortSettlementMs": 0.20000004768371582,
+          "currentWorkerStoppedAndSameViewerRecovered": true,
+          "ratio": null,
+          "reason": "Baseline finishes obsolete output; current cancels it. Different completion semantics, no parse-speed ratio."
+        },
+        "scopedSota": false
+      },
+      {
+        "sample": "filens-weekend.key",
+        "healthy": {
+          "baselineMs": 109.70000004768372,
+          "currentMs": 96.79999995231628,
+          "baselineOverCurrent": 1.1332644638607643,
+          "pairedBootstrapRatio95": [
+            1.1160164278674705,
+            1.1458333333333333
+          ],
+          "completeModelDomAndResourceChecksMatch": true,
+          "sheetsChecked": 1
+        },
+        "cancellation": {
+          "baselineObsoleteWaitMs": 97.90000009536743,
+          "currentAbortSettlementMs": 0.20000004768371582,
+          "currentWorkerStoppedAndSameViewerRecovered": true,
+          "ratio": null,
+          "reason": "Baseline finishes obsolete output; current cancels it. Different completion semantics, no parse-speed ratio."
+        },
+        "scopedSota": false
+      }
+    ],
+    "method": "Fresh Chromium contexts, alternating baseline/current order. Actual bundled Numbers, Pages and Keynote; main imports and source ready. Timer starts immediately before preview on a newly created viewer and ends at preview settlement, including local Worker script requests/startup and internal synchronous bounds/layout reads. Excludes source/main-module download and subsequent post-load content/layout/paint checks. All six lazy Numbers sheets checked after healthy timing. Cancellation fires 10 ms after the document postMessage and measures abort through settlement. Baseline completes obsolete output; current aborts. No cancellation speed ratio, total-memory or peer/SOTA claim.",
+    "rawMethodClarification": "The harness phrase No I/O refers to prepared source/main-thread imports, not local Worker requests, which remain included. Import/module exclusions in the summary likewise refer to main-thread imports. Post-load layout/paint is excluded; internal getBoundingClientRect calls remain included.",
+    "equivalence": "Every healthy repetition matches the complete document (including archive, native model and media), normalized DOM, text and complete resource payload SHA-256 for both builds. Every mounted img decodes. All six Numbers sheets match. No screenshot/pixel-equivalence claim.",
+    "cancelValidation": "Every current cancel run terminates the busy real Worker, clears preview/document/media state, rejects with AbortError without error events, and opens the same file successfully using the same viewer with a fresh Worker. Baseline runs render obsolete output; their cancellation time does not measure equivalent work."
+  },
+  "validation": {
+    "iworkUnitPassed": 334,
+    "coreUnitPassed": 262,
+    "coreUnitExistingSkipped": 11,
+    "vueUnitPassed": 44,
+    "newLifecycleSourceClientTests": 32,
+    "oldSourceFailed": 26,
+    "oldSourcePassed": 6,
+    "oldSourceUnhandledErrors": 1,
+    "oldSourceNote": "Isolated copies restore this round’s original source snapshots and run the same 32 tests. Failures include absent cancellation API, stale lifecycle behavior and detached buffers; six controls already pass. The extra unhandled error is a stale lazy-sheet listener starting an unintended unmocked request.",
+    "developmentBrowserPassed": 6,
+    "productionBrowserPassed": 1,
+    "browserCoverage": [
+      "All three native formats retain caller buffers, reuse idle Workers after clearing archives, abort displayed content, reopen, release URLs and destroy cleanly",
+      "All six real Numbers sheets load correctly",
+      "Actual busy Worker interruption and recovery in the same viewer",
+      "Delayed obsolete Blob result after replacement",
+      "Demo upload of Numbers, Pages and Keynote in development and production"
+    ],
+    "coreBuildPassed": true,
+    "iworkBuildPassed": true,
+    "demoBuildPassed": true,
+    "bundleSizesUpdated": true,
+    "incrementalPatchReverseRestoresBaseline": true,
+    "developmentDiagnostics": [
+      "Initial six browser checks exposed document-is-not-defined from the core CSS entry; resolved by the Worker-safe ZIP entry.",
+      "A rerun had five passes and one navigation interruption while proto generation/build modified watched sources; the sequential final run passes all six."
+    ],
+    "buildDiagnostic": "The first declaration build reported the new event missing from a separately maintained union. IworkViewerEventName now derives from keyof IworkViewerEventMap; final builds have no type diagnostics.",
+    "localMarkdownLinksChecked": 444,
+    "finalBindingsChecked": 61,
+    "gitDiffCheckPassed": true
+  },
+  "diagnostics": {
+    "runs": 96,
+    "excludedFromFinalConclusions": true,
+    "groups": [
+      "12 initial smoke runs before the ZIP-only entry",
+      "84 initial runs before the ZIP-only entry"
+    ],
+    "reason": "The initial harness overwrote its page-error array with a reported-error counter; the summarizer rejected it. Both groups remain unchanged in diagnostics. The corrected final harness retains both fields and validates both."
+  },
+  "limits": [
+    "Three real bundled files on one Chromium/Apple M4 Pro machine; no general native-iWork throughput or peer/SOTA ranking.",
+    "Healthy load improvements include reduced Worker startup/bundle work. They do not establish faster semantic parsing or first-paint latency.",
+    "An already-started Blob.arrayBuffer operation may continue; its result is ignored and preview settles promptly. Actual busy Worker parsing is terminated.",
+    "Idle archive clearing is queued in the retained Worker, not a synchronous GC or peak-memory guarantee.",
+    "No new native formats, editing, exact-font or unimplemented iWork visual-feature support are added. Ordinary parse errors preserve the existing error-event API."
+  ],
+  "artifacts": [
+    {
+      "path": "benchmarks/frontend/2026-10-24/iwork-lifecycle.json.gz",
+      "sha256": "583e6e0b36e82928ae931cf618e9fcf8f3f26640e46c059420fc172860562fd2"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/iwork-lifecycle-summary.json",
+      "sha256": "4d4fd35576f91a668896224cf8214ee7c87ed1a9568f563d28f74f1c800a1244"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/iwork-lifecycle-diagnostic.json.gz",
+      "sha256": "78ca45db730da134c6a03d4eca03f196ae8fba2a1607b60d5dd5d7996dd700f1"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/iwork-lifecycle.patch",
+      "sha256": "c5927fa6748e5dc1d0ffc3d38be581bc0a441d27c53bee0a87b6792715aa3f3c"
+    }
+  ],
+  "baseline": {
+    "runtime": {
+      "path": "tmp/continued-review/iwork-lifecycle-baseline/dist/index.js",
+      "sha256": "1d6e80096547e5ce690f5db15e0522676f075b619347e5966ee87d41086d9ac8"
+    },
+    "workerAssets": [
+      {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/dist/assets/iwork-worker-DLRO8dFs.js",
+        "sha256": "5c0ffb40076d78542a4cd2a80f3215d681e06d552aa5fceefb4314ba55041faa"
+      }
+    ],
+    "originalCoreRuntime": {
+      "path": "tmp/continued-review/iwork-lifecycle-baseline/core-dist/index.js",
+      "sha256": "e7ea2b2a7cf03f6d69aa00099c1f86e4e0b8c9a3004558818fa052a7676bd155"
+    },
+    "note": "For final A/B both main modules use the final core dependency, whose ZIP algorithm is unchanged; each Worker is bundled within its own saved complete dist. Source snapshots retain earlier rounds."
+  },
+  "current": {
+    "runtime": {
+      "path": "packages/iwork/dist/index.js",
+      "sha256": "98f532523b11f2af0a2290c928fa30ebcd1b99f2cbec420b5ffe36338281c87a"
+    },
+    "workerAssets": [
+      {
+        "path": "packages/iwork/dist/assets/iwork-worker-YKitWWYq.js",
+        "sha256": "5410c17ce74ef52ac175045a67bf51cd5ebfd0b83c7f1477a8b1a59b858dedb6"
+      }
+    ]
+  },
+  "productionSources": [
+    {
+      "path": "packages/iwork/src/parser/archive.ts",
+      "sha256": "ad1d21ea530b55a040eb93dcbea84aeadcf2058ab6c323f81bb37d29f7f304eb",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/src/parser/archive.ts",
+        "sha256": "470b4149b787c0c28bfc891ebfa26c84ecbf99f7475777a981095bfb858d5757"
+      }
+    },
+    {
+      "path": "packages/iwork/src/parser/detect.ts",
+      "sha256": "8003bdf5dcde7841de5727652c7a84217e7d0f154bd66bf49caeaf8eb3029767",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/src/parser/detect.ts",
+        "sha256": "6ad1caad15d94ac48533f108d367905a39cb675354e4fc6bf0e25b48011e24e7"
+      }
+    },
+    {
+      "path": "packages/iwork/src/parser/load-source.ts",
+      "sha256": "36288dd0c8e6c1f5c0b5d63baf3f28280a09188bd14c70967973afbbf1d99fe3",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/src/parser/load-source.ts",
+        "sha256": "e8e5731e73506c6682bad52dc6a23842e039df9acaa688923849f50e28ae853e"
+      }
+    },
+    {
+      "path": "packages/iwork/src/preview-driver.ts",
+      "sha256": "e3af6b1e22bea6fd55834aaa91068cd1d699b420a3d973ceeda3fd8ac9664dbe",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/src/preview-driver.ts",
+        "sha256": "bf621c029e1c39dd8f7e5e680c5a74f1c63fd2908ec2fc4498e090afd056adf5"
+      }
+    },
+    {
+      "path": "packages/iwork/src/types.ts",
+      "sha256": "5388875bd70c64ec706aee2f7b0f7d309ee53381e3076fcd84a92832e91732fb",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/src/types.ts",
+        "sha256": "d6bdc2f535e3066a4af39930a1bad951a34cb844090a1d3b2eb6f90db828959f"
+      }
+    },
+    {
+      "path": "packages/iwork/src/viewer/create-iwork-viewer.ts",
+      "sha256": "9e8c9ef5d2bdadccbe878e9971c045884376d6c102690335fd8fb4d7c8f4c48e",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/src/viewer/create-iwork-viewer.ts",
+        "sha256": "79de4b8fc980e7f7b8b67f498dfd894b856d88e773594a31a1ed5d1646026bdf"
+      }
+    },
+    {
+      "path": "packages/iwork/src/worker/client.ts",
+      "sha256": "4e2541cc8bd4772c108eb649e7faedc43f5f317eac9f5f98a8dd53cedc17eac1",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/src/worker/client.ts",
+        "sha256": "7af5bae7ded55d8611a4ff0a2c2225e2b5633aa6b155f4716c48b7521e6cc88a"
+      }
+    },
+    {
+      "path": "packages/iwork/src/worker/iwork-worker.ts",
+      "sha256": "a1312338d4ca307ba2a0da190320e6063126af4c9981eef3a8320294e22de1e4",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/src/worker/iwork-worker.ts",
+        "sha256": "4d976e05b4833d8547336afe58120a77dc0bb9c0ad9833abe24418d303a87d6f"
+      }
+    },
+    {
+      "path": "packages/iwork/vite.config.ts",
+      "sha256": "0fe7cae72ea9f9a18ad4011eacacdf91a4fd81f83856c892c46100fe7a91962b",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/iwork-vite.config.ts",
+        "sha256": "0b0092c04be3ab885195d0b18df32b542551b85d0b7a348a7fead55eac419cf3"
+      }
+    },
+    {
+      "path": "apps/demo/vite.config.ts",
+      "sha256": "e10251249e5c617171b428ef7c8ddfd8792753b11633bacfef198c078cbf9391",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/repo/apps/demo/vite.config.ts",
+        "sha256": "d8f0d902e3c06e93725b6050d92ee39ca1919a9498e55eedcf9b6024386cec50"
+      }
+    },
+    {
+      "path": "packages/core/package.json",
+      "sha256": "0eb19b899b7762b6cc797eee91e1d14ca99f7db73aff61dc5238a6bdf4e20470",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/repo/packages/core/package.json",
+        "sha256": "ee168032c22a56df87fa6ad999be8ed94d2513e05879b2ac504b7751b5023d55"
+      }
+    },
+    {
+      "path": "packages/core/vite.config.ts",
+      "sha256": "4a727c779ba469e0a60981a67b168865db91ccaa1036acaefeaef577c8fbc924",
+      "baseline": {
+        "path": "tmp/continued-review/iwork-lifecycle-baseline/repo/packages/core/vite.config.ts",
+        "sha256": "1b0d445566b9370bd5e2b9399d6bb851362f5f7778ac3d1e399211652ad4c5d4"
+      }
+    },
+    {
+      "path": "packages/core/src/zip.ts",
+      "sha256": "0aaa8c4c089cd825d3f4fbf30d82ef556bf2cbfdb9201c2c1652b8870bbf5f63",
+      "baseline": null
+    }
+  ],
+  "runtimeAndHarnessArtifacts": [
+    {
+      "path": "packages/iwork/dist/index.js",
+      "sha256": "98f532523b11f2af0a2290c928fa30ebcd1b99f2cbec420b5ffe36338281c87a"
+    },
+    {
+      "path": "packages/iwork/dist/assets/iwork-worker-YKitWWYq.js",
+      "sha256": "5410c17ce74ef52ac175045a67bf51cd5ebfd0b83c7f1477a8b1a59b858dedb6"
+    },
+    {
+      "path": "tmp/continued-review/iwork-lifecycle-baseline/dist/index.js",
+      "sha256": "1d6e80096547e5ce690f5db15e0522676f075b619347e5966ee87d41086d9ac8"
+    },
+    {
+      "path": "tmp/continued-review/iwork-lifecycle-baseline/dist/assets/iwork-worker-DLRO8dFs.js",
+      "sha256": "5c0ffb40076d78542a4cd2a80f3215d681e06d552aa5fceefb4314ba55041faa"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "sha256": "c3e534b7e7354a59c58958bf1727c326babc92a3ef915595564f8290f56218dc"
+    },
+    {
+      "path": "packages/core/dist/zip-DUJ4pXRK.js",
+      "sha256": "c03af75568c1a61dfe6c33d558b77328d68b2ba9af7ac1e8a80d30a66378a628"
+    },
+    {
+      "path": "packages/core/dist/zip.js",
+      "sha256": "a51a2cc982fd7eedc8915654b2125a4009c8f4f933b74fb52ba7f3378d92d1a1"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "sha256": "c3e534b7e7354a59c58958bf1727c326babc92a3ef915595564f8290f56218dc"
+    },
+    {
+      "path": "packages/core/dist/zip.js",
+      "sha256": "a51a2cc982fd7eedc8915654b2125a4009c8f4f933b74fb52ba7f3378d92d1a1"
+    },
+    {
+      "path": "packages/xlsx/dist/index.js",
+      "sha256": "c4cb84f4578b1d9d82afba08298b664ef8731f43002dee0d833e39c2dd4bf1ea"
+    },
+    {
+      "path": "packages/iwork/dist/index.css",
+      "sha256": "69d3cae1b1c92cdc551e134fac14993f9c5a3fafac1d882246f3a526a6677608"
+    },
+    {
+      "path": "scripts/benchmark-iwork-lifecycle.mjs",
+      "sha256": "0e3e767dc76b1cd28ac706a0094a1e8023be947a0a52e3749af3dcff3f25f208"
+    },
+    {
+      "path": "apps/demo/public/samples/a.numbers",
+      "sha256": "be5e02bd170683345595e928a71979d3b4582ea0ca44214a35c643957a281ab0"
+    },
+    {
+      "path": "apps/demo/public/samples/a.pages",
+      "sha256": "4714477138d0a4090fc2ee2ba2ebb6adcd0fb6ce20a28897a6247a8e17d1ddce"
+    },
+    {
+      "path": "apps/demo/public/samples/filens-weekend.key",
+      "sha256": "0d1fa06a23395434089ea24ce284fce2dfee4c7e1e51138be6038bb2ab41befb"
+    }
+  ],
+  "testAndDocumentationSources": [
+    {
+      "path": "packages/iwork/test/lifecycle.spec.ts",
+      "sha256": "a4bff3b2cfa3c66a08a24e3ff000246b28db5b0203ece06cbeac133a6735dac9"
+    },
+    {
+      "path": "packages/iwork/test/worker-client.spec.ts",
+      "sha256": "63e0d5ecf1526056fccc412e4d9c105e90e73e08de7778292e00ff99aa0bf903"
+    },
+    {
+      "path": "packages/iwork/test/load-source.spec.ts",
+      "sha256": "07a6a79c71ee584e1ea6f820f21b3ef3e27e226d138d9e9f59a11a72cbc625b6"
+    },
+    {
+      "path": "packages/iwork/test/viewer.spec.ts",
+      "sha256": "1ac2b227994f2347fd7745c7ed7bfaef89c3274cfc7de33b1c0378198a8f839f"
+    },
+    {
+      "path": "apps/demo/e2e/iwork-lifecycle.e2e.ts",
+      "sha256": "4e72c7b38916c51cc2caf8b2e019f7842faf3eee73a251eba56f51b5b7f92c77"
+    },
+    {
+      "path": "scripts/benchmark-iwork-lifecycle.mjs",
+      "sha256": "0e3e767dc76b1cd28ac706a0094a1e8023be947a0a52e3749af3dcff3f25f208"
+    },
+    {
+      "path": "scripts/summarize-iwork-lifecycle-benchmark.mjs",
+      "sha256": "a7cd52efe08afdf1bf1d997f0bd93377a50a933f5f7455037002a7f598cdbe96"
+    },
+    {
+      "path": "packages/core/README.md",
+      "sha256": "a38c41be8ad770d572a09fad8c740738cc2019c96f319eff7aafcbc3ef3da3a7"
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "sha256": "efe23cf640d0590b66baed91059837a32597e7dde37fbaa4b410e9caa859070d"
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "sha256": "913bddbfa1a89c6f1eba3bd6c7d417879f78315e7d624dddf690e4c9ad6d6189"
+    },
+    {
+      "path": "docs/performance-comparison.md",
+      "sha256": "f3a2dcb0ffc7e4ddf28eaaa732b767caf8d8e95a0d8c927f4dcc7411a22db4f9"
+    },
+    {
+      "path": "docs/performance-comparison.zh-CN.md",
+      "sha256": "294ddceacb4817f6b5b33f6ccfa124255a8b93e33c03a488e90ec8e095b05d71"
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "sha256": "f3584a08b74808f621f658defcab40122c98096882b4bc3d4ab64d2d01263f3d"
+    }
+  ],
+  "localValidationLogs": {
+    "coreUnit": {
+      "path": "tmp/continued-review/iwork-lifecycle-core-unit.log",
+      "sha256": "160469a79a96b101d8db646c083b6f34e1978253f08a0c7cc8c5b0e4949c27aa"
+    },
+    "iworkUnit": {
+      "path": "tmp/continued-review/iwork-lifecycle-unit-with-zip.log",
+      "sha256": "c9ad7792a59bd677fe8670e91e8a6114c1aae904373e3223632bd07a80b078f1"
+    },
+    "vueUnit": {
+      "path": "tmp/continued-review/iwork-lifecycle-vue-unit-final.log",
+      "sha256": "da4abd4f046e42becc1e80fb39d9ab948a0529e5141c9a9dbc909afbf7ad6a87"
+    },
+    "developmentBrowser": {
+      "path": "tmp/continued-review/iwork-lifecycle-browser-verified.log",
+      "sha256": "3353f7e6e9e34a95f634d93385fc96e5704892191d26d0f613fbb49fd0c71c3e"
+    },
+    "productionBrowser": {
+      "path": "tmp/continued-review/iwork-lifecycle-production-browser.log",
+      "sha256": "e650bb21a1f4df7c9599a66b893a617f3cefb9b94b9b507951cda13043c932b8"
+    },
+    "coreBuild": {
+      "path": "tmp/continued-review/iwork-lifecycle-core-build.log",
+      "sha256": "a76135bdab053ba9a980c82d4bc97117f0a3ee4af592749574f9cdbec2daeb2b"
+    },
+    "iworkBuild": {
+      "path": "tmp/continued-review/iwork-lifecycle-build-with-zip.log",
+      "sha256": "552cdcfdf324df9a456e42be708fbc15ae3185a1a2267c97be85b641c1dd217e"
+    },
+    "demoBuild": {
+      "path": "tmp/continued-review/iwork-lifecycle-demo-build-final.log",
+      "sha256": "07172ec9dd28bcfab3a0b7953c8b338d5d2162158a9338f6cf912fe4b420e7f9"
+    },
+    "bundleReport": {
+      "path": "tmp/continued-review/iwork-lifecycle-bundle-report.log",
+      "sha256": "d5849d3db57a7c896bd3929e112a4fb8578f93532ee75cca3efd0621a8fd88ab"
+    },
+    "beforeRegressions": {
+      "path": "tmp/continued-review/iwork-lifecycle-before-regressions.log",
+      "sha256": "847e95ab308615d56dc555065a1465baf8c45046c357f3292ac9ba79f441ac96"
+    },
+    "initialTypeDiagnostics": {
+      "path": "tmp/continued-review/iwork-lifecycle-build.log",
+      "sha256": "d5ec2fde0baf98ef2191b864e081dcb9262f050beeacd7b9f356a806c6310a7c"
+    },
+    "initialDevelopmentFailure": {
+      "path": "tmp/continued-review/iwork-lifecycle-browser.log",
+      "sha256": "0578bd417676e377298ffa3ddfdc1bd4822b913f29d794c491b2e6e6a955cc13"
+    },
+    "regenerationReloadDiagnostic": {
+      "path": "tmp/continued-review/iwork-lifecycle-browser-final.log",
+      "sha256": "e691016c42c9a5773d1b329b8eb290a8401aec78051938dbf1df11fc16e5b0eb"
+    },
+    "initialSummaryFieldFailure": {
+      "path": "tmp/continued-review/iwork-lifecycle-summary.log",
+      "sha256": "2bbaf49b6571fdd018ea80a533d4394f37a198afc928a4b559f5d827ab35d28b"
+    },
+    "benchmark": {
+      "path": "tmp/continued-review/iwork-lifecycle-benchmark-verified.log",
+      "sha256": "fd57e68ba9c1e80836aca174e639d399cd86f6db3b51eb5b723ad4fe946e7559"
+    },
+    "summary": {
+      "path": "tmp/continued-review/iwork-lifecycle-summary-verified.log",
+      "sha256": "4d4fd35576f91a668896224cf8214ee7c87ed1a9568f563d28f74f1c800a1244"
+    }
+  },
+  "reproduction": [
+    "Preserve earlier source changes in isolated copies. Reverse only iwork-lifecycle.patch in the baseline copy; every restored source hash has been checked against the fresh snapshots.",
+    "Build core then iWork in each copy. Put the entire baseline iWork dist, including assets, at tmp/continued-review/iwork-lifecycle-baseline/dist. The final main-thread dependency remains current for both builds; Workers bundle their own parser dependency.",
+    "Run node scripts/benchmark-iwork-lifecycle.mjs --iterations 7 --output tmp/continued-review/iwork-lifecycle-reproduced alone. Then run node scripts/summarize-iwork-lifecycle-benchmark.mjs --input tmp/continued-review/iwork-lifecycle-reproduced/results.json.",
+    "Run core, iWork and Vue Vitest directly; run Playwright iwork-lifecycle sequentially after proto/package builds settle. Production check selects uploads all native against a built demo preview."
+  ]
+}

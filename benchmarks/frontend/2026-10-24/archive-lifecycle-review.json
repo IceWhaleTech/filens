@@ -1,0 +1,227 @@
+{
+  "kind": "archive-preview-lifecycle-navigation-and-bundled-resources",
+  "engineering": true,
+  "scopedSota": false,
+  "productionFiles": [
+    {
+      "path": "packages/archive/src/preview-driver.ts",
+      "bytes": 45087,
+      "sha256": "8fe42c42ea47fe6b07d346ca469d3987e862fefc0e8c9997abd9ded039d288df"
+    }
+  ],
+  "sourceAndTestBindings": [
+    {
+      "path": "packages/archive/test/lifecycle.spec.ts",
+      "bytes": 20449,
+      "sha256": "e09f597471b2b8c7f8b8e1ba29a428cfc77d967827b4cad5fc45d09c9ef8db96"
+    },
+    {
+      "path": "packages/archive/test/fixtures/lifecycle.mjs",
+      "bytes": 3627,
+      "sha256": "749f0090d82df7d927dcc729a5309addfb004d2acbcf6c9cc85bcf3549295ea3"
+    },
+    {
+      "path": "apps/demo/e2e/archive-lifecycle.e2e.ts",
+      "bytes": 16460,
+      "sha256": "39e9760c7ad96290d6e3bfba55b74b5b1d2c717d751beee95866193c051aacee"
+    },
+    {
+      "path": "scripts/benchmark-archive-lifecycle.mjs",
+      "bytes": 8135,
+      "sha256": "6c0ba832429babd5b3de641cad85cb805e61afea7d17e9a8e3fc474450783453"
+    },
+    {
+      "path": "scripts/summarize-archive-lifecycle-benchmark.mjs",
+      "bytes": 3470,
+      "sha256": "98ac47b47970d01b34394e30e346e40443fdf16ac4cda56492eb4c2eb5244a6c"
+    },
+    {
+      "path": "packages/archive/src/index.ts",
+      "bytes": 535,
+      "sha256": "1ef78396b7de023d1e08ebfb289561abfcd30cdab7985bd663967853180b42ab"
+    },
+    {
+      "path": "packages/core/src/parser/zip.ts",
+      "bytes": 6613,
+      "sha256": "2e24ffb5036b1644c4254deb87e725cb13d45bc849326ed47cb140feb260ce49"
+    },
+    {
+      "path": "packages/core/src/zip.ts",
+      "bytes": 165,
+      "sha256": "0aaa8c4c089cd825d3f4fbf30d82ef556bf2cbfdb9201c2c1652b8870bbf5f63"
+    },
+    {
+      "path": "packages/model3d/src/preview-driver.ts",
+      "bytes": 256502,
+      "sha256": "9c7d65aca36446ff78ed411851eb614a048ae89cafe9c4efa4a294e2bcbae96b"
+    },
+    {
+      "path": "packages/vue/src/Preview.vue",
+      "bytes": 72528,
+      "sha256": "8c7fe275d85a6f53ac11c43a0fea45d55ed860b4f60ec0daa7e7734330d87dad"
+    },
+    {
+      "path": "packages/vue/src/style.css",
+      "bytes": 16408,
+      "sha256": "9d646b683119af1e2987a787123d5154be379fd9fc9fe9817a3b562b37f6e7c4"
+    },
+    {
+      "path": "playwright.config.ts",
+      "bytes": 621,
+      "sha256": "5b2993d7ef92a9c75e16315d52a9c0fdc4207cd5576e7abc45e2d43a21c331d4"
+    }
+  ],
+  "runtimeBindings": [
+    {
+      "path": "packages/archive/dist/index.js",
+      "bytes": 36157,
+      "sha256": "5440e90179d86171d920af900b9e0d3893322c60b4bf54e36ec5b95d686e563d"
+    },
+    {
+      "path": "packages/archive/dist/index.js.map",
+      "bytes": 179336,
+      "sha256": "222774a3e253d557abd51876afe5f3f00a86b03727f5ddd27edf547e72d23244"
+    },
+    {
+      "path": "packages/model3d/dist/index.js",
+      "bytes": 983143,
+      "sha256": "1fad3a232bb8eda7156152954cb25fa6e0b386285f069369a92afa2006186331"
+    },
+    {
+      "path": "packages/vue/dist/index.js",
+      "bytes": 84675,
+      "sha256": "1ebdc0dd954af7a10f537dae181a62f22ab7d1e42a0767a267cc9bef8b11057c"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "benchmarks/frontend/2026-10-24/archive-lifecycle.patch",
+      "bytes": 23395,
+      "sha256": "6a4ff9c3649385022c5d8403e6981c3ac21a7aece67ce439f651c69b54f04333"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/archive-lifecycle.json.gz",
+      "bytes": 2861,
+      "sha256": "78c1c6570c6a810c106595f76d9f9f5ff19064b912c5963a2b609ef4a93a5342"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/archive-lifecycle-summary.json",
+      "bytes": 2947,
+      "sha256": "ddaced450c96ad61b89889c7c11cf3ff7ec26add6a43a99f299c6cf492813166"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/archive-lifecycle-diagnostic.json.gz",
+      "bytes": 887269,
+      "sha256": "74fde14d63ac724b1418ac6c7348a65cda2b6d2408589068f949c98c0893c69c"
+    }
+  ],
+  "validation": {
+    "archiveUnitPassed": 79,
+    "coreUnitPassed": 280,
+    "coreUnitSkipped": 11,
+    "vueUnitPassed": 44,
+    "model3dUnitPassed": 311,
+    "newLifecycleCases": 57,
+    "originalFailures": 53,
+    "originalPassingControls": 4,
+    "developmentBrowserPassed": 18,
+    "productionBrowserPassed": 13,
+    "static3dManualBrowserViewportsPerBuild": 2,
+    "incrementalPatchExactlyRestoresOriginal": true
+  },
+  "performance": {
+    "engineering": true,
+    "scopedSota": false,
+    "sourceSha256": "d7cfc2dcfbfdfec3be1a3e6269abc80cf8ed67576b00b08fd83f24a956a768c2",
+    "cpu": "Apple M4 Pro",
+    "browser": "147.0.7727.15",
+    "iterations": 7,
+    "runs": 42,
+    "method": "Fresh Chromium contexts, alternating engine order. Real generated ZIP files; imports and complete input bytes are ready before timing. loadMs includes input-view snapshot, complete ZIP indexing, initial directory listing and DOM construction until session.load resolves. navigationMs measures returning to a previously visited directory after its first visit and a return to the root, including directory selection and complete DOM construction. It deliberately tests repeated navigation, not cold random access. Input/module transfer, layout, paint/GPU, output verification, screenshots, archive creation and peak memory are excluded. All archive metadata, every file name and byte, complete listing HTML and viewport screenshot hashes are checked after timing. Only baseline medians above 10 ms receive ratios. Same-project engineering comparison, no peer/SOTA ranking. 10,000 paired-bootstrap median-ratio resamples, seed 12345.",
+    "samples": [
+      {
+        "sample": "generated-200-0-directories.zip",
+        "bytes": 24112,
+        "files": 200,
+        "directories": 0,
+        "completeMetadataBytesHtmlAndViewportMatch": true,
+        "scopedSota": false,
+        "metrics": {
+          "loadMs": {
+            "baselineMs": 7.400000095367432,
+            "currentMs": 6.900000095367432,
+            "below10MsControl": true
+          }
+        }
+      },
+      {
+        "sample": "generated-10000-0-directories.zip",
+        "bytes": 1218912,
+        "files": 10000,
+        "directories": 0,
+        "completeMetadataBytesHtmlAndViewportMatch": true,
+        "scopedSota": false,
+        "metrics": {
+          "loadMs": {
+            "baselineMs": 64.60000002384186,
+            "currentMs": 40.299999952316284,
+            "below10MsControl": false,
+            "ratio": 1.6029776699820792,
+            "ratio95PercentBootstrapInterval": [
+              1.5724815706392687,
+              1.6352357333531577
+            ],
+            "stableEngineeringReduction": true
+          }
+        }
+      },
+      {
+        "sample": "generated-100000-1000-directories.zip",
+        "bytes": 13688912,
+        "files": 100000,
+        "directories": 1000,
+        "completeMetadataBytesHtmlAndViewportMatch": true,
+        "scopedSota": false,
+        "metrics": {
+          "loadMs": {
+            "baselineMs": 270.8000000715256,
+            "currentMs": 261.60000002384186,
+            "below10MsControl": false,
+            "ratio": 1.0351681958977264,
+            "ratio95PercentBootstrapInterval": [
+              0.9966392831354802,
+              1.1296006265737344
+            ],
+            "stableEngineeringReduction": false
+          },
+          "navigationMs": {
+            "baselineMs": 7.099999904632568,
+            "currentMs": 0.5,
+            "below10MsControl": true
+          }
+        }
+      }
+    ]
+  },
+  "reproduce": [
+    "Restore baselineFiles from the diagnostic archive in an isolated checkout preserving previous work, then build @filens/archive. Or reverse the incremental production patch there.",
+    "The browser tests use baselineRuntimeFiles directly from the diagnostic archive. For benchmarking, restore those runtime files under tmp/continued-review/archive-lifecycle-baseline/dist.",
+    "Run ../../node_modules/.bin/vitest run from packages/archive, packages/core, packages/vue and packages/model3d.",
+    "Run node scripts/benchmark-archive-lifecycle.mjs --iterations 7 --output tmp/continued-review/archive-lifecycle-rerun alone, followed by node scripts/summarize-archive-lifecycle-benchmark.mjs --input tmp/continued-review/archive-lifecycle-rerun/results.json.",
+    "Development: npx playwright test apps/demo/e2e/archive-lifecycle.e2e.ts apps/demo/e2e/archive-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts --workers=1",
+    "Production, after building and starting preview on 4174: FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/archive-lifecycle.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts --grep 'archive|ZIP|BMP|WAV|glTF entry|opens binary STL through' --workers=1"
+  ],
+  "notes": [
+    "Fresh baseline retained from the dirty authorized workspace. Earlier evidence and hashes are historical and remain unchanged.",
+    "Only archive preview-driver production code changed in this archive round. The separate requested 3D UI change removes automatic rotation and collapses inspector panels; it does not change archive timing artifacts.",
+    "All 57 new lifecycle cases pass. The isolated original source reproduces 53 failures, with four passing controls. Final assertions also check each detached navigation control individually.",
+    "Builds, unit tests and browser checks did not run concurrently with the final performance series. Each of seven repeats uses a fresh Chromium context, with alternating implementation order.",
+    "loadMs includes the complete input-view snapshot, ZIP indexing, directory listing and initial DOM construction through load settlement. Navigation is deliberately warmed/repeated, not cold random access.",
+    "Transfer/imports, layout, paint/GPU, output verification, screenshot capture, fixture creation and peak memory are excluded from timing. Complete names and bytes match independently generated expectations; full metadata, HTML and viewport screenshot hashes match across all repeats/builds.",
+    "The 10,000-file initial list falls from 64.6 to 40.3 ms. The 100,000-file load is inconclusive. The 200-file load and repeated-navigation baselines are at or below 10 ms, so no speed ratio is claimed for them.",
+    "The archive browser harness reads unchanged original runtime bytes from the published diagnostic archive. Development and production checks use that archived baseline.",
+    "Actual browser checks cover WAV playback and URL/player cleanup, independently specified BMP pixels, a real glTF preview with a parent-relative encoded texture and complete geometry/UV/texture checks, nested ZIP/TGZ, long TAR names and complete ZIP/TAR/TGZ/GZIP byte/metadata comparisons.",
+    "Eleven existing core tests remain skipped, including optional local samples. No private camera originals were accessed. Synchronous archive parsing/decompression itself cannot be interrupted.",
+    "Same-project engineering evidence only; no new peer ranking or SOTA claim. External totals remain 2,604 measurements / 1,064 successful filens runs."
+  ]
+}

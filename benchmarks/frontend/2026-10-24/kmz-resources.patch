@@ -1,0 +1,363 @@
+--- a/packages/model3d/src/preview-driver.ts
++++ b/packages/model3d/src/preview-driver.ts
+@@ -1,5 +1,6 @@
+ import {
+   createDefaultPreviewRoutes,
++  openZipArchive,
+   type FormatDefinition,
+   type Model3dPreviewNode,
+   type Model3dPreviewState,
+@@ -62,7 +63,7 @@
+ import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+ import { GCodeLoader } from 'three/examples/jsm/loaders/GCodeLoader.js';
+ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+-import { KMZLoader } from 'three/examples/jsm/loaders/KMZLoader.js';
++import { strFromU8, unzipSync } from 'three/examples/jsm/libs/fflate.module.js';
+ import { LDrawLoader } from '../vendor/three/LDrawLoader.js';
+ import { LWOLoader } from 'three/examples/jsm/loaders/LWOLoader.js';
+ import { MD2Loader } from 'three/examples/jsm/loaders/MD2Loader.js';
+@@ -763,7 +764,7 @@
+         return;
+       }
+       if (format === 'kmz') {
+-        const result = await loadKmzObjectWithWarnings(buffer);
++        const result = await loadKmzObjectWithWarnings(buffer, { signal });
+         this.createObjectScene(result.object, signal);
+         this.state = {
+           ...this.state,
+@@ -3149,149 +3150,194 @@
+   };
+ }
+ 
++export interface LoadKmzObjectOptions {
++  signal?: AbortSignal;
++}
++
++// Keep the synchronous API for existing callers; preview sessions use the selective async path.
+ export function loadKmzObject(source: ArrayBuffer): Object3D {
+-  return new KMZLoader().parse(source).scene;
+-}
+-
+-export async function loadKmzObjectWithWarnings(source: ArrayBuffer): Promise<ModelObjectLoadResult> {
+-  let loaderObject: Object3D | undefined;
++  const bytes = new Uint8Array(source), names: string[] = [], cache = new Map<string, Uint8Array>();
++  unzipSync(bytes, { filter: entry => { if (!entry.name.endsWith('/')) names.push(entry.name); return false; } });
++  const index = createKmzIndex(names);
++  const read = (name: string): Uint8Array => {
++    let value = cache.get(name);
++    if (!value) {
++      value = unzipSync(bytes, { filter: entry => entry.name === name })[name]!;
++      cache.set(name, value);
++    }
++    return value;
++  };
++  const kmlName = findKmzKml(index);
++  const warnings: string[] = [];
++  const modelName = selectKmzModel(index, kmlName, kmlName ? strFromU8(read(kmlName)) : undefined, warnings);
++  return parseKmzCollada(strFromU8(read(modelName)), modelName, index, read, warnings).object;
++}
++
++export async function loadKmzObjectWithWarnings(
++  source: ArrayBuffer,
++  options: LoadKmzObjectOptions = {}
++): Promise<ModelObjectLoadResult> {
++  checkModelLoadAborted(options.signal);
++  const archive = await waitForModelLoad(openZipArchive(new Uint8Array(source)), options.signal);
++  checkModelLoadAborted(options.signal);
++  const index = createKmzIndex([...archive.values()].filter(entry => !entry.directory).map(entry => entry.name));
++  const kmlName = findKmzKml(index);
++  const kml = kmlName ? await waitForModelLoad(archive.get(kmlName)!.text(), options.signal) : undefined;
++  checkModelLoadAborted(options.signal);
++  const warnings: string[] = [];
++  const modelName = selectKmzModel(index, kmlName, kml, warnings);
++  const dae = await waitForModelLoad(archive.get(modelName)!.text(), options.signal);
++  checkModelLoadAborted(options.signal);
++  const document = new DOMParser().parseFromString(dae, 'application/xml');
++  if (document.getElementsByTagName('parsererror').length) throw new Error('KMZ Collada XML is invalid.');
++  const resources = new Map<string, Uint8Array>();
++  // Extract image declarations only; unrelated archive files stay compressed.
++  for (const image of Array.from(document.getElementsByTagName('*'))) {
++    if (image.localName !== 'image') continue;
++    const href = Array.from(image.children).find(child => child.localName === 'init_from')?.textContent?.trim();
++    if (!href) continue;
++    const name = findKmzResource(index, href, modelName);
++    if (name && !resources.has(name)) {
++      resources.set(name, await waitForModelLoad(archive.get(name)!.bytes(), options.signal));
++      checkModelLoadAborted(options.signal);
++    }
++  }
++  const parsed = parseKmzCollada(dae, modelName, index, name => resources.get(name), warnings, options.signal);
+   try {
+-    loaderObject = loadKmzObject(source);
+-    if (hasRenderableObjectContent(loaderObject)) {
+-      return { object: loaderObject, warnings: [] };
+-    }
+-  } catch {
+-    // Some KMZ files use a nested or URL-encoded model path that KMZLoader cannot resolve.
+-  }
+-
+-  let archive: JSZip;
++    await waitForModelLoad(parsed.ready, options.signal);
++    checkModelLoadAborted(options.signal);
++    return { object: parsed.object, warnings };
++  } catch (error) {
++    parsed.release();
++    disposeModelResources(parsed.object);
++    throw error;
++  } finally {
++    parsed.release();
++  }
++}
++
++function parseKmzCollada(
++  dae: string,
++  modelName: string,
++  index: Map<string, string>,
++  read: (name: string) => Uint8Array | undefined,
++  warnings: string[],
++  signal?: AbortSignal
++): { object: Object3D; ready: Promise<void>; release: () => void } {
++  checkModelLoadAborted(signal);
++  const manager = new LoadingManager();
++  const objectUrls: string[] = [];
++  const textures = new Map<string, string>();
++  let object: Object3D | undefined;
++  const release = (): void => {
++    for (const url of objectUrls.splice(0)) URL.revokeObjectURL(url);
++    if (object?.userData.previewObjectUrls === objectUrls) delete object.userData.previewObjectUrls;
++  };
++  const ready = new Promise<void>(resolve => { manager.onLoad = () => { release(); resolve(); }; });
++  manager.onError = () => { warnings.push('A KMZ texture failed to load; the preview may be incomplete.'); };
++  manager.setURLModifier(url => {
++    checkModelLoadAborted(signal);
++    const name = findKmzResource(index, url, modelName);
++    const cached = textures.get(name ?? url);
++    if (cached) return cached;
++    const bytes = name ? read(name) : undefined;
++    if (bytes) {
++      const snapshot = new Uint8Array(bytes.byteLength); snapshot.set(bytes);
++      const resourceUrl = URL.createObjectURL(new Blob([snapshot.buffer], { type: mimeTypeForKmzEntry(name!) }));
++      textures.set(name!, resourceUrl); objectUrls.push(resourceUrl);
++      return resourceUrl;
++    }
++    // Explicit external/data/blob URLs remain borrowed from the document.
++    if (/^[a-z][a-z\d+.-]*:/i.test(url) && !/^file:/i.test(url)) return url;
++    warnings.push(`KMZ texture "${url}" could not be resolved; dependent appearance may be missing.`);
++    // A neutral white pixel preserves the material color without fetching application HTML.
++    return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1" height="1"%3E%3Cpath fill="white" d="M0 0h1v1H0z"/%3E%3C/svg%3E';
++  });
++  manager.itemStart('filens:kmz-parse');
+   try {
+-    archive = await JSZip.loadAsync(source);
++    // Resolve against modelName ourselves so paths are decoded exactly once.
++    object = new ColladaLoader(manager).parse(dae, '').scene;
++    if (objectUrls.length) object.userData.previewObjectUrls = objectUrls;
++    if (!hasRenderableObjectContent(object)) warnings.push('KMZ Collada model contains no renderable geometry.');
+   } catch (error) {
+-    if (loaderObject) {
+-      return {
+-        object: loaderObject,
+-        warnings: [`KMZ archive could not be inspected: ${error instanceof Error ? error.message : String(error)}`]
+-      };
+-    }
++    release();
+     throw error;
+-  }
+-  const entries = Object.values(archive.files).filter((entry) => !entry.dir);
+-  const kmlEntry = findKmzEntry(entries, (name) => /(^|\/)doc\.kml$/i.test(name))
+-    ?? findKmzEntry(entries, (name) => /\.kml$/i.test(name));
+-  const kmlText = kmlEntry ? await kmlEntry.async('text') : undefined;
+-  const modelHref = kmlText ? findKmzModelHref(kmlText) : undefined;
+-  const modelEntry = (modelHref ? findKmzEntry(entries, (name) => isKmzPathMatch(name, modelHref, kmlEntry?.name)) : undefined)
+-    ?? findKmzEntry(entries, (name) => /\.dae$/i.test(name));
+-  if (!modelEntry) {
+-    if (loaderObject) {
+-      return {
+-        object: loaderObject,
+-        warnings: ['KMZ archive does not contain a Collada (.dae) model with renderable geometry.']
+-      };
+-    }
+-    throw new Error('KMZ archive does not contain a Collada (.dae) model.');
+-  }
+-
+-  const warnings: string[] = [];
+-  const objectUrls: string[] = [];
+-  const resourceBytes = new Map<string, Uint8Array>();
+-  for (const entry of entries) {
+-    if (/\.(?:png|jpe?g|gif|webp|bmp|tga|dds)$/i.test(entry.name)) {
+-      resourceBytes.set(entry.name, await entry.async('uint8array'));
+-    }
+-  }
+-  const manager = new LoadingManager();
+-  manager.setURLModifier((url) => {
+-    const resource = findKmzEntry(entries, (name) => isKmzPathMatch(name, url, modelEntry.name));
+-    const bytes = resource ? resourceBytes.get(resource.name) : undefined;
+-    if (!resource || !bytes) {
+-      return url;
+-    }
+-    const blobBytes = new Uint8Array(bytes.byteLength);
+-    blobBytes.set(bytes);
+-    const resourceUrl = URL.createObjectURL(new Blob([blobBytes.buffer], { type: mimeTypeForKmzEntry(resource.name) }));
+-    objectUrls.push(resourceUrl);
+-    return resourceUrl;
+-  });
+-  const dae = await modelEntry.async('text');
+-  const object = new ColladaLoader(manager).parse(dae, `${directoryName(modelEntry.name)}/`).scene;
+-  if (objectUrls.length) {
+-    object.userData.previewObjectUrls = objectUrls;
+-  }
+-  if (!hasRenderableObjectContent(object)) {
+-    warnings.push('KMZ Collada model contains no renderable geometry.');
+-  }
+-  return { object, warnings };
++  } finally {
++    manager.itemEnd('filens:kmz-parse');
++  }
++  return { object, ready, release };
+ }
+ 
+ function hasRenderableObjectContent(object: Object3D): boolean {
+   let renderable = false;
+-  object.traverse((node) => {
+-    const candidate = node as Object3D & { geometry?: BufferGeometry };
+-    if (candidate.geometry?.getAttribute('position')?.count) {
+-      renderable = true;
+-    }
++  object.traverse(node => {
++    if ((node as Mesh).geometry?.getAttribute('position')?.count) renderable = true;
+   });
+   return renderable;
+ }
+ 
+-function findKmzEntry(entries: JSZip.JSZipObject[], predicate: (name: string) => boolean): JSZip.JSZipObject | undefined {
+-  return entries.find((entry) => predicate(entry.name));
++function normalizeKmzPath(value: string): string {
++  const parts: string[] = [];
++  for (const part of value.replace(/\\/g, '/').split('/')) {
++    if (!part || part === '.') continue;
++    if (part === '..') parts.pop();
++    else parts.push(part);
++  }
++  return parts.join('/');
++}
++
++function createKmzIndex(names: string[]): Map<string, string> {
++  return new Map(names.map(name => [normalizeKmzPath(name), name]));
++}
++
++function findKmzResource(index: Map<string, string>, href: string, relativeTo = ''): string | undefined {
++  let path = href.trim().replace(/\\/g, '/').split(/[?#]/, 1)[0] ?? '';
++  if (/^[a-z][a-z\d+.-]*:/i.test(path)) return undefined;
++  try { path = decodeURIComponent(path); } catch { /* Preserve malformed producer escapes. */ }
++  const directory = relativeTo.slice(0, relativeTo.lastIndexOf('/') + 1);
++  const candidates = [...new Set([
++    ...(path.startsWith('/') ? [] : [normalizeKmzPath(directory + path)]), normalizeKmzPath(path)
++  ])];
++  for (const candidate of candidates) {
++    const exact = index.get(candidate);
++    if (exact) return exact;
++  }
++  // Case/suffix fallbacks must be unambiguous; never let an earlier basename shadow an exact path.
++  for (const candidate of candidates) {
++    const matches = [...index].filter(([name]) => name.toLowerCase() === candidate.toLowerCase());
++    if (matches.length === 1) return matches[0]![1];
++  }
++  const suffix = candidates[candidates.length - 1]!.toLowerCase();
++  const matches = [...index].filter(([name]) => name.toLowerCase().endsWith('/' + suffix));
++  return matches.length === 1 ? matches[0]![1] : undefined;
++}
++
++function findKmzKml(index: Map<string, string>): string | undefined {
++  return index.get('doc.kml') ?? [...index.values()].find(name => /^doc\.kml$/i.test(name))
++    ?? [...index.values()].find(name => /(^|\/)doc\.kml$/i.test(name))
++    ?? [...index.values()].find(name => /\.kml$/i.test(name));
++}
++
++function selectKmzModel(index: Map<string, string>, kmlName: string | undefined, kml: string | undefined, warnings: string[]): string {
++  const href = kml ? findKmzModelHref(kml) : undefined;
++  const selected = href ? findKmzResource(index, href, kmlName) : undefined;
++  const fallback = [...index.values()].find(name => /\.dae$/i.test(name));
++  if (href && !selected && fallback) warnings.push(`KMZ model "${href}" could not be resolved; using "${fallback}".`);
++  const model = selected ?? fallback;
++  if (!model) throw new Error('KMZ archive does not contain a Collada (.dae) model.');
++  return model;
+ }
+ 
+ function findKmzModelHref(source: string): string | undefined {
+   const document = new DOMParser().parseFromString(source, 'application/xml');
+-  const parserError = document.getElementsByTagName('parsererror')[0];
+-  if (parserError) {
+-    return undefined;
+-  }
+-  for (const element of Array.from(document.getElementsByTagName('*'))) {
+-    if (element.localName?.toLowerCase() !== 'href') {
+-      continue;
+-    }
+-    const value = element.textContent?.trim();
+-    if (value && /\.dae(?:[?#].*)?$/i.test(value)) {
+-      return value;
+-    }
++  if (document.getElementsByTagName('parsererror').length) return undefined;
++  for (const model of Array.from(document.getElementsByTagName('*'))) {
++    if (model.localName?.toLowerCase() !== 'model') continue;
++    const link = Array.from(model.children).find(child => child.localName.toLowerCase() === 'link');
++    const value = link && Array.from(link.children).find(child => child.localName.toLowerCase() === 'href')?.textContent?.trim();
++    if (value && /\.dae(?:[?#].*)?$/i.test(value)) return value;
+   }
+   return undefined;
+-}
+-
+-function isKmzPathMatch(name: string, href: string, relativeTo?: string): boolean {
+-  const normalizedName = normalizeKmzPath(name);
+-  const normalizedHref = normalizeKmzPath(href);
+-  const candidates = [normalizedHref];
+-  if (relativeTo) {
+-    candidates.push(normalizeKmzPath(`${directoryName(relativeTo)}/${normalizedHref}`));
+-  }
+-  return candidates.some((candidate) => normalizedName === candidate || normalizedName.endsWith(`/${candidate}`));
+-}
+-
+-function normalizeKmzPath(value: string): string {
+-  let normalized = value.trim().replace(/\\/g, '/').split(/[?#]/, 1)[0] ?? '';
+-  try {
+-    normalized = decodeURIComponent(normalized);
+-  } catch {
+-    // Keep the original path when a producer emitted malformed percent escapes.
+-  }
+-  normalized = normalized.replace(/^\.\//, '').replace(/^\/+/, '');
+-  const parts: string[] = [];
+-  for (const part of normalized.split('/')) {
+-    if (!part || part === '.') continue;
+-    if (part === '..') {
+-      parts.pop();
+-      continue;
+-    }
+-    parts.push(part);
+-  }
+-  return parts.join('/');
+-}
+-
+-function directoryName(value: string): string {
+-  const normalized = normalizeKmzPath(value);
+-  const slash = normalized.lastIndexOf('/');
+-  return slash >= 0 ? normalized.slice(0, slash) : '';
+ }
+ 
+ function mimeTypeForKmzEntry(name: string): string {
+--- a/packages/model3d/src/index.ts
++++ b/packages/model3d/src/index.ts
+@@ -15,6 +15,7 @@
+   loadFbxObjectWithWarnings,
+   loadGCodeObject,
+   loadKmzObject,
++  loadKmzObjectWithWarnings,
+   loadLDrawObject,
+   loadLDrawObjectWithWarnings,
+   loadLwoObject,
+@@ -46,5 +47,6 @@
+   type ModelGeometry,
+   type ModelGeometryLoadResult,
+   type ModelObjectLoadResult,
++  type LoadKmzObjectOptions,
+   type StlGeometry
+ } from './preview-driver';

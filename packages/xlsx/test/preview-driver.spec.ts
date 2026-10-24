@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
-import { describe, expect, it } from 'vitest';
-import { createXlsxPreviewDriver, createXlsxPreviewRoutes, loadCsvWorkbook, loadXlsxWorkbook, resolveCellValue } from '../src';
+import { describe, expect, it, vi } from 'vitest';
+import { appendSheetRows, createSheetTable, createXlsxPreviewDriver, createXlsxPreviewRoutes, loadCsvWorkbook, loadXlsxWorkbook, resolveCellValue, type ParsedSheet } from '../src';
 
 describe('XLSX preview driver', () => {
   it('returns identical cells for the fast and general worksheet parsers', async () => {
@@ -25,6 +25,25 @@ describe('XLSX preview driver', () => {
     const workbook = await loadCsvWorkbook(new TextEncoder().encode('\uFEFFa,b,\r\n\r\nc,d,\r'));
     expect(workbook.sheets[0].rows.map(row => row.cells.map(cell => cell.value)))
       .toEqual([['a', 'b', ''], [''], ['c', 'd', '']]);
+  });
+
+  it.each(['""', 'a\n""', '""\r\n""', '\uFEFF""'])('preserves a final empty quoted CSV record: %j', async text => {
+    const workbook = await loadCsvWorkbook(new TextEncoder().encode(text));
+    const values = workbook.sheets[0].rows.map(row => row.cells.map(cell => cell.value));
+    expect(values).toEqual(text.includes('\n') ? [[text.startsWith('a') ? 'a' : ''], ['']] : [['']]);
+  });
+
+  it('round-trips quoted CSV records with mixed line endings, Unicode and long fields', async () => {
+    const values = Array.from({ length: 90 }, (_, row) => Array.from({ length: row % 9 + 1 }, (_, column) =>
+      ['', '中文😀', 'a,b', 'say "hello"', 'line\nbreak', 'line\rbreak', 'line\r\nbreak', ' padded ', 'long '.repeat(2000)][(row + column) % 9]));
+    values.push(['']);
+    const quote = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const text = values.map((row, index) => row.map(quote).join(',') + (index < values.length - 1 ? ['\r\n', '\n', '\r'][index % 3] : '')).join('');
+    const sheet = (await loadCsvWorkbook(new TextEncoder().encode(text))).sheets[0];
+    expect(sheet.rows.map(row => row.cells.map(cell => cell.value))).toEqual(values);
+    expect(sheet.rowCount).toBe(values.length);
+    expect(sheet.columnCount).toBe(9);
+    expect(sheet.rows.at(-1)?.cells[0]).toEqual({ ref: 'A91', row: 91, column: 1, value: '' });
   });
 
   it('exposes direct XLSX routes and driver support', () => {
@@ -149,8 +168,15 @@ describe('XLSX preview driver', () => {
     expect(host.querySelector('.xlsxv-table')?.textContent).toContain('Name');
     expect(host.querySelector('.xlsxv-table')?.textContent).toContain('42');
     expect(renderedStates).toHaveLength(1);
+    for (const index of [NaN, Infinity, 0.5]) {
+      expect(() => session.goToPage?.(index)).not.toThrow();
+      expect(session.getState().activeSheetIndex).toBe(0);
+    }
+    const grid = host.querySelector('.xlsxv-grid') as HTMLElement;
+    grid.scrollTop = 100;
 
     session.next?.();
+    expect(grid.scrollTop).toBe(0);
     expect(session.getState().activeSheetIndex).toBe(1);
     expect(host.querySelector('.xlsxv-table')?.textContent).toContain('TRUE');
 
@@ -240,13 +266,94 @@ describe('XLSX preview driver', () => {
     Object.defineProperties(grid, {
       clientHeight: { configurable: true, value: 500 },
       scrollHeight: { configurable: true, value: 2600 },
-      scrollTop: { configurable: true, value: 1800 }
+      scrollTop: { configurable: true, writable: true, value: 1800 }
     });
     grid.dispatchEvent(new Event('scroll'));
     expect(host.querySelectorAll('.xlsxv-table tbody tr')).toHaveLength(200);
 
     session.destroy();
     host.remove();
+  });
+
+  it.each(['csv', 'xlsx'] as const)('ignores destroyed, superseded and aborted %s source reads', async format => {
+    const bytes = await createWorkbookFixture();
+    for (const action of ['destroy', 'replace', 'abort']) {
+      const host = document.createElement('div');
+      const session = createXlsxPreviewDriver().createSession(host);
+      const rendered = vi.fn(), errors = vi.fn();
+      session.on('rendered', rendered); session.on('error', errors);
+      let finish!: (value: any) => void;
+      const source = new Blob([]);
+      Object.defineProperty(source, format === 'csv' ? 'text' : 'arrayBuffer', {
+        value: () => new Promise(resolve => { finish = resolve; })
+      });
+      const controller = new AbortController();
+      const pending = session.load(source, { descriptor: { source, extension: format }, signal: controller.signal })
+        .then(() => undefined, error => error);
+      if (action === 'destroy') session.destroy();
+      if (action === 'abort') controller.abort();
+      if (action === 'replace') {
+        const replacement = new TextEncoder().encode('Current,42');
+        await session.load(replacement, { descriptor: { source: replacement, name: 'current.csv', extension: 'csv' } });
+      }
+      finish(format === 'csv' ? 'Stale,7' : bytes.buffer);
+      const error = await pending;
+      expect(error?.name).toBe(action === 'abort' ? 'AbortError' : undefined);
+      expect(rendered).toHaveBeenCalledTimes(action === 'replace' ? 1 : 0);
+      expect(errors).not.toHaveBeenCalled();
+      if (action === 'replace') {
+        expect(host.querySelector('.xlsxv-table')?.textContent).toContain('Current');
+        expect(session.getState()).toMatchObject({ title: 'current.csv', error: null });
+      } else {
+        expect(host.querySelector('.xlsxv-table')).toBeNull();
+        expect(session.getState()).toMatchObject({ loading: false, sheets: [] });
+      }
+      session.destroy();
+    }
+  });
+
+  it('does not report an old read failure after loading a new workbook', async () => {
+    const host = document.createElement('div');
+    const session = createXlsxPreviewDriver().createSession(host);
+    const errors = vi.fn(); session.on('error', errors);
+    let fail!: (error: Error) => void;
+    const source = new Blob([]);
+    source.text = () => new Promise((_, reject) => { fail = reject; });
+    const pending = session.load(source, { descriptor: { source, extension: 'csv' } }).catch(error => error);
+    const current = new TextEncoder().encode('Current,42');
+    await session.load(current, { descriptor: { source: current, extension: 'csv' } });
+    fail(new Error('Old read failed'));
+    expect(await pending).toBeUndefined();
+    expect(errors).not.toHaveBeenCalled();
+    expect(session.getState().error).toBeNull();
+    expect(host.querySelector('.xlsxv-table')?.textContent).toContain('Current');
+    session.destroy();
+  });
+
+  it.each([loadCsvWorkbook, loadXlsxWorkbook])('rejects already-aborted inputs without reading the source', async load => {
+    const source = new Blob([]);
+    source.text = vi.fn(); source.arrayBuffer = vi.fn();
+    const controller = new AbortController(); controller.abort();
+    await expect(load(source, { descriptor: { source }, signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
+    expect(source.text).not.toHaveBeenCalled();
+    expect(source.arrayBuffer).not.toHaveBeenCalled();
+  });
+
+  it('preserves sparse, unordered, duplicate and edited rows between batches', () => {
+    const sheet: ParsedSheet = {
+      id: 'custom', name: 'Custom', rowCount: 5, columnCount: 2,
+      rows: [
+        { index: 3, cells: [{ ref: 'A3', row: 3, column: 1, value: 'old' }] },
+        { index: 1, cells: [{ ref: 'B1', row: 1, column: 2, value: 'first' }, { ref: 'B1', row: 1, column: 2, value: 'last' }] },
+        { index: 3, cells: [{ ref: 'A3', row: 3, column: 1, value: 'updated' }] }
+      ]
+    };
+    const table = createSheetTable(sheet, 3);
+    const values = () => Array.from(table.tBodies[0].rows, row => Array.from(row.querySelectorAll('td'), cell => cell.textContent));
+    expect(values()).toEqual([['', 'last'], ['', ''], ['updated', '']]);
+    sheet.rows.push({ index: 5, cells: [{ ref: 'B5', row: 5, column: 2, value: 'appended' }] });
+    appendSheetRows(table.tBodies[0], sheet, 4, 5);
+    expect(values()).toEqual([['', 'last'], ['', ''], ['updated', ''], ['', ''], ['', 'appended']]);
   });
 });
 

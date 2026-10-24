@@ -1,0 +1,76 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "6cd97eb73cbf36384c958e670e8038b1cf5d1a0565fdbd859cf77362423d649b",
+  "iterations": 7,
+  "runs": 56,
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "method": "10,000 paired bootstrap resamples of complete-extraction median ratios, seed 12345. Rendering and image decode are outside timing. Generated SVG comics exercise page count/sorting rather than photographic throughput. No peer/SOTA ranking; baseline controls at or below 10 ms receive no speed claim.",
+  "samples": [
+    {
+      "sample": "sample.epub",
+      "currentMs": 2.399999976158142,
+      "baselineMs": 2.200000047683716,
+      "ratio": 0.916666695641147,
+      "ratio95PercentBootstrapInterval": [
+        0.8148147739337148,
+        1.0454545011205132
+      ],
+      "stableEngineeringReduction": false,
+      "stableEngineeringIncrease": false,
+      "below10MsControl": true,
+      "chapters": 2,
+      "blobs": 0,
+      "completeModelsAndBlobsMatch": true
+    },
+    {
+      "sample": "generated-40-chapters.epub",
+      "currentMs": 16.399999976158142,
+      "baselineMs": 19.299999952316284,
+      "ratio": 1.1768292670959806,
+      "ratio95PercentBootstrapInterval": [
+        1.1111111173078254,
+        1.227848094198456
+      ],
+      "stableEngineeringReduction": true,
+      "stableEngineeringIncrease": false,
+      "below10MsControl": false,
+      "chapters": 40,
+      "blobs": 0,
+      "completeModelsAndBlobsMatch": true
+    },
+    {
+      "sample": "generated-200-pages.cbz",
+      "currentMs": 25.100000023841858,
+      "baselineMs": 34.89999997615814,
+      "ratio": 1.390438244741335,
+      "ratio95PercentBootstrapInterval": [
+        1.291044779306107,
+        1.4297188778284744
+      ],
+      "stableEngineeringReduction": true,
+      "stableEngineeringIncrease": false,
+      "below10MsControl": false,
+      "chapters": 200,
+      "blobs": 200,
+      "completeModelsAndBlobsMatch": true
+    },
+    {
+      "sample": "generated-1000-pages.cbz",
+      "currentMs": 93.59999990463257,
+      "baselineMs": 142.60000002384186,
+      "ratio": 1.5235042753112666,
+      "ratio95PercentBootstrapInterval": [
+        1.4989406783446773,
+        1.5449620812298093
+      ],
+      "stableEngineeringReduction": true,
+      "stableEngineeringIncrease": false,
+      "below10MsControl": false,
+      "chapters": 1000,
+      "blobs": 1000,
+      "completeModelsAndBlobsMatch": true
+    }
+  ]
+}

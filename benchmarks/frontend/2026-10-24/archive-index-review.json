@@ -1,0 +1,367 @@
+{
+  "method": "Seven fresh Chromium contexts per engine/sample; deterministically rotated order. Input bytes and modules ready before timing; no concurrent tests or builds. Measures complete index construction and extraction of all payloads. Every file name and decoded-byte signature is compared after timing. Metadata/resource-resolution review is separate and untimed.",
+  "externalComparisonRunsAdded": 63,
+  "successfulFilensExternalRunsAdded": 21,
+  "engineeringComparisonRuns": 42,
+  "diagnosticRunsExcluded": 111,
+  "functionalRunsExcludedFromTimings": 16,
+  "cumulativeExternalComparisonRuns": 2541,
+  "cumulativeSuccessfulFilensRuns": 1043,
+  "sources": {
+    "archive-index.json.gz": {
+      "uncompressedSha256": "f60c7d54a296c40c11d88036d290dc35ffa30ee7c7d9a285ed15b510487a6487",
+      "compressedSha256": "715329aea9636584fd42192218ecda5e8302b109d667025d2ca9fd7a36b648b2",
+      "runs": 63
+    },
+    "archive-index-ab.json.gz": {
+      "uncompressedSha256": "4446b6054bb3528f530ce27349e712c8c1c514fdd969969a412e07000d74a607",
+      "compressedSha256": "049959ae09dd1b94f7c4faa76f8886249a0684294cdabb8bf7f1b3506a005188",
+      "runs": 42
+    },
+    "archive-index-content-review.json.gz": {
+      "uncompressedSha256": "70acac72fa2af15b338678190ffd5cf72d569dceec35bc2c7493e3ab2a5d1513",
+      "compressedSha256": "c8ce533cc79522244ce4409ecf3218420d6a06dae3cb0a814f8e18b0c76af513",
+      "functionalRuns": 16
+    },
+    "archive-index-diagnostic.json.gz": {
+      "uncompressedSha256": "c7bb7b0b36b4218637aa790facd38f05f0b6ca58a7bf86f3faa06c9e1f524fc3",
+      "compressedSha256": "27a5bb5fdb4884c256a9a19c6168c8fde5e10e1358970bda3c24c2836cc1dcd1",
+      "runs": 111
+    }
+  },
+  "productionPatch": {
+    "path": "archive-index.patch",
+    "sha256": "f4eb4bc6ef0554a9024fd4f13874c11e589d487cfdfc7396b2940890fa664b53"
+  },
+  "implementationSources": {
+    "packages/archive/src/preview-driver.ts": "e6b866dd5449014962d67170bd3479e3a28af91255a4365dbf7340b4a0d8a553",
+    "packages/archive/test/preview-driver.spec.ts": "e612c97728f009cfeabdd468cfe140deba0f7309eda3f19a4de33ae34bff40ac",
+    "apps/demo/e2e/archive-resources.e2e.ts": "1987f45cbd9aabb29ac98ea2ac5c67b7a928f54e66eb0bb75c658c25227e416d",
+    "apps/demo/e2e/business-families.e2e.ts": "4e11b7fc7376ed90b35678ce78314de5aa3f451bffb37ef7a1598b53dcfb0d96",
+    "scripts/benchmark-other-formats.mjs": "0df95e61cd44e8d375b4c26bf897be0cf74488daec3ec82c3b36ebb30a8318c3",
+    "scripts/summarize-other-format-benchmark.mjs": "31e8b7dbd43d3ba5ee356715b05fef6968146ef6373e6a135e4a02533eaaf496"
+  },
+  "functionalReproducer": {
+    "path": "review-archive-index.mjs",
+    "sha256": "9c05059cc5b2580e467142b2b4f00485f095dca000f69f8a0853303778f5d671",
+    "command": "node benchmarks/frontend/2026-10-24/review-archive-index.mjs"
+  },
+  "currentArtifact": {
+    "path": "packages/archive/dist/index.js",
+    "sha256": "f46f50d3d7d48bbd583ad747832a329b3d3ba24e636b02b9286f56fb9397843b"
+  },
+  "baseline": {
+    "artifactPath": "tmp/continued-review/archive-index-baseline/dist/index.js",
+    "artifactSha256": "6f995bc2217f782a0c1b485072bf358275f7e43a4c750429fcf7580646c70ea4",
+    "sourceSha256": "226a021e9a98e09179aed7274685596d2158cd59389daa86034fdac827f81d9f",
+    "reproduction": "Reverse archive-index.patch, build @filens/archive and copy dist to tmp/continued-review/archive-index-baseline/dist. Restore the patch and rebuild @filens/archive. Prepare other-format benchmark dependencies/inputs as described in the benchmark README. Run scripts/benchmark-other-formats.mjs --family zip --iterations 7 --output <peer-directory>; add --archive-baseline tmp/continued-review/archive-index-baseline/dist/index.js with a different output for engineering comparisons. Summarize both using scripts/summarize-other-format-benchmark.mjs."
+  },
+  "engineeringComparisons": [
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 6.025000095367432,
+      "peerMs": 5.855000019073486,
+      "ratio": 0.9717842201488666,
+      "ratio95PercentBootstrapInterval": [
+        0.9095911876744642,
+        1.0074688526411752
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "filens-baseline",
+      "metric": "indexMs",
+      "filensMs": 4.96999990940094,
+      "peerMs": 4.899999976158142,
+      "ratio": 0.9859155061330303,
+      "ratio95PercentBootstrapInterval": [
+        0.9238186894091779,
+        1.019172534526366
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 10.240000009536743,
+      "peerMs": 11.794999957084656,
+      "ratio": 1.1518554634862994,
+      "ratio95PercentBootstrapInterval": [
+        1.070967740021614,
+        1.1978239364164298
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "filens-baseline",
+      "metric": "indexMs",
+      "filensMs": 5.699999928474426,
+      "peerMs": 7.34499990940094,
+      "ratio": 1.2885964915032533,
+      "ratio95PercentBootstrapInterval": [
+        1.1826298904716266,
+        1.3374558264814844
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 6.709999918937683,
+      "peerMs": 6.784999966621399,
+      "ratio": 1.0111773544843186,
+      "ratio95PercentBootstrapInterval": [
+        0.8979180821935969,
+        1.0805214689714673
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "filens-baseline",
+      "metric": "indexMs",
+      "filensMs": 0.4649999141693115,
+      "peerMs": 0.5749999284744263,
+      "ratio": 1.2365592142132364,
+      "ratio95PercentBootstrapInterval": [
+        1.1546393070227314,
+        1.2608698807051697
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    }
+  ],
+  "peerComparisons": [
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "zip.js",
+      "metric": "operationMs",
+      "filensMs": 6.125,
+      "peerMs": 3.40500009059906,
+      "ratio": 0.5559183821386221,
+      "ratio95PercentBootstrapInterval": [
+        0.5254777207897471,
+        0.6219816848078192
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "fflate",
+      "metric": "operationMs",
+      "filensMs": 6.125,
+      "peerMs": 0.20000004768371582,
+      "ratio": 0.032653069009586255,
+      "ratio95PercentBootstrapInterval": [
+        0.03184712251362735,
+        0.035436460654948
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "zip.js",
+      "metric": "operationMs",
+      "filensMs": 10.379999995231628,
+      "peerMs": 220.95499992370605,
+      "ratio": 21.286608865627024,
+      "ratio95PercentBootstrapInterval": [
+        20.694605013628045,
+        21.590733804295947
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "fflate",
+      "metric": "operationMs",
+      "filensMs": 10.379999995231628,
+      "peerMs": 4.315000057220459,
+      "ratio": 0.4157032812333995,
+      "ratio95PercentBootstrapInterval": [
+        0.3982970575256548,
+        0.47345560048815055
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "zip.js",
+      "metric": "operationMs",
+      "filensMs": 7.580000042915344,
+      "peerMs": 11.84499990940094,
+      "ratio": 1.5626648868520632,
+      "ratio95PercentBootstrapInterval": [
+        1.514416785580407,
+        1.5826144823292676
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "fflate",
+      "metric": "operationMs",
+      "filensMs": 7.580000042915344,
+      "peerMs": 49.15499997138977,
+      "ratio": 6.484828455552919,
+      "ratio95PercentBootstrapInterval": [
+        6.30297025798275,
+        6.735235597188154
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    }
+  ],
+  "contentReview": {
+    "commonArchives": 6,
+    "checks": [
+      "complete ordered metadata including directories and MIME types",
+      "every decoded file byte",
+      "exact, URI and Windows resource aliases",
+      "independent extracted buffers"
+    ],
+    "commonMetadataContentAndResolutionMatch": true,
+    "repairedLongPathFormats": [
+      "POSIX PAX",
+      "GNU long name"
+    ],
+    "currentLongPathsPass": true,
+    "baselineLongPathsFail": true
+  },
+  "fixtureProvenance": {
+    "writer": "Python standard-library tarfile, PAX_FORMAT and GNU_FORMAT",
+    "reproduction": "packages/archive/test/fixtures/README.md",
+    "files": {
+      "packages/archive/test/fixtures/gnu-long-path.tar": {
+        "bytes": 10240,
+        "sha256": "2a14a04f7fe78070ebe5f914e6afb8f4a8865061e0e5ad3dd06b0d7c8263a0db"
+      },
+      "packages/archive/test/fixtures/pax-long-path.tar": {
+        "bytes": 10240,
+        "sha256": "b468c802e62160c506ab81663c0290c72a2a161551d7988b0f6e1b9199deff99"
+      }
+    }
+  },
+  "validation": {
+    "archiveUnitTestsPassed": 22,
+    "vueUnitTestsPassed": 44,
+    "browserTestsPassed": 3,
+    "previousImplementationRegressionFailuresReproduced": 10,
+    "builds": [
+      "@filens/archive",
+      "demo",
+      "bundle report"
+    ],
+    "browserCoverage": [
+      "PAX/GNU long path browsing, resource extraction, root navigation and cleanup",
+      "TAR/TGZ/GZIP/JAR/WAR/EAR/APK built-in samples",
+      "tar.gz upload and nested ZIP/TAR navigation"
+    ],
+    "testRepairs": "A new fixture read used a Vite-rewritten URL; it now uses the actual module filesystem path. The pre-existing archive browser test used removed wb-variant buttons and now exercises file upload.",
+    "localMarkdownLinksChecked": 337,
+    "evidenceAndRuntimeHashesChecked": true,
+    "reversePatchCheck": true,
+    "baselineSotaExclusion": true
+  },
+  "conclusion": "1,000-file ZIP complete extraction improves by about 13%, with index construction about 22% faster in matched engineering checks. fflate remains faster on the complete task; no new SOTA label. The 16 MiB and small nested controls are below 10 ms and receive no further optimization claims. PAX/GNU long TAR paths and PAX size/time metadata now preview correctly."
+}

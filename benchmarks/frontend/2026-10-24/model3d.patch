@@ -1,0 +1,632 @@
+--- a/packages/model3d/src/preview-driver.ts
++++ b/packages/model3d/src/preview-driver.ts
+@@ -50,6 +50,8 @@
+   SkinnedMesh,
+   Scene,
+   SkeletonHelper,
++  type Skeleton,
++  type Texture,
+   Vector2,
+   Vector3,
+   WebGLRenderer,
+@@ -353,6 +355,8 @@
+   private displayMode: PreviewDisplayMode = 'solid-edge';
+   private snapshotBackground: PreviewSnapshotBackground = 'scene';
+   private state: Model3dPreviewRuntimeState;
++  private loadController: AbortController | null = null;
++  private interactionController: AbortController | null = null;
+ 
+   constructor(private readonly host: HTMLElement, private readonly options: PreviewOptions = {}) {
+     const initialScale = this.options.initialScale ?? 1;
+@@ -405,6 +409,21 @@
+   }
+ 
+   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
++    this.stopLoad();
++    const controller = new AbortController();
++    this.loadController = controller;
++    const signal = controller.signal;
++    const abort = () => controller.abort();
++    signal.addEventListener('abort', () => {
++      context.signal?.removeEventListener('abort', abort);
++      if (this.loadController === controller) {
++        this.loadController = null;
++        this.disposeScene();
++        this.state.loading = false;
++        this.emit('statechange', this.state);
++      }
++    }, { once: true });
++    context.signal?.addEventListener('abort', abort, { once: true });
+     this.state = {
+       ...this.state,
+       loading: true,
+@@ -434,16 +453,18 @@
+     this.emit('statechange', this.state);
+ 
+     try {
++      if (context.signal?.aborted) controller.abort();
++      checkModelLoadAborted(signal);
+       const format = normalizeFormat(context.route?.sourceFormat ?? context.descriptor.extension);
+       if (!MODEL3D_DIRECT_FORMATS.has(format)) {
+         throw new Error(`3D preview currently supports browser-WASM STEP/STP plus browser-native STL, OBJ, PLY, glTF, GLB, 3MF, AMF, DAE, FBX, 3DS, USDA-backed USDZ, G-code, VRML, PCD, XYZ, VTK, VOX, LDraw, KMZ, MD2, LWO, BVH, PDB, NRRD, and NHDR files, got ${format || 'unknown'}.`);
+       }
+ 
+-      this.disposeScene();
+-      const buffer = await sourceToArrayBuffer(source, context);
++      const buffer = await sourceToArrayBuffer(source, { ...context, signal });
++      checkModelLoadAborted(signal);
+       if (format === 'step' || format === 'stp') {
+         const object = await loadStepObject(buffer);
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -462,13 +483,13 @@
+               resourcePath: gltfResourcePathForSource(source),
+               resourceResolver: this.options.resourceResolver,
+               sourceFormat: format,
+-              signal: context.signal
++              signal
+             })
+           : {
+               object: await loadGlbObject(buffer),
+               warnings: []
+             };
+-        this.createObjectScene(result.object);
++        this.createObjectScene(result.object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -493,15 +514,15 @@
+             resourceBasePath: context.descriptor.name,
+             resourceResolver: this.options.resourceResolver,
+             sourceFormat: format,
+-            signal: context.signal
++            signal
+           });
+           warnings = result.warnings;
+           metadata = collectObjectPreviewMetadata(result.object, format);
+-          this.createObjectScene(result.object);
++          this.createObjectScene(result.object, signal);
+         } else {
+           const geometry = loadObjGeometry(text);
+           metadata = collectGeometryPreviewMetadata(geometry, format);
+-          this.createScene(geometry);
++          this.createScene(geometry, signal);
+         }
+         this.state = {
+           ...this.state,
+@@ -520,7 +541,7 @@
+       }
+       if (format === 'amf') {
+         const object = loadAmfObject(buffer);
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -539,9 +560,9 @@
+           resourcePath: colladaResourcePathForSource(source),
+           resourceResolver: this.options.resourceResolver,
+           sourceFormat: format,
+-          signal: context.signal
++          signal
+         });
+-        this.createObjectScene(result.object);
++        this.createObjectScene(result.object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -563,9 +584,9 @@
+           resourcePath: modelResourcePathForSource(source),
+           resourceResolver: this.options.resourceResolver,
+           sourceFormat: format,
+-          signal: context.signal
++          signal
+         });
+-        this.createObjectScene(result.object);
++        this.createObjectScene(result.object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -587,9 +608,9 @@
+           resourcePath: modelResourcePathForSource(source),
+           resourceResolver: this.options.resourceResolver,
+           sourceFormat: format,
+-          signal: context.signal
++          signal
+         });
+-        this.createObjectScene(result.object);
++        this.createObjectScene(result.object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -607,7 +628,7 @@
+       }
+       if (format === 'usdz') {
+         const object = await loadUsdzObject(buffer);
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -622,7 +643,7 @@
+       }
+       if (format === 'gcode' || format === 'gco' || format === 'nc') {
+         const object = loadGCodeObject(new TextDecoder().decode(buffer));
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -641,9 +662,9 @@
+           resourcePath: modelResourcePathForSource(source),
+           resourceResolver: this.options.resourceResolver,
+           sourceFormat: format,
+-          signal: context.signal
++          signal
+         });
+-        this.createObjectScene(result.object);
++        this.createObjectScene(result.object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -661,7 +682,7 @@
+       }
+       if (format === 'pcd') {
+         const object = loadPcdObject(buffer);
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -676,7 +697,7 @@
+       }
+       if (format === 'xyz') {
+         const object = loadXyzObject(new TextDecoder().decode(buffer));
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -691,7 +712,7 @@
+       }
+       if (format === 'vtk') {
+         const object = loadVtkObject(buffer);
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -706,7 +727,7 @@
+       }
+       if (format === 'vox') {
+         const object = loadVoxObject(buffer);
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -724,9 +745,9 @@
+           resourceBasePath: context.descriptor.name,
+           resourceResolver: this.options.resourceResolver,
+           sourceFormat: format,
+-          signal: context.signal
++          signal
+         });
+-        this.createObjectScene(result.object);
++        this.createObjectScene(result.object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -744,7 +765,7 @@
+       }
+       if (format === 'kmz') {
+         const result = await loadKmzObjectWithWarnings(buffer);
+-        this.createObjectScene(result.object);
++        this.createObjectScene(result.object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -762,7 +783,7 @@
+       }
+       if (format === 'md2') {
+         const object = loadMd2Object(buffer);
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -782,9 +803,9 @@
+           modelName: modelNameForSource(context.descriptor.name),
+           resourceResolver: this.options.resourceResolver,
+           sourceFormat: format,
+-          signal: context.signal
++          signal
+         });
+-        this.createObjectScene(result.object);
++        this.createObjectScene(result.object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -802,7 +823,7 @@
+       }
+       if (format === 'bvh') {
+         const object = loadBvhObject(new TextDecoder().decode(buffer));
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -817,7 +838,7 @@
+       }
+       if (format === 'pdb') {
+         const object = loadPdbObject(new TextDecoder().decode(buffer));
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -836,11 +857,12 @@
+               resourceBasePath: context.descriptor.name,
+               resourceResolver: this.options.resourceResolver,
+               sourceFormat: format,
+-              signal: context.signal
++              signal
+             })
+           : buffer;
++        checkModelLoadAborted(signal);
+         const object = loadNrrdObject(nrrdBuffer);
+-        this.createObjectScene(object);
++        this.createObjectScene(object, signal);
+         this.state = {
+           ...this.state,
+           loading: false,
+@@ -860,7 +882,7 @@
+             warnings: []
+           };
+       const geometry = result.geometry;
+-      this.createScene(geometry);
++      this.createScene(geometry, signal);
+       this.state = {
+         ...this.state,
+         loading: false,
+@@ -875,6 +897,11 @@
+       this.emit('rendered', this.state);
+       this.emit('statechange', this.state);
+     } catch (error) {
++      if (signal.aborted) {
++        if (context.signal?.aborted) checkModelLoadAborted(signal);
++        return;
++      }
++      this.stopLoad();
+       const normalizedError = error instanceof Error ? error : new Error(String(error));
+       this.state.loading = false;
+       this.state.error = normalizedError.message;
+@@ -885,14 +912,23 @@
+   }
+ 
+   destroy(): void {
+-    this.disposeScene();
++    this.stopLoad();
++    this.state.loading = false;
+     this.stage.replaceChildren();
+     this.root.replaceChildren();
+     if (this.root.parentElement === this.host) {
+       this.host.replaceChildren();
+     }
++    for (const listeners of Object.values(this.listeners)) listeners.clear();
+   }
+ 
++  private stopLoad(): void {
++    const controller = this.loadController;
++    this.loadController = null;
++    controller?.abort();
++    this.disposeScene();
++  }
++
+   getState(): Model3dPreviewState {
+     return {
+       ...this.state,
+@@ -1290,12 +1326,14 @@
+     await this.root.requestFullscreen?.();
+   }
+ 
+-  private createScene(model: ModelGeometry): void {
++  private createScene(model: ModelGeometry, signal: AbortSignal): void {
++    checkModelLoadAborted(signal);
+     const renderer = createRendererOrFallback({
+       antialias: true,
+       alpha: false,
+       preserveDrawingBuffer: true
+     });
++    this.renderer = renderer;
+     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+     renderer.setClearColor(0x111827, 1);
+     renderer.localClippingEnabled = true;
+@@ -1307,7 +1345,11 @@
+     scene.background = new Color(0x111827);
+     const camera = this.createCamera();
+     const modelGroup = new Group();
++    this.modelGroup = modelGroup;
++    this.scene = scene;
++    this.camera = camera;
+     const geometry = new BufferGeometry();
++    this.geometry = geometry;
+     geometry.setAttribute('position', new BufferAttribute(model.positions, 3));
+     geometry.setAttribute('normal', new BufferAttribute(model.normals, 3));
+     if (model.colors) {
+@@ -1330,6 +1372,7 @@
+       metalness: 0.08,
+       vertexColors: Boolean(model.colors)
+     });
++    this.material = material;
+     const mesh = new Mesh(geometry, material);
+     modelGroup.add(mesh);
+ 
+@@ -1339,6 +1382,8 @@
+       transparent: true,
+       opacity: 0.22
+     });
++    this.edgeGeometry = edgeGeometry;
++    this.edgeMaterial = edgeMaterial;
+     const edges = new LineSegments(edgeGeometry, edgeMaterial);
+     const previewEdges = edges as Model3dObjectNode;
+     previewEdges.userData.previewEdgeHelper = true;
+@@ -1399,12 +1444,17 @@
+     this.startAnimation();
+   }
+ 
+-  private createObjectScene(object: Object3D): void {
++  private createObjectScene(object: Object3D, signal: AbortSignal): void {
++    if (signal.aborted) {
++      disposeModelResources(object);
++      checkModelLoadAborted(signal);
++    }
+     const renderer = createRendererOrFallback({
+       antialias: true,
+       alpha: false,
+       preserveDrawingBuffer: true
+     });
++    this.renderer = renderer;
+     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+     renderer.setClearColor(0x111827, 1);
+     renderer.localClippingEnabled = true;
+@@ -1416,6 +1466,9 @@
+     scene.background = new Color(0x111827);
+     const camera = this.createCamera();
+     const modelGroup = new Group();
++    this.modelGroup = modelGroup;
++    this.scene = scene;
++    this.camera = camera;
+     modelGroup.add(object);
+     scene.add(new AmbientLight(0xffffff, 0.62));
+     const key = new DirectionalLight(0xffffff, 1.45);
+@@ -1480,6 +1533,9 @@
+   }
+ 
+   private bindInteractions(canvas: HTMLCanvasElement): void {
++    this.interactionController?.abort();
++    this.interactionController = new AbortController();
++    const signal = this.interactionController.signal;
+     canvas.addEventListener('pointerdown', (event) => {
+       this.pointerDown = true;
+       this.pointerStartX = event.clientX;
+@@ -1487,7 +1543,7 @@
+       this.pointerStartYaw = this.yaw;
+       this.pointerStartPitch = this.pitch;
+       canvas.setPointerCapture(event.pointerId);
+-    });
++    }, { signal });
+     canvas.addEventListener('pointermove', (event) => {
+       if ((this.state.measurement?.active ?? false) && !this.pointerDown) {
+         this.measurementHoverClientX = event.clientX;
+@@ -1500,7 +1556,7 @@
+       this.yaw = this.pointerStartYaw + (event.clientX - this.pointerStartX) * 0.35;
+       this.pitch = clamp(this.pointerStartPitch + (event.clientY - this.pointerStartY) * 0.25, -80, 80);
+       this.updateCamera();
+-    });
++    }, { signal });
+     canvas.addEventListener('pointerup', (event) => {
+       const moved = Math.hypot(event.clientX - this.pointerStartX, event.clientY - this.pointerStartY);
+       this.pointerDown = false;
+@@ -1508,19 +1564,19 @@
+         this.pickMeasurementPoint(event.clientX, event.clientY);
+       }
+       canvas.releasePointerCapture(event.pointerId);
+-    });
++    }, { signal });
+     canvas.addEventListener('pointercancel', () => {
+       this.pointerDown = false;
+-    });
++    }, { signal });
+     canvas.addEventListener('pointerleave', () => {
+       this.measurementHoverClientX = null;
+       this.measurementHoverClientY = null;
+       this.clearMeasurementHover();
+-    });
++    }, { signal });
+     canvas.addEventListener('wheel', (event) => {
+       event.preventDefault();
+       this.setScale(this.state.scale + (event.deltaY > 0 ? -0.08 : 0.08));
+-    }, { passive: false });
++    }, { passive: false, signal });
+   }
+ 
+   private observeResize(): void {
+@@ -2559,25 +2615,12 @@
+     this.resizeObserver?.disconnect();
+     this.resizeObserver = null;
+     window.removeEventListener('resize', this.resize);
+-    this.disposeObjectResources();
+-    this.geometry?.dispose();
+-    this.edgeGeometry?.dispose();
+-    this.material?.dispose();
+-    this.edgeMaterial?.dispose();
+-    this.measurementLineGeometry?.dispose();
+-    this.measurementLineMaterial?.dispose();
+-    this.measurementPointsGeometry?.dispose();
+-    this.measurementPointsMaterial?.dispose();
+-    this.sectionPlaneHelperGeometry?.dispose();
+-    this.sectionPlaneHelperMaterial?.dispose();
+-    this.sectionPlaneOutlineGeometry?.dispose();
+-    this.sectionPlaneOutlineMaterial?.dispose();
+-    this.sectionPlaneFillGeometry?.dispose();
+-    this.sectionPlaneFillMaterial?.dispose();
+-    this.sectionBoxFillGeometry?.dispose();
+-    this.sectionBoxFillMaterial?.dispose();
+-    this.sectionBoxHelperGeometry?.dispose();
+-    this.sectionBoxHelperMaterial?.dispose();
++    this.interactionController?.abort();
++    this.interactionController = null;
++    this.pointerDown = false;
++    disposeModelResources(this.modelGroup,
++      [this.geometry, this.edgeGeometry, this.measurementLineGeometry, this.measurementPointsGeometry, this.sectionPlaneHelperGeometry, this.sectionPlaneOutlineGeometry, this.sectionPlaneFillGeometry, this.sectionBoxFillGeometry, this.sectionBoxHelperGeometry],
++      [this.material, this.edgeMaterial, this.measurementLineMaterial, this.measurementPointsMaterial, this.sectionPlaneHelperMaterial, this.sectionPlaneOutlineMaterial, this.sectionPlaneFillMaterial, this.sectionBoxFillMaterial, this.sectionBoxHelperMaterial]);
+     if (this.renderer) {
+       this.renderer.clippingPlanes = [];
+       this.renderer.localClippingEnabled = false;
+@@ -2637,38 +2680,54 @@
+     this.state.capabilities.materialFilter = false;
+   }
+ 
+-  private disposeObjectResources(): void {
+-    const previewObjectUrls = this.modelGroup?.userData?.previewObjectUrls;
+-    if (Array.isArray(previewObjectUrls)) {
+-      for (const url of previewObjectUrls) {
+-        if (typeof url === 'string' && url.startsWith('blob:')) {
+-          URL.revokeObjectURL(url);
+-        }
+-      }
+-      delete this.modelGroup?.userData?.previewObjectUrls;
+-    }
+-    this.modelGroup?.traverse((object) => {
+-      const maybeMesh = object as Mesh & {
+-        material?: Material | Material[];
+-        geometry?: BufferGeometry;
+-      };
+-      if (maybeMesh.geometry && maybeMesh.geometry !== this.geometry) {
+-        maybeMesh.geometry.dispose();
+-      }
+-      const materials = Array.isArray(maybeMesh.material) ? maybeMesh.material : maybeMesh.material ? [maybeMesh.material] : [];
+-      for (const material of materials) {
+-        if (material !== this.material) {
+-          material.dispose();
+-        }
+-      }
+-    });
+-  }
+-
+   private emit<T extends PreviewEventName>(event: T, payload: PreviewEventMap[T]): void {
+     for (const handler of this.listeners[event]) {
+       handler(payload as never);
++    }
++  }
++}
++
++function checkModelLoadAborted(signal: AbortSignal): void {
++  if (signal.aborted) throw new DOMException('3D preview aborted.', 'AbortError');
++}
++
++function disposeModelResources(
++  root: Object3D | null,
++  extraGeometries: Array<BufferGeometry | null> = [],
++  extraMaterials: Array<Material | null> = []
++): void {
++  const geometries = new Set(extraGeometries.filter((value): value is BufferGeometry => Boolean(value)));
++  const materials = new Set(extraMaterials.filter((value): value is Material => Boolean(value)));
++  const textures = new Set<Texture>();
++  const skeletons = new Set<Skeleton>();
++  const urls = new Set<string>();
++  root?.traverse(object => {
++    const node = object as Object3D & { geometry?: BufferGeometry; material?: Material | Material[]; skeleton?: Skeleton };
++    if (node.geometry) geometries.add(node.geometry);
++    for (const material of Array.isArray(node.material) ? node.material : node.material ? [node.material] : []) materials.add(material);
++    if (node.skeleton) skeletons.add(node.skeleton);
++    if (Array.isArray(object.userData.previewObjectUrls)) {
++      for (const url of object.userData.previewObjectUrls) if (typeof url === 'string' && url.startsWith('blob:')) urls.add(url);
++      delete object.userData.previewObjectUrls;
+     }
++  });
++  const collectTexture = (value: unknown): void => {
++    if (value && typeof value === 'object' && (value as Texture).isTexture) textures.add(value as Texture);
++    else if (Array.isArray(value)) value.forEach(collectTexture);
++  };
++  for (const material of materials) {
++    Object.values(material).forEach(collectTexture);
++    const uniforms = (material as Material & { uniforms?: Record<string, { value?: unknown }> }).uniforms;
++    if (uniforms) for (const uniform of Object.values(uniforms)) collectTexture(uniform.value);
+   }
++  for (const skeleton of skeletons) {
++    if (skeleton.boneTexture) textures.delete(skeleton.boneTexture);
++    skeleton.dispose();
++  }
++  for (const geometry of geometries) geometry.dispose();
++  for (const material of materials) material.dispose();
++  for (const texture of textures) texture.dispose();
++  for (const url of urls) URL.revokeObjectURL(url);
+ }
+ 
+ export function createModel3dPreviewDriver(): PreviewDriver<Model3dPreviewState> {
+@@ -4217,7 +4276,7 @@
+     return copy.buffer;
+   }
+   if (source instanceof ArrayBuffer) {
+-    return source;
++    return source.slice(0);
+   }
+   throw new Error('Unsupported 3D source type.');
+ }
+@@ -4285,28 +4344,28 @@
+     throw new Error('Binary STL triangle data is truncated.');
+   }
+ 
+-  const positions: number[] = [];
+-  const normals: number[] = [];
++  if (!triangleCount) throw new Error('No STL triangles found.');
++  const positions = new Float32Array(triangleCount * 9);
++  const normals = new Float32Array(triangleCount * 9);
+   let offset = 84;
+   for (let triangle = 0; triangle < triangleCount; triangle += 1) {
+-    const normal: [number, number, number] = [
+-      view.getFloat32(offset, true),
+-      view.getFloat32(offset + 4, true),
+-      view.getFloat32(offset + 8, true)
+-    ];
++    const nx = view.getFloat32(offset, true);
++    const ny = view.getFloat32(offset + 4, true);
++    const nz = view.getFloat32(offset + 8, true);
+     offset += 12;
+     for (let vertex = 0; vertex < 3; vertex += 1) {
+-      positions.push(view.getFloat32(offset, true), view.getFloat32(offset + 4, true), view.getFloat32(offset + 8, true));
+-      normals.push(...normal);
++      const index = triangle * 9 + vertex * 3;
++      positions[index] = view.getFloat32(offset, true);
++      positions[index + 1] = view.getFloat32(offset + 4, true);
++      positions[index + 2] = view.getFloat32(offset + 8, true);
++      normals[index] = nx;
++      normals[index + 1] = ny;
++      normals[index + 2] = nz;
+       offset += 12;
+     }
+     offset += 2;
+   }
+-
+-  if (!positions.length) {
+-    throw new Error('No STL triangles found.');
+-  }
+-  return geometryFromArrays(positions, normals);
++  return { positions, normals, triangleCount, bounds: computeBounds(positions) };
+ }
+ 
+ interface ObjFaceVertex {
+@@ -4884,7 +4943,7 @@
+   };
+ }
+ 
+-function computeBounds(positions: number[]): ModelGeometry['bounds'] {
++function computeBounds(positions: ArrayLike<number>): ModelGeometry['bounds'] {
+   let minX = Number.POSITIVE_INFINITY;
+   let minY = Number.POSITIVE_INFINITY;
+   let minZ = Number.POSITIVE_INFINITY;

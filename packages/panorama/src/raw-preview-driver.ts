@@ -14,6 +14,7 @@ import {
 import { PanoramaPreviewSession } from './preview-driver';
 import { createImageStitchCalibration } from './static-renderer';
 import type { PanoramaProcessor } from './wasm-processor';
+import { checkPanoramaLoad, waitForPanoramaLoad } from './load-task';
 
 export const RAW_IMAGE_FORMAT_ROUTES: FormatDefinition[] = [{
   extensions: ['dng'], family: 'image', driverId: 'raw-image', targetFormat: 'jpg',
@@ -47,10 +48,15 @@ class RawImagePreviewSession implements PreviewSession {
     this.controller = new AbortController();
     const controller = this.controller;
     const signal = controller.signal;
+    signal.addEventListener('abort', () => {
+      if (this.controller !== controller) return;
+      this.release();
+      this.state = { ...this.state, loading: false, error: null };
+      this.emit('statechange', this.state);
+    }, { once: true });
     if (context.signal) {
       const abort = () => controller.abort(context.signal!.reason);
-      if (context.signal.aborted) abort();
-      else {
+      if (!context.signal.aborted) {
         context.signal.addEventListener('abort', abort, { once: true });
         this.unsubscribes.push(() => context.signal!.removeEventListener('abort', abort));
       }
@@ -61,40 +67,39 @@ class RawImagePreviewSession implements PreviewSession {
     this.emit('statechange', this.state);
     const processor = this.dependencies.processor;
     try {
-      signal.throwIfAborted();
-      const manifest = processor ? await processor.open(source, { format: 'dng', signal }) : undefined;
-      signal.throwIfAborted();
+      if (context.signal?.aborted) controller.abort();
+      checkPanoramaLoad(signal);
+      const manifest = processor ? await waitForPanoramaLoad(processor.open(source, { format: 'dng', signal }), signal) : undefined;
+      checkPanoramaLoad(signal);
       if (manifest && createImageStitchCalibration(manifest)) {
         if (!processor?.decodeImage) throw new Error('Calibrated DNG preview requires a panorama processor with WASM image decoding.');
-        const preview = await processor.decodeImage(signal);
-        signal.throwIfAborted();
+        const preview = await waitForPanoramaLoad(processor.decodeImage(signal), signal);
+        checkPanoramaLoad(signal);
         processor.close();
         const child = new PanoramaPreviewSession(this.host, this.options);
         this.attach(child);
-        await child.loadCalibratedImage(preview, manifest, loadContext);
+        await waitForPanoramaLoad(child.loadCalibratedImage(preview, manifest, loadContext), signal);
       } else {
         processor?.close();
-        const preview = await this.dependencies.converter.convert({
+        const preview = await waitForPanoramaLoad(this.dependencies.converter.convert({
           source, sourceFormat: 'dng', targetFormat: 'jpg', name: context.descriptor.name
-        }, loadContext);
-        signal.throwIfAborted();
+        }, loadContext), signal);
+        checkPanoramaLoad(signal);
         const warnings = [...(manifest?.warnings ?? []), ...(preview.warnings ?? [])];
         this.state.warnings = warnings;
         if (warnings.length) this.emit('warnings', warnings);
+        checkPanoramaLoad(signal);
         const child = createImagePreviewDriver().createSession(this.host, this.options);
         this.attach(child, warnings);
-        await child.load(preview.source, {
+        await waitForPanoramaLoad(child.load(preview.source, {
           ...loadContext,
           descriptor: { ...context.descriptor, source: preview.source, extension: preview.format, contentType: preview.contentType },
           route: { family: 'image', driverId: 'image', sourceFormat: preview.format, targetFormat: preview.format }
-        });
+        }), signal);
       }
     } catch (error) {
-      if (signal.aborted) throw error;
-      processor?.close();
-      this.unsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
-      this.child?.destroy();
-      this.child = undefined;
+      if (signal.aborted) throw new DOMException('RAW preview was aborted.', 'AbortError');
+      this.release();
       const normalized = error instanceof Error ? error : new Error(String(error));
       this.state = { ...this.state, loading: false, error: normalized.message };
       this.emit('error', normalized);
@@ -105,8 +110,10 @@ class RawImagePreviewSession implements PreviewSession {
 
   private attach(child: PreviewSession, warnings: string[] = []): void {
     this.child = child;
+    const controller = this.controller;
     for (const event of ['loading', 'rendered', 'error', 'statechange', 'warnings'] as const) {
       this.unsubscribes.push(child.on(event, (payload) => {
+        if (this.controller !== controller || controller?.signal.aborted || this.child !== child) return;
         if (event === 'loading' || event === 'rendered' || event === 'statechange') {
           this.state = { ...(payload as PreviewItemState), warnings: [...new Set([...warnings, ...(payload as PreviewItemState).warnings])] };
           this.emit(event, this.state);
@@ -115,7 +122,7 @@ class RawImagePreviewSession implements PreviewSession {
     }
   }
 
-  getState(): PreviewItemState { return this.state; }
+  getState(): PreviewItemState { return { ...this.state, warnings: [...this.state.warnings], capabilities: { ...this.state.capabilities } }; }
   on<T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void): () => void {
     const handlers = this.listeners.get(event) ?? new Set();
     this.listeners.set(event, handlers);
@@ -131,7 +138,13 @@ class RawImagePreviewSession implements PreviewSession {
   pan(x: number, y: number): void { this.child?.pan?.(x, y); }
   async fullscreen(): Promise<void> { await this.child?.fullscreen?.(); }
   destroy(): void {
-    this.controller?.abort();
+    const controller = this.controller;
+    this.controller = undefined;
+    controller?.abort();
+    this.release();
+    this.state = { ...this.state, loading: false };
+  }
+  private release(): void {
     this.unsubscribes.splice(0).forEach((unsubscribe) => unsubscribe());
     this.child?.destroy();
     this.child = undefined;

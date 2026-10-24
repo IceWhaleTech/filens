@@ -1,0 +1,410 @@
+{
+  "date": "2026-10-24",
+  "engineering": true,
+  "scopedSota": false,
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "outcome": "Shared frontend HTTP/WASM source handling fixes, prompt asynchronous cancellation and recoverable module loading, plus faster Base64 upload preparation. No backend conversion logic added.",
+  "changes": [
+    "HTTP and WASM adapters download HTTP(S), blob:, root-relative and ./ or ../ paths even when the source name equals its URL; other strings remain inline text.",
+    "Binary percent-escaped data URLs preserve their original bytes, literal plus signs and UTF-8 text. Missing data separators reject instead of uploading URL text.",
+    "HTTP cancellation is checked before input preparation, headers and POST, and races pending downloads, fetches and response bodies; failed or cancelled source downloads cannot submit conversion requests.",
+    "WASM cancellation races Blob reads, source fetches, shared module loading and instantiation, with checks before starting synchronous WASM.",
+    "Failed module loads and image ABI initialization can be retried. Concurrent callers reuse shared loading, successful modules stay cached and cancelling one invocation does not cancel another.",
+    "HTTP Blob construction snapshots exact typed-array views without a redundant manual copy; SharedArrayBuffer views retain an explicit snapshot. The public WASM runner still snapshots invocation files before awaiting module loading.",
+    "A preallocated Base64 byte loop replaces the per-byte Uint8Array.from callback; HTTP and WASM reuse one data URL implementation."
+  ],
+  "measurements": {
+    "finalRuns": 70,
+    "repeatsPerCaseEngine": 7,
+    "excludedSmokeRuns": 10,
+    "cpu": "Apple M4 Pro",
+    "browser": "147.0.7727.15",
+    "method": "Fresh Chromium context per invocation, rotating build order. Imports and synthetic inputs ready before timing. Public HTTP convert() includes Blob/FormData preparation, an in-process custom fetch and tiny JSON response decoding. No HTTP serialization, network, server conversion, renderer, peak-memory or peer/SOTA measurement. After timing verify all uploaded bytes, snapshot/slice ownership, filename/type and response bytes. Ignore speed claims where baseline median is <=10 ms; retain all runs.",
+    "samples": [
+      {
+        "sample": "uint8array",
+        "bytes": 67108864,
+        "baselineMs": 8.700000047683716,
+        "currentMs": 4.599999904632568,
+        "below10MsControl": true,
+        "ratio": null,
+        "pairedBootstrapRatio95": null,
+        "stableEngineeringReduction": false,
+        "completeUploadedBytesMatch": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "subview",
+        "bytes": 67108864,
+        "baselineMs": 8.800000071525574,
+        "currentMs": 4.600000023841858,
+        "below10MsControl": true,
+        "ratio": null,
+        "pairedBootstrapRatio95": null,
+        "stableEngineeringReduction": false,
+        "completeUploadedBytesMatch": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "arraybuffer",
+        "bytes": 67108864,
+        "baselineMs": 4.5,
+        "currentMs": 4.600000023841858,
+        "below10MsControl": true,
+        "ratio": null,
+        "pairedBootstrapRatio95": null,
+        "stableEngineeringReduction": false,
+        "completeUploadedBytesMatch": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "blob",
+        "bytes": 67108864,
+        "baselineMs": 0.6000000238418579,
+        "currentMs": 0.6000000238418579,
+        "below10MsControl": true,
+        "ratio": null,
+        "pairedBootstrapRatio95": null,
+        "stableEngineeringReduction": false,
+        "completeUploadedBytesMatch": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "base64",
+        "bytes": 8388608,
+        "baselineMs": 262.10000002384186,
+        "currentMs": 19.399999976158142,
+        "below10MsControl": false,
+        "ratio": 13.51030929618313,
+        "pairedBootstrapRatio95": [
+          12.651741276152999,
+          13.803108755900666
+        ],
+        "stableEngineeringReduction": true,
+        "completeUploadedBytesMatch": true,
+        "scopedSota": false
+      }
+    ],
+    "rawJsonSha256": "1cb51d9cf88703468620b510b0f08c70465bc3ca950ba99463f0f0e0d27673fa",
+    "equivalence": "Every final run checks the full uploaded payload hash and byte length, exact view/snapshot ownership after input mutation, filename/type and complete result bytes after the timer."
+  },
+  "validation": {
+    "newSourceLifecycleTests": 24,
+    "oldSourceFailed": 20,
+    "oldSourcePassedControls": 4,
+    "unhandledErrors": 0,
+    "unitByPackage": {
+      "converter-client": 56,
+      "panorama": 150,
+      "vue": 44
+    },
+    "unitPassed": 250,
+    "developmentBrowser": {
+      "passed": 10,
+      "command": "npx playwright test apps/demo/e2e/converter-source.e2e.ts apps/demo/e2e/converter-io.e2e.ts apps/demo/e2e/preview-runtime.e2e.ts --workers=1",
+      "log": "converter-source-browser.log"
+    },
+    "productionBrowser": {
+      "passed": 7,
+      "command": "FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/converter-source.e2e.ts apps/demo/e2e/converter-io.e2e.ts apps/demo/e2e/panorama-raw.e2e.ts --grep 'downloads an HTTP source|cancels a real source|retries a real WASM|converts an image DOCM|synthetic|ordinary camera DNG' --workers=1",
+      "log": "converter-source-production-browser.log"
+    },
+    "browserCoverage": [
+      "Actual source download, full multipart upload and complete binary response through built converter runtime",
+      "Actual cancelled source download never submits conversion POST",
+      "Actual WASM URL returns 503 once, succeeds next time, then reuses the module; real RTF output contains the input text",
+      "Shared previewer and HTTP adapter render a deterministic DOCX fixture with decoded 256x256 picture, then destroy cleanly",
+      "Existing shared runtime replacement/destruction, error recovery and lazy PDF checks",
+      "Actual image-rich DOCM conversion and four decoded pictures",
+      "Synthetic ONE RS/X5 DNG previews and ordinary public Pentax DNG preview"
+    ],
+    "builds": [
+      "npm run build:converter-client",
+      "npm run build:demo"
+    ],
+    "bundleReport": "npm run report:bundle-sizes",
+    "currentSourceMapMatchesAllProductionSources": true,
+    "baselineSourceMapMatchesBothOriginalSources": true,
+    "incrementalReversePatchRestoresExactBaselineAndRemovesHelper": true,
+    "finalBindingsChecked": 43,
+    "localMarkdownPathsChecked": 479,
+    "gitDiffCheckPassed": true,
+    "benchmarkScriptSyntaxChecksPassed": true,
+    "temporaryPreviewPortsClosed": [
+      4173,
+      4174
+    ],
+    "warnings": [
+      "Existing multiple Three.js instance warning in Vue tests",
+      "Existing demo vendor chunk size warning"
+    ]
+  },
+  "provenance": {
+    "measuredIndexSourceSha256": "4ff851d008b4f4d9a5f9ad8c6a1b56aefe276c1577eb255eb75db35765fc5e9d",
+    "finalIndexSourceSha256": "c811c41148ed2d904c67d4d017586f131c1090a5966bbbb5119392526ee1fd41",
+    "measuredAndFinalRuntimeSha256": "2b14bbd4517de794deefa954ae162e97c334ce471ee6f9ca7d4eeba1d8382b40",
+    "explanation": "After measurement, remove one blank line at EOF in index.ts for git diff --check, then rebuild. Measured and final JS are byte-identical. The diagnostic archive retains the exact measured index.ts and final source map. Raw records are unchanged.",
+    "baseline": [
+      {
+        "path": "tmp/continued-review/converter-source-baseline/index.ts",
+        "sha256": "11a9e327099c64489d30f5b3d294c08d38f4aa6915025ed990f03d7537a383da",
+        "bytes": 25731
+      },
+      {
+        "path": "tmp/continued-review/converter-source-baseline/wasm-client.ts",
+        "sha256": "6cc852e89e2e6d357741d15890caf8f4fc4f9ddd7ac22c992265f13f6c988526",
+        "bytes": 32448
+      },
+      {
+        "path": "tmp/continued-review/converter-source-baseline/dist/index.js",
+        "sha256": "1fbbc65bbf794a90bdd8a40636544417b262513ea3e1abc48adb73d95f8622fc",
+        "bytes": 57170
+      },
+      {
+        "path": "tmp/continued-review/converter-source-baseline/dist/index.js.map",
+        "sha256": "263540fe2823dd912b3d8bd0df92223dacab1b281307496a4c7b04906133edf7",
+        "bytes": 97694
+      }
+    ]
+  },
+  "limits": [
+    "Synthetic byte payloads on one Chromium/Apple M4 Pro system. Input preparation only; no transport serialization, network latency, server conversion, renderer, peak-memory or peer/SOTA claim.",
+    "All four non-Base64 baseline medians are <=10 ms and receive no speed ratio. Their unchanged/slower results remain in the summary.",
+    "Cancellation stops waiting for asynchronous work; already-running synchronous WASM or JS cannot be interrupted. A custom non-cooperative asynchronous operation may complete later, with its rejection observed.",
+    "A fixed Response input is consumed once and must be replaced after failure; URL or factory module sources can load again.",
+    "Bare relative filenames are inline text; prefix relative source URLs with ./ or ../.",
+    "The HTTP browser endpoint returns a known DOCX fixture and does not establish server conversion fidelity. Private camera originals are not re-evaluated."
+  ],
+  "reproduction": [
+    "Restore diagnostic baselineFiles entries at their repository-relative paths, or reverse the incremental patch and build in an isolated checkout preserving earlier work. Keep the current checkout unchanged.",
+    "npm run build:converter-client",
+    "node scripts/benchmark-converter-source.mjs --baseline tmp/continued-review/converter-source-baseline/dist/index.js --iterations 7 --output tmp/continued-review/converter-source-reproduced",
+    "node scripts/summarize-converter-source-benchmark.mjs --input tmp/continued-review/converter-source-reproduced/results.json --output tmp/continued-review/converter-source-reproduced/summary.json",
+    "Run benchmarks alone, without tests/builds or other browser work.",
+    "From each package in unitByPackage: ../../node_modules/.bin/vitest run",
+    "Reverse only converter-source.patch in an isolated current source copy and run test/source-lifecycle.spec.ts from its converter-client directory: twenty failures, four controls.",
+    "npx playwright test apps/demo/e2e/converter-source.e2e.ts apps/demo/e2e/converter-io.e2e.ts apps/demo/e2e/preview-runtime.e2e.ts --workers=1",
+    "Build demo, start vite preview on 127.0.0.1:4174, then run the production browser command recorded above."
+  ],
+  "bindings": [
+    {
+      "path": "packages/converter-client/src/index.ts",
+      "sha256": "c811c41148ed2d904c67d4d017586f131c1090a5966bbbb5119392526ee1fd41",
+      "bytes": 26250
+    },
+    {
+      "path": "packages/converter-client/src/wasm-client.ts",
+      "sha256": "497e453c88330d543b53e26272e100f01c8fe543d157dcc95f81e81e6875da3e",
+      "bytes": 31581
+    },
+    {
+      "path": "packages/converter-client/src/source.ts",
+      "sha256": "f3b0ae6aebd2bc95d6c60c5f4278f1e2a96ac9642d1a21e8be80d10694cfdf21",
+      "bytes": 2793
+    },
+    {
+      "path": "packages/converter-client/test/source-lifecycle.spec.ts",
+      "sha256": "7aeeb50a1cf6879c8c639fbcf7cb311667cdef1ea732b6a0b73863e4f1d2e7bf",
+      "bytes": 13912
+    },
+    {
+      "path": "packages/converter-client/test/fixtures/wasi.mjs",
+      "sha256": "c46f34a0f6367c41e5f2fd3f6f37518bd886aaad726c64929f6d6189969520d8",
+      "bytes": 4255
+    },
+    {
+      "path": "packages/docx/test/fixtures/document.mjs",
+      "sha256": "d50e70d957b6e5b8d3f5d5677323a4b33fa1ec9187de68b739ae46799e7d3efc",
+      "bytes": 3866
+    },
+    {
+      "path": "apps/demo/e2e/converter-source.e2e.ts",
+      "sha256": "19174818152117e561b5459e99753d5f07cb6c4cd61de1a42e6e82562f55945d",
+      "bytes": 7568
+    },
+    {
+      "path": "apps/demo/e2e/converter-io.e2e.ts",
+      "sha256": "75ef0bfefb4e7d8d43dbc3b643266b65d372b7825814a7a092f2663fe6ae3738",
+      "bytes": 1503
+    },
+    {
+      "path": "apps/demo/e2e/preview-runtime.e2e.ts",
+      "sha256": "51b8324286b3dffdf767ee5351044df4a5b6b746f8a00a19631f1ed24090136f",
+      "bytes": 9621
+    },
+    {
+      "path": "apps/demo/e2e/panorama-raw.e2e.ts",
+      "sha256": "1443dbdb37fb5c7e19f43a8d964953d04cbecdb7bfc90baf0a487cbd29cc89f2",
+      "bytes": 4578
+    },
+    {
+      "path": "scripts/benchmark-converter-source.mjs",
+      "sha256": "08b71507cd6dce0069dce2e66cc0655c5f594e7032e387f7f6e1e44d0139dd10",
+      "bytes": 7347
+    },
+    {
+      "path": "scripts/summarize-converter-source-benchmark.mjs",
+      "sha256": "ae158f43e91ceec1e2d234f2c26da2a635c0a062e456126bb295836184098795",
+      "bytes": 3136
+    },
+    {
+      "path": "packages/converter-client/dist/index.js",
+      "sha256": "2b14bbd4517de794deefa954ae162e97c334ce471ee6f9ca7d4eeba1d8382b40",
+      "bytes": 58438
+    },
+    {
+      "path": "packages/converter-client/dist/index.js.map",
+      "sha256": "62e202e0af9d89af8d82e168cd04ec2fbb276f5fa2b563f8bee04447182ddc80",
+      "bytes": 102229
+    },
+    {
+      "path": "packages/converter-client/dist/index.d.ts",
+      "sha256": "15104e2569b218ece502072e53541dc5e0c603f34fea7f33d80a56cba72c2a90",
+      "bytes": 1484
+    },
+    {
+      "path": "packages/converter-client/dist/wasm-client.d.ts",
+      "sha256": "f7c968acc2acfdaaa15ea5b51671f498984679eb3822c77af72fffb4d3ca7b2b",
+      "bytes": 1626
+    },
+    {
+      "path": "packages/converter-client/dist/source.d.ts",
+      "sha256": "19b3f8c0b4a1a88269b341ec7d0d54d1b8e4bd7c423f59284919d0d4c4a011af",
+      "bytes": 594
+    },
+    {
+      "path": "wasm/converter-core/dist/converter-core.wasm",
+      "sha256": "0f0ab8885293e76991a337dab6f0977e5015380594e914d89ebe8c976a8cedbf",
+      "bytes": 893007
+    },
+    {
+      "path": "wasm/converter-image/dist/converter-image.wasm",
+      "sha256": "adb3351801f0ff7ef209481013e75f9d708ab87230c4d3918576dd5f7630c7aa",
+      "bytes": 1097979
+    },
+    {
+      "path": "apps/demo/public/samples/photo-transparency.icns",
+      "sha256": "42a0bed51abf7279d53d024cab60e2e3dffb66e9d160166b12ac4c0c7d3e6d75",
+      "bytes": 224582
+    },
+    {
+      "path": "apps/demo/public/samples/raw/pentax-k-r.dng",
+      "sha256": "adc5c155341543e2e5c6de9c0ce87c86cc4629fe90a0f6e68fdf685dcd531b64",
+      "bytes": 13397743
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "sha256": "f311da89dd89205f8c1fb5c4a0be2d1b471977ace782813d9e41000e7ddcbf45",
+      "bytes": 3853
+    },
+    {
+      "path": "apps/demo/dist/build-info.json",
+      "sha256": "680f2c30ed8a94e108cd049dd147827bd0f09e188379c594926c83c92529e2e5",
+      "bytes": 876
+    },
+    {
+      "path": "apps/demo/vite.config.ts",
+      "sha256": "c59cf4425e5f223ee83635a4528ffeb2ceb8d63ee3166dd5d84710920d2f1267",
+      "bytes": 14226
+    },
+    {
+      "path": "playwright.config.ts",
+      "sha256": "5b2993d7ef92a9c75e16315d52a9c0fdc4207cd5576e7abc45e2d43a21c331d4",
+      "bytes": 621
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "sha256": "9701c1dc0c2de1ae9ad117f5c752d8c30751a9cc06ffda48ec0f373468aeeccb",
+      "bytes": 86099
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "sha256": "7702567c9c1ecb1ac43fc506638a24d7042f219513076697e3699f934dfc1de6",
+      "bytes": 38306
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "sha256": "7247c9657a3c16d236ad954c69f59d6e37a42a10c6bcaa50d98b652b72d4702c",
+      "bytes": 36876
+    },
+    {
+      "path": "docs/performance-comparison.md",
+      "sha256": "ee19f1eb586697f9931465434ed1c492e6d31c916d2b7fa9efbea4822c2cb2a7",
+      "bytes": 34553
+    },
+    {
+      "path": "docs/performance-comparison.zh-CN.md",
+      "sha256": "acdf2797613297c72cc0834543153104b283267a1e0aaa53256a79da535cdb5e",
+      "bytes": 31591
+    },
+    {
+      "path": "apps/demo/dist/assets/index-CTYMBa5A.js",
+      "sha256": "f1a2979b65b177955db2a386879523d966f052fed11a096272f818bf2bcd13c8",
+      "bytes": 145197
+    },
+    {
+      "path": "apps/demo/dist/assets/vendor-BqbwLxmX.js",
+      "sha256": "ab5a0500a99edb5f7fccc0e4341fc87a9f8fbbd196a23d97533d71fa73633dcc",
+      "bytes": 1372133
+    },
+    {
+      "path": "apps/demo/dist/assets/core-BQQk23gN.js",
+      "sha256": "f2461d8ab95228736874379fe171457a493a888164ba106d29a41c36dbfd67ef",
+      "bytes": 290069
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-hAhVepbp.js",
+      "sha256": "d781b18450998c6972184ab2ac8ddee1e5781c772223f469b7b5d0b207d737dc",
+      "bytes": 109128
+    },
+    {
+      "path": "apps/demo/dist/assets/media--7uKt0Sb.js",
+      "sha256": "a9ab660b93f6dd4ca02219a5a62d1ccf270353f6a0c7366a7d0720705037348f",
+      "bytes": 213668
+    },
+    {
+      "path": "apps/demo/dist/assets/core-CEn7YOnF.css",
+      "sha256": "7d158685d2016c05d1bf8c3c4efefd1a086f3977da7e17abae6eacc03fc99f74",
+      "bytes": 5500
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-B1myDZRM.css",
+      "sha256": "6cf6d520f26937cc97308ceef86510cb5035e588673832483b15923fac58588d",
+      "bytes": 496
+    },
+    {
+      "path": "apps/demo/dist/assets/media-BrueUWFI.css",
+      "sha256": "67e4dc2c50b980fa3c71ebe803040192fa1fedf5c91d54851619512660576d94",
+      "bytes": 7170
+    },
+    {
+      "path": "apps/demo/dist/assets/index-D5zSLHLT.css",
+      "sha256": "28368a57749f016bc98571bedb5e90a142ad116f6139ec0056474559ac85683e",
+      "bytes": 32017
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/converter-source.patch",
+      "sha256": "993d1555294832c392064e61600165a174ed37c795d57c7a8516bf3626a0004f",
+      "bytes": 15630
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/converter-source.json.gz",
+      "sha256": "e14684ef2a5781244578fec930220ec9012330b8d3ddbb1f952f6a5a3baa84ec",
+      "bytes": 1866
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/converter-source-summary.json",
+      "sha256": "a3fa7eb5eaa88c0ee619d8a1b937cf408a2c42f9449c2f56101d50af2e4c326d",
+      "bytes": 2381
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/converter-source-diagnostic.json.gz",
+      "sha256": "552d3411c0b7a4355922e20129cbb650478f85377d68f43a7dc46f9b7aaa0133",
+      "bytes": 111407
+    }
+  ]
+}

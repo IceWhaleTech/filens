@@ -1,0 +1,63 @@
+--- a/packages/converter-client/src/wasm-client.ts
++++ b/packages/converter-client/src/wasm-client.ts
+@@ -409,6 +409,7 @@
+ 
+ const OFLAGS_CREAT = 1;
+ const OFLAGS_DIRECTORY = 2;
++const OFLAGS_EXCL = 4;
+ const OFLAGS_TRUNC = 8;
+ const FDFLAGS_APPEND = 1;
+ 
+@@ -619,6 +620,7 @@
+     if (!descriptor || descriptor.kind !== 'file') {
+       return descriptor?.kind === 'dir' ? ERRNO_ISDIR : ERRNO_BADF;
+     }
++    if (whence !== 0 && whence !== 1 && whence !== 2) return ERRNO_INVAL;
+     const base = whence === 0
+       ? 0
+       : whence === 1
+@@ -661,7 +663,9 @@
+       return ERRNO_ISDIR;
+     }
+     for (const [source, length] of this.iovs(iovs, iovsLen)) {
+-      const chunk = this.bytes.slice(source, source + length);
++      // WASM execution is paused during this import; copy directly into the
++      // owned file storage instead of allocating an intermediate chunk.
++      const chunk = this.bytes.subarray(source, source + length);
+       this.writeFileChunk(descriptor, chunk);
+       total += length;
+     }
+@@ -702,6 +706,9 @@
+     const path = this.readPath(fd, pathPtr, pathLen);
+     if (!path) {
+       return ERRNO_BADF;
++    }
++    if ((oflags & OFLAGS_CREAT) && (oflags & OFLAGS_EXCL) && (this.files.has(path) || this.dirs.has(path))) {
++      return ERRNO_EXIST;
+     }
+     const wantsDirectory = Boolean(oflags & OFLAGS_DIRECTORY);
+     if (wantsDirectory) {
+@@ -841,11 +848,21 @@
+   }
+ 
+   private writeFileChunk(descriptor: Extract<FileDescriptor, { kind: 'file' }>, chunk: Uint8Array): void {
++    // A zero-byte write must not extend a file after seeking beyond EOF.
++    if (!chunk.byteLength) return;
+     const previous = this.files.get(descriptor.path) ?? new Uint8Array();
+     const position = descriptor.append ? previous.byteLength : descriptor.position;
+     const nextLength = Math.max(previous.byteLength, position + chunk.byteLength);
+-    const next = new Uint8Array(nextLength);
+-    next.set(previous);
++    // Keep the map's view at logical length so reads, seeks and stat never
++    // expose spare capacity. Grow geometrically to amortize incremental writes.
++    let next: Uint8Array;
++    if (nextLength <= previous.buffer.byteLength) {
++      next = new Uint8Array(previous.buffer, 0, nextLength);
++    } else {
++      const storage = new Uint8Array(Math.max(nextLength, previous.buffer.byteLength * 2));
++      storage.set(previous);
++      next = storage.subarray(0, nextLength);
++    }
+     next.set(chunk, position);
+     this.files.set(descriptor.path, next);
+     descriptor.position = position + chunk.byteLength;

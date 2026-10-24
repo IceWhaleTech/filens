@@ -1,0 +1,586 @@
+{
+  "method": "Seven repeats per engine/sample, eight PPTX inputs, rotating current/previous builds in fresh Chromium contexts. Cancellation is a simulated local read completed after abort; bytes and libraries are prepared, I/O waiting is excluded. Normal first-preview controls include image decode, fonts and two animation frames. Engineering evidence only; external rankings and totals are unchanged.",
+  "engineeringComparisonRuns": 224,
+  "cancellationRuns": 112,
+  "normalPreviewRuns": 112,
+  "diagnosticRunsExcluded": 17,
+  "cumulativeExternalComparisonRuns": 2478,
+  "cumulativeSuccessfulFilensRuns": 1022,
+  "sources": {
+    "pptx-cancel.json.gz": {
+      "uncompressedSha256": "1c5b572d13528e513dd58d8d7ac555427247e97b67489bc806cfd38e94f79ef1",
+      "compressedSha256": "e10ad99e66458aa71bc2fa8b551a816dc5bba17ab632a07d3c61a54eee1843e1",
+      "runs": 112
+    },
+    "pptx-cancel-preview-ab.json.gz": {
+      "uncompressedSha256": "b6c02f79e4b7a345730a15479f2237a1174c5a75548dd6e008e1f538e033c47c",
+      "compressedSha256": "8a3739cb4ef6f13368f89852e7af2fc9d6cad8ab45c368361fa69d98ff64fc79",
+      "runs": 112
+    },
+    "pptx-cancel-diagnostic.json.gz": {
+      "uncompressedSha256": "288dba3c26e4cf0aa1df121da59fae5bfff6dfc1fb63cf897b7cb3e48b6b1df7",
+      "compressedSha256": "b9248172175ed53cd2606e835b961ee9cb85780488b443a5fdf9cd2ba9a4edef",
+      "runs": 17
+    }
+  },
+  "productionPatch": {
+    "path": "pptx-cancel.patch",
+    "sha256": "11c591eac48525a25bf2ca07f5da6308b901621552aac8dcb0962c368652f970"
+  },
+  "implementationSources": {
+    "packages/core/src/parser/archive.ts": "b2c21724e77003a9684369c6534e8ccf0fffefef0a828ebb622d6d7138596762",
+    "packages/core/src/parser/load-pptx.ts": "37da96d9e39f1c1b344a0f21e00c091907fdae553acb91b8cf527a3bc7e03dbd",
+    "packages/core/src/parser/load-source.ts": "9305f8f42ceb1e9312c071d5c059e314ca4ecd6eecffa5adb8f2dfb986a7227c",
+    "packages/core/src/render/dom.ts": "5ce199744a4fc56660765339ca85d8398f671332d3e3e02ac2e058874ded2534",
+    "packages/core/test/archive.spec.ts": "45d51b291726bf315231aae647905d807c64e6774d91826719f727820c97bc75",
+    "packages/core/test/load-source.spec.ts": "f989f577bfd59bd4b5b09b6c5d0a97ee430176ef273bacd709a5ab2e1429b63a",
+    "packages/core/test/dom.spec.ts": "bf8fc76b981c661e6b0b88038ea70bb1cfc2134e74252b8a1acc68d272613b17",
+    "apps/demo/e2e/pptx-lifecycle.e2e.ts": "55b21938bcbbcc9cb7d1b309dfe693ef431362cc5128c4112fd87f224ed9d647",
+    "scripts/benchmark-frontends.mjs": "28e45c2b23041ee82e5da8d1088b727b51079ec44514e66755a3a25804d9ed39",
+    "scripts/summarize-frontend-benchmark.mjs": "2e6a530be4a0378aa77eec4b2b08052efa220277d249d73e2a69639e95ef5caf"
+  },
+  "currentArtifact": {
+    "path": "packages/core/dist/index.js",
+    "sha256": "087860f415a1b58c0a14112d86f5c9ddad57039e0eb3fee5d2533de5f4e273c9"
+  },
+  "baseline": {
+    "artifactPath": "tmp/continued-review/pptx-baseline/dist/index.js",
+    "artifactSha256": "0d559fcb11687ef1434ea5e0618c05c69214a91b8503e64dd40f562ed9d8856a",
+    "sourceHashes": {
+      "packages/core/src/parser/archive.ts": "ce3e5eeea5520b29887412ce702525f7af5c498e86afac276abf88f0ebee72ec",
+      "packages/core/src/parser/load-pptx.ts": "b73905ff9f2c3c0c51ad95b3d3031b177abcba5162c910ba7cfb904adb8b964e",
+      "packages/core/src/parser/load-source.ts": "cbe3c92ade613a16746c5d466c54452040006c20855e3bf5ecf099f6aad1b105",
+      "packages/core/src/render/dom.ts": "c5635787b59559479bfcf52062b75e5b8b53f0fefb10eb93aa4485e530b4c81a"
+    },
+    "reproduction": "Reverse pptx-cancel.patch, build @filens/core and copy dist to tmp/continued-review/pptx-baseline/dist. Restore the patch and rebuild @filens/core. Run scripts/benchmark-frontends.mjs with --pptx-baseline tmp/continued-review/pptx-baseline/dist/index.js --iterations 7, using --family pptx-cancel for cancellation and --family pptx-view --review-content for preview controls. Use separate --output directories and scripts/summarize-frontend-benchmark.mjs for each. Generated IDs are retained: each fresh context performs one preview, so full models hash identically."
+  },
+  "cancellation": {
+    "currentAborted": 56,
+    "currentUnwantedSlides": 0,
+    "baselineParsedAfterAbort": 56,
+    "summaries": [
+      {
+        "family": "pptx-cancel",
+        "sample": "vue-office-test.pptx",
+        "engine": "filens",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 0.48500001430511475,
+        "minMs": 0.4599999189376831,
+        "medianProcessingMs": null,
+        "maxMs": 1.3600000143051147,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "vue-office-test.pptx",
+        "engine": "filens-baseline",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 29.77999997138977,
+        "minMs": 27.199999928474426,
+        "medianProcessingMs": null,
+        "maxMs": 32.12000000476837,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.7823486328125,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "filens-field-notes.pptx",
+        "engine": "filens",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 0.4700000286102295,
+        "minMs": 0.434999942779541,
+        "medianProcessingMs": null,
+        "maxMs": 0.5299999713897705,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "filens-field-notes.pptx",
+        "engine": "filens-baseline",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 11.97000002861023,
+        "minMs": 11.47000002861023,
+        "medianProcessingMs": null,
+        "maxMs": 15.43999993801117,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.47060394287109375,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "rich-pptx-shapes.pptx",
+        "engine": "filens",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 0.45500004291534424,
+        "minMs": 0.43999993801116943,
+        "medianProcessingMs": null,
+        "maxMs": 0.5550000667572021,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "rich-pptx-shapes.pptx",
+        "engine": "filens-baseline",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 11.129999995231628,
+        "minMs": 10.945000052452087,
+        "medianProcessingMs": null,
+        "maxMs": 11.924999952316284,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.5779228210449219,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "rich-pptx-pictures.pptx",
+        "engine": "filens",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 0.5249999761581421,
+        "minMs": 0.45500004291534424,
+        "medianProcessingMs": null,
+        "maxMs": 0.8049999475479126,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "rich-pptx-pictures.pptx",
+        "engine": "filens-baseline",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 6.40500009059906,
+        "minMs": 5.975000023841858,
+        "medianProcessingMs": null,
+        "maxMs": 9.129999995231628,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.3066215515136719,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "sample-deck.pptx",
+        "engine": "filens",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 0.4549999237060547,
+        "minMs": 0.4099999666213989,
+        "medianProcessingMs": null,
+        "maxMs": 0.5099999904632568,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "sample-deck.pptx",
+        "engine": "filens-baseline",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 10.860000014305115,
+        "minMs": 10.375,
+        "medianProcessingMs": null,
+        "maxMs": 11.735000014305115,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.5561714172363281,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "poi-SampleShow.pptx",
+        "engine": "filens",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 0.5049999952316284,
+        "minMs": 0.4099999666213989,
+        "medianProcessingMs": null,
+        "maxMs": 0.5349999666213989,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "poi-SampleShow.pptx",
+        "engine": "filens-baseline",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 8.965000033378601,
+        "minMs": 8.465000033378601,
+        "medianProcessingMs": null,
+        "maxMs": 10.084999918937683,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.46363067626953125,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "poi-pie-chart.pptx",
+        "engine": "filens",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 0.4950000047683716,
+        "minMs": 0.42500007152557373,
+        "medianProcessingMs": null,
+        "maxMs": 0.5749999284744263,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "poi-pie-chart.pptx",
+        "engine": "filens-baseline",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 8.679999947547913,
+        "minMs": 8.350000023841858,
+        "medianProcessingMs": null,
+        "maxMs": 8.949999928474426,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.4311408996582031,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "poi-2411-Performance_Up.pptx",
+        "engine": "filens",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 0.5099999904632568,
+        "minMs": 0.46000003814697266,
+        "medianProcessingMs": null,
+        "maxMs": 0.5600000619888306,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.01586151123046875,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      },
+      {
+        "family": "pptx-cancel",
+        "sample": "poi-2411-Performance_Up.pptx",
+        "engine": "filens-baseline",
+        "successes": 7,
+        "attempted": 7,
+        "medianMs": 27.290000081062317,
+        "minMs": 26.81499993801117,
+        "medianProcessingMs": null,
+        "maxMs": 28.52999997138977,
+        "medianMainThreadRetainedJsHeapDeltaMiB": 0.7302017211914062,
+        "medianLongestMainThreadTaskMs": 0,
+        "medianIdleGlDrawCalls": null,
+        "output": {},
+        "failures": []
+      }
+    ],
+    "limitations": "The check prevents parsing after a late read and stops subsequent archive reads. It does not preempt a synchronous parser/inflater already running, and Blob.arrayBuffer itself is not cancellable."
+  },
+  "previewChecks": [
+    {
+      "family": "pptx-view",
+      "sample": "vue-office-test.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 54.5550000667572,
+      "peerMs": 56.02499997615814,
+      "peerOverFilensRatio": 1.026945282881535,
+      "ratio95PercentBootstrapInterval": [
+        0.8576871193985124,
+        1.1439114393974104
+      ],
+      "stableLeadInThisComparison": false,
+      "completeModelsEqual": true,
+      "modelSha256": "49639b3d46301766a20d60c495ce373a3e9bd0d46fd1604c4a7f6a84ccc8a1d4",
+      "firstPreviewPngEqual": true,
+      "screenshotSha256": "9f5ad038d0e58126c5c6764ff617ad8aaab1ece3f3537e8167d531e2188e1cab",
+      "currentInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      "baselineInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "family": "pptx-view",
+      "sample": "filens-field-notes.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 51.1949999332428,
+      "peerMs": 53.269999980926514,
+      "peerOverFilensRatio": 1.0405313028692151,
+      "ratio95PercentBootstrapInterval": [
+        0.8793865574494923,
+        1.0998776977325224
+      ],
+      "stableLeadInThisComparison": false,
+      "completeModelsEqual": true,
+      "modelSha256": "e8e43bfdffdf95e75300290d1e855f2c76419f87be4c1a234353ce5a03d97160",
+      "firstPreviewPngEqual": true,
+      "screenshotSha256": "5ea91780dbb0e907f953459404e7b7b091b289f70ba135f604472dab66cddfda",
+      "currentInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      "baselineInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-shapes.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 50.855000019073486,
+      "peerMs": 51.99500000476837,
+      "peerOverFilensRatio": 1.0224166745701961,
+      "ratio95PercentBootstrapInterval": [
+        0.8827441701286687,
+        1.1916194287435198
+      ],
+      "stableLeadInThisComparison": false,
+      "completeModelsEqual": true,
+      "modelSha256": "78c349a6f2b12b1084a5d6087794c1d8e319df644c698605aded9c2fc0e2a12f",
+      "firstPreviewPngEqual": true,
+      "screenshotSha256": "82301193dd0a9fae23f4bdc2f6aef4ec5c2b099e99ca1ab56f13fb4fa5e68ffd",
+      "currentInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      "baselineInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "family": "pptx-view",
+      "sample": "rich-pptx-pictures.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 36.37999999523163,
+      "peerMs": 34.075000047683716,
+      "peerOverFilensRatio": 0.936641012978284,
+      "ratio95PercentBootstrapInterval": [
+        0.8348404246220941,
+        1.063726925069445
+      ],
+      "stableLeadInThisComparison": false,
+      "completeModelsEqual": true,
+      "modelSha256": "00428e27fa7e3cd1eeb23f86b69ee09a1ef5b3525c4bb36dcd823f93e72cf24f",
+      "firstPreviewPngEqual": true,
+      "screenshotSha256": "108aa71544c875f82c13b3b0d792cf831aeb04963a480b7a4c10834f7da56064",
+      "currentInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      "baselineInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "family": "pptx-view",
+      "sample": "sample-deck.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 41.109999895095825,
+      "peerMs": 39.36500000953674,
+      "peerOverFilensRatio": 0.957552909510777,
+      "ratio95PercentBootstrapInterval": [
+        0.8711635746823657,
+        1.0298756240982323
+      ],
+      "stableLeadInThisComparison": false,
+      "completeModelsEqual": true,
+      "modelSha256": "9e35af7278c5301555cd984aabd20d8eca40d05e05e702306bd54869c449ca38",
+      "firstPreviewPngEqual": true,
+      "screenshotSha256": "9f36023b8d31c52eb84c9575d2eaae558404e98bbd4fd4e2073fb4ed7975b0aa",
+      "currentInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      "baselineInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-SampleShow.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 20.304999947547913,
+      "peerMs": 32.64999997615814,
+      "peerOverFilensRatio": 1.6079783334400375,
+      "ratio95PercentBootstrapInterval": [
+        0.9967604423373997,
+        1.6408009980995444
+      ],
+      "stableLeadInThisComparison": false,
+      "completeModelsEqual": true,
+      "modelSha256": "20dc8dc64b2f7ce8989c7f56b9466e06056b05ff6f7669122ede2591ca42b589",
+      "firstPreviewPngEqual": true,
+      "screenshotSha256": "ca0edbc6c7b76f11c22b8fbc12051876a4e7215e93b064cde356d0ee1a289541",
+      "currentInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      "baselineInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-pie-chart.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 22.669999957084656,
+      "peerMs": 20.980000019073486,
+      "peerOverFilensRatio": 0.9254521419845427,
+      "ratio95PercentBootstrapInterval": [
+        0.8088932787644406,
+        1.271620279924623
+      ],
+      "stableLeadInThisComparison": false,
+      "completeModelsEqual": true,
+      "modelSha256": "e613dabea40d641ac322a634d9ad0166dcc5235108bc09b938d01cd57292da15",
+      "firstPreviewPngEqual": true,
+      "screenshotSha256": "76a49b193df279c1cfb68cf2fef197d022a3d5d31ca22eb4727fa37705963c6a",
+      "currentInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      "baselineInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    },
+    {
+      "family": "pptx-view",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 61.14999997615814,
+      "peerMs": 66.76499998569489,
+      "peerOverFilensRatio": 1.0918233853103185,
+      "ratio95PercentBootstrapInterval": [
+        0.902289451738815,
+        1.2039360583828336
+      ],
+      "stableLeadInThisComparison": false,
+      "completeModelsEqual": true,
+      "modelSha256": "9e90814526f60db04552fb22167d1e400ea717a50d8753b319069b5f48436c27",
+      "firstPreviewPngEqual": true,
+      "screenshotSha256": "1a75707d689194b5be3030aec6b5b6d97f1abb59d4ca3a6edf6409160914fab5",
+      "currentInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      "baselineInteractions": {
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    }
+  ],
+  "fontRegression": {
+    "beforeFix": "A newly loaded font still rendered with cached synthetic weight 310 instead of the real face. The new regression test failed on the previous implementation.",
+    "afterFix": "Real Chromium FontFace insertion and removal give weights 310, empty, 310 across three renders. Probe caching remains shared within each synchronous render."
+  },
+  "validation": {
+    "coreUnitTests": {
+      "passed": 225,
+      "existingSkipped": 11
+    },
+    "iworkUnitTestsPassed": 302,
+    "vueUnitTestsPassed": 44,
+    "browserLifecycleTestsPassed": 2,
+    "builds": [
+      "@filens/core",
+      "demo",
+      "bundle report"
+    ],
+    "baselineRankingGuard": "A 2x current/previous synthetic timing lead, without an explicit engineering marker, is still excluded from peer ranking.",
+    "localMarkdownLinksChecked": 293,
+    "rejectedCssExperimentFullyReverted": true,
+    "evidenceHashesAndReversePatchCheck": true
+  },
+  "conclusion": "Cancelled old files no longer continue parsing. Normal preview confidence intervals include 1 for every sample, with identical full models and PNGs; no normal-preview speedup or new SOTA claim. Existing small-file peer deficits remain visible in the public report."
+}

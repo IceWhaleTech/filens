@@ -1,4 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import JSZip from 'jszip';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { Bone, BufferGeometry, Float32BufferAttribute, Group, LineSegments, Mesh, MeshStandardMaterial, Points, Skeleton, Texture, Vector3 } from 'three';
 import JSZip from 'jszip';
 import {
@@ -139,7 +140,7 @@ vi.mock('three/examples/jsm/loaders/KMZLoader.js', () => ({
   }
 }));
 
-vi.mock('three/examples/jsm/loaders/LDrawLoader.js', () => ({
+vi.mock('../vendor/three/LDrawLoader.js', () => ({
   LDrawLoader: class {
     setConditionalLineMaterial = vi.fn();
     setMaterials = vi.fn();
@@ -241,6 +242,10 @@ class MockResizeObserver {
 }
 
 beforeEach(() => {
+  vi.stubGlobal('URL', class extends URL {
+    static createObjectURL = vi.fn(() => 'blob:model-sidecar');
+    static revokeObjectURL = vi.fn();
+  });
   Object.defineProperty(globalThis, 'ResizeObserver', {
     value: MockResizeObserver,
     configurable: true
@@ -259,7 +264,8 @@ beforeEach(() => {
   objSetMaterialsMock.mockReset();
   mtlParseMock.mockReset();
   mtlParseMock.mockImplementation(() => ({
-    preload: materialsPreloadMock
+    preload: materialsPreloadMock,
+    materials: {}
   }));
   materialsPreloadMock.mockReset();
   materialsPreloadMock.mockImplementation(() => undefined);
@@ -373,6 +379,8 @@ beforeEach(() => {
   });
 });
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe('model3d preview driver', () => {
   it('parses ASCII STL geometry', () => {
     const geometry = loadStlGeometry(new TextEncoder().encode(createAsciiStlFixture()).buffer);
@@ -459,10 +467,10 @@ describe('model3d preview driver', () => {
       name: 'diffuse.png'
     }));
     expect(mtlParseMock).toHaveBeenCalledWith(
-      expect.stringContaining('map_Kd data:image/png;base64,iVBORw=='),
+      expect.stringContaining('map_Kd blob:model-sidecar'),
       ''
     );
-    expect(materialsPreloadMock).toHaveBeenCalled();
+    expect(materialsPreloadMock).not.toHaveBeenCalled();
     expect(objSetMaterialsMock).toHaveBeenCalled();
     expect(objParseMock).toHaveBeenCalledWith(expect.stringContaining('mtllib materials/base.mtl'));
   });
@@ -705,11 +713,11 @@ describe('model3d preview driver', () => {
     expect(result.warnings).toContain('Collada texture "diffuse.png" could not be resolved; default loader lookup was used.');
   });
 
-  it('loads KMZ objects through the Three.js loader', () => {
-    const buffer = new Uint8Array([0x50, 0x4b]).buffer;
-
+  it('loads a KMZ Collada model through the shared archive path', async () => {
+    const zip = new JSZip(); zip.file('model.dae', '<COLLADA></COLLADA>');
+    const buffer = await zip.generateAsync({ type: 'arraybuffer' });
     expect(loadKmzObject(buffer)).toBeInstanceOf(Group);
-    expect(kmzParseMock).toHaveBeenCalledWith(buffer);
+    expect(colladaParseMock).toHaveBeenCalledWith('<COLLADA></COLLADA>', '', expect.any(Object));
   });
 
   it('loads MD2 meshes through the Three.js loader', () => {
@@ -971,7 +979,8 @@ describe('model3d preview driver', () => {
       name: 'base.png'
     }));
     const parsed = JSON.parse(gltfParseAsyncMock.mock.calls.at(-1)?.[0] as string);
-    expect(parsed.buffers[0].uri).toBe('data:application/octet-stream;base64,AAAA');
+    expect(parsed.buffers[0].uri).toBe('blob:model-sidecar');
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:model-sidecar');
     expect(parsed.images[0].uri).toBe('data:image/png;base64,iVBORw0KGgo=');
     expect(gltfParseAsyncMock.mock.calls.at(-1)?.[1]).toBe('');
   });
@@ -1254,7 +1263,8 @@ describe('model3d preview driver', () => {
       initialScale: 1
     });
 
-    await session.load(new Uint8Array([0x50, 0x4b]), {
+    const zip = new JSZip(); zip.file('model.dae', '<COLLADA></COLLADA>');
+    await session.load(await zip.generateAsync({ type: 'uint8array' }), {
       descriptor: {
         source: new Uint8Array(),
         name: 'scene.usdz',
@@ -1494,7 +1504,8 @@ describe('model3d preview driver', () => {
       initialScale: 1
     });
 
-    await session.load(new Uint8Array([0x50, 0x4b]), {
+    const zip = new JSZip(); zip.file('model.dae', '<COLLADA></COLLADA>');
+    await session.load(await zip.generateAsync({ type: 'uint8array' }), {
       descriptor: {
         source: new Uint8Array(),
         name: 'scene.kmz',
@@ -1510,7 +1521,7 @@ describe('model3d preview driver', () => {
         orbit: true
       }
     });
-    expect(kmzParseMock).toHaveBeenCalledWith(expect.any(ArrayBuffer));
+    expect(colladaParseMock).toHaveBeenCalledWith('<COLLADA></COLLADA>', '', expect.any(Object));
     expect(container.querySelector('canvas.model3dv-canvas')).toBeTruthy();
 
     session.destroy();
@@ -3818,7 +3829,7 @@ describe('model3d preview driver', () => {
       loading: false
     });
     const parsed = JSON.parse(gltfParseAsyncMock.mock.calls.at(-1)?.[0] as string);
-    expect(parsed.buffers[0].uri).toBe('data:application/octet-stream;base64,AAAA');
+    expect(parsed.buffers[0].uri).toBe('blob:model-sidecar');
     expect(container.querySelector('canvas.model3dv-canvas')).toBeTruthy();
 
     session.destroy();

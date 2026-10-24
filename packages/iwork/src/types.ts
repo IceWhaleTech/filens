@@ -13,13 +13,7 @@ export type IworkType = 'key' | 'pages' | 'numbers';
 export type IworkSource = string | ArrayBuffer | Uint8Array | Blob | File;
 export type IworkTypeHint = IworkType | 'auto';
 export type IworkFitMode = CoreViewerOptions['fit'] | 'height';
-export type IworkViewerEventName =
-  | 'rendered'
-  | 'error'
-  | 'warnings'
-  | 'pagechange'
-  | 'sheetchange'
-  | 'scalechange';
+export type IworkViewerEventName = keyof IworkViewerEventMap;
 
 export interface LoadIworkOptions {
   hint?: IworkTypeHint;
@@ -199,6 +193,7 @@ export interface IworkViewerState {
 }
 
 export interface IworkViewerEventMap {
+  loadingchange: IworkViewerState;
   rendered: IworkViewerState;
   error: Error;
   warnings: string[];

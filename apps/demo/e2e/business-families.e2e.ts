@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
 
 test('groups formats by business family on desktop and mobile', async ({ page }) => {
@@ -72,12 +74,28 @@ test('offers polished samples across the supported Office families', async ({ pa
     ['SXC', 'openoffice-dashboard.sxc', 'Dashboard'],
     ['SXI', 'openoffice-review.sxi', 'Quarterly Review'],
     ['ODG', 'design-boards.odg', 'Brand System'],
-    ['SXD', 'design-boards.sxd', 'Delivery Board']
+    ['SXD', 'design-boards.sxd', 'Brand System']
   ] as const) {
     await page.getByRole('button', { name: format, exact: true }).click();
     await expect(page.locator('.wb-preview-title strong')).toHaveText(name);
     await expect(page.locator('.wb-preview-stage')).toContainText(text);
     await expect(page.locator('.wb-note.is-error')).toHaveCount(0);
+    if (format === 'ODG' || format === 'SXD') {
+      const showToolbar = page.getByRole('button', { name: '显示工具栏', exact: true });
+      if (await showToolbar.isVisible()) await showToolbar.click();
+      const shell = page.locator('.pptxv-generic-shell');
+      await expect(shell.locator('.pptxv-status').first()).toHaveText('1 / 3');
+      await shell.getByRole('button', { name: 'Next', exact: true }).click();
+      await expect(page.locator('.wb-preview-stage')).toContainText('User Journey');
+      await shell.getByRole('button', { name: 'Next', exact: true }).click();
+      await expect(shell.locator('.pptxv-status').first()).toHaveText('3 / 3');
+      await expect(page.locator('.wb-preview-stage')).toContainText('Delivery Board');
+      await expect.poll(() => shell.locator('.pptxv-slide-shell[data-slide-index="2"]').evaluate(element => {
+        const rect = element.getBoundingClientRect(), viewport = element.parentElement!.getBoundingClientRect();
+        const center = viewport.top + viewport.height / 2;
+        return rect.top < center && rect.bottom > center;
+      })).toBe(true);
+    }
   }
 
   await page.getByRole('button', { name: 'DOCX', exact: true }).click();
@@ -108,10 +126,13 @@ test('offers read-only TAR, TGZ, and GZIP samples', async ({ page }) => {
     await expect(page.locator('.archivev-table')).toContainText(entry);
   }
 
-  await page.locator('button.wb-variant').filter({ hasText: 'sample-archive.tar.gz' }).click();
+  await page.locator('input[type="file"]').setInputFiles({
+    name: 'sample-archive.tar.gz', mimeType: 'application/gzip',
+    buffer: await readFile(resolve('apps/demo/public/samples/sample-archive-tar-gz.bin'))
+  });
   await expect(page.locator('.archivev-table')).toContainText('SOURCES.md');
 
-  await page.locator('button.wb-variant').filter({ hasText: 'sample-nested-archives.zip' }).click();
+  await page.locator('input[type="file"]').setInputFiles(resolve('apps/demo/public/samples/sample-nested-archives.zip'));
   await page.locator('tr.archivev-row').filter({ hasText: 'archives/' }).click();
   await page.locator('tr.archivev-row').filter({ hasText: 'sample-archive.tar' }).click();
   await expect(page.locator('.archivev-table')).toContainText('rich-text.rtf');
@@ -157,10 +178,14 @@ test('offers playable samples for more audio and video formats', async ({ page }
 });
 
 test('offers samples for browser-native images and panorama aliases', async ({ page }) => {
-  await page.route('**/external-samples/insta360/insp', (route) => route.fulfill({
-    path: 'apps/demo/public/samples/panorama/insta360-oners-tallinn.jpg',
-    contentType: 'image/jpeg'
-  }));
+  let inspRequests = 0;
+  // Exercise the sample alias using a bundled stitched image; native calibration has separate tests.
+  await page.route(url => url.pathname === '/v3/file' &&
+    url.searchParams.get('files')?.endsWith('/insta360/IMG_20220701_170732_00_018.insp') === true,
+  route => {
+    inspRequests++;
+    return route.fulfill({ path: 'apps/demo/public/samples/panorama/insta360-oners-tallinn.jpg', contentType: 'image/jpeg' });
+  });
   await page.goto('./?view=preview');
   await page.getByRole('button', { name: 'Media', exact: true }).click();
 
@@ -226,17 +251,11 @@ test('offers samples for browser-native images and panorama aliases', async ({ p
   await expect(page.locator('.wb-preview-title strong')).toHaveText('insta360-oners-tallinn.jpg');
   await expect(page.locator('canvas.panoramav-canvas')).toBeVisible({ timeout: 15_000 });
 
-  const externalSamples = page.locator('.wb-external-samples');
-  await expect(externalSamples.getByRole('button')).toHaveText([
-    /INSP.*Insta360 One RS 1-inch/,
-    /INSV.*Insta360 One RS calibrated raw pair/,
-    /LRV.*Insta360 One RS low-resolution proxy/,
-    /OSV \+ LRF.*DJI Osmo 360 experimental LRF proxy/
-  ]);
   await panoramaCategory.getByRole('button', { name: 'INSP', exact: true }).click();
   await expect(page.locator('.wb-preview-title strong')).toHaveText('IMG_20220701_170732_00_018.insp');
   await expect(page.locator('canvas.panoramav-canvas')).toBeVisible({ timeout: 15_000 });
-  await expect(externalSamples.getByRole('link', { name: 'Source' })).toHaveCount(4);
+  expect(inspRequests).toBeGreaterThan(0);
+  await expect(page.locator('.wb-note.is-error')).toHaveCount(0);
 
   await panoramaCategory.getByRole('button', { name: '360V', exact: true }).click();
   await expect(page.locator('.wb-preview-title strong')).toHaveText('nasa-black-hole-360.webm');

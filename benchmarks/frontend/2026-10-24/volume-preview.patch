@@ -1,0 +1,279 @@
+--- a/packages/model3d/src/preview-driver.ts
++++ b/packages/model3d/src/preview-driver.ts
+@@ -12,7 +12,6 @@
+   type PreviewEventName,
+   type PreviewLoadContext,
+   type PreviewOptions,
+-  type PreviewResourceResolveResult,
+   type PreviewResourceResolver,
+   type PreviewSnapshotBackground,
+   type PreviewSession,
+@@ -3383,11 +3382,27 @@
+ }
+ 
+ export function loadNrrdObject(source: ArrayBuffer): Object3D {
+-  const volume = new NRRDLoader().parse(source as unknown as string);
++  const prepared = prepareNrrdHeader(source);
++  const volume = new NRRDLoader().parse(prepared.buffer as unknown as string);
++  const voxelCount = volume.xLength * volume.yLength * volume.zLength;
++  if (!Number.isSafeInteger(voxelCount) || voxelCount < 1 || volume.data.length !== voxelCount) {
++    throw new Error('NRRD voxel data length does not match its dimensions.');
++  }
++  if ((prepared.encoding === 'raw' || prepared.encoding === 'gz' || prepared.encoding === 'gzip') && prepared.endian) {
++    const nativeEndian = new Uint8Array(new Uint16Array([1]).buffer)[0] === 1 ? 'little' : 'big';
++    if (prepared.endian !== nativeEndian) {
++      const bytes = new Uint8Array(volume.data.buffer, volume.data.byteOffset, volume.data.byteLength);
++      const width = volume.data.BYTES_PER_ELEMENT;
++      for (let offset = 0; offset < bytes.length; offset += width) {
++        for (let left = offset, right = offset + width - 1; left < right; left++, right--) {
++          const value = bytes[left]!; bytes[left] = bytes[right]!; bytes[right] = value;
++        }
++      }
++    }
++  }
+   const [minValue, maxValue] = volume.computeMinMax();
+   const range = maxValue - minValue;
+   const lowerThreshold = minValue <= 0 && maxValue > 0 ? 0 : range > 0 ? minValue + range * 0.5 : minValue;
+-  const voxelCount = volume.data.length;
+   const maxPoints = 60000;
+   const stride = Math.max(1, Math.ceil(voxelCount / maxPoints));
+   const spacing = volume.spacing.length >= 3 ? volume.spacing : [1, 1, 1];
+@@ -3436,6 +3451,7 @@
+   source: string,
+   options: ResolveNhdrBufferOptions = {}
+ ): Promise<ArrayBuffer> {
++  checkModelLoadAborted(options.signal);
+   const reference = listNhdrDataFileReference(source);
+   if (!reference) {
+     return new TextEncoder().encode(source).buffer;
+@@ -3444,23 +3460,20 @@
+   if (!resourceResolver) {
+     throw new Error(`NHDR references external data file "${reference}" but no resourceResolver was provided.`);
+   }
+-  if (options.signal?.aborted) {
+-    throw new DOMException('3D preview aborted.', 'AbortError');
+-  }
+   const baseDir = dirname(options.resourceBasePath ?? '');
+-  const resolved = normalizeResourceResolverResult(
++  const resolved = unpackResourceResolverResult(
+     await resolveModelResource(resourceResolver, {
+       source: joinResourcePath(baseDir, reference),
+       fallbackSource: reference,
+       relation: 'volume',
+       sourceFormat: options.sourceFormat ?? 'nhdr'
+-    }),
+-    'application/octet-stream'
++    }, options.signal)
+   );
+   if (!resolved.source) {
+     throw new Error(`NHDR external data file "${reference}" could not be resolved.`);
+   }
+   const dataBuffer = await previewSourceToArrayBuffer(resolved.source, options.signal);
++  checkModelLoadAborted(options.signal);
+   return mergeNhdrHeaderAndData(source, dataBuffer);
+ }
+ 
+@@ -3858,28 +3871,31 @@
+     fallbackSource: string;
+     relation: string;
+     sourceFormat: string;
+-  }
++  },
++  signal?: AbortSignal
+ ): Promise<Awaited<ReturnType<PreviewResourceResolver>>> {
+-  const primary = await resourceResolver({
++  checkModelLoadAborted(signal);
++  const primary = await waitForModelLoad(Promise.resolve(resourceResolver({
+     family: 'model3d',
+     sourceFormat: request.sourceFormat,
+     source: request.source,
+     relation: request.relation,
+     name: request.source.split(/[\\/]/).pop() ?? request.source
+-  });
+-  if (normalizeResourceResolverResult(primary, objResourceContentType(request.source)).source) {
++  })), signal);
++  checkModelLoadAborted(signal);
++  if (unpackResourceResolverResult(primary).source) {
+     return primary;
+   }
+   if (request.fallbackSource === request.source) {
+     return primary;
+   }
+-  return resourceResolver({
++  return waitForModelLoad(Promise.resolve(resourceResolver({
+     family: 'model3d',
+     sourceFormat: request.sourceFormat,
+     source: request.fallbackSource,
+     relation: request.relation,
+     name: request.fallbackSource.split(/[\\/]/).pop() ?? request.fallbackSource
+-  });
++  })), signal);
+ }
+ 
+ async function buildLDrawFileMap(
+@@ -3966,19 +3982,16 @@
+   const lines = source.split(/\r?\n/);
+   const rewrittenLines: string[] = [];
+   let replacedDataFile = false;
+-  let replacedEncoding = false;
++  let hasEncoding = false;
+ 
+   for (const rawLine of lines) {
++    if (!rawLine.trim()) break;
+     if (/^\s*data\s*file\s*:/i.test(rawLine) || /^\s*datafile\s*:/i.test(rawLine)) {
+-      rewrittenLines.push('encoding: raw');
+       replacedDataFile = true;
+-      replacedEncoding = true;
+       continue;
+     }
+     if (/^\s*encoding\s*:/i.test(rawLine)) {
+-      rewrittenLines.push('encoding: raw');
+-      replacedEncoding = true;
+-      continue;
++      hasEncoding = true;
+     }
+     rewrittenLines.push(rawLine);
+   }
+@@ -3986,17 +3999,50 @@
+   if (!replacedDataFile) {
+     return new TextEncoder().encode(source).buffer;
+   }
+-  if (!replacedEncoding) {
++  if (!hasEncoding) {
+     rewrittenLines.push('encoding: raw');
+   }
+ 
+   const normalizedHeader = rewrittenLines.join('\n').replace(/\s+$/, '');
+-  const headerBytes = new TextEncoder().encode(`${normalizedHeader}\n\n`);
++  const headerBytes = new TextEncoder().encode(`${normalizedHeader}\n#\n\n`);
+   const dataBytes = new Uint8Array(dataBuffer);
+   const merged = new Uint8Array(headerBytes.byteLength + dataBytes.byteLength);
+   merged.set(headerBytes, 0);
+   merged.set(dataBytes, headerBytes.byteLength);
+   return merged.buffer;
++}
++
++function prepareNrrdHeader(source: ArrayBuffer): { buffer: ArrayBuffer; encoding?: string; endian?: string } {
++  const bytes = new Uint8Array(source);
++  let lineStart = 0;
++  for (let index = 0; index < bytes.length; index++) {
++    if (bytes[index] !== 10) continue;
++    const lineEnd = bytes[index - 1] === 13 ? index - 1 : index;
++    if (lineEnd !== lineStart) { lineStart = index + 1; continue; }
++    const header = new TextDecoder().decode(bytes.subarray(0, lineStart));
++    const fields = new Map(header.split(/\r?\n/).flatMap(line => {
++      const match = /^([^:#]+):\s*(.*)$/.exec(line);
++      return match ? [[match[1]!.trim().toLowerCase(), match[2]!.trim().toLowerCase()] as const] : [];
++    }));
++    for (const field of ['line skip', 'byte skip']) {
++      if (fields.has(field) && fields.get(field) !== '0') throw new Error(`NRRD ${field} is not supported for preview.`);
++    }
++    if (fields.get('dimension') !== '3') throw new Error('NRRD preview requires three scalar dimensions.');
++    const encoding = fields.get('encoding');
++    if (!['raw', 'gz', 'gzip', 'ascii', 'text', 'txt', 'hex'].includes(encoding ?? '')) {
++      throw new Error(`NRRD encoding "${encoding ?? ''}" is not supported for preview.`);
++    }
++    const endian = fields.get('endian');
++    if (endian && endian !== 'little' && endian !== 'big') throw new Error(`Unsupported NRRD endian "${endian}".`);
++    // Three's loader drops the last header character and only accepts LF separators.
++    // A trailing comment protects the final metadata field; payload bytes stay untouched.
++    if (!header.includes('\r') && /\n#[^\n]*\n$/.test(header)) return { buffer: source, encoding, endian };
++    const normalized = new TextEncoder().encode(`${header.replace(/\r\n/g, '\n').trimEnd()}\n#\n\n`);
++    const buffer = new Uint8Array(normalized.length + bytes.length - index - 1);
++    buffer.set(normalized); buffer.set(bytes.subarray(index + 1), normalized.length);
++    return { buffer: buffer.buffer, encoding, endian };
++  }
++  return { buffer: source };
+ }
+ 
+ function resolveLwoTextureUrl(
+@@ -4337,15 +4383,22 @@
+ }
+ 
+ async function previewSourceToArrayBuffer(source: PreviewSource, signal?: AbortSignal): Promise<ArrayBuffer> {
++  checkModelLoadAborted(signal);
+   if (typeof source === 'string') {
+-    const response = await fetch(source, { signal });
+-    if (!response.ok) {
+-      throw new Error(`Failed to load 3D source: ${response.status} ${response.statusText}`.trim());
+-    }
+-    return response.arrayBuffer();
++    const release = (response: Response): void => { void response.body?.cancel().catch(() => {}); };
++    const response = await waitForModelLoad(fetch(source, { signal }), signal, release);
++    try {
++      checkModelLoadAborted(signal);
++      if (!response.ok) {
++        throw new Error(`Failed to load 3D source: ${response.status} ${response.statusText}`.trim());
++      }
++      return await waitForModelLoad(response.arrayBuffer(), signal);
++    } finally {
++      if (signal?.aborted || !response.ok) release(response);
++    }
+   }
+   if (source instanceof Blob) {
+-    return source.arrayBuffer();
++    return waitForModelLoad(source.arrayBuffer(), signal);
+   }
+   if (ArrayBuffer.isView(source)) {
+     const copy = new Uint8Array(source.byteLength);
+@@ -4353,7 +4406,7 @@
+     return copy.buffer;
+   }
+   if (source instanceof ArrayBuffer) {
+-    return source;
++    return source.slice(0);
+   }
+   throw new Error('Unsupported 3D source type.');
+ }
+@@ -7034,40 +7087,21 @@
+   contentType: string,
+   objectUrls?: string[]
+ ): { source?: string; warnings: string[] } {
++  const resolved = unpackResourceResolverResult(result);
++  return { source: normalizeResolvedPreviewSource(resolved.source, contentType, objectUrls), warnings: resolved.warnings };
++}
++
++function unpackResourceResolverResult(
++  result: Awaited<ReturnType<PreviewResourceResolver>>
++): { source?: PreviewSource; warnings: string[] } {
+   if (!result) {
+     return { warnings: [] };
+   }
+-  if (typeof result === 'string') {
+-    return {
+-      source: result,
+-      warnings: []
+-    };
+-  }
+-  if (result instanceof Blob) {
+-    return {
+-      source: normalizeResolvedPreviewSource(result, contentType, objectUrls),
+-      warnings: []
+-    };
+-  }
+-  if (ArrayBuffer.isView(result) || result instanceof ArrayBuffer) {
+-    const bytes = ArrayBuffer.isView(result)
+-      ? new Uint8Array(result.buffer, result.byteOffset, result.byteLength)
+-      : new Uint8Array(result);
+-    return {
+-      source: normalizeResolvedPreviewSource(bytes, contentType, objectUrls),
+-      warnings: []
+-    };
+-  }
+-  return normalizeResourceResolveResult(result, contentType, objectUrls);
+-}
+-
+-function normalizeResourceResolveResult(
+-  result: PreviewResourceResolveResult,
+-  contentType: string,
+-  objectUrls?: string[]
+-): { source?: string; warnings: string[] } {
++  const isSource = (value: unknown): value is PreviewSource => typeof value === 'string' || value instanceof Blob
++    || ArrayBuffer.isView(value) || value instanceof ArrayBuffer;
++  if (isSource(result)) return { source: result, warnings: [] };
+   return {
+-    source: normalizeResolvedPreviewSource(result.source, contentType, objectUrls),
++    source: isSource(result.source) ? result.source : undefined,
+     warnings: result.warnings ?? []
+   };
+ }

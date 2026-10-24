@@ -1,0 +1,443 @@
+diff --git a/packages/panorama/src/calibrated-renderer.ts b/packages/panorama/src/calibrated-renderer.ts
+index f53cb29..950207c 100644
+--- a/packages/panorama/src/calibrated-renderer.ts
++++ b/packages/panorama/src/calibrated-renderer.ts
+@@ -71,6 +71,7 @@ export async function createCalibratedPanoramaImageRenderer(processor: PanoramaP
+   texture.flipY = panoramaTextureFlipY(manifest.textureOrigin);
+   texture.colorSpace = SRGBColorSpace;
+   texture.minFilter = LinearFilter;
++  texture.generateMipmaps = false;
+   texture.needsUpdate = true;
+   const seamTexture = new DataTexture(new Uint8Array(128 * 64).fill(128), 128, 64, RedFormat, UnsignedByteType);
+   seamTexture.needsUpdate = true;
+@@ -81,7 +82,9 @@ export async function createCalibratedPanoramaImageRenderer(processor: PanoramaP
+   geometry.scale(-1, 1, 1);
+   const mesh = new Mesh(geometry, material);
+   const analyzer = new PanoramaFrameAnalyzer(processor, manifest, lensSources, material, seamTexture);
+-  analyzer.acceptImage(texture.image as CanvasImageSource);
++  // Complete the one-time analysis before the first frame. Still images can then
++  // retain that frame until interaction or resize without polling for seam work.
++  await analyzer.acceptImage(texture.image as CanvasImageSource);
+ 
+   return {
+     mesh,
+@@ -234,19 +237,18 @@ function createStillCalibratedMaterial(manifest: PanoramaAssetManifest, lensSour
+         vec4 b = projectLens(body, intrinsics1, size1, sourceRect1, distortion1, quaternion1, xi1, tangential1, thinPrism1, sensorTilt1, lens1);
+         if (a.a <= 0.0 && b.a <= 0.0) {
+           gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+-          return;
+-        }
+-        if (a.a <= 0.0 || b.a <= 0.0) {
++        } else if (a.a <= 0.0 || b.a <= 0.0) {
+           gl_FragColor = vec4((a.a > 0.0 ? a.rgb * exposureGain0 : b.rgb * exposureGain1), 1.0);
+-          return;
++        } else {
++          float frontPreference = 1.0 - smoothstep(radians(75.0), radians(105.0), abs(bodyPanoramaUv.x * 6.28318530718 - 3.14159265359));
++          float aWeight = a.a * frontPreference;
++          float bWeight = b.a * (1.0 - frontPreference);
++          float lens1Weight = useDynamicSeam == 1
++            ? texture2D(seamMask, bodyPanoramaUv).r
++            : bWeight / max(aWeight + bWeight, 0.0001);
++          gl_FragColor = vec4(mix(a.rgb * exposureGain0, b.rgb * exposureGain1, lens1Weight), 1.0);
+         }
+-        float frontPreference = 1.0 - smoothstep(radians(75.0), radians(105.0), abs(bodyPanoramaUv.x * 6.28318530718 - 3.14159265359));
+-        float aWeight = a.a * frontPreference;
+-        float bWeight = b.a * (1.0 - frontPreference);
+-        float lens1Weight = useDynamicSeam == 1
+-          ? texture2D(seamMask, bodyPanoramaUv).r
+-          : bWeight / max(aWeight + bWeight, 0.0001);
+-        gl_FragColor = vec4(mix(a.rgb * exposureGain0, b.rgb * exposureGain1, lens1Weight), 1.0);
++        #include <colorspace_fragment>
+       }
+     `
+   });
+@@ -1267,11 +1269,11 @@ class PanoramaFrameAnalyzer {
+     });
+   }
+ 
+-  acceptImage(image: CanvasImageSource) {
++  async acceptImage(image: CanvasImageSource) {
+     if (this.closed || this.busy) return;
+     this.busy = true;
+     const generation = this.generation;
+-    void this.analyze([image, image], generation).catch(() => {
++    await this.analyze([image, image], generation).catch(() => {
+       // Static INSP rendering can retain calibrated blending if seam analysis is unavailable.
+     }).finally(() => { this.busy = false; });
+   }
+@@ -1450,7 +1452,7 @@ function framePixels(frame: CanvasImageSource): Uint8ClampedArray {
+   const canvas = typeof OffscreenCanvas !== 'undefined'
+     ? new OffscreenCanvas(SOURCE_ANALYSIS_SIZE, SOURCE_ANALYSIS_SIZE)
+     : Object.assign(document.createElement('canvas'), { width: SOURCE_ANALYSIS_SIZE, height: SOURCE_ANALYSIS_SIZE });
+-  const context = canvas.getContext('2d', { willReadFrequently: true });
++  const context = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
+   if (!context) throw new Error('A 2D canvas is required for panorama seam analysis.');
+   context.drawImage(frame, 0, 0, SOURCE_ANALYSIS_SIZE, SOURCE_ANALYSIS_SIZE);
+   return context.getImageData(0, 0, SOURCE_ANALYSIS_SIZE, SOURCE_ANALYSIS_SIZE).data;
+diff --git a/packages/panorama/src/preview-driver.ts b/packages/panorama/src/preview-driver.ts
+index b405f14..8e0953f 100644
+--- a/packages/panorama/src/preview-driver.ts
++++ b/packages/panorama/src/preview-driver.ts
+@@ -451,8 +451,8 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
+       this.animationFrame = 0;
+       this.renderFrame();
+       // Still photos only need a frame when the view or viewport changes.
+-      // Video and calibrated renderers retain their update/state polling.
+-      if (this.state.family === 'panorama-video' || this.calibratedRenderer) this.scheduleFrame();
++      // Calibrated photos finish seam analysis before their initial frame too.
++      if (this.state.family === 'panorama-video') this.scheduleFrame();
+     });
+   }
+ 
+diff --git a/packages/panorama/src/wasm-processor.ts b/packages/panorama/src/wasm-processor.ts
+index 810a63f..2511cfd 100644
+--- a/packages/panorama/src/wasm-processor.ts
++++ b/packages/panorama/src/wasm-processor.ts
+@@ -199,9 +199,11 @@ export function createWasmPanoramaProcessor(options: WasmPanoramaProcessorOption
+       throwIfAborted(signal);
+       reader = sourceReader;
+       const ranges = new Map<string, { offset: number; bytes: Uint8Array }>();
++      const headBytes = openOptions.format === 'insp' ? 1 << 20 : 64 << 10;
++      const tailBytes = openOptions.format === 'insp' ? 64 << 10 : 1 << 20;
+       const initial = [
+-        { offset: 0, length: Math.min(64 << 10, sourceReader.size) },
+-        { offset: Math.max(0, sourceReader.size - (1 << 20)), length: Math.min(1 << 20, sourceReader.size) }
++        { offset: 0, length: Math.min(headBytes, sourceReader.size) },
++        { offset: Math.max(0, sourceReader.size - tailBytes), length: Math.min(tailBytes, sourceReader.size) }
+       ];
+       await addRanges(sourceReader, ranges, initial, signal);
+       let sidecarBytes: Uint8Array | undefined;
+diff --git a/wasm/converter-core-rust/src/panorama.rs b/wasm/converter-core-rust/src/panorama.rs
+index d879062..187f61c 100644
+--- a/wasm/converter-core-rust/src/panorama.rs
++++ b/wasm/converter-core-rust/src/panorama.rs
+@@ -1,5 +1,5 @@
+ use serde::{Deserialize, Serialize};
+-use serde_json::{Value, json};
++use serde_json::{json, Value};
+ use std::collections::BTreeMap;
+ use std::fs;
+ 
+@@ -321,9 +321,9 @@ fn inspect_insp(file: &SparseFile) -> Result<InspectOutcome, InspectError> {
+     let mut prefix_length = file.size.min(1 << 20);
+     let (width, height) = loop {
+         let Some(bytes) = file.read(0, prefix_length as usize) else {
+-            return Ok(InspectOutcome::NeedRanges(vec![
+-                file.need(0, prefix_length),
+-            ]));
++            return Ok(InspectOutcome::NeedRanges(
++                vec![file.need(0, prefix_length)],
++            ));
+         };
+         if let Some(dimensions) = jpeg_dimensions(&bytes) {
+             break dimensions;
+@@ -506,7 +506,7 @@ fn inspect_iso_bmff(
+         (moov_size - header_size as u64) as usize,
+     ) else {
+         return Ok(InspectOutcome::NeedRanges(vec![
+-            file.need(moov_offset, moov_size),
++            file.need(moov_offset, moov_size)
+         ]));
+     };
+     let mut tracks = parse_tracks(&moov_bytes)?;
+@@ -537,7 +537,7 @@ fn inspect_iso_bmff(
+         if let Some(sample) = djmd {
+             let Some(bytes) = file.read(sample.offset, sample.size as usize) else {
+                 return Ok(InspectOutcome::NeedRanges(vec![
+-                    file.need(sample.offset, sample.size as u64),
++                    file.need(sample.offset, sample.size as u64)
+                 ]));
+             };
+             let calibration = decode_dji_calibration(&bytes);
+@@ -763,15 +763,12 @@ fn inspect_insta_info(file: &SparseFile) -> Result<InstaInfoOutcome, InspectErro
+         });
+     }
+     let metadata_offset = file.size - metadata_size;
+-    let Some(metadata) = file.read(metadata_offset, metadata_size as usize) else {
+-        return Ok(InstaInfoOutcome::NeedRange(
+-            file.need(metadata_offset, metadata_size),
+-        ));
+-    };
+-    let Some(info) = find_insta_info_frame(&metadata) else {
+-        return Ok(InstaInfoOutcome::Unavailable);
++    let info = match find_insta_info_frame(file, metadata_offset) {
++        InstaFrameOutcome::Complete(info) => info,
++        InstaFrameOutcome::NeedRange(range) => return Ok(InstaInfoOutcome::NeedRange(range)),
++        InstaFrameOutcome::Unavailable => return Ok(InstaInfoOutcome::Unavailable),
+     };
+-    let fields = protobuf_fields(info).ok_or_else(|| invalid("invalid INSV INFO protobuf"))?;
++    let fields = protobuf_fields(&info).ok_or_else(|| invalid("invalid INSV INFO protobuf"))?;
+     let file_group = field_bytes(&fields, 26)
+         .and_then(protobuf_fields)
+         .map(|group| {
+@@ -846,36 +843,103 @@ fn insta_embedded_offset_supported(model: Option<&str>) -> bool {
+     matches!(model, Some("Insta360 OneRS"))
+ }
+ 
+-fn find_insta_info_frame(metadata: &[u8]) -> Option<&[u8]> {
+-    if metadata.len() < 78 {
+-        return None;
++enum InstaFrameOutcome {
++    Complete(Vec<u8>),
++    NeedRange(RequiredRange),
++    Unavailable,
++}
++
++// Walk frame footers without reading unrelated thumbnails, IMU or telemetry.
++// A small backward window normally includes both the next footer and its INFO
++// body. Fall back to the bounded metadata block for unusually fragmented files,
++// so the browser's eight-invocation inspection limit still covers old layouts.
++fn insta_info_range(
++    file: &SparseFile,
++    metadata_offset: u64,
++    offset: u64,
++    length: u64,
++) -> RequiredRange {
++    if file.segments.len() >= 6 {
++        return file.need(metadata_offset, file.size - metadata_offset);
+     }
+-    let mut cursor = metadata.len() - 72;
++    let end = offset + length;
++    let start = end.saturating_sub(length.max(4096)).max(metadata_offset);
++    file.need(start, end - start)
++}
++
++fn find_insta_info_frame(file: &SparseFile, metadata_offset: u64) -> InstaFrameOutcome {
++    let metadata_end = file.size - 72;
++    let mut cursor = metadata_end;
+     for _ in 0..64 {
+-        if cursor < 6 {
+-            break;
++        if cursor < metadata_offset + 6 {
++            return InstaFrameOutcome::Unavailable;
+         }
+-        let header = &metadata[cursor - 6..cursor];
++        let Some(header) = file.read(cursor - 6, 6) else {
++            return InstaFrameOutcome::NeedRange(insta_info_range(
++                file,
++                metadata_offset,
++                cursor - 6,
++                6,
++            ));
++        };
+         let frame_type = header[1];
+-        let size = le_u32(header, 2)? as usize;
+-        let start = cursor.checked_sub(size + 6)?;
++        let size = le_u32(&header, 2).unwrap() as u64;
++        let Some(start) = cursor
++            .checked_sub(size + 6)
++            .filter(|start| *start >= metadata_offset)
++        else {
++            return InstaFrameOutcome::Unavailable;
++        };
+         if frame_type == 1 {
+-            return metadata.get(start..start + size);
++            return match file.read(start, size as usize) {
++                Some(info) => InstaFrameOutcome::Complete(info),
++                None => InstaFrameOutcome::NeedRange(insta_info_range(
++                    file,
++                    metadata_offset,
++                    start,
++                    size,
++                )),
++            };
+         }
+         if frame_type == 0 {
+-            let index = metadata.get(start..start + size)?;
++            let Some(index) = file.read(start, size as usize) else {
++                return InstaFrameOutcome::NeedRange(insta_info_range(
++                    file,
++                    metadata_offset,
++                    start,
++                    size,
++                ));
++            };
+             for entry in index.chunks_exact(10) {
+                 if entry[0] != 1 {
+                     continue;
+                 }
+-                let frame_size = le_u32(entry, 2)? as usize;
+-                let offset = le_u32(entry, 6)? as usize;
+-                return metadata.get(offset..offset + frame_size);
++                let frame_size = le_u32(entry, 2).unwrap() as u64;
++                let Some(offset) = metadata_offset.checked_add(le_u32(entry, 6).unwrap() as u64)
++                else {
++                    return InstaFrameOutcome::Unavailable;
++                };
++                if !offset
++                    .checked_add(frame_size)
++                    .is_some_and(|end| end <= metadata_end)
++                {
++                    return InstaFrameOutcome::Unavailable;
++                }
++                return match file.read(offset, frame_size as usize) {
++                    Some(info) => InstaFrameOutcome::Complete(info),
++                    None => InstaFrameOutcome::NeedRange(insta_info_range(
++                        file,
++                        metadata_offset,
++                        offset,
++                        frame_size,
++                    )),
++                };
+             }
++            return InstaFrameOutcome::Unavailable;
+         }
+         cursor = start;
+     }
+-    None
++    InstaFrameOutcome::Unavailable
+ }
+ 
+ fn decode_insta_offset_v3(
+@@ -1859,6 +1923,151 @@ mod tests {
+         assert_eq!(field_string(&fields, 2).as_deref(), Some("abc"));
+     }
+ 
++    fn insta_info_fixture(indexed: bool, unknown_frames: usize) -> (Vec<u8>, u64) {
++        fn frame(bytes: &mut Vec<u8>, kind: u8, body: &[u8]) {
++            bytes.extend(body);
++            bytes.extend([0, kind]);
++            bytes.extend((body.len() as u32).to_le_bytes());
++        }
++        let mut bytes = vec![0; 512];
++        let metadata_offset = bytes.len() as u64;
++        frame(&mut bytes, 1, b"\x12\x02X5");
++        for _ in 0..unknown_frames {
++            frame(
++                &mut bytes,
++                2,
++                &vec![0; if unknown_frames == 1 { 2 << 20 } else { 8192 }],
++            );
++        }
++        if indexed {
++            let mut index = vec![1, 0];
++            index.extend(4u32.to_le_bytes());
++            index.extend(0u32.to_le_bytes());
++            frame(&mut bytes, 0, &index);
++        }
++        let mut header = vec![0; 72];
++        header[32..36]
++            .copy_from_slice(&((bytes.len() - metadata_offset as usize + 72) as u32).to_le_bytes());
++        header[36..40].copy_from_slice(&3u32.to_le_bytes());
++        header[40..72].copy_from_slice(b"8db42d694ccc418790edff439fe026bf");
++        bytes.extend(header);
++        (bytes, metadata_offset)
++    }
++
++    #[test]
++    fn inspects_info_without_reading_large_thumbnail_frames() {
++        for indexed in [false, true] {
++            let (bytes, _) = insta_info_fixture(indexed, 1);
++            let complete = SparseFile {
++                size: bytes.len() as u64,
++                segments: vec![Segment {
++                    offset: 0,
++                    bytes: bytes.clone(),
++                }],
++            };
++            let InstaInfoOutcome::Complete(expected) = inspect_insta_info(&complete).unwrap()
++            else {
++                panic!("missing complete INFO");
++            };
++            let start = bytes.len() - (64 << 10);
++            let mut sparse = SparseFile {
++                size: bytes.len() as u64,
++                segments: vec![Segment {
++                    offset: start as u64,
++                    bytes: bytes[start..].to_vec(),
++                }],
++            };
++            let mut requested = 0;
++            for _ in 0..8 {
++                match inspect_insta_info(&sparse).unwrap() {
++                    InstaInfoOutcome::Complete(actual) => {
++                        assert_eq!(actual, expected);
++                        assert_eq!(actual["cameraModel"], "X5");
++                        break;
++                    }
++                    InstaInfoOutcome::NeedRange(range) => {
++                        requested += range.length;
++                        sparse.segments.push(Segment {
++                            offset: range.offset,
++                            bytes: bytes
++                                [range.offset as usize..(range.offset + range.length) as usize]
++                                .to_vec(),
++                        });
++                    }
++                    InstaInfoOutcome::Unavailable => panic!("lost sparse INFO"),
++                }
++            }
++            assert!(matches!(
++                inspect_insta_info(&sparse).unwrap(),
++                InstaInfoOutcome::Complete(_)
++            ));
++            assert!(
++                requested > 0 && requested <= 8192,
++                "read {requested} bytes for INFO"
++            );
++        }
++    }
++
++    #[test]
++    fn falls_back_within_the_sparse_inspection_iteration_budget() {
++        let (bytes, metadata_offset) = insta_info_fixture(false, 12);
++        let mut sparse = SparseFile {
++            size: bytes.len() as u64,
++            segments: vec![Segment {
++                offset: (bytes.len() - 72) as u64,
++                bytes: bytes[bytes.len() - 72..].to_vec(),
++            }],
++        };
++        let mut used_fallback = false;
++        for _ in 0..8 {
++            match inspect_insta_info(&sparse).unwrap() {
++                InstaInfoOutcome::Complete(_) => break,
++                InstaInfoOutcome::NeedRange(range) => {
++                    used_fallback |= range.offset == metadata_offset
++                        && range.length == bytes.len() as u64 - metadata_offset;
++                    sparse.segments.push(Segment {
++                        offset: range.offset,
++                        bytes: bytes[range.offset as usize..(range.offset + range.length) as usize]
++                            .to_vec(),
++                    });
++                }
++                InstaInfoOutcome::Unavailable => panic!("lost fragmented INFO"),
++            }
++        }
++        assert!(used_fallback);
++        assert!(matches!(
++            inspect_insta_info(&sparse).unwrap(),
++            InstaInfoOutcome::Complete(_)
++        ));
++    }
++
++    #[test]
++    fn rejects_insta_info_frames_outside_the_metadata_block() {
++        let (mut bytes, metadata_offset) = insta_info_fixture(false, 1);
++        let footer_size = bytes.len() - 76;
++        bytes[footer_size..footer_size + 4].copy_from_slice(&u32::MAX.to_le_bytes());
++        let file = SparseFile {
++            size: bytes.len() as u64,
++            segments: vec![Segment { offset: 0, bytes }],
++        };
++        assert!(matches!(
++            find_insta_info_frame(&file, metadata_offset),
++            InstaFrameOutcome::Unavailable
++        ));
++
++        let (mut bytes, metadata_offset) = insta_info_fixture(true, 1);
++        let index_offset = bytes.len() - 72 - 6 - 4;
++        bytes[index_offset..index_offset + 4].copy_from_slice(&u32::MAX.to_le_bytes());
++        let file = SparseFile {
++            size: bytes.len() as u64,
++            segments: vec![Segment { offset: 0, bytes }],
++        };
++        assert!(matches!(
++            find_insta_info_frame(&file, metadata_offset),
++            InstaFrameOutcome::Unavailable
++        ));
++    }
++
+     #[test]
+     fn decodes_dji_metadata_batch() {
+         fn field(number: u8, bytes: Vec<u8>) -> Vec<u8> {

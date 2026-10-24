@@ -19,6 +19,10 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
   const worker = new IworkWorkerClient();
   const usePagedWidthFitByDefault = options.fit === undefined;
   let mediaRegistry: MediaRegistry | null = null;
+  let loadController: AbortController | null = null;
+  let renderController: AbortController | null = null;
+  let generation = 0;
+  let destroyed = false;
   const state: IworkViewerState = {
     loading: false,
     error: null,
@@ -58,7 +62,36 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
     warnings: state.warnings.slice()
   });
 
+  const stopLoad = () => {
+    const controller = loadController;
+    loadController = null;
+    controller?.abort();
+    worker.cancel();
+    renderController?.abort();
+    renderController = null;
+    resizeObserver?.disconnect();
+    resizeObserver = null;
+    if (scrollFrame && typeof cancelAnimationFrame !== 'undefined') cancelAnimationFrame(scrollFrame);
+    scrollFrame = 0;
+    stage.replaceChildren();
+    stage.classList.remove('iworkv-numbers-stage');
+    pageShells = [];
+    mountedPages.clear();
+    visiblePages.clear();
+    sheetLoads.clear();
+    mediaRegistry?.destroy();
+    mediaRegistry = null;
+    Object.assign(state, {
+      document: null, kind: null, loading: false, error: null, warnings: [],
+      currentPage: 0, pageCount: 0, currentSheet: 0, sheetCount: 0
+    });
+    container.scrollTop = 0;
+    container.scrollLeft = 0;
+  };
+
   const render = () => {
+    renderController?.abort();
+    renderController = new AbortController();
     stage.innerHTML = '';
     stage.classList.toggle('iworkv-numbers-stage', state.document?.kind === 'numbers');
     pageShells = [];
@@ -111,7 +144,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
       button.className = 'xlsxv-sheet-tab';
       button.classList.toggle('is-active', index === state.currentSheet);
       button.textContent = sheet.name;
-      button.addEventListener('click', () => goToSheet(index));
+      button.addEventListener('click', () => goToSheet(index), { signal: renderController!.signal });
       tabs.appendChild(button);
     });
 
@@ -171,7 +204,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
           decorateNumbersCells(table, item, mediaRegistry);
         }
       }
-    }, { passive: true });
+    }, { passive: true, signal: renderController!.signal });
 
     preview.replaceChildren(tabs, grid);
     stage.appendChild(preview);
@@ -368,18 +401,38 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
         }
       })
       .finally(() => {
-        sheetLoads.delete(index);
+        if (sheetLoads.get(index) === task) sheetLoads.delete(index);
       });
     sheetLoads.set(index, task);
   };
 
   const preview: IworkViewerInstance['preview'] = async (source, previewOptions = {}) => {
+    if (destroyed) throw new Error('iWork viewer has been destroyed.');
+    const currentGeneration = ++generation;
+    stopLoad();
+    const controller = new AbortController();
+    loadController = controller;
+    const abort = () => {
+      if (loadController !== controller) return;
+      stopLoad();
+      setStatus();
+      emit('loadingchange', getState());
+    };
+    previewOptions.signal?.addEventListener('abort', abort, { once: true });
+    controller.signal.addEventListener('abort', () => previewOptions.signal?.removeEventListener('abort', abort), { once: true });
+    if (previewOptions.signal?.aborted) {
+      abort();
+      throw new DOMException('The operation was aborted.', 'AbortError');
+    }
     state.loading = true;
     state.error = null;
     setStatus();
+    emit('loadingchange', getState());
     try {
-      const bytes = await loadSourceBytes(source, { signal: previewOptions.signal });
-      const document = await worker.parse(bytes, options.type, resolveSourceName(source));
+      const bytes = await waitForLoad(loadSourceBytes(source, { signal: controller.signal }), controller.signal);
+      if (controller.signal.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
+      const document = await waitForLoad(worker.parse(bytes, options.type, resolveSourceName(source)), controller.signal);
+      if (controller.signal.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
       state.document = document;
       state.kind = document.kind;
       state.warnings = document.warnings.slice();
@@ -399,19 +452,24 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
       render();
       bindResizeObserver();
       setStatus();
+      emit('loadingchange', getState());
+      if (loadController !== controller) return;
       emit('warnings', state.warnings);
-      emit('rendered', getState());
+      if (loadController === controller) emit('rendered', getState());
     } catch (error) {
+      if (destroyed || generation !== currentGeneration) return;
+      if (controller.signal.aborted) throw new DOMException('The operation was aborted.', 'AbortError');
       const normalized = error instanceof Error ? error : new Error(String(error));
-      state.loading = false;
+      stopLoad();
       state.error = normalized.message;
       setStatus();
-      emit('error', normalized);
+      emit('loadingchange', getState());
+      if (!destroyed && generation === currentGeneration) emit('error', normalized);
     }
   };
 
   const setScale = (scale: number) => {
-    if (state.kind === 'numbers') {
+    if (destroyed || state.kind === 'numbers') {
       return;
     }
     state.fit = 'none';
@@ -421,7 +479,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
   };
 
   const fit = (mode: IworkFitMode = 'contain') => {
-    if (state.kind === 'numbers') {
+    if (destroyed || state.kind === 'numbers') {
       return;
     }
     state.fit = mode;
@@ -430,6 +488,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
   };
 
   const on = <T extends IworkViewerEventName>(event: T, handler: EventHandler<T>) => {
+    if (destroyed) return () => {};
     const handlers = listeners.get(event) ?? new Set<(payload: unknown) => void>();
     handlers.add(handler as (payload: unknown) => void);
     listeners.set(event, handlers);
@@ -439,6 +498,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
   };
 
   const goToSheet = (index: number) => {
+    if (destroyed || state.kind !== 'numbers') return;
     state.currentSheet = Math.max(0, Math.min(index, Math.max(state.sheetCount - 1, 0)));
     state.error = null;
     render();
@@ -450,18 +510,14 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
   return {
     preview,
     destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      ++generation;
       listeners.clear();
-      mediaRegistry?.destroy();
-      mediaRegistry = null;
-      resizeObserver?.disconnect();
-      resizeObserver = null;
+      stopLoad();
       container.removeEventListener('scroll', handleScroll);
       container.ownerDocument.removeEventListener('scroll', handleScroll, true);
       container.ownerDocument.defaultView?.removeEventListener('scroll', handleScroll);
-      if (scrollFrame && typeof cancelAnimationFrame !== 'undefined') {
-        cancelAnimationFrame(scrollFrame);
-      }
-      scrollFrame = 0;
       worker.destroy();
       container.classList.remove('iworkv-root', 'is-loading', 'is-error');
       container.removeAttribute('data-status');
@@ -470,6 +526,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
     setScale,
     fit,
     goToPage(index: number) {
+      if (destroyed) return;
       state.currentPage = Math.max(0, Math.min(index, Math.max(state.pageCount - 1, 0)));
       if (state.document && state.document.kind !== 'numbers') {
         visiblePages.clear();
@@ -499,6 +556,17 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
     getState,
     on
   };
+}
+
+// Blob reads and third-party source promises may not implement cancellation.
+// Settle the caller promptly while still handling any late rejection.
+function waitForLoad<T>(task: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const abort = () => reject(new DOMException('The operation was aborted.', 'AbortError'));
+    signal.addEventListener('abort', abort, { once: true });
+    task.then(resolve, reject).finally(() => signal.removeEventListener('abort', abort));
+    if (signal.aborted) abort();
+  });
 }
 
 function numbersTableToSheet(table: TableItem, index: number): ParsedSheet {

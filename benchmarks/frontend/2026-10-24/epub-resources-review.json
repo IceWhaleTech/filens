@@ -1,0 +1,235 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "date": "2026-10-24T09:00:34.564Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "measurements": {
+    "engineering": true,
+    "scopedSota": false,
+    "sourceSha256": "92b0a0be53c4bdb3f84780ff30f632c5bfcca43274b328d7862440948a06afe9",
+    "iterations": 7,
+    "runs": 56,
+    "cpu": "Apple M4 Pro",
+    "browser": "147.0.7727.15",
+    "method": "10,000 paired bootstrap resamples of complete-extraction median ratios, seed 12345. Rendering and image decode are outside timing. Generated SVG illustrations exercise per-resource overhead rather than photographic throughput. No peer/SOTA ranking; baseline controls at or below 10 ms receive no speed claim.",
+    "samples": [
+      {
+        "sample": "sample.epub",
+        "currentMs": 2.3000000715255737,
+        "baselineMs": 2.100000023841858,
+        "ratio": 0.9130434602330002,
+        "ratio95PercentBootstrapInterval": [
+          0.913043408402876,
+          0.9130435075561587
+        ],
+        "stableEngineeringReduction": false,
+        "stableEngineeringIncrease": true,
+        "below10MsControl": true,
+        "chapters": 2,
+        "blobs": 0,
+        "completeModelsAndBlobsMatch": true
+      },
+      {
+        "sample": "generated-40-chapters.epub",
+        "currentMs": 15.399999976158142,
+        "baselineMs": 14.700000047683716,
+        "ratio": 0.9545454591196009,
+        "ratio95PercentBootstrapInterval": [
+          0.9483870998505624,
+          1
+        ],
+        "stableEngineeringReduction": false,
+        "stableEngineeringIncrease": false,
+        "below10MsControl": false,
+        "chapters": 40,
+        "blobs": 0,
+        "completeModelsAndBlobsMatch": true
+      },
+      {
+        "sample": "generated-200-assets.epub",
+        "currentMs": 22.5,
+        "baselineMs": 30.300000071525574,
+        "ratio": 1.3466666698455811,
+        "ratio95PercentBootstrapInterval": [
+          1.2777777780608008,
+          1.4449541236994874
+        ],
+        "stableEngineeringReduction": true,
+        "stableEngineeringIncrease": false,
+        "below10MsControl": false,
+        "chapters": 1,
+        "blobs": 200,
+        "completeModelsAndBlobsMatch": true
+      },
+      {
+        "sample": "generated-1000-assets.epub",
+        "currentMs": 88.20000004768372,
+        "baselineMs": 132.09999990463257,
+        "ratio": 1.4977324244128698,
+        "ratio95PercentBootstrapInterval": [
+          1.4274553564969303,
+          1.6628571428571428
+        ],
+        "stableEngineeringReduction": true,
+        "stableEngineeringIncrease": false,
+        "below10MsControl": false,
+        "chapters": 1,
+        "blobs": 1000,
+        "completeModelsAndBlobsMatch": true
+      }
+    ]
+  },
+  "measurementJsonSha256": "92b0a0be53c4bdb3f84780ff30f632c5bfcca43274b328d7862440948a06afe9",
+  "evidenceFiles": {
+    "benchmarks/frontend/2026-10-24/epub-resources.json.gz": "f6bf121c6f224654fae4d233043d1b38f24afdbb0aef90f84cb4108f9dd06e00",
+    "benchmarks/frontend/2026-10-24/epub-resources-summary.json": "454c2890b1dda5785b23ed67470dc10c1f2ae7c66555096180a75907275608b6",
+    "benchmarks/frontend/2026-10-24/epub-resources-content-review.json.gz": "379844552424223c147b93f4772448f686e7407891e1f04c3a6d8657872b1b62",
+    "benchmarks/frontend/2026-10-24/epub-resources-diagnostic.json.gz": "c3c7f3f74fa68e6a040b55d22cd64f6c66c820afd6c5e74295e7dbde7bf04a37",
+    "benchmarks/frontend/2026-10-24/epub-resources.patch": "9dc922f449c5aa51fd9af24114d8a949d3477020ac8bf511d3bb89350e7d5d2f"
+  },
+  "sourceHashes": {
+    "packages/ebook/src/preview-driver.ts": "c3bef8bcb083de692bdbc5fd982a21beaf52c5cd37fe0ea1ce0228afa1bf32ec",
+    "packages/ebook/src/epub-resources.ts": "4dc01d37fc901b876a3e5eeacb0c7cd5a79f8fa6f4102db48fa5d7a212eb2ac1",
+    "packages/ebook/src/css-resources.ts": "da1c5ce3a9e39c8800e0c331f84aa312d0da54d5338a2e8359a2568cb2427e2e",
+    "packages/ebook/test/preview-driver.spec.ts": "01e13253c1f0055fae71227113e15caec1329859d7a325772d6a2ef802cb854f",
+    "packages/ebook/test/resources.spec.ts": "23f8f0adfed9a74728f73335afed6e3153332554934860e2d6ea3287e868c701",
+    "packages/ebook/test/fixtures/books.mjs": "79a5b85f1922e78c2cc9c53055e8f22346b68f23bc65b0c659bc7ca8d2efde3c",
+    "packages/ebook/test/fixtures/preview-font.woff": "6363f8e06ceaf06149bae890242483cd41163a6b640879da10ab42751962c9c9",
+    "apps/demo/e2e/epub-resources.e2e.ts": "793b973a1f13ac72235626473bc0fb935e5f58a4cb0b7607ddac99d065f234eb",
+    "apps/demo/e2e/ebook-lifecycle.e2e.ts": "e307b416528c4374d1db6d636e1957b9ff8f68f40e1539f1186166dddf267dc1",
+    "scripts/benchmark-epub-resources.mjs": "543dbd0af027625de7c9d9ab3b3d3bcfdefc44f138fa00ecb97f7c8b1836cdb5",
+    "scripts/summarize-epub-resources-benchmark.mjs": "91e3545307b95df6748071fbd93cb2865220190c8863a25d1619db89908d7d47",
+    "scripts/review-epub-resources.mjs": "c8d546d693bae30a7ca3c83fe5f0867c6fe96f15f2dd47c514e4b598bc665e71"
+  },
+  "currentArtifact": {
+    "engine": "current",
+    "path": "packages/ebook/dist/index.js",
+    "sha256": "57903201981769b41a60f91b6e001593619b728d78154b090bbdac2927a8ea7d"
+  },
+  "baseline": {
+    "engine": "baseline",
+    "path": "tmp/continued-review/epub-resources-baseline/dist/index.js",
+    "sha256": "c1a17d98f55cd3def5f8a9462a97c67ce8101754462cf6235bfb030a283c8992",
+    "sourcePath": "tmp/continued-review/epub-resources-baseline/src/preview-driver.ts",
+    "sourceSha256": "360e1408c9e7f1a1e0f1f55c0f66c5ae18a5f4482e94e662728c2703356ec530",
+    "reconstruction": "Reverse epub-resources.patch, build @filens/ebook, copy dist to tmp/continued-review/epub-resources-baseline/dist; restore the patch and rebuild. The snapshot includes all ebook optimizations completed before this round."
+  },
+  "runtimeVersions": {
+    "jszip": "3.10.1"
+  },
+  "contentReview": {
+    "completeModelAndResourceBytesMatch": true,
+    "samples": 5,
+    "chapterPairs": 244,
+    "resourcePairs": 1400,
+    "sourceRepresentations": 5,
+    "correctedStyledBook": {
+      "inputSha256": "935fb2da88b4166b6f139824b1d17bc2ccd0e65f125e7a6d85c34d6928c5da65",
+      "previousChapterCount": 1,
+      "currentChapterCount": 2,
+      "fullModelSha256": "30f5ca6cfde5cd6717bdfd3321e0e309a10825a8d02185e43ea85d002de88f83",
+      "resources": [
+        {
+          "type": "font/woff",
+          "size": 684,
+          "sha256": "6363f8e06ceaf06149bae890242483cd41163a6b640879da10ab42751962c9c9"
+        },
+        {
+          "type": "image/svg+xml",
+          "size": 114,
+          "sha256": "f0e873a6d9c6155e96e9d1e1c604302c609ccc89ffc3706fe4c451710f863b5b"
+        },
+        {
+          "type": "image/svg+xml",
+          "size": 114,
+          "sha256": "f0e873a6d9c6155e96e9d1e1c604302c609ccc89ffc3706fe4c451710f863b5b"
+        },
+        {
+          "type": "text/css;charset=utf-8",
+          "size": 30,
+          "sha256": "cc861276f4beed392b976fe7006315ff23068be2e63a4add71a9a338a9c35480"
+        },
+        {
+          "type": "text/css;charset=utf-8",
+          "size": 53,
+          "sha256": "311c2537d4c2058d2bcc999283468b3e48e4d65b9ab1f49af041469b1a1e760b"
+        },
+        {
+          "type": "text/css;charset=utf-8",
+          "size": 417,
+          "sha256": "9eceb333a83abce250520f0b9e448037f5417c29b35f820f383a7db19637d438"
+        }
+      ],
+      "warnings": [
+        "Skipped circular EPUB stylesheet import: OPS/styles/main.css."
+      ],
+      "browserCoverage": "Both chapters: imported colors, bounded cyclic imports, real WOFF load, four decoded CSS backgrounds, inline styles, SVG xlink resources, queried image URLs and complete session URL cleanup."
+    }
+  },
+  "validation": {
+    "ebookUnitTestsPassed": 29,
+    "vueUnitTestsPassed": 44,
+    "browserTestsPassed": 4,
+    "oldNestedImportBrowserFailureReproduced": true,
+    "builds": [
+      "@filens/ebook with clean declaration diagnostics",
+      "production demo",
+      "bundle report"
+    ],
+    "coverage": [
+      "nested CSS imports and cyclic imports",
+      "local and resolver-provided CSS bytes/Blobs",
+      "BOM, MIME charset and @charset decoding",
+      "font loading and decoded background images",
+      "inline styles and CSS comments/literal strings",
+      "encoded chapter/resource paths and SVG xlink references",
+      "shared and missing resolver-result caching",
+      "unreferenced stylesheet imports remain unrequested",
+      "immediate idle state on cancellation",
+      "URL release on replacement/failure/abort/destruction",
+      "production demo EPUB upload and chapter switch"
+    ],
+    "reverseProductionPatchCheck": true,
+    "syntaxAndWhitespaceChecksPassed": true,
+    "localMarkdownLinksChecked": 398,
+    "evidenceAndRuntimeHashesChecked": true
+  },
+  "diagnostics": {
+    "excludedRuns": 280,
+    "reasons": [
+      "initial implementations",
+      "browser tests overlapped one timing batch",
+      "separate chapter scans included a small losing plain-text control",
+      "later charset/unused-style handling",
+      "plain-chapter traversal shortcut"
+    ]
+  },
+  "behaviorChanges": [
+    "At most eight manifest assets decompress concurrently; typed resource URLs retain manifest order.",
+    "Stylesheets resolve imports, font and image URLs relative to their own archive path, including unmanifested local dependencies.",
+    "Chapter style elements/attributes and namespaced SVG hrefs resolve relative to the chapter; encoded paths and blob URL query handling are corrected.",
+    "Shared/missing resolver results are cached per path and relation; cyclic imports terminate with a warning.",
+    "Unreferenced stylesheet dependencies are not resolved, and cancellation emits the idle state immediately."
+  ],
+  "limitations": [
+    "Engineering A/B only, with no peer/SOTA claim. External totals remain 2,604 measurements / 1,064 successful filens runs.",
+    "Complete extraction only: image decoding, layout, display, first-visible time and peak memory are outside timing.",
+    "Generated SVG resources measure per-entry overhead rather than photographic payload throughput.",
+    "The 40-chapter control is retained at 14.7 to 15.4 ms, without stable improvement; the repository sample remains below 10 ms and has no speed claim.",
+    "Manifest extraction remains eager. Eight-item batches bound entry count rather than byte count; an executing JSZip operation cannot be preempted.",
+    "Fixture file contents are deterministic, but JSZip-generated directory timestamps are not normalized: regenerated ZIP hashes can differ. Each engine in a timed pair uses identical cached input bytes; complete extracted payload signatures are checked.",
+    "CSS processing handles URL tokens and import strings rather than implementing every CSS image syntax or full ebook navigation. Standalone loaders retain caller ownership of custom resource URLs."
+  ],
+  "reproduction": [
+    "node scripts/benchmark-epub-resources.mjs --iterations 7 --output tmp/continued-review/epub-resources-reproduced",
+    "node scripts/summarize-epub-resources-benchmark.mjs --input tmp/continued-review/epub-resources-reproduced/results.json",
+    "node scripts/review-epub-resources.mjs",
+    "npx playwright test apps/demo/e2e/ebook-lifecycle.e2e.ts apps/demo/e2e/epub-resources.e2e.ts --workers=1"
+  ],
+  "conclusion": "Generated 200/1000-resource EPUB complete extraction falls from 30.3/132.1 to 22.5/88.2 ms, about 26%/33% less time. Resource styling and encoded-path compatibility are corrected; losing controls are retained and no SOTA label is added.",
+  "coreArtifact": {
+    "path": "packages/core/dist/index.js",
+    "sha256": "087860f415a1b58c0a14112d86f5c9ddad57039e0eb3fee5d2533de5f4e273c9"
+  }
+}

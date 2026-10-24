@@ -12,6 +12,7 @@ const labels = {
   core: ['PPTX / 核心运行时', 'PPTX / core runtime'],
   preview: ['Vue 预览容器', 'Vue preview host'],
   office: ['DOCX / XLSX / PDF', 'DOCX / XLSX / PDF'],
+  'pdf-runtime': ['PDF 按需引擎', 'On-demand PDF engine'],
   iwork: ['iWork 预览', 'iWork preview'],
   design: ['CAD / 思维导图 / 流程图', 'CAD / mind maps / diagrams'],
   model3d: ['3D 预览', '3D preview'],

@@ -1,0 +1,82 @@
+--- a/packages/cad/src/preview-driver.ts
++++ b/packages/cad/src/preview-driver.ts
+@@ -643,22 +643,28 @@
+     this.drawing = drawing;
+     const stage = document.createElement('div');
+     stage.className = 'cadv-stage';
+-    this.layerElements.clear();
+-    const svg = renderDrawingToSvg(drawing, this.layerElements);
++    const svg = renderDrawingToSvg(drawing);
+     this.canvas = svg;
+-    this.appliedLayers = new Set(this.state.activeLayerIds);
++    this.layerElements.clear();
++    for (const element of svg.querySelectorAll<SVGElement>('[data-layer]')) {
++      const layer = element.getAttribute('data-layer')!;
++      const elements = this.layerElements.get(layer);
++      if (elements) elements.push(element);
++      else this.layerElements.set(layer, [element]);
++    }
+     stage.appendChild(svg);
+     this.root.replaceChildren(stage);
++    this.applyLayerVisibility(true);
+     this.applyTransform();
+   }
+ 
+-  private applyLayerVisibility(): void {
++  private applyLayerVisibility(force = false): void {
+     if (!this.canvas) {
+       return;
+     }
+     const activeLayers = new Set(this.state.activeLayerIds ?? []);
+     for (const [layerId, elements] of this.layerElements) {
+-      if (activeLayers.has(layerId) === this.appliedLayers.has(layerId)) continue;
++      if (!force && activeLayers.has(layerId) === this.appliedLayers.has(layerId)) continue;
+       for (const element of elements) {
+         const entityVisible = element.getAttribute('data-entity-visible') !== 'false';
+         const visible = entityVisible && (!layerId || activeLayers.has(layerId));
+@@ -2018,7 +2024,7 @@
+   return index;
+ }
+ 
+-function renderDrawingToSvg(drawing: CadDrawing, layerElements: Map<string, SVGElement[]>): SVGSVGElement {
++function renderDrawingToSvg(drawing: CadDrawing): SVGSVGElement {
+   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+   svg.classList.add('cadv-canvas');
+   const width = Math.max(drawing.bounds.maxX - drawing.bounds.minX, 1);
+@@ -2045,7 +2051,7 @@
+   svg.appendChild(group);
+ 
+   for (const entity of drawing.entities) {
+-    const node = renderEntity(entity, drawing.bounds, layerElements);
++    const node = renderEntity(entity, drawing.bounds);
+     if (node) {
+       group.appendChild(node);
+     }
+@@ -2063,7 +2069,7 @@
+   return svg;
+ }
+ 
+-function renderEntity(entity: CadEntity, bounds: CadDrawing['bounds'], layerElements: Map<string, SVGElement[]>): SVGElement | null {
++function renderEntity(entity: CadEntity, bounds: CadDrawing['bounds']): SVGElement | null {
+   const applyEntityAttributes = (node: SVGElement, paintTarget: 'stroke' | 'fill' = 'stroke'): SVGElement => {
+     node.setAttribute(paintTarget, entity.color ?? DEFAULT_CAD_COLOR);
+     if (paintTarget === 'stroke') {
+@@ -2077,9 +2083,6 @@
+     }
+     if (entity.layer) {
+       node.setAttribute('data-layer', entity.layer);
+-      const elements = layerElements.get(entity.layer);
+-      if (elements) elements.push(node);
+-      else layerElements.set(entity.layer, [node]);
+     }
+     if (entity.colorIndex != null) {
+       node.setAttribute('data-color-index', String(entity.colorIndex));
+@@ -2096,8 +2099,6 @@
+     if (entity.visible === false) {
+       node.setAttribute('display', 'none');
+       node.setAttribute('data-layer-visible', 'false');
+-    } else if (entity.layer) {
+-      node.setAttribute('data-layer-visible', 'true');
+     }
+     return node;
+   };

@@ -1,0 +1,294 @@
+{
+  "date": "2026-10-24",
+  "kind": "panorama-processor-operation-ownership",
+  "engineering": true,
+  "measuredPerformance": false,
+  "scopedSota": false,
+  "scope": "Shared frontend panorama processor TS/WASM orchestration only; no new parsing algorithm, renderer changes, backend conversion logic or Go changes.",
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "changes": [
+    "Each open owns its reader, manifest, controller, companion and track mapping. Replacement installs a new state before aborting/disposing the previous state; obsolete errors cannot clear the replacement.",
+    "Publish the manifest only after primary and companion inspection both succeed. Failed opens dispose only their own state and remain reusable.",
+    "Keep the original open signal active through subsequent reads, sensor development and seam/IMU work; operation signals cancel only their operation.",
+    "Pass operation signals to the shared WASM runner, covering asynchronous module loading and instantiation without cancelling shared compilation for other callers.",
+    "Race non-cooperative source probes, response bodies and Blob/range reads against cancellation. Observe late failures and cancel late response bodies without blocking on their streams.",
+    "Snapshot source/track/vendor ownership for an IMU batch instead of consulting mutable processor state between reads.",
+    "Release combined-signal fallback listeners after every operation or source disposal. Empty samples return empty bytes without an invalid HTTP range request.",
+    "Validate full-body byte count and the 64 MiB fallback budget, accounting for browser-decoded HTTP bodies retaining the compressed Content-Length header."
+  ],
+  "validation": {
+    "newTests": 19,
+    "oldSourceFailed": 17,
+    "oldSourcePassedControls": 2,
+    "unhandledErrors": 0,
+    "unitByPackage": {
+      "panorama": {
+        "passed": 169,
+        "skipped": 0
+      },
+      "converter-client": {
+        "passed": 56,
+        "skipped": 0
+      },
+      "core": {
+        "passed": 280,
+        "skipped": 11
+      },
+      "vue": {
+        "passed": 44,
+        "skipped": 0
+      }
+    },
+    "unitPassed": 549,
+    "existingCoreSkipped": 11,
+    "developmentBrowser": {
+      "passed": 11,
+      "command": "npx playwright test apps/demo/e2e/panorama-processor.e2e.ts apps/demo/e2e/panorama-lifecycle.e2e.ts apps/demo/e2e/panorama-raw.e2e.ts --grep-invert 'camera-original' --workers=1",
+      "log": "panorama-processor-browser-final.log"
+    },
+    "productionBrowser": {
+      "passed": 6,
+      "command": "FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/panorama-processor.e2e.ts apps/demo/e2e/panorama-raw.e2e.ts --grep-invert 'camera-original' --workers=1",
+      "log": "panorama-processor-production-browser.log"
+    },
+    "browserCoverage": [
+      "Built processor library with actual remote DNG Range requests; abort after open rejects RAW decode before loading image WASM, and reopen develops a 1024x512 JPEG",
+      "Non-cooperative real source probe settles before its held response is released; late response body is cancelled while replacement ONE RS state remains current",
+      "One seam caller cancels during a shared real module load; other caller succeeds and subsequent invocation reuses the same load",
+      "Existing URL/context release, late image replacement, real ordinary DNG conversion/abort, spherical NASA video playback retirement and demo panorama-to-flat-image checks",
+      "Synthetic ONE RS/X5 DNG direction, static seam readiness, resize and switch back to ordinary public DNG, in development and production"
+    ],
+    "builds": [
+      "npm run build:panorama",
+      "npm run build:demo"
+    ],
+    "categoryChecks": "npm run test:categories",
+    "bundleReport": "npm run report:bundle-sizes",
+    "baselineAndCurrentSourceMapsMatchProcessorSnapshots": true,
+    "currentSourceMapMatchesLoadTaskHelper": true,
+    "incrementalReversePatchRestoresBaselineBytes": true,
+    "finalCurrentBindingsChecked": 32,
+    "baselineBindingsChecked": 3,
+    "localMarkdownPathsChecked": 486,
+    "gitDiffCheckPassed": true,
+    "reviewScriptSyntaxCheckPassed": true,
+    "temporaryPreviewPortsClosed": [
+      4173,
+      4174
+    ],
+    "warnings": [
+      "Existing duplicate Three.js instance warning in Vue tests",
+      "Existing demo vendor chunk size warning"
+    ]
+  },
+  "contentEquivalence": {
+    "samples": 4,
+    "syntheticSamples": 3,
+    "publicCameraSamples": 1,
+    "completeManifestsMatch": true,
+    "completeJpegLengthsAndHashesMatch": true,
+    "completeSeamResultMatches": true,
+    "contentResultsJsonSha256": "f6b0f92e4415d8bd6bbe1bbb86ccaa92d312208f92c7237f9be1cebc78cad414",
+    "method": "Bundle previous/current processor sources against the same installed converter runtime, compile unchanged production WASM once, then compare complete manifests and developed JPEG bytes. Synthetic fixtures and one public ordinary DNG; no private originals. This is correctness validation, without timing or visual-quality/SOTA ranking.",
+    "results": "panorama-processor-content-review.json.gz"
+  },
+  "limits": [
+    "This is correctness and cancellation coverage; no elapsed-time, throughput, memory or peer/SOTA measurement is added. Cases at or below 10 ms are not promoted as speed gains.",
+    "Already-running synchronous WASM/JS cannot be interrupted. Non-cooperative asynchronous work can finish later; output is discarded and late rejection observed.",
+    "Track/metadata cancellation tests inject descriptors into synthetic DNG manifests. They establish operation ownership, not support for additional real video formats, metadata variants or camera originals.",
+    "Content equivalence covers three synthetic DNGs and one public Pentax DNG. Private camera-original panorama quality is not re-evaluated.",
+    "HTTP Content-Encoding control supplies already-decoded bytes to model the browser contract; browser range checks use actual 206 responses."
+  ],
+  "baseline": [
+    {
+      "path": "tmp/continued-review/panorama-processor-baseline/wasm-processor.ts",
+      "sha256": "fba2276ec12ad0c9cc65073c088531ace2f0c629d9288420f31aa7a85b8103f5",
+      "bytes": 28580
+    },
+    {
+      "path": "tmp/continued-review/panorama-processor-baseline/dist/index.js",
+      "sha256": "e06893d735cb6d65f64bb4e29f2100847357e94348b963dac8a21cedff26190b",
+      "bytes": 1044343
+    },
+    {
+      "path": "tmp/continued-review/panorama-processor-baseline/dist/index.js.map",
+      "sha256": "ae1a7ba9c59bd606aec92705f27a381e600a9a50274ccb26549371f0dd9ece2e",
+      "bytes": 3428688
+    }
+  ],
+  "bindings": [
+    {
+      "path": "packages/panorama/src/wasm-processor.ts",
+      "sha256": "804e8da2ce8b53dcad11f176a57791059a457dec7abd952c748cd3969ddc9422",
+      "bytes": 32230
+    },
+    {
+      "path": "packages/panorama/src/load-task.ts",
+      "sha256": "18fd51ddc0187a3876cbde17a1a21ddabaf2af77f13280995435bd3e9c2895b2",
+      "bytes": 2124
+    },
+    {
+      "path": "packages/converter-client/src/wasm-client.ts",
+      "sha256": "497e453c88330d543b53e26272e100f01c8fe543d157dcc95f81e81e6875da3e",
+      "bytes": 31581
+    },
+    {
+      "path": "packages/converter-client/dist/index.js",
+      "sha256": "2b14bbd4517de794deefa954ae162e97c334ce471ee6f9ca7d4eeba1d8382b40",
+      "bytes": 58438
+    },
+    {
+      "path": "packages/panorama/test/processor-ownership.spec.ts",
+      "sha256": "330412a57e04cba2206f69442310ea20c61a1a4ba3d0af6a7c4959e719806822",
+      "bytes": 13294
+    },
+    {
+      "path": "packages/panorama/test/fixtures/dng.ts",
+      "sha256": "b97f4c880247d6d13a1690238a4a60d508bfcc7b1fe4ab97dc9b7edb89642670",
+      "bytes": 4035
+    },
+    {
+      "path": "packages/panorama/test/raw-preview.spec.ts",
+      "sha256": "cccb268835bd0c993bf842696cf55e7b76335fa046cf94e8b6671d00bff7c611",
+      "bytes": 7988
+    },
+    {
+      "path": "apps/demo/e2e/panorama-processor.e2e.ts",
+      "sha256": "57f7f708096e64a6ea267f344ee68ccc29653f2fdf3edf8a9585fba48cf406bf",
+      "bytes": 7177
+    },
+    {
+      "path": "apps/demo/e2e/panorama-lifecycle.e2e.ts",
+      "sha256": "a681ff2d010d69749af2ad0fec206b9dc399b69295afab559a4a295aa8660f09",
+      "bytes": 9704
+    },
+    {
+      "path": "apps/demo/e2e/panorama-raw.e2e.ts",
+      "sha256": "1443dbdb37fb5c7e19f43a8d964953d04cbecdb7bfc90baf0a487cbd29cc89f2",
+      "bytes": 4578
+    },
+    {
+      "path": "scripts/review-panorama-processor.mjs",
+      "sha256": "70f755fe1724447031c1a719c834e1820015dddab2edf3f1b98701ce71e142c1",
+      "bytes": 4769
+    },
+    {
+      "path": "packages/panorama/dist/index.js",
+      "sha256": "d36785c6ab8c8e0c50d3393baabaff5137aeeb5f85e965321023f126a80d7536",
+      "bytes": 1047248
+    },
+    {
+      "path": "packages/panorama/dist/index.js.map",
+      "sha256": "da42a9dfa38d77db0edcacf32d5ffb656673980a616fb4cbed9b21decb06686d",
+      "bytes": 3437038
+    },
+    {
+      "path": "packages/panorama/dist/wasm-processor.d.ts",
+      "sha256": "3bf290d2652806ccafa881638b3193149e17850ad920f8261f74d3d51e2c5071",
+      "bytes": 5157
+    },
+    {
+      "path": "wasm/converter-core/dist/converter-core.wasm",
+      "sha256": "0f0ab8885293e76991a337dab6f0977e5015380594e914d89ebe8c976a8cedbf",
+      "bytes": 893007
+    },
+    {
+      "path": "wasm/converter-image/dist/converter-image.wasm",
+      "sha256": "adb3351801f0ff7ef209481013e75f9d708ab87230c4d3918576dd5f7630c7aa",
+      "bytes": 1097979
+    },
+    {
+      "path": "apps/demo/public/samples/raw/pentax-k-r.dng",
+      "sha256": "adc5c155341543e2e5c6de9c0ce87c86cc4629fe90a0f6e68fdf685dcd531b64",
+      "bytes": 13397743
+    },
+    {
+      "path": "packages/panorama/README.md",
+      "sha256": "d934107ec44fa5dceaec71b268424071b19be0cb1b3b9777c821e57bc934a27c",
+      "bytes": 3905
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "sha256": "86c6d2c534bd90e3753afd46e159567c9320eaeda3f3930c6084a54d8456e835",
+      "bytes": 38619
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "sha256": "a18e2fb819839513c17958a5e2a44aa1f2e687a1101da0f25f3c80a645790e74",
+      "bytes": 37160
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "sha256": "d2215a8069d8a4fb3a14b5056f0ab86957ec3cacd6b62169ae075642dd7fcb43",
+      "bytes": 88562
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "sha256": "adaa36381720d43f9f2c65998c567d1c8e51cf00106efe1280023179207086a8",
+      "bytes": 3853
+    },
+    {
+      "path": "apps/demo/dist/build-info.json",
+      "sha256": "c889d84494cea11b02137088dd0460e942cd1fb342fd90f05649d26a36547afe",
+      "bytes": 876
+    },
+    {
+      "path": "apps/demo/vite.config.ts",
+      "sha256": "c59cf4425e5f223ee83635a4528ffeb2ceb8d63ee3166dd5d84710920d2f1267",
+      "bytes": 14226
+    },
+    {
+      "path": "playwright.config.ts",
+      "sha256": "5b2993d7ef92a9c75e16315d52a9c0fdc4207cd5576e7abc45e2d43a21c331d4",
+      "bytes": 621
+    },
+    {
+      "path": "apps/demo/dist/assets/index-D5zSLHLT.css",
+      "sha256": "28368a57749f016bc98571bedb5e90a142ad116f6139ec0056474559ac85683e",
+      "bytes": 32017
+    },
+    {
+      "path": "apps/demo/dist/assets/index-pVF-iVC-.js",
+      "sha256": "7af583220ef96743c95b75bbbdb2ef086c1c6e1e49f547d41ce7f5d4c0e2b782",
+      "bytes": 145197
+    },
+    {
+      "path": "apps/demo/dist/assets/media-BrueUWFI.css",
+      "sha256": "67e4dc2c50b980fa3c71ebe803040192fa1fedf5c91d54851619512660576d94",
+      "bytes": 7170
+    },
+    {
+      "path": "apps/demo/dist/assets/media-Dqe8pafv.js",
+      "sha256": "0d9c9d87322e85e6db7e44452237665fc42efd3f5ba232c540d1d76140ab8a3f",
+      "bytes": 214890
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/panorama-processor.patch",
+      "sha256": "07a0dd94a7d5f5977dbe77e11f544fecaf17e398b6cf610df5185b2bffc49a9a",
+      "bytes": 34780
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/panorama-processor-content-review.json.gz",
+      "sha256": "96154a1ffb56644e8069f497be2f0a055aad605cb3a37c1c26b4f09aa6ade4b7",
+      "bytes": 2618
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/panorama-processor-diagnostic.json.gz",
+      "sha256": "4e3079de05dc0da1b515bed524b6374786cb8d3978f893b68502379263798e88",
+      "bytes": 1987457
+    }
+  ],
+  "reproduction": [
+    "Restore diagnostic baselineFiles at their repository-relative paths, or reverse panorama-processor.patch only in an isolated checkout preserving earlier work. Never reverse it in the current working checkout.",
+    "From each package listed in unitByPackage: ../../node_modules/.bin/vitest run",
+    "In the isolated old processor copy, run test/processor-ownership.spec.ts: seventeen fail, two controls pass, with no unhandled errors.",
+    "node scripts/review-panorama-processor.mjs --baseline tmp/continued-review/panorama-processor-baseline/wasm-processor.ts --output tmp/continued-review/panorama-processor-reproduced",
+    "npm run build:panorama && npm run build:demo",
+    "npx playwright test apps/demo/e2e/panorama-processor.e2e.ts apps/demo/e2e/panorama-lifecycle.e2e.ts apps/demo/e2e/panorama-raw.e2e.ts --grep-invert 'camera-original' --workers=1",
+    "Serve the demo with vite preview on 127.0.0.1:4174, then run the productionBrowser command above. Both browser commands explicitly exclude camera-original tests."
+  ]
+}

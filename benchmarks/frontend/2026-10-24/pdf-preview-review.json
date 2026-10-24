@@ -1,0 +1,295 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "externalComparisonRunsAdded": 0,
+  "engineeringComparisonRuns": 42,
+  "diagnosticRunsExcluded": 138,
+  "cumulativeExternalComparisonRuns": 2604,
+  "cumulativeSuccessfulFilensRuns": 1064,
+  "method": "Fresh Chromium context per invocation; rotated current/baseline order. Same PDF.js version, viewport 1000x800, DPR 1, host 800x600. Inputs and JS ready before timing; worker startup remains included. First painted preview is sampled after two animation frames when the first canvas contains nonwhite content. Ready time waits for load() plus two frames: eager baseline completes every page; virtual current completes visible/nearby pages. Full-page pixel signatures and interactions are checked separately after timing. Engineering only, no peer SOTA ranking.",
+  "versions": {
+    "pdfjs-dist": "5.4.624"
+  },
+  "sources": {
+    "pdf-preview.json.gz": {
+      "uncompressedSha256": "f47210077c74699b8f59c10fdc5cd1f7f6f66f276ef0d64710651118db4fa616",
+      "compressedSha256": "5234505e77c5f22f208424b6131254fad5ec34537513332c2b123fd756c1bf0f",
+      "runs": 42
+    },
+    "pdf-preview-diagnostic.json.gz": {
+      "uncompressedSha256": "b0e05b9a7cc3d7c8d06ea931d6ab013f903b097d4537528475daa7f85f6220f6",
+      "compressedSha256": "adc6c32f9fdb34f400dc7a689d20c9ca927a8b98687fafa66ca356541ae24c33",
+      "runs": 138
+    }
+  },
+  "productionPatch": {
+    "path": "pdf-preview.patch",
+    "sha256": "75693b9c1cf45c4d7fedbe6211e4d8cb10b312f0a133c20b59cc436c4535256b"
+  },
+  "implementationSources": {
+    "packages/pdf/src/preview-driver.ts": "7a4928a126500644fbc784d658c023ddcac16f5a8e61b581804be2862eddfa01",
+    "packages/pdf/src/styles/index.css": "b5c8b6c799f61d5cc9e0231ee7419880e3f6c2ca4c6a763a7db4d646cec91fa5",
+    "packages/pdf/test/preview-driver.spec.ts": "0de1f30a76d37fabd75413b8fa9c51ad6ca2273a3ccd028da8d9d5b504feb6f9",
+    "packages/pdf/test/fixtures/document.mjs": "2d31f17e345dde75cd6ff7a9c35ef346ae548a880a2eedc8284c569ae62a9c15",
+    "apps/demo/e2e/pdf-lifecycle.e2e.ts": "413cfd6c88810e51ae5b63486555331527eb287f85d826f012b19b7e6681811c",
+    "apps/demo/e2e/demo.e2e.ts": "afcde51b8e8f6d8c1abed86dc0a4e99ec53cf9a8db134fa1c852fbe9724295b4",
+    "scripts/benchmark-pdf-preview.mjs": "fde924542bfb52f4cff027f3e06781343adfdf64bce9b3ec29a1c41919b88aa5",
+    "scripts/summarize-pdf-preview-benchmark.mjs": "6158032c2a598373e7b629adbe71cf63dbfc0270daafbb314d2ed98b014010b4"
+  },
+  "currentArtifact": {
+    "path": "packages/pdf/dist/index.js",
+    "sha256": "046e9981bbce018c2b9e04ea9c57d8af304e17f713965123f46509e594a70cf0"
+  },
+  "currentStyles": {
+    "path": "packages/pdf/dist/index.css",
+    "sha256": "a16aefeeef4bd2303b3857880b22e37d40fcaa985dd56bf189b5f6a84b74dc82"
+  },
+  "baseline": {
+    "artifactPath": "tmp/continued-review/pdf-baseline/dist/index.js",
+    "artifactSha256": "256fad9ea016cf4a05452ad4d9ae84ab4282f511fde5b952abeeb726a822a8d6",
+    "cssSha256": "c72617f4f8b5fe8752f305f3d2b9d144f81828a0e7127cc91715da11e53baafb",
+    "sourceSha256": "2245b31dbc9be3a8a5bd8800438811fcbb8fafdeb6bae875b8f260e74d1cf326",
+    "stylesheetSourceSha256": "fcd4d66c80105e57bdc3f5a27040a499f270fe265b5e2604f8286e0f2db1ec10",
+    "reproduction": "Reverse pdf-preview.patch, build @filens/pdf, copy dist to tmp/continued-review/pdf-baseline/dist. Restore the patch and rebuild. Run node scripts/benchmark-pdf-preview.mjs --iterations 7 --review --output <directory>, then scripts/summarize-pdf-preview-benchmark.mjs --input <directory>/results.json. Inputs and both modules must be ready before timing. The benchmark generates two deterministic PDFs and reads the repository three-page PDF."
+  },
+  "samples": [
+    {
+      "name": "cosmic-atlas.pdf",
+      "bytes": 689455,
+      "sha256": "7f085e7cfcb77645a9e296cd527150037868f7e1ead61fddf6d1a316b9576a69"
+    },
+    {
+      "name": "generated-100-pages.pdf",
+      "bytes": 311219,
+      "sha256": "bc13fd30d94122b8158d9b2d6a3bce9fa1bfbb8c3af17d6959709fd97d1d4711"
+    },
+    {
+      "name": "generated-100-mixed-pages.pdf",
+      "bytes": 311285,
+      "sha256": "7ce4ee0373d72228dca939c9c85a6a392b64b4104f6d52a3222b88ff6fdfda2d"
+    }
+  ],
+  "completePixelReview": {
+    "pagePairs": 203,
+    "allMatch": true,
+    "coverage": "Three repository pages plus 100 uniform and 100 mixed-size generated pages. Entire RGBA buffers and dimensions are compared for every page in iteration zero; every first page also matches across all seven timed repetitions."
+  },
+  "comparisons": [
+    {
+      "sample": "cosmic-atlas.pdf",
+      "firstPagePixelsMatch": true,
+      "completePageReviewMatches": true,
+      "reviewedPages": 3,
+      "comparisons": [
+        {
+          "metric": "readyMs",
+          "current": 116.69999992847443,
+          "baseline": 134,
+          "ratio": 1.148243359744034,
+          "ratio95PercentBootstrapInterval": [
+            1.1195928755444713,
+            1.176470588481556
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "firstPaintMs",
+          "current": 116.69999992847443,
+          "baseline": 117.19999992847443,
+          "ratio": 1.0042844901482986,
+          "ratio95PercentBootstrapInterval": [
+            0.9770992362321483,
+            1.0298769758770816
+          ],
+          "stableEngineeringReduction": false,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvasPixels",
+          "current": 720000,
+          "baseline": 1080000,
+          "ratio": 1.5,
+          "ratio95PercentBootstrapInterval": [
+            1.5,
+            1.5
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvases",
+          "current": 2,
+          "baseline": 3,
+          "ratio": 1.5,
+          "ratio95PercentBootstrapInterval": [
+            1.5,
+            1.5
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "generated-100-pages.pdf",
+      "firstPagePixelsMatch": true,
+      "completePageReviewMatches": true,
+      "reviewedPages": 100,
+      "comparisons": [
+        {
+          "metric": "readyMs",
+          "current": 104.19999992847443,
+          "baseline": 1750.2000000476837,
+          "ratio": 16.796545117553418,
+          "ratio95PercentBootstrapInterval": [
+            16.463781757374377,
+            17.191176470588236
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "firstPaintMs",
+          "current": 120.59999990463257,
+          "baseline": 116.70000004768372,
+          "ratio": 0.9676616927028783,
+          "ratio95PercentBootstrapInterval": [
+            0.9433805156521594,
+            1.0134907253247911
+          ],
+          "stableEngineeringReduction": false,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvasPixels",
+          "current": 540000,
+          "baseline": 27000000,
+          "ratio": 50,
+          "ratio95PercentBootstrapInterval": [
+            50,
+            50
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvases",
+          "current": 2,
+          "baseline": 100,
+          "ratio": 50,
+          "ratio95PercentBootstrapInterval": [
+            50,
+            50
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "generated-100-mixed-pages.pdf",
+      "firstPagePixelsMatch": true,
+      "completePageReviewMatches": true,
+      "reviewedPages": 100,
+      "comparisons": [
+        {
+          "metric": "readyMs",
+          "current": 100.70000004768372,
+          "baseline": 1753.6999999284744,
+          "ratio": 17.41509433066592,
+          "ratio95PercentBootstrapInterval": [
+            17.00874634038487,
+            17.673057513166494
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "firstPaintMs",
+          "current": 117.30000007152557,
+          "baseline": 120.29999995231628,
+          "ratio": 1.0255754465384606,
+          "ratio95PercentBootstrapInterval": [
+            0.9765690380559306,
+            1.0485762140156987
+          ],
+          "stableEngineeringReduction": false,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvasPixels",
+          "current": 750000,
+          "baseline": 32148000,
+          "ratio": 42.864,
+          "ratio95PercentBootstrapInterval": [
+            42.864,
+            42.864
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "canvases",
+          "current": 2,
+          "baseline": 100,
+          "ratio": 50,
+          "ratio95PercentBootstrapInterval": [
+            50,
+            50
+          ],
+          "stableEngineeringReduction": true,
+          "stableEngineeringIncrease": false,
+          "scopedSota": false
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "pdfUnitTestsPassed": 9,
+    "vueUnitTestsPassed": 44,
+    "browserTestsPassed": 3,
+    "builds": [
+      "@filens/pdf",
+      "demo",
+      "bundle report"
+    ],
+    "testRepairs": "The old demo test referenced removed presentation/compare layout buttons. It now exercises actual PDF toolbar controls. New tests tolerate PDF.js one-pixel viewport rounding and explicitly wait for delayed reads to begin rather than assuming worker destruction takes two microtasks.",
+    "coverage": [
+      "actual demo PDF toolbar Next/Prev/zoom/fit and switching to CSV",
+      "100-page mixed geometry with bounded canvases",
+      "resize and low-zoom visible-page coverage",
+      "aborted reads and worker loading",
+      "stale render/getPage failures, switching, destruction and canvas release"
+    ],
+    "localMarkdownLinksChecked": 357,
+    "evidenceAndRuntimeHashesChecked": true,
+    "reverseProductionPatchCheck": true,
+    "syntaxAndWhitespaceChecksPassed": true
+  },
+  "behaviorChanges": [
+    "Default virtual rendering finishes loading after visible pages are rendered, prefetches nearby pages, and zeros/releases distant canvas buffers.",
+    "Page navigation, zoom/fit, resizing, fullscreen and cancellation are connected to the public session API.",
+    "Default virtual preview does not advertise complete-document printing. virtual:false retains eager rendering and that capability.",
+    "Unopened page sizes use first-page estimates until PDF.js supplies actual page dimensions.",
+    "The abort listener retains only its signal rather than the source descriptor. Viewport dimensions are read once before writing page sizes."
+  ],
+  "limitations": [
+    "Same PDF.js engine before and after; this is scheduling engineering, not an independent parser/rendering algorithm or peer SOTA comparison.",
+    "Loading settlement and the first nonwhite-content sample are distinct metrics. All final first-content ratio intervals overlap 1; no first-visible timing improvement is claimed.",
+    "Canvas backing-store pixel counts do not measure total process, PDF.js worker or GPU memory. PDF.js retains its own document/page caches.",
+    "The two 100-page fixtures are deterministic synthetic documents. The real repository document has three pages. Text search/selection layers remain unavailable."
+  ],
+  "conclusion": "Uniform 100-page load settlement: 1750.2 to 104.2 ms (16.80x); mixed-size 100-page load settlement: 1753.7 to 100.7 ms (17.42x). Initial canvases: 100 to 2; uniform canvas pixels: 27,000,000 to 540,000 (98% fewer). All 203 page pairs are pixel-identical. First visible content has no stable final change; no SOTA label."
+}

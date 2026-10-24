@@ -5,6 +5,7 @@ import type {
   PreviewLoadContext,
   PreviewSource
 } from '@filens/core';
+import { base64ToBytes, isConversionSourceUrl, isDataUrl, readDataUrl, throwIfAborted, waitForConversion } from './source';
 
 export * from './wasm-client';
 
@@ -60,31 +61,39 @@ export function createHttpConverterClient(options: HttpConverterClientOptions): 
 
   return {
     async convert(request, context) {
+      const signal = context.signal;
+      throwIfAborted(signal);
       const body = new FormData();
       body.set('sourceFormat', request.sourceFormat);
       body.set('targetFormat', request.targetFormat);
       if (request.name) body.set('name', request.name);
       if (request.password) body.set('password', request.password);
       if (request.locale) body.set('locale', request.locale);
-      body.set('file', await sourceToBlob(request.source, request), inferUploadFileName(request));
+      body.set('file', await sourceToBlob(request.source, request, fetchImpl, signal), inferUploadFileName(request));
+      throwIfAborted(signal);
 
-      const response = await fetchImpl(options.endpoint, {
+      const headers = typeof options.headers === 'function' ? options.headers(request) : options.headers;
+      throwIfAborted(signal);
+      const response = await waitForConversion(fetchImpl(options.endpoint, {
         method: 'POST',
         body,
-        signal: context.signal,
+        signal,
         credentials: options.credentials,
-        headers: typeof options.headers === 'function' ? options.headers(request) : options.headers
-      });
+        headers
+      }), signal);
+      throwIfAborted(signal);
 
       if (!response.ok) {
-        throw await httpConversionError(response, request);
+        throw await waitForConversion(httpConversionError(response, request), signal);
       }
 
       if ((options.responseType ?? 'json') === 'blob') {
-        return blobResponseToConversionResult(response, request.targetFormat);
+        return waitForConversion(blobResponseToConversionResult(response, request.targetFormat), signal);
       }
 
-      return jsonResponseToConversionResult(await response.json(), request, response);
+      const payload = await waitForConversion(response.json(), signal);
+      throwIfAborted(signal);
+      return jsonResponseToConversionResult(payload, request, response);
     }
   };
 }
@@ -166,7 +175,7 @@ function httpErrorResultFromHeaders(headers: Headers, request: ConversionRequest
   };
 }
 
-async function sourceToBlob(source: PreviewSource, request: ConversionRequest): Promise<Blob> {
+async function sourceToBlob(source: PreviewSource, request: ConversionRequest, fetchImpl: typeof fetch, signal?: AbortSignal): Promise<Blob> {
   const inferredType = inferContentType(request.name, request.sourceFormat);
   if (source instanceof Blob) {
     if (source.type || inferredType === 'application/octet-stream') {
@@ -180,12 +189,22 @@ async function sourceToBlob(source: PreviewSource, request: ConversionRequest): 
     if (isDataUrl(source)) {
       return dataUrlToBlob(source, inferredType);
     }
+    if (isConversionSourceUrl(source)) {
+      const response = await waitForConversion(fetchImpl(source, { signal }), signal);
+      throwIfAborted(signal);
+      if (!response.ok) throw new Error(`Failed to fetch conversion source: ${response.status} ${response.statusText}`.trim());
+      const blob = await waitForConversion(response.blob(), signal);
+      throwIfAborted(signal);
+      return blob.type ? blob : new Blob([blob], { type: inferredType });
+    }
     return new Blob([source], {
       type: inferredType === 'application/octet-stream' ? 'text/plain' : inferredType
     });
   }
   if (ArrayBuffer.isView(source)) {
     const bytes = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+    if (bytes.buffer instanceof ArrayBuffer) return new Blob([bytes as Uint8Array<ArrayBuffer>], { type: inferredType });
+    // Blob rejects SharedArrayBuffer views; keep a snapshot for those callers.
     const copy = new Uint8Array(bytes.byteLength);
     copy.set(bytes);
     return new Blob([copy.buffer as ArrayBuffer], {
@@ -244,26 +263,10 @@ function decodeJsonSource(record: Record<string, unknown>): PreviewSource {
 }
 
 function dataUrlToBlob(dataUrl: string, fallbackContentType = 'application/octet-stream'): Blob {
-  const commaIndex = dataUrl.indexOf(',');
-  if (commaIndex < 0) {
-    return new Blob([dataUrl]);
-  }
-  const meta = dataUrl.slice(0, commaIndex);
-  const payload = dataUrl.slice(commaIndex + 1);
-  const contentType = meta.match(/^data:([^;,]+)/i)?.[1] ?? fallbackContentType;
-  const bytes = meta.toLowerCase().includes(';base64')
-    ? base64ToBytes(payload)
-    : new TextEncoder().encode(decodeURIComponent(payload));
-  const copy = new Uint8Array(bytes.byteLength);
-  copy.set(bytes);
-  return new Blob([copy.buffer as ArrayBuffer], {
-    type: contentType
+  const { bytes, contentType } = readDataUrl(dataUrl);
+  return new Blob([bytes as Uint8Array<ArrayBuffer>], {
+    type: contentType ?? fallbackContentType
   });
-}
-
-function base64ToBytes(base64: string): Uint8Array {
-  const binary = atob(base64);
-  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
 function parseWarningsHeader(headers: Headers): string[] | undefined {
@@ -849,8 +852,4 @@ function inferSpecialFileFormat(name: string): string {
 
 function normalizeFormat(format: string): string {
   return format.trim().replace(/^\./, '').toLowerCase();
-}
-
-function isDataUrl(source: string): boolean {
-  return source.trimStart().toLowerCase().startsWith('data:');
 }

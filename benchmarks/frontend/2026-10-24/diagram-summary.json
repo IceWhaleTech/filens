@@ -1,0 +1,276 @@
+{
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "79eba28d98d13896a43f0c6e52e27b085f747d910615c0dc0fbabd35a0f472ee",
+  "iterations": 7,
+  "runs": 112,
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "method": "10,000 paired bootstrap resamples of median ratios, seed 12345. XML/ZIP-to-model parsing and separate session load through SVG DOM construction; layout/paint excluded. Session measurement follows parser measurement in the same context. Baseline operations at or below 10 ms receive no speed claim. No peer/SOTA ranking.",
+  "samples": [
+    {
+      "sample": "drawio-3000-plain",
+      "nodeCount": 3000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 10.799999952316284,
+          "baselineMs": 19.5,
+          "ratio": 1.8055555635273701,
+          "ratio95PercentBootstrapInterval": [
+            1.7727272727272727,
+            1.831775694999625
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 19.799999952316284,
+          "baselineMs": 28.899999976158142,
+          "ratio": 1.4595959619069243,
+          "ratio95PercentBootstrapInterval": [
+            1.432835822754433,
+            1.4670050713810097
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "drawio-3000-html",
+      "nodeCount": 3000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 12.800000071525574,
+          "baselineMs": 21.700000047683716,
+          "ratio": 1.6953124942519935,
+          "ratio95PercentBootstrapInterval": [
+            1.6796874906140147,
+            1.6953125100408215
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 22.200000047683716,
+          "baselineMs": 31.300000071525574,
+          "ratio": 1.4099099101034158,
+          "ratio95PercentBootstrapInterval": [
+            1.3839285655365308,
+            1.422727275978435
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "visio-1000",
+      "nodeCount": 1000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 26.600000023841858,
+          "baselineMs": 45.39999997615814,
+          "ratio": 1.7067669148671296,
+          "ratio95PercentBootstrapInterval": [
+            1.67286244760087,
+            1.710526321922124
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 30.199999928474426,
+          "baselineMs": 49,
+          "ratio": 1.6225165601341531,
+          "ratio95PercentBootstrapInterval": [
+            1.6085526296698651,
+            1.6345514953060787
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "vsdx-3000",
+      "nodeCount": 3000,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 79.80000007152557,
+          "baselineMs": 141.5,
+          "ratio": 1.7731829558041614,
+          "ratio95PercentBootstrapInterval": [
+            1.7571606463033616,
+            1.7839196001272342
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 86.69999992847443,
+          "baselineMs": 154.5,
+          "ratio": 1.782006921885341,
+          "ratio95PercentBootstrapInterval": [
+            1.7620137304577768,
+            1.7919075144508672
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": false,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "drawio-small-30",
+      "nodeCount": 30,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 0.6000000238418579,
+          "baselineMs": 0.8000000715255737,
+          "ratio": 1.3333333995607137,
+          "ratio95PercentBootstrapInterval": [
+            1.1428571915140007,
+            1.500000198682181
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 0.8999999761581421,
+          "baselineMs": 1,
+          "ratio": 1.1111111405455043,
+          "ratio95PercentBootstrapInterval": [
+            1,
+            1.222222148636239
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "blue-box.vsdx",
+      "nodeCount": 1,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 3.4000000953674316,
+          "baselineMs": 3.600000023841858,
+          "ratio": 1.0588235067248764,
+          "ratio95PercentBootstrapInterval": [
+            1.028571435383388,
+            1.088235315773314
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 1.399999976158142,
+          "baselineMs": 1.399999976158142,
+          "ratio": 1,
+          "ratio95PercentBootstrapInterval": [
+            0.9999999148505133,
+            1.1666666004392863
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "color-boxes.vsdx",
+      "nodeCount": 7,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 4,
+          "baselineMs": 4.399999976158142,
+          "ratio": 1.0999999940395355,
+          "ratio95PercentBootstrapInterval": [
+            1.0487804700759535,
+            1.153846125630938
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 2,
+          "baselineMs": 2.399999976158142,
+          "ratio": 1.199999988079071,
+          "ratio95PercentBootstrapInterval": [
+            1.095238116863363,
+            1.199999988079071
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    },
+    {
+      "sample": "testfile1.vsdx",
+      "nodeCount": 12,
+      "completeModelsAndSvgMatch": true,
+      "comparisons": [
+        {
+          "metric": "parseMs",
+          "currentMs": 4.799999952316284,
+          "baselineMs": 5.800000071525574,
+          "ratio": 1.208333360238208,
+          "ratio95PercentBootstrapInterval": [
+            1.183673465415767,
+            1.2291666987455556
+          ],
+          "stableEngineeringReduction": true,
+          "below10MsControl": true,
+          "scopedSota": false
+        },
+        {
+          "metric": "sessionLoadMs",
+          "currentMs": 2.5,
+          "baselineMs": 2.600000023841858,
+          "ratio": 1.0400000095367432,
+          "ratio95PercentBootstrapInterval": [
+            1,
+            1.0833333540293908
+          ],
+          "stableEngineeringReduction": false,
+          "below10MsControl": true,
+          "scopedSota": false
+        }
+      ]
+    }
+  ]
+}

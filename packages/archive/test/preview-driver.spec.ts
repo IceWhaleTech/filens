@@ -1,4 +1,7 @@
 import JSZip from 'jszip';
+import { readFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import {
@@ -10,6 +13,16 @@ import {
 } from '../src';
 
 describe('Archive preview driver', () => {
+  it.each(['pax', 'gnu'])('reads a %s archive written by Python tarfile', async format => {
+    const bytes = await readFile(join(dirname(fileURLToPath(import.meta.url)), 'fixtures', `${format}-long-path.tar`));
+    const index = await createArchiveResourceIndex(bytes, createLoadContext(`${format}.tar`));
+    const path = `目录/${'long-file-name-'.repeat(12)}预览.txt`;
+    expect(index.files.map(entry => entry.name)).toEqual(expect.arrayContaining([path, 'next.txt']));
+    expect(index.files).toHaveLength(2);
+    await expect(index.read(path)?.readAsText()).resolves.toBe('Long path preview: 中文内容\n');
+    await expect(index.read('next.txt')?.readAsText()).resolves.toBe('Next entry\n');
+  });
+
   it('exposes supported read-only archive routes', () => {
     const routes = createArchivePreviewRoutes();
     const zipRoute = routes.find((route) => route.extensions.includes('zip'));
@@ -44,6 +57,65 @@ describe('Archive preview driver', () => {
     await expect(tgzIndex.read('data/value.json')?.readAsText()).resolves.toBe('{"ok":true}');
     expect(gzipIndex.files.map((entry) => entry.name)).toEqual(['note.txt']);
     await expect(gzipIndex.files[0]?.readAsText()).resolves.toBe('plain text');
+  });
+
+  it.each(['pax', 'gnu'])('reads long Unicode %s paths without leaking metadata to the next file', async format => {
+    const path = `目录/${'long-segment/'.repeat(20)}预览.txt`;
+    const extension = format === 'pax'
+      ? { name: 'PaxHeaders/file', type: 'x', content: paxRecord('path', path) + paxRecord('mtime', '1700000000.125') }
+      : { name: '././@LongLink', type: 'L', content: `${path}\0` };
+    const tar = createTarRecords([extension,
+      { name: 'truncated.txt', content: 'Long path preview' },
+      { name: 'next.txt', content: 'Next file' }
+    ]);
+    for (const gzip of [false, true]) {
+      const index = await createArchiveResourceIndex(gzip ? gzipSync(tar) : tar, createLoadContext(gzip ? 'long.tgz' : 'long.tar'));
+      expect(index.files.map(entry => entry.name)).toEqual(expect.arrayContaining([path, 'next.txt']));
+      expect(index.files).toHaveLength(2);
+      await expect(index.read(path)?.readAsText()).resolves.toBe('Long path preview');
+      await expect(index.read('next.txt')?.readAsText()).resolves.toBe('Next file');
+      expect(index.read(path)?.size).toBe(17);
+      expect(index.read(path)?.modified).toBe(format === 'pax' ? 1_700_000_000_125 : 1_700_000_000_000);
+      expect(index.read('next.txt')?.modified).toBe(1_700_000_000_000);
+    }
+  });
+
+  it('applies and clears global/local PAX values while respecting extended file sizes', async () => {
+    const tar = createTarRecords([
+      { name: 'Global', type: 'g', content: paxRecord('mtime', '123.5') + paxRecord('comment', 'unknown field') },
+      { name: 'Local', type: 'x', content: paxRecord('path', 'actual.txt') + paxRecord('size', '4') },
+      { name: 'short.txt', content: 'data', headerSize: 1 },
+      { name: 'inherited.txt', content: 'Inherited' },
+      { name: 'Local', type: 'x', content: paxRecord('mtime', '') },
+      { name: 'local-default.txt', content: 'Local reset' },
+      { name: 'Global', type: 'g', content: paxRecord('mtime', '') },
+      { name: 'global-default.txt', content: 'Global reset' }
+    ]);
+    const index = await createArchiveResourceIndex(tar, createLoadContext('pax.tar'));
+    expect(index.files).toHaveLength(4);
+    await expect(index.read('actual.txt')?.readAsText()).resolves.toBe('data');
+    expect(index.read('actual.txt')?.size).toBe(4);
+    expect(index.read('actual.txt')?.modified).toBe(123_500);
+    expect(index.read('inherited.txt')?.modified).toBe(123_500);
+    expect(index.read('local-default.txt')?.modified).toBe(1_700_000_000_000);
+    expect(index.read('global-default.txt')?.modified).toBe(1_700_000_000_000);
+  });
+
+  it('consumes local PAX metadata even for an unsupported symbolic-link entry', async () => {
+    const tar = createTarRecords([
+      { name: 'Local', type: 'x', content: paxRecord('path', 'link.txt') },
+      { name: 'link', type: '2', content: '' },
+      { name: 'actual.txt', content: 'Actual file' }
+    ]);
+    const index = await createArchiveResourceIndex(tar, createLoadContext('link.tar'));
+    expect(index.files.map(entry => entry.name)).toEqual(['actual.txt']);
+  });
+
+  it.each(['99 path=a\n', '0 path=a\n', '-1 path=a\n', '12 invalid!\n',
+    paxRecord('size', '-1'), paxRecord('size', '1.5'), paxRecord('mtime', 'NaN')
+  ])('rejects malformed or truncated PAX metadata: %j', async content => {
+    const tar = createTarRecords([{ name: 'PaxHeader', type: 'x', content }, { name: 'data.txt', content: 'data' }]);
+    await expect(createArchiveResourceIndex(tar, createLoadContext('bad-pax.tar'))).rejects.toThrow('TAR');
   });
 
   it('renders ZIP entries into an archive table', async () => {
@@ -156,6 +228,37 @@ describe('Archive preview driver', () => {
 
     expect(index.read('shared.png')).toBeUndefined();
     await expect(resolveBytes(index.resolve, 'a/shared.png')).resolves.toEqual([1]);
+  });
+
+  it('preserves rooted, encoded, Unicode and Windows resource paths in a shared index', async () => {
+    const zip = new JSZip();
+    zip.file('scene/目录/空 格.txt', '中文');
+    zip.file('scene/encoded%20asset.json', '{}');
+    zip.file('scene/textures/shared.png', new Uint8Array([1]));
+    zip.file('other/shared.png', new Uint8Array([2]));
+    zip.file('scene\\buffers\\model.bin', new Uint8Array([3, 4]), { createFolders: false });
+    const index = await createArchiveResourceIndex(await zip.generateAsync({ type: 'uint8array' }), createLoadContext(), {
+      root: './scene/', contentTypes: { 'scene/目录/空 格.txt': 'text/custom', json: 'application/custom+json' }
+    });
+    await expect(index.read('https://example.test/scene/目录/空%20格.txt?v=1#preview')?.readAsText()).resolves.toBe('中文');
+    await expect(index.read('目录/空 格.txt')?.readAsText()).resolves.toBe('中文');
+    await expect(index.read('encoded%20asset.json')?.readAsText()).resolves.toBe('{}');
+    await expect(index.read('buffers/model.bin')?.readAsArrayBuffer()).resolves.toEqual(new Uint8Array([3, 4]).buffer);
+    expect(index.read('空 格.txt')?.contentType).toBe('text/custom');
+    expect(index.read('encoded asset.json')?.contentType).toBe('application/custom+json');
+    expect(index.read('shared.png')).toBeUndefined();
+    await expect(resolveBytes(index.resolve, 'textures/shared.png')).resolves.toEqual([1]);
+    await expect(resolveBytes(index.resolve, 'other/shared.png')).resolves.toEqual([2]);
+    expect(index.entries.map(entry => entry.type).slice(0, 4)).toEqual(Array(4).fill('directory'));
+  });
+
+  it('keeps extracted buffers independent from cached archive contents', async () => {
+    const index = await createArchiveResourceIndex(await createZipFixture(), createLoadContext());
+    const entry = index.read('docs/readme.txt')!;
+    const bytes = new Uint8Array(await entry.readAsArrayBuffer());
+    bytes.fill(0);
+    await expect(entry.readAsText()).resolves.toBe('Archive preview');
+    expect(new Uint8Array(await entry.readAsArrayBuffer())[0]).toBe('A'.charCodeAt(0));
   });
 
   it('can return blobs with inferred content types', async () => {
@@ -273,18 +376,31 @@ function createLoadContext(name = 'bundle.zip') {
 }
 
 function createTarFixture(files: Record<string, string>): Uint8Array {
+  return createTarRecords(Object.entries(files).map(([name, content]) => ({ name, content })));
+}
+
+function paxRecord(key: string, value: string): string {
+  const content = ` ${key}=${value}\n`;
+  let length = new TextEncoder().encode(content).length + 1;
+  while (String(length).length + new TextEncoder().encode(content).length !== length) {
+    length = String(length).length + new TextEncoder().encode(content).length;
+  }
+  return `${length}${content}`;
+}
+
+function createTarRecords(files: Array<{ name: string; content: string; type?: string; headerSize?: number }>): Uint8Array {
   const chunks: Uint8Array[] = [];
-  for (const [name, content] of Object.entries(files)) {
+  for (const { name, content, type = '0', headerSize } of files) {
     const data = new TextEncoder().encode(content);
     const header = new Uint8Array(512);
     writeTarString(header, 0, 100, name);
     writeTarOctal(header, 100, 8, 0o644);
     writeTarOctal(header, 108, 8, 0);
     writeTarOctal(header, 116, 8, 0);
-    writeTarOctal(header, 124, 12, data.byteLength);
+    writeTarOctal(header, 124, 12, headerSize ?? data.byteLength);
     writeTarOctal(header, 136, 12, 1_700_000_000);
     header.fill(32, 148, 156);
-    header[156] = '0'.charCodeAt(0);
+    header[156] = type.charCodeAt(0);
     writeTarString(header, 257, 6, 'ustar');
     writeTarString(header, 263, 2, '00');
     writeTarOctal(header, 148, 8, header.reduce((sum, value) => sum + value, 0));

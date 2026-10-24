@@ -1,0 +1,294 @@
+{
+  "method": "Seven fresh Chromium contexts per engine/input; deterministically rotated engine order. Input bytes and libraries ready before timing. Includes UTF-8 decoding, CSV parsing and the complete public workbook model for filens. PapaParse returns raw fields; SheetJS returns a workbook with codepage 65001 and raw values. Entire row/field signatures are checked after timing. No concurrent builds or tests during measurements.",
+  "externalComparisonRunsAdded": 63,
+  "successfulFilensExternalRunsAdded": 21,
+  "engineeringComparisonRuns": 42,
+  "diagnosticRunsExcluded": 111,
+  "cumulativeExternalComparisonRuns": 2604,
+  "cumulativeSuccessfulFilensRuns": 1064,
+  "sources": {
+    "csv.json.gz": {
+      "uncompressedSha256": "c43f827232fbd6f35b3f6ad875edb6daca41595d3ffe56e3ba97e41c200f4d31",
+      "compressedSha256": "b137ab4495a2f417e139f2eee439b2d57c96d3a67482c4a5fdd93e8e6d5373a7",
+      "runs": 63
+    },
+    "csv-ab.json.gz": {
+      "uncompressedSha256": "cefdb0fbde011efda13a7a5c08837aeac7440d5fe02b875f50e90283d4d96e1a",
+      "compressedSha256": "2169897f90d81793b24d9948aa13bd739b78e7ce0b7f4e48e02c38cd01fafe0c",
+      "runs": 42
+    },
+    "csv-content-review.json.gz": {
+      "uncompressedSha256": "44b1039098e68852023adbdb4801bb71c2ef21ebc8dd4be3e565e6324e583cf0",
+      "compressedSha256": "3d3b442eb6e36aa399bd3d72941d0e53fe7939413f51665c71d6f79df52e529a",
+      "samples": 8,
+      "generatedCases": 240
+    },
+    "csv-diagnostic.json.gz": {
+      "uncompressedSha256": "e08ae2301fb4f56a7b798446a0ead3be762da43108b701954a631328a4729f32",
+      "compressedSha256": "0979dea0ac88006f9b080349b0d92c1a99067c526baf9e8c9c3e258fd39fb6bd",
+      "runs": 111
+    }
+  },
+  "productionPatch": {
+    "path": "csv.patch",
+    "sha256": "a37846c80d251e815c5c4adb71869162b8d82a32fc56b0fdce8dbad46b8b81b9"
+  },
+  "harnessPatch": {
+    "path": "csv-harness.patch",
+    "sha256": "83e4b9fed56c850750a2e1b865ead8867fdc8db485b0ac11c122ff62f667004f",
+    "reversal": "Reverse only this patch to restore the benchmark/preparer from the archive checkpoint; preserves earlier CAD/archive engineering options."
+  },
+  "implementationSources": {
+    "packages/xlsx/src/parser.ts": "d6fcf46b9e73c31fe089fdb24594ac4223a7c05c0e076b77da726cc5cc751d04",
+    "packages/xlsx/test/preview-driver.spec.ts": "0f153e12b70fd445c3f50a9ac0f3090dce6110d79dccec9f878294c0b0e247e4",
+    "apps/demo/e2e/csv-records.e2e.ts": "88cd6c9179364c26cb1468738825e568f4ef346227353e037b85303673c16be0",
+    "scripts/benchmark-other-formats.mjs": "b3a9d24deb821a24862de2d2ee1e133f2ed946cba43e27e13f688778db2c5dbc",
+    "scripts/prepare-other-format-benchmark.mjs": "5bd985dbf08e4ce7765bd090ae5900ad1640ebb604148d023a9064f45ae2f218",
+    "scripts/summarize-other-format-benchmark.mjs": "31e8b7dbd43d3ba5ee356715b05fef6968146ef6373e6a135e4a02533eaaf496"
+  },
+  "functionalReproducer": {
+    "path": "review-csv.mjs",
+    "sha256": "68f4c161b96eb63bcebc5939ac9a503fbe57c0e893a81a3364fe3808e013f260",
+    "command": "node benchmarks/frontend/2026-10-24/review-csv.mjs"
+  },
+  "currentArtifact": {
+    "path": "packages/xlsx/dist/index.js",
+    "sha256": "6316049b2bb920df977f2af5b656a21d9b6972c9a192f153bcd73f1b060efaa2"
+  },
+  "baseline": {
+    "artifactPath": "tmp/continued-review/csv-baseline/dist/index.js",
+    "artifactSha256": "37ea0dd6c6a0bf5ffbfbb7efc691b1cd9d30dd11d3415370018bb9de876fe07a",
+    "sourceSha256": "da658a83d9fbe9bad1cbb781b82e6f454043eeb45608be3e17a64f1065f6fcd2",
+    "benchmarkSourceSha256": "0df95e61cd44e8d375b4c26bf897be0cf74488daec3ec82c3b36ebb30a8318c3",
+    "reproduction": "Reverse csv.patch, build @filens/xlsx, then copy dist to tmp/continued-review/csv-baseline/dist. Restore csv.patch and rebuild @filens/xlsx. Prepare the extended inputs and dependencies as described in the benchmark README. Run scripts/benchmark-other-formats.mjs --family csv --iterations 7 --output <peer-directory>; add --workbook-baseline tmp/continued-review/csv-baseline/dist/index.js with a different output for engineering checks. Summarize both with scripts/summarize-other-format-benchmark.mjs. Run the functional reproducer separately."
+  },
+  "engineeringComparisons": [
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 11.235000014305115,
+      "peerMs": 12.964999914169312,
+      "ratio": 1.1539830794536228,
+      "ratio95PercentBootstrapInterval": [
+        1.1003490377251421,
+        1.1889442614630157
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 5.520000100135803,
+      "peerMs": 9.625,
+      "ratio": 1.7436593886589251,
+      "ratio95PercentBootstrapInterval": [
+        1.5488332048132858,
+        1.8479698140013123
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "csv",
+      "sample": "generated-long-fields.csv",
+      "peer": "filens-baseline",
+      "metric": "operationMs",
+      "filensMs": 5.46999990940094,
+      "peerMs": 69.99500000476837,
+      "ratio": 12.796161090326972,
+      "ratio95PercentBootstrapInterval": [
+        12.357458158275595,
+        13.276951674880548
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    }
+  ],
+  "peerComparisons": [
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "peer": "papaparse",
+      "metric": "operationMs",
+      "filensMs": 11.100000023841858,
+      "peerMs": 8.940000057220459,
+      "ratio": 0.8054054088304593,
+      "ratio95PercentBootstrapInterval": [
+        0.74119719665921,
+        0.9494382061350503
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "peer": "sheetjs",
+      "metric": "operationMs",
+      "filensMs": 11.100000023841858,
+      "peerMs": 73.36000001430511,
+      "ratio": 6.609008996102168,
+      "ratio95PercentBootstrapInterval": [
+        6.468846635643104,
+        6.930124975356885
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "peer": "papaparse",
+      "metric": "operationMs",
+      "filensMs": 5.485000014305115,
+      "peerMs": 8.745000004768372,
+      "ratio": 1.594348219136014,
+      "ratio95PercentBootstrapInterval": [
+        1.4855855672992813,
+        1.707619031270345
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "peer": "sheetjs",
+      "metric": "operationMs",
+      "filensMs": 5.485000014305115,
+      "peerMs": 27.260000109672546,
+      "ratio": 4.969917965100692,
+      "ratio95PercentBootstrapInterval": [
+        4.674731153679081,
+        5.289523805890765
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "csv",
+      "sample": "generated-long-fields.csv",
+      "peer": "papaparse",
+      "metric": "operationMs",
+      "filensMs": 5.4049999713897705,
+      "peerMs": 7.759999990463257,
+      "ratio": 1.4357076839110423,
+      "ratio95PercentBootstrapInterval": [
+        1.3751118881095,
+        1.6521739341399218
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "csv",
+      "sample": "generated-long-fields.csv",
+      "peer": "sheetjs",
+      "metric": "operationMs",
+      "filensMs": 5.4049999713897705,
+      "peerMs": 185.6800000667572,
+      "ratio": 34.353376697431116,
+      "ratio95PercentBootstrapInterval": [
+        31.996320479669233,
+        37.85121505276471
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    }
+  ],
+  "contentReview": {
+    "unchangedCompleteModels": 8,
+    "fullCsvValueMatricesMatchBothPeers": true,
+    "generatedMatrices": 240,
+    "sourceRepresentations": 6,
+    "repairedEmptyQuotedRecordCases": 4
+  },
+  "validation": {
+    "xlsxUnitTestsPassed": 17,
+    "vueUnitTestsPassed": 44,
+    "browserTestsPassed": 1,
+    "oldSourceNewRegressionFailures": 5,
+    "builds": [
+      "@filens/xlsx",
+      "demo",
+      "bundle report"
+    ],
+    "browserCoverage": [
+      "real file upload",
+      "quoted UTF-8 and CRLF inside a field",
+      "scroll appends row 102 including its final empty quoted record"
+    ],
+    "reverseProductionPatchCheck": true,
+    "reverseHarnessPatchCheck": true,
+    "baselineSotaExclusion": true,
+    "localMarkdownLinksChecked": 349,
+    "evidenceAndRuntimeHashesChecked": true,
+    "syntaxAndWhitespaceChecksPassed": true
+  },
+  "limitations": [
+    "Synthetic deterministic CSV workloads; no claim of superiority on all CSV files.",
+    "PapaParse returns fields without constructing cell-address objects, whereas filens produces its complete public workbook model.",
+    "The numeric task remains slower than PapaParse. The two quoted tasks now take under 10 ms and are omitted from the published ranking despite stable timing leads.",
+    "Earlier SheetJS default-decoding runs produced mojibake for BOM-free UTF-8. They are preserved as diagnostics and superseded by the explicit-UTF-8 runs."
+  ],
+  "conclusion": "Matched engineering checks reduce the 5.47 MB long-field task from 70.0 to 5.5 ms (about 12.8x), and the numeric task from 13.0 to 11.2 ms (about 13% less time), preserving complete models. Final empty quoted records are repaired. The current peer numeric check is 11.1 ms versus PapaParse 8.9 ms; no new public SOTA label."
+}

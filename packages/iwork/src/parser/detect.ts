@@ -1,4 +1,4 @@
-import { openZipArchive, type ZipEntry } from '@filens/core';
+import { openZipArchive, type ZipEntry } from '@filens/core/zip';
 import { uncompress as snappyUncompress } from 'snappyjs';
 import type { DetectIworkTypeOptions, IworkSource, IworkType } from '../types';
 import { loadSourceBytes } from './load-source';

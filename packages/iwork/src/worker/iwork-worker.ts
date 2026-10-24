@@ -17,7 +17,7 @@ interface SheetRequest {
   index: number;
 }
 
-type WorkerRequest = DocumentRequest | SheetRequest;
+type WorkerRequest = DocumentRequest | SheetRequest | { kind: 'clear' };
 
 interface ParseResponse {
   id: number;
@@ -30,6 +30,10 @@ let context: SemanticBuildContext | null = null;
 
 self.addEventListener('message', async (event: MessageEvent<WorkerRequest>) => {
   const request = event.data;
+  if (request.kind === 'clear') {
+    context = null;
+    return;
+  }
   try {
     if (request.kind === 'sheet') {
       if (context?.archive.type !== 'numbers') {
@@ -43,6 +47,7 @@ self.addEventListener('message', async (event: MessageEvent<WorkerRequest>) => {
       return;
     }
 
+    context = null;
     const bytes = new Uint8Array(request.bytes);
     const type = await detectIworkType(bytes, { hint: request.hint });
     const archivePackage = await loadArchivePackage(bytes, type, { sourceName: request.sourceName });
@@ -53,6 +58,7 @@ self.addEventListener('message', async (event: MessageEvent<WorkerRequest>) => {
     );
     self.postMessage({ id: request.id, document } satisfies ParseResponse);
   } catch (error) {
+    if (request.kind === 'document') context = null;
     const response: ParseResponse = {
       id: request.id,
       error: error instanceof Error ? error.message : String(error)

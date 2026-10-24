@@ -6,6 +6,7 @@ const option = (key, fallback) => args.includes(key) ? args[args.indexOf(key) + 
 const input = option('--input', 'tmp/performance-other/results/results.json');
 const output = option('--output', path.join(path.dirname(input), 'summary.json'));
 const result = JSON.parse(fs.readFileSync(input));
+const engineering = result.engineering === true || result.runs.some(run => run.engine === 'filens-baseline');
 if (result.profiled) throw new Error('Profiled diagnostic runs cannot be used for performance rankings.');
 const previewFile = option('--preview-review', path.join(path.dirname(input), 'previews/review.json'));
 const previews = fs.existsSync(previewFile) ? JSON.parse(fs.readFileSync(previewFile)) : null;
@@ -47,10 +48,11 @@ const comparisons = summary.filter(r => r.engine !== 'filens').flatMap(peer => {
     const interval = [distribution[250], distribution[9750]];
     return { family: peer.family, sample: peer.sample, peer: peer.engine, metric, filensMs: median(a), peerMs: median(b), ratio: median(b) / median(a), ratio95PercentBootstrapInterval: interval,
       matchingOutput, matchingPreview, matchingExactPreview, matchingPreviewContent, stableTimingLead: interval[0] > 1,
-      scopedLead: result.iterations >= 7 && interval[0] > 1 && matchingOutput && narrowEquivalentTask && metric !== 'initMs' };
+      scopedLead: !engineering && result.iterations >= 7 && interval[0] > 1 && matchingOutput && narrowEquivalentTask && metric !== 'initMs' };
   });
 });
-const report = { date: result.date, cpu: result.cpu, browser: result.browser, versions: result.versions, iterations: result.iterations, totalRuns: result.runs.length,
+const report = { sourceSha256: crypto.createHash('sha256').update(fs.readFileSync(input)).digest('hex'),
+  date: result.date, cpu: result.cpu, browser: result.browser, versions: result.versions, iterations: result.iterations, engineering, totalRuns: result.runs.length,
   filensRuns: result.runs.filter(r => r.engine === 'filens').length, filensSuccessfulRuns: result.runs.filter(r => r.engine === 'filens' && good(r)).length,
   method: 'Peer / filens ratios; 10,000 paired percentile bootstrap resamples, LCG seed 12345. Eligibility requires a matching recorded output signature and >=7 iterations. Legacy XLS conversion can qualify when all resolved nonempty cell addresses/text match in the same viewer; tiny decimal differences (12 significant digits) and trailing blank grid space are accepted for preview. Editable formula/structure parity is not required. STEP metadata is deliberately omitted from filens; signatures compare oriented world-space triangles/normals, rounded to 1e-5, with independent full numerical regression checks. No global SOTA proof.',
   previewReview: previews ? { path: path.relative(path.dirname(input), previewFile), benchmarkResultSha256: previews.benchmarkResultSha256 } : null,

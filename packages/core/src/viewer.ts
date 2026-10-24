@@ -421,6 +421,10 @@ export class PptxViewer implements ViewerInstance {
   private bindSlideTracking(): void {
     this.scrollArea.removeEventListener('scroll', this.handleFallbackScroll);
     this.scrollArea.addEventListener('scroll', this.handleFallbackScroll, { passive: true });
+    for (const event of ['wheel', 'touchstart', 'pointerdown']) {
+      this.scrollArea.removeEventListener(event, this.handleNavigationInterruption);
+      this.scrollArea.addEventListener(event, this.handleNavigationInterruption, { passive: true });
+    }
 
     if (typeof window !== 'undefined') {
       window.removeEventListener('scroll', this.handleFallbackScroll);
@@ -441,7 +445,20 @@ export class PptxViewer implements ViewerInstance {
     });
   };
 
+  private readonly handleNavigationInterruption = () => {
+    if (this.navigationTargetSlide == null) return;
+    this.navigationSourceSlide = null;
+    this.clearNavigationSettleTimer();
+    this.handleFallbackScroll();
+  };
+
   private syncCurrentSlideToViewport(): void {
+    // Smooth scrolling crosses other slides; keep rapid Next/Prev actions
+    // relative to the requested destination until navigation settles.
+    if (this.navigationTargetSlide != null) {
+      this.syncMountedSlides();
+      return;
+    }
     const trackedIndex = this.findTrackedSlideIndex();
     if (trackedIndex == null) {
       return;
@@ -622,7 +639,7 @@ export class PptxViewer implements ViewerInstance {
       this.navigationSettleTimer = 0;
       this.navigationSourceSlide = null;
       this.navigationTargetSlide = null;
-      this.syncMountedSlides();
+      this.syncCurrentSlideToViewport();
     }, releaseDelay);
   }
 
@@ -678,6 +695,9 @@ export class PptxViewer implements ViewerInstance {
       this.fallbackScrollRaf = 0;
     }
     this.scrollArea.removeEventListener('scroll', this.handleFallbackScroll);
+    for (const event of ['wheel', 'touchstart', 'pointerdown']) {
+      this.scrollArea.removeEventListener(event, this.handleNavigationInterruption);
+    }
     if (typeof window !== 'undefined') {
       window.removeEventListener('scroll', this.handleFallbackScroll);
       window.removeEventListener('resize', this.handleFallbackScroll);

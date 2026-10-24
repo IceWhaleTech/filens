@@ -13,7 +13,8 @@ for (const kind of ['one-rs', 'x5'] as const) {
       name: `${kind}.dng`, mimeType: 'image/dng', buffer: Buffer.from(dngFixture(kind, 6))
     });
     const canvas = page.locator('canvas.panoramav-canvas');
-    await expect(canvas).toHaveAttribute('data-insta360-context-status', 'ready');
+    // A fresh browser also fetches/compiles both WASM modules and the GL shaders.
+    await expect(canvas).toHaveAttribute('data-insta360-context-status', 'ready', { timeout: 20_000 });
     await expect(canvas).toHaveAttribute('data-insta360-static-seam-analyzed', 'true');
     await expect(canvas).toHaveAttribute('data-insta360-static-seam-status', 'ready');
     const pixels = await canvas.evaluate((element) => {

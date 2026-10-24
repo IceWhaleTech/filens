@@ -1,0 +1,884 @@
+{
+  "date": "2026-10-24",
+  "kind": "ldraw-native-dependencies-and-linear-normal-component-iteration",
+  "engineering": true,
+  "scopedSota": false,
+  "scope": "Shared frontend 3D TS library prepares native MPD text and reuses the MIT Three r176 parser with a tracked Map/iterator smoothing patch. No new backend/Go conversion algorithm or production WASM change.",
+  "externalTotals": {
+    "measurements": 2604,
+    "successfulFilensRuns": 1064,
+    "incrementFromThisRound": 0
+  },
+  "changes": [
+    "Read native UTF-8 resources directly; recursively prepare referenced parts/primitives and feed the public MPD parser, preserving part names and avoiding Base64 URLs as cache keys.",
+    "Prefer packed definitions, preserve containing-file paths and distinct private definitions, normalize Windows/case and standard s/48 prefixes, cache resolved paths and avoid unused external reads.",
+    "Detect reachable cycles before parsing; report missing resolved parts while retaining available geometry instead of requesting application HTML.",
+    "Race resolver/Blob/fetch/body/parser waits against cancellation, observe late errors, dispose abandoned scenes, preserve AbortError and leave caller Error objects unchanged.",
+    "Replace repeated shrinking-object enumeration in upstream normal smoothing with one live Map iterator. Preserve edge insertion order, connectivity, hard-edge rules and accumulation."
+  ],
+  "performance": {
+    "finalRuns": 42,
+    "iterations": 7,
+    "excludedPartialSmokeRecords": 5,
+    "excludedCompletedPartialSmokeRuns": 4,
+    "excludedInterruptedPartialSmokeRecords": 1,
+    "excludedSignedZeroDiagnosticRuns": 42,
+    "summary": "ldraw-resources-summary.json",
+    "raw": "ldraw-resources.json.gz",
+    "method": "Fresh Chromium contexts, alternating build order. Imports and UTF-8 sidecar bytes prepared before timing. loadMs includes resource normalization/dependency preparation and complete Three LDraw geometry/material construction. The original file map embeds data URLs in part names: Three probes three invalid prefixed URLs before trying the URL itself. A strict local HTTP server returns 404 for those probes; their time is included and counts retained. HTTP fallback-HTML servers can instead fail, as recorded in separate correctness tests. Excludes original input transfer, module loading, renderer/GPU/paint and peak memory. Complete positions/normals and material values checked against the generated fixture after timing. No ignored padding. Baselines at or below 10 ms receive no speed ratio; no peer/SOTA ranking.",
+    "samples": [
+      {
+        "sample": "generated-100-triangles.ldr",
+        "bytes": 2636,
+        "currentMs": 2.799999952316284,
+        "baselineMs": 6.700000047683716,
+        "below10MsControl": true,
+        "completePositionsNormalsMaterialsWarningsMatch": true,
+        "noOwnedUrlsCreated": true,
+        "scopedSota": false
+      },
+      {
+        "sample": "generated-2000-triangles.ldr",
+        "bytes": 56686,
+        "currentMs": 9.300000071525574,
+        "baselineMs": 289,
+        "below10MsControl": false,
+        "completePositionsNormalsMaterialsWarningsMatch": true,
+        "noOwnedUrlsCreated": true,
+        "scopedSota": false,
+        "ratio": 31.07526857820684,
+        "ratio95PercentBootstrapInterval": [
+          30.442105268177233,
+          31.413043722482172
+        ],
+        "stableEngineeringReduction": true
+      },
+      {
+        "sample": "generated-10000-triangles.ldr",
+        "bytes": 317036,
+        "currentMs": 29.09999990463257,
+        "baselineMs": 8909.400000095367,
+        "below10MsControl": false,
+        "completePositionsNormalsMaterialsWarningsMatch": true,
+        "noOwnedUrlsCreated": true,
+        "scopedSota": false,
+        "ratio": 306.16494946025887,
+        "ratio95PercentBootstrapInterval": [
+          304.95890360995696,
+          310.4320552366834
+        ],
+        "stableEngineeringReduction": true
+      }
+    ]
+  },
+  "validation": {
+    "unitByPackage": {
+      "model3d": 245,
+      "vue": 44
+    },
+    "unitPassed": 289,
+    "newResourceTests": 27,
+    "upstreamSmoothingEquivalenceTests": 8,
+    "oldSourceFailed": 24,
+    "oldSourcePassedControls": 3,
+    "currentUnitReportsSuccessful": true,
+    "developmentBrowser": {
+      "passed": 22,
+      "command": "npx playwright test apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/ldraw-development-browser-final"
+    },
+    "productionBrowser": {
+      "passed": 19,
+      "command": "FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --grep 'LDraw|UTF-8|OBJ|known voxels|non-cooperative volume|real inline|textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/ldraw-production-browser"
+    },
+    "browserContent": {
+      "development": {
+        "nested": [
+          {
+            "kind": "original-packed",
+            "calls": [],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "current-packed",
+            "calls": [],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "view",
+            "calls": [
+              "models/parts/box.dat",
+              "models/parts/s/face.dat"
+            ],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "buffer",
+            "calls": [
+              "models/parts/box.dat",
+              "models/parts/s/face.dat"
+            ],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "blob",
+            "calls": [
+              "models/parts/box.dat",
+              "models/parts/s/face.dat"
+            ],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "base64",
+            "calls": [
+              "models/parts/box.dat",
+              "models/parts/s/face.dat"
+            ],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "percent",
+            "calls": [
+              "models/parts/box.dat",
+              "models/parts/s/face.dat"
+            ],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          }
+        ],
+        "shading": [
+          {
+            "mode": "curved",
+            "engine": "original",
+            "pixelHash": "874f5ea8de7c3159c42860c3906eede8e39268599700789b63dfdeca5ff795c6",
+            "normalHashes": [
+              "30b1b4a1811dc91b8c603ca6e37ae5c2622123e79404f9f8a2a1c983a13585fc"
+            ],
+            "visible": 12320,
+            "glError": 0
+          },
+          {
+            "mode": "curved",
+            "engine": "current",
+            "pixelHash": "874f5ea8de7c3159c42860c3906eede8e39268599700789b63dfdeca5ff795c6",
+            "normalHashes": [
+              "30b1b4a1811dc91b8c603ca6e37ae5c2622123e79404f9f8a2a1c983a13585fc"
+            ],
+            "visible": 12320,
+            "glError": 0
+          },
+          {
+            "mode": "hard",
+            "engine": "original",
+            "pixelHash": "0a663d2300969c348245d68800289a1dfe5e414063c1056fdecdb337e6612d0c",
+            "normalHashes": [
+              "7a80cbc6cb6b3ded3eddfec5611cc105add0e32e0100af10ab8133f2d4e34c49"
+            ],
+            "visible": 12323,
+            "glError": 0
+          },
+          {
+            "mode": "hard",
+            "engine": "current",
+            "pixelHash": "0a663d2300969c348245d68800289a1dfe5e414063c1056fdecdb337e6612d0c",
+            "normalHashes": [
+              "7a80cbc6cb6b3ded3eddfec5611cc105add0e32e0100af10ab8133f2d4e34c49"
+            ],
+            "visible": 12323,
+            "glError": 0
+          },
+          {
+            "mode": "multicolor",
+            "engine": "original",
+            "pixelHash": "5632e875f95fe701763084936b660c1c43e4c76c0d2c58f18a0423f302b12154",
+            "normalHashes": [
+              "9caea4b76687dd39eba51d1b0a562253128931c7f8ad1f1d8ac18d7618d1a936"
+            ],
+            "visible": 12323,
+            "glError": 0
+          },
+          {
+            "mode": "multicolor",
+            "engine": "current",
+            "pixelHash": "5632e875f95fe701763084936b660c1c43e4c76c0d2c58f18a0423f302b12154",
+            "normalHashes": [
+              "9caea4b76687dd39eba51d1b0a562253128931c7f8ad1f1d8ac18d7618d1a936"
+            ],
+            "visible": 12323,
+            "glError": 0
+          }
+        ]
+      },
+      "production": {
+        "nested": [
+          {
+            "kind": "original-packed",
+            "calls": [],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "current-packed",
+            "calls": [],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "view",
+            "calls": [
+              "models/parts/box.dat",
+              "models/parts/s/face.dat"
+            ],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "buffer",
+            "calls": [
+              "models/parts/box.dat",
+              "models/parts/s/face.dat"
+            ],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "blob",
+            "calls": [
+              "models/parts/box.dat",
+              "models/parts/s/face.dat"
+            ],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "base64",
+            "calls": [
+              "models/parts/box.dat",
+              "models/parts/s/face.dat"
+            ],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          },
+          {
+            "kind": "percent",
+            "calls": [
+              "models/parts/box.dat",
+              "models/parts/s/face.dat"
+            ],
+            "meshes": 2,
+            "lines": 4,
+            "conditionalLines": 2,
+            "colors": [
+              "ff0000",
+              "ff0000"
+            ],
+            "names": [
+              "parts/box.dat",
+              "parts/box.dat"
+            ],
+            "warnings": [],
+            "positionsMatch": true,
+            "normalsMatch": true,
+            "pixelHash": "f1bbbb3b382cc496433135df32cb8d834e3d151d37dacb5ee9d84e1a22091254",
+            "redPixels": 4794,
+            "glError": 0,
+            "createdUrls": 0
+          }
+        ],
+        "shading": [
+          {
+            "mode": "curved",
+            "engine": "original",
+            "pixelHash": "874f5ea8de7c3159c42860c3906eede8e39268599700789b63dfdeca5ff795c6",
+            "normalHashes": [
+              "30b1b4a1811dc91b8c603ca6e37ae5c2622123e79404f9f8a2a1c983a13585fc"
+            ],
+            "visible": 12320,
+            "glError": 0
+          },
+          {
+            "mode": "curved",
+            "engine": "current",
+            "pixelHash": "874f5ea8de7c3159c42860c3906eede8e39268599700789b63dfdeca5ff795c6",
+            "normalHashes": [
+              "30b1b4a1811dc91b8c603ca6e37ae5c2622123e79404f9f8a2a1c983a13585fc"
+            ],
+            "visible": 12320,
+            "glError": 0
+          },
+          {
+            "mode": "hard",
+            "engine": "original",
+            "pixelHash": "0a663d2300969c348245d68800289a1dfe5e414063c1056fdecdb337e6612d0c",
+            "normalHashes": [
+              "7a80cbc6cb6b3ded3eddfec5611cc105add0e32e0100af10ab8133f2d4e34c49"
+            ],
+            "visible": 12323,
+            "glError": 0
+          },
+          {
+            "mode": "hard",
+            "engine": "current",
+            "pixelHash": "0a663d2300969c348245d68800289a1dfe5e414063c1056fdecdb337e6612d0c",
+            "normalHashes": [
+              "7a80cbc6cb6b3ded3eddfec5611cc105add0e32e0100af10ab8133f2d4e34c49"
+            ],
+            "visible": 12323,
+            "glError": 0
+          },
+          {
+            "mode": "multicolor",
+            "engine": "original",
+            "pixelHash": "5632e875f95fe701763084936b660c1c43e4c76c0d2c58f18a0423f302b12154",
+            "normalHashes": [
+              "9caea4b76687dd39eba51d1b0a562253128931c7f8ad1f1d8ac18d7618d1a936"
+            ],
+            "visible": 12323,
+            "glError": 0
+          },
+          {
+            "mode": "multicolor",
+            "engine": "current",
+            "pixelHash": "5632e875f95fe701763084936b660c1c43e4c76c0d2c58f18a0423f302b12154",
+            "normalHashes": [
+              "9caea4b76687dd39eba51d1b0a562253128931c7f8ad1f1d8ac18d7618d1a936"
+            ],
+            "visible": 12323,
+            "glError": 0
+          }
+        ]
+      }
+    },
+    "nativeSourcesMatchOriginalPackedGeometryAndPixels": true,
+    "curvedHardAndMulticolorNormalsAndPixelsMatchOriginal": true,
+    "developmentProductionContentMatch": true,
+    "realStepGeometry": {
+      "fixtures": 3,
+      "imports": 9,
+      "worldSpaceTriangleAndNormalSetsMatch": true
+    },
+    "builds": [
+      "npm run build:model3d",
+      "npm run build:demo"
+    ],
+    "categoryChecks": "npm run test:categories",
+    "bundleReport": "npm run report:bundle-sizes",
+    "sourceMapsMatchOriginalFinalAndVendorSource": true,
+    "upstreamMitLicenseRetainedInLibraryAndDemo": true,
+    "incrementalReversePatchRestoresOriginalBytes": true,
+    "gitDiffCheckPassed": true,
+    "verifiedLocalMarkdownLinks": 524,
+    "temporaryPreviewPortsClosed": [
+      4173,
+      4174
+    ],
+    "knownBuildWarning": "Existing large demo vendor chunk warning"
+  },
+  "limits": [
+    "Generated disconnected triangles target an upstream worst-case normal-smoothing path. This is a same-project engineering comparison, not a representative model corpus or peer/SOTA ranking.",
+    "The original data-URL file map triggers three local HTTP 404 probes; their time is included. Current prepared MPD uses no fallback probes.",
+    "Timing includes dependency preparation and complete geometry/material construction plus smoothing; excludes input/module transfer, renderer/GPU/paint and peak memory.",
+    "The 100-triangle baseline is below 10 ms and receives no speed ratio. Output part names intentionally stop containing data URLs; complete attributes and material values match.",
+    "Without an app resolver, unresolved external parts retain the upstream lookup behavior. This does not ship the complete LDraw parts library.",
+    "Cancellation stops asynchronous waits and disposes late scenes. Already-running synchronous geometry parsing and normal smoothing cannot be interrupted."
+  ],
+  "baseline": [
+    {
+      "path": "tmp/continued-review/ldraw-resources-baseline/packages/model3d/src/preview-driver.ts",
+      "bytes": 249571,
+      "sha256": "5559ef3d9531aa27218af622d01e6697ade2c02ef8c53c042dc8af3477919b03"
+    },
+    {
+      "path": "tmp/continued-review/ldraw-resources-baseline/dist/index.js",
+      "bytes": 980424,
+      "sha256": "671e5355b4f3d38dd22b7859728674064f480849ad5737de2724081908347fb0"
+    },
+    {
+      "path": "tmp/continued-review/ldraw-resources-baseline/dist/index.js.map",
+      "bytes": 2500488,
+      "sha256": "b8dad4963fa939847749b4f5e9f10aeaab36afbaebff64dd17ca3b2ad5e13e64"
+    }
+  ],
+  "bindings": [
+    {
+      "path": "packages/model3d/src/preview-driver.ts",
+      "bytes": 253012,
+      "sha256": "761007e461a0bd99c7cb1381222a25efda35dfb2d04e1628cc8c73d1466d7a40"
+    },
+    {
+      "path": "packages/model3d/vendor/three/LDrawLoader.js",
+      "bytes": 61248,
+      "sha256": "60b5d77a657b885cf4489aaea387b798870f7d83903335094b3aacb81c6e6074"
+    },
+    {
+      "path": "packages/model3d/vendor/three/LDrawLoader.d.ts",
+      "bytes": 73,
+      "sha256": "ea25a7d7aed6382107ce3d1392ebbdbaee05abc29577a1ba6be09ce8a2eab9ff"
+    },
+    {
+      "path": "packages/model3d/vendor/three/LICENSE",
+      "bytes": 1081,
+      "sha256": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601"
+    },
+    {
+      "path": "packages/model3d/vendor/three/README.md",
+      "bytes": 741,
+      "sha256": "9bee111b4deb00447e1b86acbc59b0cc821c996350e804cdbf56667c8292682d"
+    },
+    {
+      "path": "packages/model3d/test/ldraw-resources.spec.ts",
+      "bytes": 15116,
+      "sha256": "985753e02fd50124898be5ee05222adbd08e465bbbca6ee1a5355aef0db15471"
+    },
+    {
+      "path": "packages/model3d/test/ldraw-smoothing.spec.ts",
+      "bytes": 2205,
+      "sha256": "71db0e9dce61c75090b1383fedbf53508068174e95078bc3adecf4843802ca98"
+    },
+    {
+      "path": "packages/model3d/test/fixtures/ldraw.mjs",
+      "bytes": 3003,
+      "sha256": "e267ee9b42e317abd83fcd3d41baeea4e6b070e71f459c10c7e350fb041609ee"
+    },
+    {
+      "path": "packages/model3d/test/preview-driver.spec.ts",
+      "bytes": 153226,
+      "sha256": "72ad629ebe78304ddfe701e1a3f86227196f3557b5ebb31f7f51aeeee709d547"
+    },
+    {
+      "path": "apps/demo/e2e/ldraw-resources.e2e.ts",
+      "bytes": 14351,
+      "sha256": "0139dd5a6bdba92565d2692893b7c75f0646c7c1365564691c84bc43edaf4a95"
+    },
+    {
+      "path": "scripts/benchmark-ldraw-resources.mjs",
+      "bytes": 7652,
+      "sha256": "cf9546e422028e263c274b9dfc2a9d26c51ee18cdd451e3f66ba4b46cd4d47ef"
+    },
+    {
+      "path": "scripts/summarize-ldraw-resources-benchmark.mjs",
+      "bytes": 3533,
+      "sha256": "7e1deef7bcf61b2e9b0742790db156dc1a1a4ff703fd392b868eb63241fa915a"
+    },
+    {
+      "path": "packages/model3d/test/resource-loading.spec.ts",
+      "bytes": 12035,
+      "sha256": "8b567185a81f84c6ae24b58f28fe8d56f9519c6f9441f2a9204cbd1ddfa08867"
+    },
+    {
+      "path": "packages/model3d/test/volume-loading.spec.ts",
+      "bytes": 10279,
+      "sha256": "e6c604fdb6eb200f463282468645320e84890aa9a08f728196f0994865393f17"
+    },
+    {
+      "path": "packages/model3d/test/obj-resources.spec.ts",
+      "bytes": 15721,
+      "sha256": "de9b2ef83c38dc7e3b145120ed2ddc62e1ea2d5cf06c52e593e585151b366a84"
+    },
+    {
+      "path": "packages/model3d/test/lifecycle.spec.ts",
+      "bytes": 8620,
+      "sha256": "a27de263b7940f32d1750835e7611091238c55696ce583dca4340753defad02c"
+    },
+    {
+      "path": "apps/demo/e2e/obj-resources.e2e.ts",
+      "bytes": 12249,
+      "sha256": "d8a449f07b3bea09f5a021bdb17b150278b3f16263aaf9724d2e682402323895"
+    },
+    {
+      "path": "apps/demo/e2e/volume-preview.e2e.ts",
+      "bytes": 8085,
+      "sha256": "dab15bf85a3e68709bcded2721ae9e2f854ac8f825f6edbe86266172f65b0cf1"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-resources.e2e.ts",
+      "bytes": 12407,
+      "sha256": "c0b8f406cf247e83689d08dc3b04219ba40fec41dc94d8ae38bc46294aeb1def"
+    },
+    {
+      "path": "apps/demo/e2e/model3d-lifecycle.e2e.ts",
+      "bytes": 4831,
+      "sha256": "41ffae4946181a00a312a032d1168bc08d909333aa0258f757ed01a591452281"
+    },
+    {
+      "path": "apps/demo/e2e/cad-wasm.e2e.ts",
+      "bytes": 1540,
+      "sha256": "6f921a2f19906cdf232ea60395f00288c0d8630c5c25cf3d72c8369f90e32b7f"
+    },
+    {
+      "path": "packages/model3d/dist/index.js",
+      "bytes": 983315,
+      "sha256": "f64764dac2f91bb442223d9636d7525137751b5f236372a8c03ea4f2ecabf847"
+    },
+    {
+      "path": "packages/model3d/dist/index.js.map",
+      "bytes": 2508063,
+      "sha256": "793db145cf811aad1f2f511e56b4443e46a530fa8078c9e02abacb652a1b0f49"
+    },
+    {
+      "path": "packages/model3d/dist/preview-driver.d.ts",
+      "bytes": 12084,
+      "sha256": "baf559e8faa643130ecb50fc1872fecc26dce32b2f26797c02657e019c61fe69"
+    },
+    {
+      "path": "packages/model3d/vendor/occt-import-js/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "packages/model3d/dist/occt-import-js.wasm",
+      "bytes": 2688776,
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "bytes": 585770,
+      "sha256": "42c42ba5fe8762aa1cd7bc9b2204d0c94798d0ef98eec9735d9411b29ac0888d"
+    },
+    {
+      "path": "node_modules/three/build/three.module.js",
+      "bytes": 595384,
+      "sha256": "d513a6de314b2c32d0a11a209bc1ec06b528ae95c0f841a1c1761aa9248c814a"
+    },
+    {
+      "path": "node_modules/three/build/three.core.js",
+      "bytes": 1385513,
+      "sha256": "c943c148229a99917d815f772404c48f5447e82c0c450f92403955bc27e8d100"
+    },
+    {
+      "path": "node_modules/three/examples/jsm/loaders/LDrawLoader.js",
+      "bytes": 59936,
+      "sha256": "c586499e5d02543282a5e852d358f3ea7ed94c75862230e82c3c3852656e7beb"
+    },
+    {
+      "path": "node_modules/three/LICENSE",
+      "bytes": 1081,
+      "sha256": "bfe119ea4fd413f5f7ca3fcd63adb0c4a073ed39daa2fe7d3e6b769e21272601"
+    },
+    {
+      "path": "scripts/test-occt-wasm.mjs",
+      "bytes": 9110,
+      "sha256": "af48b86af8c03677c806fbdb11c325c68f2bb8f61074c5cec2544e616775f584"
+    },
+    {
+      "path": "playwright.config.ts",
+      "bytes": 621,
+      "sha256": "5b2993d7ef92a9c75e16315d52a9c0fdc4207cd5576e7abc45e2d43a21c331d4"
+    },
+    {
+      "path": "docs/support-matrix.md",
+      "bytes": 40122,
+      "sha256": "0c89165068584d6a261ec6b5106c03128b347161cd3e90a3fd24ba8f31191d4b"
+    },
+    {
+      "path": "docs/support-matrix.zh-CN.md",
+      "bytes": 38574,
+      "sha256": "da215d83ea967e1a47353bbfadaa0d0b1d68248ebb1bcc12c7e75fee0dcd51c2"
+    },
+    {
+      "path": "docs/performance-comparison.md",
+      "bytes": 36484,
+      "sha256": "977a5fd408b96f8a4da895d4d3e5210be979828efa2246f63597bc112e4c46e8"
+    },
+    {
+      "path": "docs/performance-comparison.zh-CN.md",
+      "bytes": 33266,
+      "sha256": "69380a7977ceb1b53e9a41a2f96d85f3f3f618e3a976759872c3d5ef4c4bf20c"
+    },
+    {
+      "path": "docs/bundle-sizes.md",
+      "bytes": 2653,
+      "sha256": "a36d4a439d4f30928e6f8ce107fba13e846b368aee65531dd8c538ade55c511e"
+    },
+    {
+      "path": "docs/assets/bundle-sizes.json",
+      "bytes": 3853,
+      "sha256": "8f1a39448ab1019333418b4741d5484545bd66b971fd7c7cd95c862a63cea3cf"
+    },
+    {
+      "path": "benchmarks/frontend/README.md",
+      "bytes": 101160,
+      "sha256": "499273a494ddee0902e570e495378396ea956ec88b82e17f78e9b6d5fa267d4e"
+    },
+    {
+      "path": "apps/demo/dist/build-info.json",
+      "bytes": 876,
+      "sha256": "e1e6eae470331d8f741179de1613b70d9ffc7c37977c358e336d0d953abba074"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-D5zSLHLT.css",
+      "bytes": 32017,
+      "sha256": "28368a57749f016bc98571bedb5e90a142ad116f6139ec0056474559ac85683e"
+    },
+    {
+      "path": "apps/demo/dist/assets/index-uHTo-KTs.js",
+      "bytes": 145197,
+      "sha256": "a90cc357c2271ede9f8e9f97a0530b48e10956dd60c6629971e75725503008b4"
+    },
+    {
+      "path": "apps/demo/dist/assets/vendor-Cr5d4KSI.js",
+      "bytes": 1351964,
+      "sha256": "f1e77229f58e7ff602514188eb2dbaf1465dd902946f7dce3a29ee0140812762"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-B1myDZRM.css",
+      "bytes": 496,
+      "sha256": "6cf6d520f26937cc97308ceef86510cb5035e588673832483b15923fac58588d"
+    },
+    {
+      "path": "apps/demo/dist/assets/model3d-CwuTpm5h.js",
+      "bytes": 134921,
+      "sha256": "c79171bc437c282ec6eea5012e508468e9f017500d7a95c7871d6e45021ca4d8"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/ldraw-resources.patch",
+      "bytes": 77363,
+      "sha256": "0f46f12efa16a46c60857b8b5b584ef3ffdd073b0417decd62a2309199ca08a5"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/ldraw-resources.json.gz",
+      "bytes": 2463,
+      "sha256": "5b66f454854bb145cd7ea55fc978764da9156d290f0c73ff5f18b20edb050278"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/ldraw-resources-summary.json",
+      "bytes": 1921,
+      "sha256": "030b3caa68dd9120db3e0d4ede7b3b9718e8f78d7b85b7629ea4c0aba3d3da19"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/ldraw-resources-diagnostic.json.gz",
+      "bytes": 1905029,
+      "sha256": "01fa0587f62eef7c7be22cf2ef29767915983c77a2fd28ba4ce80d827a453dcf"
+    },
+    {
+      "path": "benchmarks/frontend/2026-10-24/ldraw-smoothing.patch",
+      "bytes": 3306,
+      "sha256": "75fb12e8e6f26bedf8b61a1e1d46b3e4af03a0009a07dac3e6d7263a91ac9074"
+    }
+  ],
+  "reproduction": [
+    "Restore diagnostic baselineFiles in an isolated checkout preserving earlier changes, or reverse only ldraw-resources.patch there. Never reverse it in the active workspace. The patch includes the new vendor files.",
+    "For runtime A/B restore baselineRuntimeFiles at their exact recorded paths. The tracked loader and exact original upstream source are retained in the diagnostic archive.",
+    "npm run build:model3d",
+    "Run alone: node scripts/benchmark-ldraw-resources.mjs --iterations 7 --output tmp/continued-review/ldraw-resources-reproduced",
+    "node scripts/summarize-ldraw-resources-benchmark.mjs --input tmp/continued-review/ldraw-resources-reproduced/results.json",
+    "From packages/model3d and packages/vue respectively: ../../node_modules/.bin/vitest run. Original isolated resource tests reproduce 24 failures and three passing controls; current smoothing tests compare against the unchanged upstream loader.",
+    "node scripts/test-occt-wasm.mjs",
+    "npm run build:demo",
+    "npx playwright test apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --workers=1 --output tmp/continued-review/ldraw-development-browser-final",
+    "Serve with npm run preview --workspace @filens/demo -- --host 127.0.0.1 --port 4174, then run: FILENS_E2E_BASE_URL=http://127.0.0.1:4174/modules/filens/ npx playwright test apps/demo/e2e/ldraw-resources.e2e.ts apps/demo/e2e/obj-resources.e2e.ts apps/demo/e2e/volume-preview.e2e.ts apps/demo/e2e/model3d-resources.e2e.ts apps/demo/e2e/model3d-lifecycle.e2e.ts apps/demo/e2e/cad-wasm.e2e.ts --grep 'LDraw|UTF-8|OBJ|known voxels|non-cooperative volume|real inline|textured glTF|non-cooperative sidecar|actual STEP WASM|real glTF scene|optional CAD WASM|opens binary STL through' --workers=1 --output tmp/continued-review/ldraw-production-browser"
+  ]
+}
