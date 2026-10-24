@@ -1,7 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { zipSync } from 'fflate';
+import { unzipSync, zipSync } from 'fflate';
 import { loadPptxArchive } from '../src/parser/archive';
+import { loadPptx } from '../src/parser/load-pptx';
+import { readFixture } from './helpers';
 
 describe('presentation archive', () => {
   it.each([128, 17 * 1024 * 1024])('does not inflate an unsupported %i-byte attachment when reading XML', async size => {
@@ -30,6 +32,23 @@ describe('presentation archive', () => {
     const archive = await loadPptxArchive(bytes);
     expect(await archive.file('slide.xml')!.async('text')).toBe('<slide/>');
     await expect(archive.file('unused.bin')!.async('uint8array')).rejects.toThrow();
+  });
+
+  it('previews a complete presentation despite a corrupt unrelated attachment', async () => {
+    const original = await readFixture('fixtures-text-theme.pptx');
+    const bytes = zipSync({ 'unused.bin': new Uint8Array(128), ...unzipSync(original) });
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const start = 30 + view.getUint16(26, true) + view.getUint16(28, true);
+    bytes[start] = 7;
+    // Generated IDs increase between loads; compare all parsed content.
+    const content = (presentation: Awaited<ReturnType<typeof loadPptx>>) => ({
+      ...presentation,
+      slides: presentation.slides.map(({ id, ...slide }) => ({
+        ...slide,
+        items: slide.items.map(({ id, ...item }) => item)
+      }))
+    });
+    expect(content(await loadPptx(bytes))).toEqual(content(await loadPptx(original)));
   });
 
 });
