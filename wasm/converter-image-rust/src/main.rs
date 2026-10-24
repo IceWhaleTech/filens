@@ -294,23 +294,74 @@ fn convert_raw_preview_with_options(
         });
     }
     let bytes = fs::read(input).map_err(|error| io_error(format!("read RAW input: {error}")))?;
-    if let Some(preview) = best_embedded_jpeg(&bytes).filter(|_| !options.preserve_sensor_geometry)
-    {
-        return fs::write(output, preview)
-            .map_err(|error| io_error(format!("write RAW JPEG preview: {error}")));
-    }
-    let developed = develop_raw_sensor_preview_with_options(&bytes, options).map_err(|error| {
-        parse_error(format!(
-            "RAW sensor preview could not be developed: {error}"
-        ))
-    })?;
-    fs::write(output, developed)
-        .map_err(|error| io_error(format!("write developed RAW JPEG preview: {error}")))
+    let preview = raw_preview_bytes(&bytes, options).map_err(parse_error)?;
+    fs::write(output, preview).map_err(|error| io_error(format!("write RAW JPEG preview: {error}")))
 }
 
-#[cfg(test)]
-fn develop_raw_sensor_preview(bytes: &[u8]) -> Result<Vec<u8>, String> {
-    develop_raw_sensor_preview_with_options(bytes, &PreviewOptions::default())
+fn raw_preview_bytes<'a>(
+    bytes: &'a [u8],
+    options: &PreviewOptions,
+) -> Result<std::borrow::Cow<'a, [u8]>, String> {
+    if let Some(preview) = best_embedded_jpeg(&bytes).filter(|_| !options.preserve_sensor_geometry)
+    {
+        return Ok(std::borrow::Cow::Borrowed(preview));
+    }
+    develop_raw_sensor_preview_with_options(bytes, options)
+        .map(std::borrow::Cow::Owned)
+        .map_err(|error| format!("RAW sensor preview could not be developed: {error}"))
+}
+
+// The browser can call the same conversion core directly without copying a
+// large RAW through a virtual filesystem. CLI/wazero keep their WASI entrypoint.
+// Allocations are owned by the caller until filens_image_free(ptr, len).
+#[cfg(target_arch = "wasm32")]
+#[unsafe(no_mangle)]
+pub extern "C" fn filens_image_alloc(length: u32) -> u32 {
+    if length == 0 {
+        return 0;
+    }
+    Box::into_raw(vec![0u8; length as usize].into_boxed_slice()) as *mut u8 as u32
+}
+
+#[cfg(target_arch = "wasm32")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn filens_image_free(pointer: u32, length: u32) {
+    if pointer != 0 && length != 0 {
+        unsafe {
+            drop(Box::from_raw(std::ptr::slice_from_raw_parts_mut(
+                pointer as *mut u8,
+                length as usize,
+            )));
+        }
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn filens_image_preview(pointer: u32, length: u32) -> u64 {
+    if pointer == 0 || length == 0 {
+        return 0;
+    }
+    let input = unsafe { std::slice::from_raw_parts(pointer as *const u8, length as usize) };
+    let converted = raw_preview_bytes(input, &PreviewOptions::default());
+    let (metadata, image) = match converted {
+        Ok(image) => {
+            let metadata = serde_json::json!({"ok": true, "targetFormat": "jpg", "contentType": "image/jpeg", "backend": RAW_PREVIEW_BACKEND, "warnings": [RAW_PREVIEW_WARNING]});
+            (metadata, image)
+        }
+        Err(message) => (
+            serde_json::json!({"ok": false, "errorCode": "parse_error", "errorMessage": message}),
+            std::borrow::Cow::Borrowed(&[] as &[u8]),
+        ),
+    };
+    let json = serde_json::to_vec(&metadata).expect("image result serializes");
+    let mut result = Vec::with_capacity(4 + json.len() + image.len());
+    result.extend_from_slice(&(json.len() as u32).to_le_bytes());
+    result.extend_from_slice(&json);
+    result.extend_from_slice(&image);
+    let length = result.len() as u32;
+    let pointer = Box::into_raw(result.into_boxed_slice()) as *mut u8 as u32;
+    (u64::from(length) << 32) | u64::from(pointer)
 }
 
 fn develop_raw_sensor_preview_with_options(
@@ -363,12 +414,17 @@ fn encode_raw_sensor_preview(raw: &RawImage, options: &PreviewOptions) -> Result
     } else {
         (sampled_width, sampled_height)
     };
-    let color_matrix = camera_to_srgb(raw);
-    let mut pixels =
-        Vec::with_capacity(output_width.saturating_mul(output_height).saturating_mul(3));
+    let color_matrix = camera_to_srgb(raw)?;
+    let brightness = baseline_exposure_brightness(raw.baseline_exposure);
+    let normalization = RawNormalization::new(raw);
+    let sampler = BayerSampler::new(raw, &normalization);
+    let rgb_sampler = IntegerRgbSampler::new(raw, &normalization);
+    let srgb = SrgbEncoder::new();
+    let mut pixels = vec![0u8; output_width.saturating_mul(output_height).saturating_mul(3)];
 
     for output_y in 0..output_height {
-        for output_x in 0..output_width {
+        let row = &mut pixels[output_y * output_width * 3..(output_y + 1) * output_width * 3];
+        for (output_x, pixel) in row.chunks_exact_mut(3).enumerate() {
             let (x, y) = if transpose {
                 (output_y, output_x)
             } else {
@@ -378,17 +434,16 @@ fn encode_raw_sensor_preview(raw: &RawImage, options: &PreviewOptions) -> Result
             let y = if flip_y { sampled_height - 1 - y } else { y };
             let source_x = left + (x * scale + scale / 2).min(width - 1);
             let source_y = top + (y * scale + scale / 2).min(height - 1);
-            let rgb = raw_sensor_rgb(raw, source_x, source_y);
-            let rgb = color_matrix.map(|row| row.iter().zip(rgb).map(|(a, b)| a * b).sum::<f32>());
-            pixels.extend(rgb.map(|value| {
-                let value = value.clamp(0.0, 1.0);
-                let value = if value <= 0.0031308 {
-                    value * 12.92
-                } else {
-                    1.055 * value.powf(1.0 / 2.4) - 0.055
-                };
-                (value * 255.0 + 0.5) as u8
-            }));
+            let rgb = rgb_sampler
+                .as_ref()
+                .map(|sampler| sampler.sample(source_x, source_y))
+                .or_else(|| {
+                    sampler
+                        .as_ref()
+                        .and_then(|sampler| sampler.sample(source_x, source_y))
+                })
+                .unwrap_or_else(|| raw_sensor_rgb(raw, &normalization, source_x, source_y));
+            pixel.copy_from_slice(&encode_camera_rgb(rgb, color_matrix, brightness, &srgb));
         }
     }
 
@@ -404,74 +459,309 @@ fn encode_raw_sensor_preview(raw: &RawImage, options: &PreviewOptions) -> Result
     Ok(output)
 }
 
-fn camera_to_srgb(raw: &RawImage) -> [[f32; 3]; 3] {
-    let xyz = raw.cam_to_xyz_normalized();
-    let srgb = [
-        [3.2404542, -1.5371385, -0.4985314],
-        [-0.969266, 1.8760108, 0.041556],
-        [0.0556434, -0.2040259, 1.0572252],
-    ];
-    let mut matrix = [[0.0; 3]; 3];
-    for i in 0..3 {
-        for j in 0..3 {
-            matrix[i][j] = (0..3).map(|k| srgb[i][k] * xyz[k][j]).sum();
-        }
+#[cfg(test)]
+fn encode_srgb_reference(value: f32) -> u8 {
+    let value = value.clamp(0.0, 1.0);
+    let value = if value <= 0.0031308 {
+        value * 12.92
+    } else {
+        1.055 * value.powf(1.0 / 2.4) - 0.055
+    };
+    (value * 255.0 + 0.5) as u8
+}
+
+struct SrgbEncoder;
+
+impl SrgbEncoder {
+    fn new() -> Self {
+        Self
     }
-    // Keep neutral white neutral after white balance, as in a small RAW developer.
-    for row in &mut matrix {
+
+    fn encode(&self, value: f32) -> u8 {
+        static TABLE: &[u8; 65536] = include_bytes!(concat!(env!("OUT_DIR"), "/srgb-u16.bin"));
+        if value.is_nan() || value <= 0.0 {
+            return 0;
+        }
+        if value >= 1.0 {
+            return 255;
+        }
+        TABLE[(value * 65535.0 + 0.5) as usize]
+    }
+}
+
+fn baseline_exposure_brightness(ev: f32) -> f32 {
+    if !ev.is_finite() || ev == -999.0 {
+        1.0
+    } else {
+        ev.clamp(-4.0, 4.0).exp2()
+    }
+}
+
+fn encode_camera_rgb(
+    rgb: [f32; 3],
+    matrix: [[f32; 3]; 3],
+    brightness: f32,
+    srgb: &SrgbEncoder,
+) -> [u8; 3] {
+    // Photos / LibRaw highlight=0: clip white-balanced camera channels before
+    // conversion, then apply metadata exposure and the fixed sRGB transfer curve.
+    let rgb = rgb.map(|value| value.clamp(0.0, 1.0));
+    std::array::from_fn(|channel| {
+        let row = &matrix[channel];
+        srgb.encode((row[0] * rgb[0] + row[1] * rgb[1] + row[2] * rgb[2]) * brightness)
+    })
+}
+
+fn camera_to_srgb(raw: &RawImage) -> Result<[[f32; 3]; 3], String> {
+    if (0..3).any(|channel| raw.whitelevels[channel] <= raw.blacklevels[channel]) {
+        return Err("RAW sensor color calibration has invalid black/white levels".into());
+    }
+    // Normalize the camera-to-sRGB basis as dcraw/LibRaw do, rather than
+    // normalizing the XYZ basis and scaling the rows after inversion.
+    let rgb_to_xyz = [
+        [0.412453, 0.357580, 0.180423],
+        [0.212671, 0.715160, 0.072169],
+        [0.019334, 0.119193, 0.950227],
+    ];
+    let mut rgb_to_cam = [[0.0; 3]; 4];
+    for (channel, row) in rgb_to_cam.iter_mut().enumerate().take(3) {
+        for (column, value) in row.iter_mut().enumerate() {
+            *value = (0..3)
+                .map(|k| raw.xyz_to_cam[channel][k] * rgb_to_xyz[k][column])
+                .sum();
+        }
         let sum: f32 = row.iter().sum();
-        if !sum.is_finite() || sum.abs() < 1e-6 {
-            return [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+        if !sum.is_finite() || sum <= 1e-6 {
+            return Err("RAW sensor color calibration has an invalid matrix".into());
         }
         for value in row {
             *value /= sum;
         }
     }
-    matrix
+    let inverse = RawImage::pseudoinverse(rgb_to_cam);
+    let matrix = inverse.map(|row| [row[0], row[1], row[2]]);
+    if matrix.iter().flatten().any(|value| !value.is_finite()) {
+        return Err("RAW sensor color calibration has a singular matrix".into());
+    }
+    Ok(matrix)
 }
 
-fn raw_sensor_rgb(raw: &RawImage, x: usize, y: usize) -> [f32; 3] {
+struct RawNormalization {
+    black: [f32; 4],
+    range: [f32; 4],
+    balance: [f32; 4],
+}
+
+#[derive(Default)]
+struct SensorKernel {
+    offsets: [[isize; 9]; 3],
+    counts: [usize; 3],
+}
+
+// CFA phases and u16 normalization repeat across millions of output samples.
+// Resolve them once, retaining the general sampler at borders and for floats,
+// non-Bayer arrays and interleaved RGB sensors. Addition order stays identical.
+struct BayerSampler<'a> {
+    values: &'a [u16],
+    width: usize,
+    height: usize,
+    kernels: [SensorKernel; 4],
+    normalized: [Vec<f32>; 3],
+}
+
+struct IntegerRgbSampler<'a> {
+    values: &'a [u16],
+    width: usize,
+    cpp: usize,
+    normalized: [Vec<f32>; 3],
+}
+
+impl<'a> IntegerRgbSampler<'a> {
+    fn new(raw: &'a RawImage, normalization: &RawNormalization) -> Option<Self> {
+        let RawImageData::Integer(values) = &raw.data else {
+            return None;
+        };
+        if raw.cpp < 3 || values.len() < raw.width.checked_mul(raw.height)?.checked_mul(raw.cpp)? {
+            return None;
+        }
+        Some(Self {
+            values,
+            width: raw.width,
+            cpp: raw.cpp,
+            normalized: std::array::from_fn(|channel| {
+                (0..=u16::MAX)
+                    .map(|value| normalization.sample(channel, f32::from(value)))
+                    .collect()
+            }),
+        })
+    }
+
+    fn sample(&self, x: usize, y: usize) -> [f32; 3] {
+        let index = (y * self.width + x) * self.cpp;
+        std::array::from_fn(|channel| {
+            self.normalized[channel][usize::from(self.values[index + channel])]
+        })
+    }
+}
+
+impl<'a> BayerSampler<'a> {
+    fn new(raw: &'a RawImage, normalization: &RawNormalization) -> Option<Self> {
+        let RawImageData::Integer(values) = &raw.data else {
+            return None;
+        };
+        if raw.cpp != 1
+            || raw.cfa.width != 2
+            || raw.cfa.height != 2
+            || raw.width < 3
+            || raw.height < 3
+            || values.len() < raw.width.checked_mul(raw.height)?
+        {
+            return None;
+        }
+        let kernels = std::array::from_fn(|phase| {
+            let mut kernel = SensorKernel::default();
+            for dy in -1isize..=1 {
+                for dx in -1isize..=1 {
+                    let channel = raw.cfa.color_at(
+                        (2 + phase / 2).wrapping_add_signed(dy),
+                        (2 + phase % 2).wrapping_add_signed(dx),
+                    );
+                    if channel < 3 {
+                        kernel.offsets[channel][kernel.counts[channel]] =
+                            dy * raw.width as isize + dx;
+                        kernel.counts[channel] += 1;
+                    }
+                }
+            }
+            kernel
+        });
+        Some(Self {
+            values,
+            width: raw.width,
+            height: raw.height,
+            kernels,
+            normalized: std::array::from_fn(|channel| {
+                (0..=u16::MAX)
+                    .map(|value| normalization.sample(channel, f32::from(value)))
+                    .collect()
+            }),
+        })
+    }
+
+    fn sample(&self, x: usize, y: usize) -> Option<[f32; 3]> {
+        if x == 0 || y == 0 || x >= self.width - 1 || y >= self.height - 1 {
+            return None;
+        }
+        let kernel = &self.kernels[(y & 1) * 2 + (x & 1)];
+        let center = y * self.width + x;
+        Some(std::array::from_fn(|channel| {
+            let count = kernel.counts[channel];
+            let mut total = 0.0;
+            for &offset in &kernel.offsets[channel][..count] {
+                let value = self.values[center.wrapping_add_signed(offset)];
+                total += self.normalized[channel][usize::from(value)];
+            }
+            if count == 0 {
+                0.0
+            } else {
+                total / count as f32
+            }
+        }))
+    }
+}
+
+impl RawNormalization {
+    fn new(raw: &RawImage) -> Self {
+        let black = raw.blacklevels.map(f32::from);
+        let range = std::array::from_fn(|channel| {
+            f32::from(raw.whitelevels[channel]).max(black[channel] + 1.0) - black[channel]
+        });
+        let coefficients = if raw.wb_coeffs[..3]
+            .iter()
+            .all(|value| value.is_finite() && *value > 0.0)
+        {
+            raw.wb_coeffs
+        } else {
+            raw.neutralwb()
+        };
+        let balance = coefficients.map(|white_balance| {
+            let green = coefficients[1];
+            if green.is_finite() && green > 0.0 && white_balance.is_finite() && white_balance > 0.0
+            {
+                white_balance / green
+            } else {
+                1.0
+            }
+        });
+        Self {
+            black,
+            range,
+            balance,
+        }
+    }
+
+    fn sample(&self, channel: usize, value: f32) -> f32 {
+        ((value - self.black[channel]) / self.range[channel]).clamp(0.0, 1.0)
+            * self.balance[channel]
+    }
+}
+
+fn raw_sensor_rgb(
+    raw: &RawImage,
+    normalization: &RawNormalization,
+    x: usize,
+    y: usize,
+) -> [f32; 3] {
     if raw.cpp >= 3 {
         return [0, 1, 2].map(|channel| {
             let index = (y * raw.width + x)
                 .saturating_mul(raw.cpp)
                 .saturating_add(channel);
             raw_data_value(&raw.data, index)
-                .map(|value| normalize_raw_value(raw, channel, value))
+                .map(|value| normalization.sample(channel, value))
                 .unwrap_or(0.0)
         });
     }
 
     if !raw.cfa.is_valid() {
         let value = raw_data_value(&raw.data, y * raw.width + x)
-            .map(|value| normalize_raw_value(raw, 1, value))
+            .map(|value| normalization.sample(1, value))
             .unwrap_or(0.0);
         return [value; 3];
     }
 
-    [0, 1, 2].map(|channel| {
-        let mut total = 0.0;
-        let mut count = 0u32;
-        for dy in -1i32..=1 {
-            for dx in -1i32..=1 {
-                let sample_x = x as i32 + dx;
-                let sample_y = y as i32 + dy;
-                if sample_x < 0
-                    || sample_y < 0
-                    || sample_x >= raw.width as i32
-                    || sample_y >= raw.height as i32
-                    || raw.cfa.color_at(sample_y as usize, sample_x as usize) != channel
-                {
-                    continue;
-                }
-                let index = sample_y as usize * raw.width + sample_x as usize;
-                if let Some(value) = raw_data_value(&raw.data, index) {
-                    total += normalize_raw_value(raw, channel, value);
-                    count += 1;
-                }
+    // Visit each neighboring sensor sample once. Per-channel accumulation
+    // order is unchanged, preserving the previous floating-point result.
+    let mut totals = [0.0; 3];
+    let mut counts = [0u32; 3];
+    for dy in -1i32..=1 {
+        for dx in -1i32..=1 {
+            let sample_x = x as i32 + dx;
+            let sample_y = y as i32 + dy;
+            if sample_x < 0
+                || sample_y < 0
+                || sample_x >= raw.width as i32
+                || sample_y >= raw.height as i32
+            {
+                continue;
+            }
+            let channel = raw.cfa.color_at(sample_y as usize, sample_x as usize);
+            if channel >= 3 {
+                continue;
+            }
+            let index = sample_y as usize * raw.width + sample_x as usize;
+            if let Some(value) = raw_data_value(&raw.data, index) {
+                totals[channel] += normalization.sample(channel, value);
+                counts[channel] += 1;
             }
         }
-        if count > 0 { total / count as f32 } else { 0.0 }
+    }
+    std::array::from_fn(|channel| {
+        if counts[channel] > 0 {
+            totals[channel] / counts[channel] as f32
+        } else {
+            0.0
+        }
     })
 }
 
@@ -482,15 +772,24 @@ fn raw_data_value(data: &RawImageData, index: usize) -> Option<f32> {
     }
 }
 
+#[cfg(test)]
 fn normalize_raw_value(raw: &RawImage, channel: usize, value: f32) -> f32 {
     let channel = channel.min(3);
     let black = f32::from(raw.blacklevels[channel]);
     let white = f32::from(raw.whitelevels[channel]).max(black + 1.0);
     let mut value = ((value - black) / (white - black)).clamp(0.0, 1.0);
-    let green = raw.wb_coeffs[1];
-    let white_balance = raw.wb_coeffs[channel];
+    let coefficients = if raw.wb_coeffs[..3]
+        .iter()
+        .all(|value| value.is_finite() && *value > 0.0)
+    {
+        raw.wb_coeffs
+    } else {
+        raw.neutralwb()
+    };
+    let green = coefficients[1];
+    let white_balance = coefficients[channel];
     if green.is_finite() && green > 0.0 && white_balance.is_finite() && white_balance > 0.0 {
-        value *= (white_balance / green).clamp(0.25, 4.0);
+        value *= white_balance / green;
     }
     value
 }
@@ -593,10 +892,7 @@ fn best_embedded_jpeg(bytes: &[u8]) -> Option<&[u8]> {
     let mut best: Option<(usize, usize, u64)> = None;
     let mut start = 0usize;
     while start + 1 < bytes.len() {
-        let Some(offset) = bytes[start..]
-            .windows(2)
-            .position(|pair| pair == [0xff, 0xd8])
-        else {
+        let Some(offset) = jpeg_start(&bytes[start..]) else {
             break;
         };
         let candidate_start = start + offset;
@@ -612,6 +908,30 @@ fn best_embedded_jpeg(bytes: &[u8]) -> Option<&[u8]> {
         start = candidate_start + 2;
     }
     best.map(|(start, end, _)| &bytes[start..end])
+}
+
+// Search seven adjacent byte pairs per load. This stays portable to scalar
+// WASM runtimes while avoiding a byte-at-a-time search over large RAW files.
+fn jpeg_start(bytes: &[u8]) -> Option<usize> {
+    let mut offset = 0;
+    while offset + 8 <= bytes.len() {
+        let block = u64::from_le_bytes(bytes[offset..offset + 8].try_into().unwrap());
+        let pairs = !block | ((block >> 8) ^ 0xd8d8_d8d8_d8d8_d8d8);
+        let mut matches =
+            pairs.wrapping_sub(0x0101_0101_0101_0101) & !pairs & 0x8080_8080_8080_8080;
+        while matches != 0 {
+            let index = (matches.trailing_zeros() / 8) as usize;
+            if bytes[offset + index..offset + index + 2] == [0xff, 0xd8] {
+                return Some(offset + index);
+            }
+            matches &= matches - 1;
+        }
+        offset += 7;
+    }
+    bytes[offset..]
+        .windows(2)
+        .position(|pair| pair == [0xff, 0xd8])
+        .map(|index| offset + index)
 }
 
 fn jpeg_bounds(bytes: &[u8], start: usize) -> Option<(usize, u16, u16)> {
@@ -648,10 +968,7 @@ fn jpeg_bounds(bytes: &[u8], start: usize) -> Option<(usize, u16, u16)> {
         cursor += length;
         if marker == 0xda {
             while cursor + 1 < bytes.len() {
-                if bytes[cursor] != 0xff {
-                    cursor += 1;
-                    continue;
-                }
+                cursor += memchr::memchr(0xff, &bytes[cursor..])?;
                 let marker_start = cursor;
                 while bytes.get(cursor) == Some(&0xff) {
                     cursor += 1;
@@ -674,7 +991,7 @@ fn validate_output(path: &str, target: &str) -> Result<(), ConvertError> {
     let bytes = fs::read(path)
         .map_err(|error| conversion_error(format!("read converted image {path}: {error}")))?;
     let valid = match target {
-        "jpg" => best_embedded_jpeg(&bytes).is_some_and(|image| image.len() == bytes.len()),
+        "jpg" => jpeg_bounds(&bytes, 0).is_some_and(|(end, _, _)| end == bytes.len()),
         "png" => png_bounds(&bytes) == Some(bytes.len()),
         _ => false,
     };
@@ -803,6 +1120,39 @@ mod tests {
         let bytes = [b"RAW".as_slice(), &small, &sensor, &large, b"TAIL"].concat();
 
         assert_eq!(best_embedded_jpeg(&bytes), Some(large.as_slice()));
+        assert_eq!(
+            raw_preview_bytes(&bytes, &PreviewOptions::default())
+                .unwrap()
+                .as_ref(),
+            large.as_slice()
+        );
+    }
+
+    #[test]
+    fn jpeg_pair_search_handles_every_alignment_and_truncated_inputs() {
+        for length in 0..80 {
+            for position in 0..length {
+                let mut bytes = vec![0; length];
+                bytes[position] = 0xff;
+                if position + 1 < length {
+                    bytes[position + 1] = 0xd8;
+                }
+                assert_eq!(
+                    jpeg_start(&bytes),
+                    bytes.windows(2).position(|pair| pair == [0xff, 0xd8])
+                );
+            }
+        }
+        let bytes = (0..65536)
+            .flat_map(|word: u32| word.to_le_bytes())
+            .collect::<Vec<_>>();
+        for offset in 0..8 {
+            let tail = &bytes[offset..];
+            assert_eq!(
+                jpeg_start(tail),
+                tail.windows(2).position(|pair| pair == [0xff, 0xd8])
+            );
+        }
     }
 
     #[test]
@@ -836,13 +1186,14 @@ mod tests {
         }
 
         assert!(best_embedded_jpeg(&raw).is_none());
-        let preview = develop_raw_sensor_preview(&raw).expect("sensor preview should decode");
+        let preview = raw_preview_bytes(&raw, &PreviewOptions::default())
+            .expect("sensor preview should decode");
         assert!(best_embedded_jpeg(&preview).is_some_and(|jpeg| jpeg.len() == preview.len()));
     }
 
-    #[test]
-    fn calibrated_preview_keeps_full_sensor_and_normal_preview_applies_crop_and_orientation() {
-        let raw = RawImage {
+    fn synthetic_raw() -> RawImage {
+        RawImage {
+            baseline_exposure: 0.0,
             make: "Synthetic".into(),
             model: "Synthetic".into(),
             clean_make: "Synthetic".into(),
@@ -854,9 +1205,9 @@ mod tests {
             whitelevels: [65535; 4],
             blacklevels: [0; 4],
             xyz_to_cam: [
-                [0.412453, 0.357580, 0.180423],
-                [0.212671, 0.715160, 0.072169],
-                [0.019334, 0.119193, 0.950227],
+                [3.2404542, -1.5371385, -0.4985314],
+                [-0.969266, 1.8760108, 0.041556],
+                [0.0556434, -0.2040259, 1.0572252],
                 [0.0; 3],
             ],
             cfa: rawloader::CFA::new("RGGB"),
@@ -864,7 +1215,331 @@ mod tests {
             blackareas: vec![],
             orientation: rawloader::Orientation::Rotate90,
             data: RawImageData::Integer(vec![30000; 32]),
-        };
+        }
+    }
+
+    // Same independent color contract as Photos' nativeGrayDNGFixture: 18%
+    // sensor gray, calibrated sRGB primaries, no JPEG and signed exposure EV.
+    fn gray_dng(ev: Option<i32>, with_matrix: bool) -> Vec<u8> {
+        let short = |value: u16| value.to_le_bytes().to_vec();
+        let long = |value: u32| value.to_le_bytes().to_vec();
+        let mut entries: Vec<(u16, u16, u32, Vec<u8>)> = vec![
+            (254, 4, 1, long(0)),
+            (256, 4, 1, long(32)),
+            (257, 4, 1, long(32)),
+            (258, 3, 1, short(16)),
+            (259, 3, 1, short(1)),
+            (262, 3, 1, short(32803)),
+            (271, 2, 5, b"Test\0".to_vec()),
+            (272, 2, 7, b"Camera\0".to_vec()),
+            (273, 4, 1, long(0)),
+            (277, 3, 1, short(1)),
+            (278, 4, 1, long(32)),
+            (279, 4, 1, long(32 * 32 * 2)),
+            (33421, 3, 2, vec![2, 0, 2, 0]),
+            (33422, 1, 4, vec![0, 1, 1, 2]),
+            (50706, 1, 4, vec![1, 4, 0, 0]),
+            (50714, 4, 1, long(1000)),
+            (50717, 4, 1, long(11000)),
+            (
+                50728,
+                5,
+                3,
+                [1u32.to_le_bytes(), 1u32.to_le_bytes()].concat().repeat(3),
+            ),
+        ];
+        if with_matrix {
+            let matrix: Vec<u8> = [
+                3.2404542f32,
+                -1.5371385,
+                -0.4985314,
+                -0.969266,
+                1.8760108,
+                0.041556,
+                0.0556434,
+                -0.2040259,
+                1.0572252,
+            ]
+            .iter()
+            .flat_map(|value| {
+                [
+                    ((*value * 1_000_000.0).round() as i32).to_le_bytes(),
+                    1_000_000i32.to_le_bytes(),
+                ]
+                .concat()
+            })
+            .collect();
+            entries.push((50721, 10, 9, matrix));
+        }
+        if let Some(ev) = ev {
+            entries.push((
+                50730,
+                10,
+                1,
+                [ev.to_le_bytes(), 1i32.to_le_bytes()].concat(),
+            ));
+        }
+        entries.sort_by_key(|entry| entry.0);
+        let mut bytes = vec![0; 8 + 2 + entries.len() * 12 + 4];
+        bytes[..8].copy_from_slice(&[b'I', b'I', 42, 0, 8, 0, 0, 0]);
+        bytes[8..10].copy_from_slice(&(entries.len() as u16).to_le_bytes());
+        let mut strip_offset = 0;
+        for (index, (tag, kind, count, value)) in entries.into_iter().enumerate() {
+            let start = 10 + index * 12;
+            bytes[start..start + 2].copy_from_slice(&tag.to_le_bytes());
+            bytes[start + 2..start + 4].copy_from_slice(&kind.to_le_bytes());
+            bytes[start + 4..start + 8].copy_from_slice(&count.to_le_bytes());
+            if value.len() <= 4 {
+                bytes[start + 8..start + 8 + value.len()].copy_from_slice(&value);
+            } else {
+                let offset = bytes.len() as u32;
+                bytes[start + 8..start + 12].copy_from_slice(&offset.to_le_bytes());
+                bytes.extend(value);
+                if bytes.len() % 2 != 0 {
+                    bytes.push(0);
+                }
+            }
+            if tag == 273 {
+                strip_offset = start + 8;
+            }
+        }
+        let offset = bytes.len() as u32;
+        bytes[strip_offset..strip_offset + 4].copy_from_slice(&offset.to_le_bytes());
+        bytes.extend(2800u16.to_le_bytes().repeat(32 * 32));
+        bytes
+    }
+
+    #[test]
+    fn sensor_color_matches_photos_gray_and_signed_exposure_contract() {
+        let encoder = SrgbEncoder::new();
+        for (ev, expected) in [
+            (None, 118u8),
+            (Some(0), 118),
+            (Some(-1), 85),
+            (Some(1), 162),
+        ] {
+            let raw = rawloader::decode(&mut Cursor::new(gray_dng(ev, true))).unwrap();
+            assert_eq!(raw.baseline_exposure, ev.unwrap_or(0) as f32);
+            let normalization = RawNormalization::new(&raw);
+            let rgb = raw_sensor_rgb(&raw, &normalization, 10, 10);
+            let color = encode_camera_rgb(
+                rgb,
+                camera_to_srgb(&raw).unwrap(),
+                baseline_exposure_brightness(raw.baseline_exposure),
+                &encoder,
+            );
+            assert!(
+                color.iter().all(|value| value.abs_diff(expected) <= 1),
+                "EV {ev:?}: {color:?}"
+            );
+            assert!(encode_raw_sensor_preview(&raw, &PreviewOptions::default()).is_ok());
+        }
+        for ev in [f32::NAN, f32::INFINITY, -999.0] {
+            assert_eq!(baseline_exposure_brightness(ev), 1.0);
+        }
+        assert_eq!(baseline_exposure_brightness(100.0), 16.0);
+        assert_eq!(baseline_exposure_brightness(-100.0), 1.0 / 16.0);
+        assert!(rawloader::decode(&mut Cursor::new(gray_dng(None, false))).is_err());
+    }
+
+    #[test]
+    fn camera_matrix_preserves_known_colors_and_neutral_clipped_highlights() {
+        let mut raw = synthetic_raw();
+        let identity = raw.xyz_to_cam;
+        let basis = [[0.8, 0.15, 0.05], [0.1, 0.8, 0.1], [0.05, 0.15, 0.8]];
+        for (channel, row) in basis.iter().enumerate() {
+            for column in 0..3 {
+                raw.xyz_to_cam[channel][column] =
+                    (0..3).map(|i| row[i] * identity[i][column]).sum();
+            }
+        }
+        let matrix = camera_to_srgb(&raw).unwrap();
+        let color = [0.2, 0.4, 0.6];
+        let sensor = basis.map(|row| row.iter().zip(color).map(|(a, b)| a * b).sum());
+        let srgb = SrgbEncoder::new();
+        let actual = encode_camera_rgb(sensor, matrix, 1.0, &srgb);
+        let expected = color.map(|value| srgb.encode(value));
+        assert!(
+            actual.iter().zip(expected).all(|(a, b)| a.abs_diff(b) <= 1),
+            "{actual:?} {expected:?}"
+        );
+        assert_eq!(
+            encode_camera_rgb([2.0, 1.0, 1.5], matrix, 1.0, &srgb),
+            [255; 3]
+        );
+        raw.xyz_to_cam = [[0.0; 3]; 4];
+        assert!(camera_to_srgb(&raw).is_err());
+        raw.xyz_to_cam = identity;
+        raw.whitelevels[0] = raw.blacklevels[0];
+        assert!(camera_to_srgb(&raw).is_err());
+    }
+
+    #[test]
+    fn integer_rgb_lookup_matches_general_normalization() {
+        let mut raw = synthetic_raw();
+        for cpp in [3, 4] {
+            raw.cpp = cpp;
+            raw.data = RawImageData::Integer(
+                (0..raw.width * raw.height * cpp)
+                    .map(|index| (index * 1979) as u16)
+                    .collect(),
+            );
+            raw.wb_coeffs = [2.2, 1.0, 1.6, 1.0];
+            let normalization = RawNormalization::new(&raw);
+            let sampler = IntegerRgbSampler::new(&raw, &normalization).unwrap();
+            for y in 0..raw.height {
+                for x in 0..raw.width {
+                    assert_eq!(
+                        sampler.sample(x, y).map(f32::to_bits),
+                        raw_sensor_rgb(&raw, &normalization, x, y).map(f32::to_bits)
+                    );
+                }
+            }
+        }
+        raw.data = RawImageData::Integer(vec![0]);
+        assert!(IntegerRgbSampler::new(&raw, &RawNormalization::new(&raw)).is_none());
+    }
+
+    #[test]
+    fn sensor_sampling_matches_the_previous_three_pass_results_bit_for_bit() {
+        for pattern in ["RGGB", "BGGR", "GRBG", "GBRG"] {
+            let mut raw = synthetic_raw();
+            raw.cfa = rawloader::CFA::new(pattern);
+            raw.blacklevels = [17, 29, 43, 0];
+            raw.whitelevels = [40000, 35000, 32000, 0];
+            for floating in [false, true] {
+                raw.data = if floating {
+                    RawImageData::Float(
+                        (0..32).map(|index| index as f32 * 1411.7 - 800.0).collect(),
+                    )
+                } else {
+                    RawImageData::Integer((0..32).map(|index| (index * 1979) as u16).collect())
+                };
+                for balance in [[2.2, 1.0, 1.6, 1.0], [f32::NAN, -1.0, f32::INFINITY, 0.0]] {
+                    raw.wb_coeffs = balance;
+                    let normalization = RawNormalization::new(&raw);
+                    let sampler = BayerSampler::new(&raw, &normalization);
+                    for y in 0..raw.height {
+                        for x in 0..raw.width {
+                            let reference = [0, 1, 2].map(|channel| {
+                                let mut total = 0.0;
+                                let mut count = 0u32;
+                                for dy in -1i32..=1 {
+                                    for dx in -1i32..=1 {
+                                        let sx = x as i32 + dx;
+                                        let sy = y as i32 + dy;
+                                        if sx < 0
+                                            || sy < 0
+                                            || sx >= raw.width as i32
+                                            || sy >= raw.height as i32
+                                            || raw.cfa.color_at(sy as usize, sx as usize) != channel
+                                        {
+                                            continue;
+                                        }
+                                        if let Some(value) = raw_data_value(
+                                            &raw.data,
+                                            sy as usize * raw.width + sx as usize,
+                                        ) {
+                                            total += normalize_raw_value(&raw, channel, value);
+                                            count += 1;
+                                        }
+                                    }
+                                }
+                                if count > 0 { total / count as f32 } else { 0.0 }
+                            });
+                            assert_eq!(
+                                raw_sensor_rgb(&raw, &normalization, x, y).map(f32::to_bits),
+                                reference.map(f32::to_bits)
+                            );
+                            if let Some(fast) =
+                                sampler.as_ref().and_then(|sampler| sampler.sample(x, y))
+                            {
+                                assert_eq!(fast.map(f32::to_bits), reference.map(f32::to_bits));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn nikon_d3s_without_embedded_jpeg_decodes_the_sensor() {
+        let bytes = include_bytes!("../../../apps/demo/public/samples/raw/nikon-iss.nef");
+        let mut without_jpeg = bytes.to_vec();
+        let mut cursor = 0;
+        while let Some(offset) = jpeg_start(&without_jpeg[cursor..]) {
+            let start = cursor + offset;
+            if let Some((end, _, _)) = jpeg_bounds(&without_jpeg, start) {
+                without_jpeg[start..end].fill(0);
+                cursor = end;
+            } else {
+                cursor = start + 2;
+            }
+        }
+        assert!(best_embedded_jpeg(&without_jpeg).is_none());
+        let mut original = Cursor::new(bytes);
+        let expected = rawloader::decode(&mut original).expect("original Nikon sensor");
+        let actual =
+            rawloader::decode(&mut Cursor::new(&without_jpeg)).expect("Nikon sensor without JPEG");
+        assert_eq!(
+            (actual.width, actual.height),
+            (expected.width, expected.height)
+        );
+        match (&actual.data, &expected.data) {
+            (RawImageData::Integer(actual), RawImageData::Integer(expected)) => {
+                assert_eq!(actual, expected)
+            }
+            _ => panic!("expected integer sensor data"),
+        }
+        let preview = raw_preview_bytes(&without_jpeg, &PreviewOptions::default())
+            .expect("Nikon JPEG preview");
+        let (_, width, height) = jpeg_bounds(&preview, 0).unwrap();
+        assert!(width > 1000 && height > 500);
+    }
+
+    #[test]
+    fn srgb_lookup_stays_within_one_byte_for_shadows_extremes_and_random_samples() {
+        let encoder = SrgbEncoder::new();
+        for index in 0..=65535 {
+            let value = index as f32 / 65535.0;
+            assert!(encoder.encode(value).abs_diff(encode_srgb_reference(value)) <= 1);
+            for delta in [-0.5f32, 0.5] {
+                let between = (index as f32 + delta) / 65535.0;
+                assert!(
+                    encoder
+                        .encode(between)
+                        .abs_diff(encode_srgb_reference(between))
+                        <= 1
+                );
+            }
+        }
+        for value in [
+            f32::NAN,
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+            -0.0,
+            0.0,
+            -1.0,
+            1.0,
+            2.0,
+        ] {
+            assert_eq!(encoder.encode(value), encode_srgb_reference(value));
+        }
+        let mut seed = 12345u32;
+        for _ in 0..1_000_000 {
+            seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+            let value = seed as f32 / u32::MAX as f32;
+            assert!(
+                encoder.encode(value).abs_diff(encode_srgb_reference(value)) <= 1,
+                "sample {value}"
+            );
+        }
+    }
+
+    #[test]
+    fn calibrated_preview_keeps_full_sensor_and_normal_preview_applies_crop_and_orientation() {
+        let raw = synthetic_raw();
         let ordinary = encode_raw_sensor_preview(&raw, &PreviewOptions::default()).unwrap();
         let sensor = encode_raw_sensor_preview(
             &raw,

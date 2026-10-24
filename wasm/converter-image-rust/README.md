@@ -17,8 +17,33 @@ area cropping and EXIF orientation, and shares white balance, camera-to-sRGB
 matrix conversion, and sRGB encoding. Neither path provides full RAW development
 or vendor picture-profile parity. Input is limited to 256 MiB.
 
-Current optimized size (`wasm-opt -Oz`, Brotli quality 11):
+The color contract follows Photos' `internal/rawthumbnail/native_impl.inc` and
+`native_color_test.go` at revision `5967f350d9b169211379b91a3a097ee1883373e6`:
+camera white balance with a daylight fallback, sensor black/white levels,
+camera-basis normalization before matrix inversion, clipping white-balanced
+camera channels before color conversion, fixed sRGB transfer without histogram
+auto-brightening, and signed DNG `BaselineExposure` bounded to ±4 EV. Missing
+exposure or an invalid sentinel uses 0 EV; invalid levels or color matrices
+return an error. Synthetic no-JPEG DNG tests check 18% gray near 118/255 and
+−1 / +1 EV near 85 / 162.
+
+Sensor previews use cached CFA sampling kernels, integer normalization tables,
+preallocated output rows and a build-generated 16-bit linear-to-sRGB table.
+The last step differs from the exact transfer function by at most one 8-bit
+code value, including shadows. These changes keep the ordinary 2048-pixel limit.
+Camera profiles are parsed lazily, including the added Nikon D3S profile; see
+[rawloader provenance and local changes](vendor/rawloader/FILENS-CHANGES.md).
+
+Five no-embedded-JPEG camera samples lead both measured LibRaw-Wasm 1.6.0
+half-size configurations by 1.11–2.14× for sensor development and preview-canvas
+drawing. This scope allows different intermediate sizes and tone; display
+waiting is reported separately. See the
+[browser comparison and actual previews](../../docs/performance-comparison.md)
+and [reproduction instructions](../../benchmarks/frontend/README.md).
+
+Current optimized size (Rust release optimization 3, LTO, `wasm-opt -O3`;
+gzip level 6 and Brotli quality 11):
 
 | Artifact | Raw | Gzip | Brotli |
 | --- | ---: | ---: | ---: |
-| `converter-image.wasm` | 694,781 | 222,754 | 176,144 |
+| `converter-image.wasm` | 1,097,979 | 300,052 | 215,789 |

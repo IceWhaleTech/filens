@@ -1,0 +1,371 @@
+{
+  "method": "Seven fresh-context repeats per configuration; no concurrent tests or builds. Final external comparisons retain failures and slower cases. A separate seven-repeat confirmation prevents a new SOTA claim for the small picture deck. New/old iWork engineering runs rotate identical workloads and are excluded from external-comparison totals.",
+  "externalComparisonRunsAdded": 392,
+  "successfulFilensExternalRunsAdded": 147,
+  "engineeringComparisonRuns": 28,
+  "sources": {
+    "pptx-model-fastxml.json.gz": {
+      "uncompressedSha256": "3e6ed7b76450fbb91e5e6b3460991e21ce7af524afda09089faed7495eae9eba",
+      "compressedSha256": "cc647ee00584be9ad76400769edb1212cf92356a49d6aced644f4c4e270e5322",
+      "runs": 168
+    },
+    "pptx-preview-fastxml.json.gz": {
+      "uncompressedSha256": "6a77206aae03be484f994a3b34a5afb36233f8bcd97b18dce172ff8932a4bfff",
+      "compressedSha256": "80112ccb3c27abd869c4152d8b63d7adaa028cbaa105a194af60010734162141",
+      "runs": 168
+    },
+    "numbers-buffered.json.gz": {
+      "uncompressedSha256": "5b1c6aeeed8a26410ad8d6a19b665aa14bf85773628c8327a453f8487687a00b",
+      "compressedSha256": "6b5aa3fc164f38f0f1c2514982e6d335f8bff277f807a17df3be464794a76504",
+      "runs": 14
+    },
+    "iwork-preview-buffered.json.gz": {
+      "uncompressedSha256": "c9f034a1f7a87d9005a04239a85352881ba495afefd2df3ade487422f10a7e18",
+      "compressedSha256": "f7a9195d4d363b8b09e20f659b06c3a42a39cec3ca914371bc3ba4ccf36a2740",
+      "runs": 21
+    },
+    "pptx-pictures-confirm.json.gz": {
+      "uncompressedSha256": "93c7fcd008745cb100b8289522b4bf80c6669f0b20c039d34948ad76d605fb36",
+      "compressedSha256": "b8ea78f702ea3822a6aa141193fbac643ab5033d441f3655ee6898d421bf12d1",
+      "runs": 21
+    },
+    "numbers-buffered-ab.json.gz": {
+      "uncompressedSha256": "4868f4ebbf4080bf85295da595cd77dfa11c30f46b6ad471be37b672e1182008",
+      "compressedSha256": "4fc697ac91d44caad7ed0e0ad13e94c1617ebe8e7c2177496a379b825881764f",
+      "runs": 14
+    },
+    "numbers-preview-buffered-ab.json.gz": {
+      "uncompressedSha256": "f7489381ee02a20a8f1a7015dfc6a7f6d78efccb65ec08295319a2b392647260",
+      "compressedSha256": "fb0f53b3cba2ca7cb74a9a165ed65940e3461397ec788eefa4179fde0abfd13b",
+      "runs": 14
+    }
+  },
+  "artifacts": {
+    "scripts/benchmark-frontends.mjs": "f1633e7518ef1823c735ccbcccef362b0d2e9fcc2f53f61fe6a0fb86743532f7",
+    "packages/core/dist/index.js": "2e6a26185978c4859da62053a962e1bdc878bdb9beeeeb8a4dd4cee2471dea46",
+    "packages/iwork/dist/index.js": "21935622abe9adbeef35600de609682cf79cd2264bc38c4d40cf7a0b3af3ecc1",
+    "packages/panorama/dist/index.js": "a5b7b32c337f24fccb9e97338d5c1c475a656ab5d49d968d96b5b72d0bc284d6",
+    "packages/converter-client/dist/index.js": "cbd8f90f4151fced4c6fd4d89da5fc0b1b3ea932c17ae038a90b29bfbf6dee5d",
+    "packages/xlsx/dist/index.js": "37ea0dd6c6a0bf5ffbfbb7efc691b1cd9d30dd11d3415370018bb9de876fe07a",
+    "wasm/converter-core/dist/converter-core.wasm": "9fd03adbdccdd6ab5f05bd625e2ac382dc57a1e6320effacd618c35e4e29fbb4",
+    "wasm/converter-image/dist/converter-image.wasm": "adb3351801f0ff7ef209481013e75f9d708ab87230c4d3918576dd5f7630c7aa",
+    "tmp/performance-sota/package-lock.json": "088496502d26bb7550e7eb3eb4c3dbe2f543a8406caff1af4e7d25f3525bc06c",
+    "tmp/performance-sota/xlsx-0.20.3.full.min.js": "cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41"
+  },
+  "implementationSources": {
+    "packages/core/src/parser/ordered-xml.ts": "87ef9b7f6806d4080193f37da927a3871aaf926168aa72a9a93d88cfe27a2ca4",
+    "packages/core/src/parser/xml.ts": "8c5ce30f931af957e5dce31eea0edcab326174303c5cbe75f753ddf32fd2caa7",
+    "packages/core/test/xml.spec.ts": "7f4ac8ba6919ca8471361a45ae93965a4770206df5c585d9706a84a2571e1f72",
+    "packages/iwork/src/parser/table.ts": "7abd02e7432f90decbd999380965e97d227ce52f893ef9d27a261ebac05dd294",
+    "packages/iwork/src/parser/helpers.ts": "8ee95e7353a64c8cd2983e30775076c13c8a2c495ad3232a50f0113c279f859a",
+    "packages/iwork/test/table.spec.ts": "7aac7eb53cfbb8a45aedc75952a5b6d2d4726ac85020e874493c085c55916b2c"
+  },
+  "pptx": {
+    "fullModels": [
+      {
+        "sample": "filens-field-notes.pptx",
+        "same": true,
+        "modelBytes": 7820337,
+        "sha256": "e8e43bfdffdf95e75300290d1e855f2c76419f87be4c1a234353ce5a03d97160"
+      },
+      {
+        "sample": "rich-pptx-pictures.pptx",
+        "same": true,
+        "modelBytes": 799908,
+        "sha256": "d6af6c3ac2282e793901cb6a32a10dd7986d3db5a7dc58ee7d21152453acd79b"
+      },
+      {
+        "sample": "rich-pptx-shapes.pptx",
+        "same": true,
+        "modelBytes": 452754,
+        "sha256": "6eba4556568dd7c34dc408534242474e485ce093905ac24a7fcceca9675360c7"
+      },
+      {
+        "sample": "sample-deck.pptx",
+        "same": true,
+        "modelBytes": 43147,
+        "sha256": "7a85225895b840a9f2f6fbfd6566bf3bb99172c6c592a1d04e1d25f156ee5866"
+      },
+      {
+        "sample": "vue-office-test.pptx",
+        "same": true,
+        "modelBytes": 145025749,
+        "sha256": "bfeb00d9e53e8df336b610aee1c6e04e022b4f74757aa51edadf4b4e75e0659b"
+      },
+      {
+        "sample": "poi-SampleShow.pptx",
+        "same": true,
+        "modelBytes": 5701,
+        "sha256": "71cdf91808f3445012881acb74433a835e399c8e1d182919f00ba91a6260070f"
+      },
+      {
+        "sample": "poi-pie-chart.pptx",
+        "same": true,
+        "modelBytes": 3015,
+        "sha256": "2201d9cdf499c9f051f545d422882ce61cc1f812c911cb27c9e618554ae8e956"
+      },
+      {
+        "sample": "poi-2411-Performance_Up.pptx",
+        "same": true,
+        "modelBytes": 4951309,
+        "sha256": "84d93653a0abf7144446069418ac4f2d0cbdb9edde2c65b377da8098ddf93b50"
+      }
+    ],
+    "interactions": [
+      {
+        "sample": "vue-office-test.pptx",
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      {
+        "sample": "filens-field-notes.pptx",
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      {
+        "sample": "rich-pptx-shapes.pptx",
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      {
+        "sample": "rich-pptx-pictures.pptx",
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      {
+        "sample": "sample-deck.pptx",
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      {
+        "sample": "poi-SampleShow.pptx",
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      {
+        "sample": "poi-pie-chart.pptx",
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      },
+      {
+        "sample": "poi-2411-Performance_Up.pptx",
+        "initialVisible": true,
+        "jumped": true,
+        "zoomedVisible": true,
+        "scrolledVisible": true
+      }
+    ],
+    "largeDeckSotaQualified": true,
+    "smallPictureDeckSotaQualified": false,
+    "smallPictureDeckReason": "The independent seven-repeat confirmation does not stably beat vue-office. No new SOTA label despite a lead in the first seven-repeat comparison.",
+    "smallPictureDeckConfirmation": [
+      {
+        "family": "pptx-view",
+        "sample": "rich-pptx-pictures.pptx",
+        "peer": "pptx-preview",
+        "metric": "readyMs",
+        "filensMs": 29.335000038146973,
+        "peerMs": 34.574999928474426,
+        "peerOverFilensRatio": 1.1786262104487268,
+        "ratio95PercentBootstrapInterval": [
+          1.034855957554526,
+          1.2241408810288397
+        ],
+        "stableLeadInThisComparison": true
+      },
+      {
+        "family": "pptx-view",
+        "sample": "rich-pptx-pictures.pptx",
+        "peer": "vue-office",
+        "metric": "readyMs",
+        "filensMs": 29.335000038146973,
+        "peerMs": 32.77999997138977,
+        "peerOverFilensRatio": 1.1174365068608472,
+        "ratio95PercentBootstrapInterval": [
+          0.9261499268990727,
+          1.1873824591615654
+        ],
+        "stableLeadInThisComparison": false
+      }
+    ],
+    "previewCaveats": "Pie-chart peers omit the chart; Performance_Up shows a different first page. These previews remain diagnostic."
+  },
+  "numbers": {
+    "sheets": 6,
+    "tables": 14,
+    "nonemptyCells": 5772,
+    "completeCellSnapshotsUnchanged": true,
+    "contentUncompressedSha256": "d601f7b1fa8b2a68a61b749bb26c4ada7d1065b50163e11c8cb812a0f09b8f9c",
+    "fullStyledModelUnchanged": true,
+    "fullStyledModelJsonBytes": 15306113,
+    "fullStyledModelSha256": "508b2940d6c6a3d64ec2ffb0103d1ebed05b857bb3acc859b26a58b2ebdd394f",
+    "fullStyledModelSnapshot": "numbers-styled-model-refined.json.gz",
+    "fullModelAb": {
+      "family": "numbers-model",
+      "sample": "a.numbers",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 43.80499994754791,
+      "peerMs": 46.080000042915344,
+      "peerOverFilensRatio": 1.051934712888746,
+      "ratio95PercentBootstrapInterval": [
+        1.0449588271198307,
+        1.0796196591902962
+      ],
+      "stableLeadInThisComparison": true
+    },
+    "nativePreviewAb": {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 141.29999995231628,
+      "peerMs": 140.0199999809265,
+      "peerOverFilensRatio": 0.9909412599304903,
+      "ratio95PercentBootstrapInterval": [
+        0.9519878882296211,
+        1.0411570070279081
+      ],
+      "stableLeadInThisComparison": false
+    },
+    "note": "Full-model engineering comparison improves about 5%; native preview has no stable benefit. SheetJS cached data is still faster. No Numbers SOTA claim."
+  },
+  "iworkInteractions": [
+    {
+      "sample": "a.numbers",
+      "archiveMatches": true,
+      "sheetsMatch": true,
+      "sheets": 6,
+      "tables": 14
+    },
+    {
+      "sample": "a.pages",
+      "archiveMatches": true,
+      "navigated": true,
+      "zoomed": true
+    },
+    {
+      "sample": "filens-weekend.key",
+      "archiveMatches": true,
+      "navigated": true,
+      "zoomed": true
+    }
+  ],
+  "pixels": [
+    {
+      "sample": "poi-SampleShow.pptx",
+      "screenshotSha256": "ca0edbc6c7b76f11c22b8fbc12051876a4e7215e93b064cde356d0ee1a289541",
+      "previousScreenshotSha256": "ca0edbc6c7b76f11c22b8fbc12051876a4e7215e93b064cde356d0ee1a289541",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "rich-pptx-pictures.pptx",
+      "screenshotSha256": "108aa71544c875f82c13b3b0d792cf831aeb04963a480b7a4c10834f7da56064",
+      "previousScreenshotSha256": "108aa71544c875f82c13b3b0d792cf831aeb04963a480b7a4c10834f7da56064",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "poi-2411-Performance_Up.pptx",
+      "screenshotSha256": "1a75707d689194b5be3030aec6b5b6d97f1abb59d4ca3a6edf6409160914fab5",
+      "previousScreenshotSha256": "1a75707d689194b5be3030aec6b5b6d97f1abb59d4ca3a6edf6409160914fab5",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "filens-field-notes.pptx",
+      "screenshotSha256": "5ea91780dbb0e907f953459404e7b7b091b289f70ba135f604472dab66cddfda",
+      "previousScreenshotSha256": "5ea91780dbb0e907f953459404e7b7b091b289f70ba135f604472dab66cddfda",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "vue-office-test.pptx",
+      "screenshotSha256": "9f5ad038d0e58126c5c6764ff617ad8aaab1ece3f3537e8167d531e2188e1cab",
+      "previousScreenshotSha256": "9f5ad038d0e58126c5c6764ff617ad8aaab1ece3f3537e8167d531e2188e1cab",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "rich-pptx-shapes.pptx",
+      "screenshotSha256": "82301193dd0a9fae23f4bdc2f6aef4ec5c2b099e99ca1ab56f13fb4fa5e68ffd",
+      "previousScreenshotSha256": "82301193dd0a9fae23f4bdc2f6aef4ec5c2b099e99ca1ab56f13fb4fa5e68ffd",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "poi-pie-chart.pptx",
+      "screenshotSha256": "76a49b193df279c1cfb68cf2fef197d022a3d5d31ca22eb4727fa37705963c6a",
+      "previousScreenshotSha256": "76a49b193df279c1cfb68cf2fef197d022a3d5d31ca22eb4727fa37705963c6a",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "sample-deck.pptx",
+      "screenshotSha256": "9f36023b8d31c52eb84c9575d2eaae558404e98bbd4fd4e2073fb4ed7975b0aa",
+      "previousScreenshotSha256": "9f36023b8d31c52eb84c9575d2eaae558404e98bbd4fd4e2073fb4ed7975b0aa",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "filens-weekend.key",
+      "screenshotSha256": "c3754fc7a470290e3a6da9ed1bf0d33a16a4349762945817f714880f709dd8cb",
+      "previousScreenshotSha256": "c3754fc7a470290e3a6da9ed1bf0d33a16a4349762945817f714880f709dd8cb",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "a.numbers",
+      "screenshotSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+      "previousScreenshotSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "a.pages",
+      "screenshotSha256": "ccc28b72f1e5922b106e571cfee6dec860686776de9b88c3aa5e37caef5a4a74",
+      "previousScreenshotSha256": "ccc28b72f1e5922b106e571cfee6dec860686776de9b88c3aa5e37caef5a4a74",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    }
+  ],
+  "validation": {
+    "coreUnitTestsPassed": 212,
+    "coreUnitTestsSkipped": 11,
+    "iworkUnitTestsPassed": 295,
+    "coreBuild": "passed",
+    "iworkBuild": "passed",
+    "demoBuild": "passed",
+    "bundleReport": "passed"
+  },
+  "engineeringHarness": {
+    "path": "benchmark-iwork-ab.mjs",
+    "sha256": "e9d44e342efe4823dc5044d0c50d8ac4c57a1e95ceb5f8f81c06d0c581d41d06",
+    "note": "Derived from the production harness with a second filens build and rotating engine order. The engineering raw records retain the common production-harness artifact hash; this is the exact derived harness that ran them."
+  },
+  "engineeringBaseline": {
+    "implementationSources": {
+      "packages/iwork/src/parser/table.ts": "409d2dd1bacdd33ddfd4c7d44f60aba862e4d7ded3c6e95d4ce717ac522f664b",
+      "packages/iwork/src/parser/helpers.ts": "a2889c079ddc2bfc205f367cc102735d63fb48ba1b026f093da75f9180ff45e6"
+    },
+    "artifacts": {
+      "index.js": "027a3915c33df03b197176a2c901e7fb90690db73259870d3339055585c659f4",
+      "assets/iwork-worker-i3HSbKjc.js": "bc5a3f609c044f8795052ef8005cf39fb0fee9c83a8bddeb7a388903ae90aa45"
+    }
+  }
+}

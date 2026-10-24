@@ -1,0 +1,415 @@
+{
+  "method": "Seven fresh-context final preview repeats and 14 rotating current/previous engineering measurements. First-preview timing boundary is unchanged and still waits for media decode, fonts and two animation frames. All initial table rows remain in the DOM. CSS content-visibility defers offscreen layout; unsupported browsers render normally. Functional and diagnostic runs are excluded from external-comparison totals.",
+  "externalComparisonRunsAdded": 7,
+  "successfulFilensExternalRunsAdded": 7,
+  "engineeringComparisonRuns": 14,
+  "rejectedParserExperimentRuns": 28,
+  "browserReviewRuns": 4,
+  "profiledDiagnosticRuns": 1,
+  "cumulativeExternalComparisonRuns": 1988,
+  "cumulativeSuccessfulFilensRuns": 833,
+  "sources": {
+    "numbers-preview-visibility.json.gz": {
+      "uncompressedSha256": "74ae63618a2ab184c73f59c80000789ca2a1c36bf215e93b33ce36713c11d9f7",
+      "compressedSha256": "bf4ff72691f0406db180f53f73894e128a22e82b1d3f516bdd585cdd96f7571b",
+      "runs": 7
+    },
+    "numbers-preview-visibility-ab.json.gz": {
+      "uncompressedSha256": "9b0f957a97ac83dc9736e82a41c2d233807d34d6daed3c07440f5a8853389a6c",
+      "compressedSha256": "b55b1db215f4bcf15a5ee4add81a660e85a9ec1195adf49d0f288d6e37a11a2b",
+      "runs": 14
+    },
+    "numbers-visibility-browser-review.json.gz": {
+      "uncompressedSha256": "be4b604ffc74f406f5c1b9194fb899f747747aba0aa3272509b3518b474d674a",
+      "compressedSha256": "4dd2ae8a66dbacfac284117e1cb1586861af506b7d26fbdd6fa6b1ba1102db3b",
+      "runs": 1
+    },
+    "iwork-visibility-resize-review.json.gz": {
+      "uncompressedSha256": "2b3b5a262f587602d37d478e4d77361cb827047735dc9cb1947562a9a589e131",
+      "compressedSha256": "b4a00071709ade046355afdb7fb5cf7c777b76e0dd21e16ab0e6cebc26c53580",
+      "runs": 3
+    },
+    "numbers-visibility-parser-diagnostic.json.gz": {
+      "uncompressedSha256": "c8e88164441d8412d791d9b05d1bed8a71712900bb2c7cb79e8c1e29db1dacc4",
+      "compressedSha256": "22ff85d4a02a4e573703d9529e7da7ed9240419b70f65518cfee09ab59f98d10",
+      "runs": 28
+    },
+    "numbers-visibility-profile-diagnostic.json.gz": {
+      "uncompressedSha256": "1c80f3965a7b4b9ee47900fa78c6f379aa347fd70dcfba638ba616bd315f57a8",
+      "compressedSha256": "878996d9402d021f57faf9e0bd0a1b0f6b4b3b657d8c89f55742f2ed627c0a59",
+      "runs": 1,
+      "profiled": true,
+      "excludedFromRanking": true
+    }
+  },
+  "artifacts": {
+    "scripts/benchmark-frontends.mjs": "f1633e7518ef1823c735ccbcccef362b0d2e9fcc2f53f61fe6a0fb86743532f7",
+    "packages/core/dist/index.js": "2e6a26185978c4859da62053a962e1bdc878bdb9beeeeb8a4dd4cee2471dea46",
+    "packages/iwork/dist/index.js": "6040dd66f03ac25639e556f3b8691f421bc3f41b872d96b61653d84859f869fc",
+    "packages/panorama/dist/index.js": "a5b7b32c337f24fccb9e97338d5c1c475a656ab5d49d968d96b5b72d0bc284d6",
+    "packages/converter-client/dist/index.js": "cbd8f90f4151fced4c6fd4d89da5fc0b1b3ea932c17ae038a90b29bfbf6dee5d",
+    "packages/xlsx/dist/index.js": "37ea0dd6c6a0bf5ffbfbb7efc691b1cd9d30dd11d3415370018bb9de876fe07a",
+    "wasm/converter-core/dist/converter-core.wasm": "9fd03adbdccdd6ab5f05bd625e2ac382dc57a1e6320effacd618c35e4e29fbb4",
+    "wasm/converter-image/dist/converter-image.wasm": "adb3351801f0ff7ef209481013e75f9d708ab87230c4d3918576dd5f7630c7aa",
+    "tmp/performance-sota/package-lock.json": "088496502d26bb7550e7eb3eb4c3dbe2f543a8406caff1af4e7d25f3525bc06c",
+    "tmp/performance-sota/xlsx-0.20.3.full.min.js": "cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41"
+  },
+  "implementationSources": {
+    "packages/iwork/src/viewer/create-iwork-viewer.ts": "79de4b8fc980e7f7b8b67f498dfd894b856d88e773594a31a1ed5d1646026bdf",
+    "packages/iwork/src/styles/index.css": "46bccbe60475208122ea5c2d3a71cc6e45bf4724198103a6c03b11ee4e71df70"
+  },
+  "unchangedParserAndWorkerSources": {
+    "packages/iwork/src/parser/protobuf.ts": "b949b939bad0bc901d63cdda5b34f7b66620aceb087964b89e92e21e16cbd004",
+    "packages/iwork/src/parser/table.ts": "7abd02e7432f90decbd999380965e97d227ce52f893ef9d27a261ebac05dd294",
+    "packages/iwork/src/parser/archive.ts": "470b4149b787c0c28bfc891ebfa26c84ecbf99f7475777a981095bfb858d5757",
+    "packages/iwork/src/parser/helpers.ts": "8ee95e7353a64c8cd2983e30775076c13c8a2c495ad3232a50f0113c279f859a",
+    "packages/iwork/src/worker/client.ts": "7af5bae7ded55d8611a4ff0a2c2225e2b5633aa6b155f4716c48b7521e6cc88a",
+    "packages/iwork/src/worker/iwork-worker.ts": "4d976e05b4833d8547336afe58120a77dc0bb9c0ad9833abe24418d303a87d6f"
+  },
+  "engineeringReproductionArtifacts": {
+    "benchmark-iwork-visibility-ab.mjs": "36a9d683bce1c6e37e3bd0d9bc1365cab7e60f8ecefaa1017aabb6835a28cf04",
+    "benchmark-iwork-visibility-review.mjs": "43433bbc372eee2afc8cc5f0ff48bfb3cf375d9849ef2d807f608fedb4d7f437",
+    "numbers-visibility.patch": "bb79d751d69a1761b7135b9a2bc9e011ad6477e5ed7b86bdffd4632fb051306d"
+  },
+  "baseline": {
+    "artifactPath": "tmp/performance-sota/oct24-wire-baseline/iwork-dist/index.js",
+    "artifactSha256": "4cc28ba6728681f46be1d9ae179ff351d6ceda9aadf5db773c1803ae95967283",
+    "sourceHashes": {
+      "packages/iwork/src/viewer/create-iwork-viewer.ts": "128ecd449e8eccce9dea7cac71d72b474f4aa8014fa7e6dc7f33258a401b0917",
+      "packages/iwork/src/styles/index.css": "2817de9ad1f123314177a1398c4010421b7cf4755013b794bc116c85ea454e04"
+    },
+    "reproduction": "Apply numbers-visibility.patch in reverse, build @filens/iwork and copy dist to tmp/performance-sota/oct24-wire-baseline/iwork-dist. Restore/apply the patch and rebuild. Run the derived A/B harness from the repository root with --family iwork-view --sample a.numbers --iterations 7 --review-content. The harness loads the current stylesheet for both engines; the baseline does not add the new containment class or intrinsic sizing."
+  },
+  "engineeringComparisons": [
+    {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 86.83499991893768,
+      "peerMs": 98.29999995231628,
+      "peerOverFilensRatio": 1.1320320152482457,
+      "ratio95PercentBootstrapInterval": [
+        1.0941706592191296,
+        1.1951928775459086
+      ],
+      "stableLeadInThisComparison": true
+    }
+  ],
+  "firstPreviewPixelCheck": {
+    "sameDecodedPixels": true,
+    "rgbPixelSha256": "5e8075faec78d4d4fee1389ee79ab9ff7f2c79b931d51d35e7900fdd4551fb73",
+    "currentPngSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+    "previousPngSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201"
+  },
+  "contentAndInteractions": {
+    "archiveMatches": true,
+    "sheetsMatch": true,
+    "sheets": 6,
+    "tables": 14
+  },
+  "offscreenTableReviews": [
+    {
+      "sheet": 0,
+      "table": 0,
+      "textMatches": true,
+      "rows": 47,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 0,
+      "table": 1,
+      "textMatches": true,
+      "rows": 47,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 0,
+      "table": 2,
+      "textMatches": true,
+      "rows": 47,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 0,
+      "table": 3,
+      "textMatches": true,
+      "rows": 46,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 0,
+      "table": 4,
+      "textMatches": true,
+      "rows": 46,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 1,
+      "table": 0,
+      "textMatches": true,
+      "rows": 47,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 2,
+      "table": 0,
+      "textMatches": true,
+      "rows": 47,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 2,
+      "table": 1,
+      "textMatches": true,
+      "rows": 47,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 2,
+      "table": 2,
+      "textMatches": true,
+      "rows": 47,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 3,
+      "table": 0,
+      "textMatches": true,
+      "rows": 47,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 3,
+      "table": 1,
+      "textMatches": true,
+      "rows": 6,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 3,
+      "table": 2,
+      "textMatches": true,
+      "rows": 11,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 4,
+      "table": 0,
+      "textMatches": true,
+      "rows": 4,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    },
+    {
+      "sheet": 5,
+      "table": 0,
+      "textMatches": true,
+      "rows": 47,
+      "mounted": true,
+      "reachedViewport": true,
+      "contentVisibility": "auto"
+    }
+  ],
+  "offscreenTablePixelChecks": [
+    {
+      "sample": "numbers-sheet-0-table-0",
+      "sameDecodedPixels": true,
+      "autoPngSha256": "ea8bb1f8694d727cd967f14ad8d51569b93f4ed33916637190d66b33cc9f8548",
+      "visiblePngSha256": "ea8bb1f8694d727cd967f14ad8d51569b93f4ed33916637190d66b33cc9f8548"
+    },
+    {
+      "sample": "numbers-sheet-0-table-1",
+      "sameDecodedPixels": false,
+      "autoPngSha256": "915681a3fde69c4757f99db38c4ef6563047eb07d19a70caa4f1b0b9ee81a384",
+      "visiblePngSha256": "ac219788c939b04d4aea20c28bffef4f772bcafc6a4a7adeb8898362e93256d4"
+    },
+    {
+      "sample": "numbers-sheet-0-table-2",
+      "sameDecodedPixels": true,
+      "autoPngSha256": "265d49f12fc0b0be82fff77c9c422e615c6503bade8964dafacefba3f40b688f",
+      "visiblePngSha256": "265d49f12fc0b0be82fff77c9c422e615c6503bade8964dafacefba3f40b688f"
+    },
+    {
+      "sample": "numbers-sheet-0-table-3",
+      "sameDecodedPixels": false,
+      "autoPngSha256": "e6f8e39db55a9de1e583f45d3e4883d56ec84f8831c36b0e61fb4de182090a9a",
+      "visiblePngSha256": "b7fe7e6988881f5a64b4da1c48d0134b2ab151794f0eba5e2510a3a42d311742"
+    },
+    {
+      "sample": "numbers-sheet-0-table-4",
+      "sameDecodedPixels": false,
+      "autoPngSha256": "62abc880bbfff676c9a84664dbce5f517f84ef44ebc712cd4ad4c4e5bdb0dc1a",
+      "visiblePngSha256": "14f007dd693d1452c863a4536f8af6adb1f99878e5e879cb53be09838ca5d630"
+    },
+    {
+      "sample": "numbers-sheet-1-table-0",
+      "sameDecodedPixels": true,
+      "autoPngSha256": "ebfd83d898a86d41d49c182f7efbec6f2b3ff4bbcda097c8699a6766e4f94b89",
+      "visiblePngSha256": "ebfd83d898a86d41d49c182f7efbec6f2b3ff4bbcda097c8699a6766e4f94b89"
+    },
+    {
+      "sample": "numbers-sheet-2-table-0",
+      "sameDecodedPixels": false,
+      "autoPngSha256": "2b623e15cff6554bf73733955a102dd336f181778e6d4a92e9c7b9983bc61325",
+      "visiblePngSha256": "449718dcbbcf1ea1b1da57f9fe53b5b21e6c56fbeb7abb667e897cdd99c90086"
+    },
+    {
+      "sample": "numbers-sheet-2-table-1",
+      "sameDecodedPixels": false,
+      "autoPngSha256": "68df7eb182886551c3e304fab844ae142e3ef656cd4a0a01fae66a2da647f28b",
+      "visiblePngSha256": "15d342a7da09238803b1734669dbb3a3342848078e8cc3ec885e1fe7695d1256"
+    },
+    {
+      "sample": "numbers-sheet-2-table-2",
+      "sameDecodedPixels": true,
+      "autoPngSha256": "e1d07c5968d52e82ccc5ad7e8b68baedd9ebeb42f8399f3d80b7c5fc8f5584d8",
+      "visiblePngSha256": "e1d07c5968d52e82ccc5ad7e8b68baedd9ebeb42f8399f3d80b7c5fc8f5584d8"
+    },
+    {
+      "sample": "numbers-sheet-3-table-0",
+      "sameDecodedPixels": true,
+      "autoPngSha256": "1a4582db80800ff5b09cd8d2ff48fb6adbf5f93f4ce99537d69e058a08c20d7f",
+      "visiblePngSha256": "1a4582db80800ff5b09cd8d2ff48fb6adbf5f93f4ce99537d69e058a08c20d7f"
+    },
+    {
+      "sample": "numbers-sheet-3-table-1",
+      "sameDecodedPixels": false,
+      "autoPngSha256": "4ef622d00f2e77fdd097de1d60739096efb411737dcc548a23a4118e798d0be0",
+      "visiblePngSha256": "a5c6032aef14d71fdc887a51866588c5355d00606c235b3a44bbc8e57ad9b95a"
+    },
+    {
+      "sample": "numbers-sheet-3-table-2",
+      "sameDecodedPixels": true,
+      "autoPngSha256": "b3009e3445599a98de81f9a22e1da523bcf8b74b2ee12e01c695b1ae11a1d239",
+      "visiblePngSha256": "b3009e3445599a98de81f9a22e1da523bcf8b74b2ee12e01c695b1ae11a1d239"
+    },
+    {
+      "sample": "numbers-sheet-4-table-0",
+      "sameDecodedPixels": true,
+      "autoPngSha256": "da9abe1ae0eda7cfd7ed9ce29425c436ca08fa28417ba461751dc0725930ede5",
+      "visiblePngSha256": "da9abe1ae0eda7cfd7ed9ce29425c436ca08fa28417ba461751dc0725930ede5"
+    },
+    {
+      "sample": "numbers-sheet-5-table-0",
+      "sameDecodedPixels": true,
+      "autoPngSha256": "ee6d04310e4925bf5f6a233f4e59234e440457bbae1e3c165abead5411d0dff1",
+      "visiblePngSha256": "ee6d04310e4925bf5f6a233f4e59234e440457bbae1e3c165abead5411d0dff1"
+    }
+  ],
+  "offscreenTableVisualReview": "All 14 tables remain readable with complete mounted row/cell content when scrolled into view. 8 auto/visible screenshot pairs have identical decoded pixels; the other 6 retain readable content with small vertical alignment or column-width differences as offscreen sizing resolves. Only the initial preview is claimed pixel-identical.",
+  "browserResizeChecks": [
+    {
+      "sample": "a.numbers",
+      "interactions": {
+        "archiveMatches": true,
+        "sheetsMatch": true,
+        "sheets": 6,
+        "tables": 14
+      },
+      "resizeReview": {
+        "originalRows": [
+          47,
+          47,
+          47,
+          46,
+          46
+        ],
+        "loadedRows": [
+          47,
+          47,
+          47,
+          46,
+          46
+        ],
+        "scrollLoadedMore": null,
+        "tablesPreserved": true,
+        "loadedRowsPreserved": true,
+        "scrollPreserved": true,
+        "floatingScaleMatches": true,
+        "selectedSheetPreserved": true
+      }
+    },
+    {
+      "sample": "a.pages",
+      "interactions": {
+        "archiveMatches": true,
+        "navigated": true,
+        "zoomed": true
+      },
+      "resizeReview": {
+        "retainedContentPreserved": true,
+        "selectedContentPreserved": true,
+        "selectedPagePreserved": true,
+        "canvasScaleMatches": true
+      }
+    },
+    {
+      "sample": "filens-weekend.key",
+      "interactions": {
+        "archiveMatches": true,
+        "navigated": true,
+        "zoomed": true
+      },
+      "resizeReview": {
+        "retainedContentPreserved": true,
+        "selectedContentPreserved": true,
+        "selectedPagePreserved": true,
+        "canvasScaleMatches": true
+      }
+    }
+  ],
+  "finalSummary": [
+    {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 83.6599999666214,
+      "minMs": 82.625,
+      "medianProcessingMs": null,
+      "maxMs": 94.3400000333786,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 5.598316192626953,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 6
+      },
+      "failures": []
+    }
+  ],
+  "unchangedRanking": "No native iWork peer was added. Full Numbers parsing remains 35.4 ms versus 26.0 ms SheetJS data extraction in the prior complete-model comparison. No new SOTA claim.",
+  "validation": {
+    "iworkTests": 299,
+    "iworkBuild": true,
+    "demoBuild": true,
+    "bundleReport": true
+  },
+  "bundleReportSha256": "b357e07c5ed78c1c3b1643734225e77873e162d343f54bcc9b4c2372ba1fa273"
+}

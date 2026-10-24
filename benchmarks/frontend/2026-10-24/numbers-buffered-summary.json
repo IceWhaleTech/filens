@@ -1,0 +1,89 @@
+{
+  "sourceSha256": "5b1c6aeeed8a26410ad8d6a19b665aa14bf85773628c8327a453f8487687a00b",
+  "date": "2026-10-24T00:42:35.045Z",
+  "cpu": "Apple M4 Pro",
+  "platform": "darwin 25.6.0 arm64",
+  "browser": "147.0.7727.15",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "devicePixelRatio": 1
+  },
+  "versions": {
+    "pptxtojson": "2.2.0",
+    "pptx-preview": "1.0.7",
+    "@vue-office/pptx": "1.0.1",
+    "libraw-wasm": "1.6.0",
+    "@photo-sphere-viewer/core": "5.15.1",
+    "sheetjs": "0.20.3"
+  },
+  "iterations": 7,
+  "totalRuns": 14,
+  "filensSuccessfulRuns": 7,
+  "method": "Ratios are peer / filens (higher means filens is faster). Paired bootstrap of per-iteration measurements, 10000 resamples, percentile 95% interval, LCG seed 12345. Small single-machine sample; not an independent benchmark or a global SOTA proof.",
+  "comparisons": [
+    {
+      "family": "numbers-model",
+      "sample": "a.numbers",
+      "peer": "sheetjs",
+      "metric": "readyMs",
+      "filensMs": 40.855000019073486,
+      "peerMs": 26.269999980926514,
+      "peerOverFilensRatio": 0.6430057512828822,
+      "ratio95PercentBootstrapInterval": [
+        0.6020773227798659,
+        0.6752909161928088
+      ],
+      "stableLeadInThisComparison": false
+    }
+  ],
+  "timingLeads": [
+    {
+      "family": "numbers-model",
+      "sample": "a.numbers",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    }
+  ],
+  "aggregates": [],
+  "summary": [
+    {
+      "family": "numbers-model",
+      "sample": "a.numbers",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 40.855000019073486,
+      "minMs": 39.08500003814697,
+      "medianProcessingMs": null,
+      "maxMs": 48.954999923706055,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 7.61053466796875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 6,
+        "nonemptyCells": 5772
+      },
+      "failures": []
+    },
+    {
+      "family": "numbers-model",
+      "sample": "a.numbers",
+      "engine": "sheetjs",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 26.269999980926514,
+      "minMs": 25.175000071525574,
+      "medianProcessingMs": null,
+      "maxMs": 27.330000042915344,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.6525802612304688,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 14,
+        "nonemptyCells": 5772
+      },
+      "failures": []
+    }
+  ]
+}

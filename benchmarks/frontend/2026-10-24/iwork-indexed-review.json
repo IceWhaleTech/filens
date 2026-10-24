@@ -1,0 +1,242 @@
+{
+  "method": "Seven fresh-context repeats per final external and engineering configuration; no concurrent builds or tests. Engineering comparisons rotate the current and previous builds with identical workloads and are excluded from external-comparison totals. First-preview boundaries remain unchanged. Profiled and traced PPTX diagnostics are not ranking evidence.",
+  "externalComparisonRunsAdded": 35,
+  "successfulFilensExternalRunsAdded": 28,
+  "engineeringComparisonRuns": 56,
+  "diagnosticRunsExcluded": 14,
+  "sources": {
+    "numbers-indexed.json.gz": {
+      "uncompressedSha256": "88a5cafbe7cb2a2cbf6787f21a4652127f999aab361b24af3ec63f493e70f217",
+      "compressedSha256": "6cf5cd6719704d1cf43200fcc6d1fddb865cb2fe05a4e8c52e84ad454ccf2cee",
+      "runs": 14
+    },
+    "iwork-preview-indexed.json.gz": {
+      "uncompressedSha256": "5755d671e1fb0c1d8b1e2f9e90fabda6ceda2eebcf50b2b7e3ceadb4a94ff8aa",
+      "compressedSha256": "6ceb2feeb549cfa3ed22b62069ab42e172cdcb1e77405b87d3d70eeb31c08792",
+      "runs": 21
+    },
+    "numbers-indexed-ab.json.gz": {
+      "uncompressedSha256": "5ff1d1eef309ffeb889f6638476c82dd597ce20153e57573da11a9971d20921f",
+      "compressedSha256": "d90f1f885ef9c70bcf3abcd1cb475448dab3021569e750b076db779853ace9d2",
+      "runs": 14
+    },
+    "iwork-preview-indexed-ab.json.gz": {
+      "uncompressedSha256": "e1c026a0d1b214b0e9a93c886d48e653efc4bc8edb2f42f1c13fd045f1ac5548",
+      "compressedSha256": "e8fc935a86167a70d8597b856df2440925d39cab7682c74c91101e24d0fb750c",
+      "runs": 42
+    },
+    "numbers-varint-diagnostic.json.gz": {
+      "uncompressedSha256": "3b8ea17fae092018cda5210ace01ecdf3071665d27baaf1b27a1f0b16909df0a",
+      "compressedSha256": "e8c011f56a07d090268dd62f1ce504380af188d99ebd8e2d52e1eab58ea270ad",
+      "runs": 14
+    }
+  },
+  "artifacts": {
+    "scripts/benchmark-frontends.mjs": "f1633e7518ef1823c735ccbcccef362b0d2e9fcc2f53f61fe6a0fb86743532f7",
+    "packages/core/dist/index.js": "2e6a26185978c4859da62053a962e1bdc878bdb9beeeeb8a4dd4cee2471dea46",
+    "packages/iwork/dist/index.js": "8c5b13d61f31e6f6ce4102968bf65ce661c23c73ce4fc3c98581bc9ba7b5b7a1",
+    "packages/panorama/dist/index.js": "a5b7b32c337f24fccb9e97338d5c1c475a656ab5d49d968d96b5b72d0bc284d6",
+    "packages/converter-client/dist/index.js": "cbd8f90f4151fced4c6fd4d89da5fc0b1b3ea932c17ae038a90b29bfbf6dee5d",
+    "packages/xlsx/dist/index.js": "37ea0dd6c6a0bf5ffbfbb7efc691b1cd9d30dd11d3415370018bb9de876fe07a",
+    "wasm/converter-core/dist/converter-core.wasm": "9fd03adbdccdd6ab5f05bd625e2ac382dc57a1e6320effacd618c35e4e29fbb4",
+    "wasm/converter-image/dist/converter-image.wasm": "adb3351801f0ff7ef209481013e75f9d708ab87230c4d3918576dd5f7630c7aa",
+    "tmp/performance-sota/package-lock.json": "088496502d26bb7550e7eb3eb4c3dbe2f543a8406caff1af4e7d25f3525bc06c",
+    "tmp/performance-sota/xlsx-0.20.3.full.min.js": "cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41"
+  },
+  "implementationSources": {
+    "packages/iwork/src/parser/archive.ts": "470b4149b787c0c28bfc891ebfa26c84ecbf99f7475777a981095bfb858d5757",
+    "packages/iwork/src/parser/protobuf.ts": "b949b939bad0bc901d63cdda5b34f7b66620aceb087964b89e92e21e16cbd004",
+    "packages/iwork/test/protobuf.spec.ts": "ad0ef16e9b5ecd897eadb0de798d6968055881fc8f56c5c7cc256e4f0550419a",
+    "packages/iwork/test/load-iwork.spec.ts": "2ec1a03568bdaadf4246f70f3c285c3b098124408e00ea12e4188f0cff48f878"
+  },
+  "baseline": {
+    "artifactPath": "tmp/performance-sota/oct24-cont-baseline/iwork-dist/index.js",
+    "artifactSha256": "21935622abe9adbeef35600de609682cf79cd2264bc38c4d40cf7a0b3af3ecc1",
+    "sourceHashes": {
+      "packages/iwork/src/parser/archive.ts": "612f2704f2343ba760295b7cf5efd910173621b7cd9ef1d7d01c355e74324e62",
+      "packages/iwork/src/parser/protobuf.ts": "eb0a4bb4222166964f90c72e5d30abf1979e67eedc57bbf70d0f609fce7dcba6"
+    },
+    "reproduction": "Apply iwork-indexed.patch in reverse to reconstruct the previous two parser files, build @filens/iwork, and copy its dist to tmp/performance-sota/oct24-cont-baseline/iwork-dist. Restore/apply the patch and build the current implementation before running the derived A/B harness from the repository root. The previous and current builds use the same core runtime."
+  },
+  "completeArchiveAndModelChecks": [
+    {
+      "file": "packages/iwork/vendor/iwork-converter/testdata/a.numbers",
+      "same": true,
+      "baselineSha256": "fc46f85a6eff178f0a1114fba1576733e103dc6923844ff3d9ed902beb0c3aed",
+      "currentSha256": "fc46f85a6eff178f0a1114fba1576733e103dc6923844ff3d9ed902beb0c3aed",
+      "records": 661,
+      "fullDocumentJsonBytes": 1812454
+    },
+    {
+      "file": "packages/iwork/vendor/iwork-converter/testdata/a.pages",
+      "same": true,
+      "baselineSha256": "5ebdbaacd17c6ac61b107d94b8c85ad4407aa83e3e0f4c4bf4c105f85ca7276e",
+      "currentSha256": "5ebdbaacd17c6ac61b107d94b8c85ad4407aa83e3e0f4c4bf4c105f85ca7276e",
+      "records": 865,
+      "fullDocumentJsonBytes": 7593541
+    },
+    {
+      "file": "packages/iwork/vendor/iwork-converter/testdata/a.key",
+      "same": true,
+      "baselineSha256": "148692d2cb953bb9bb2b65979d885cd3bd6bcb687c4579936851219f94016419",
+      "currentSha256": "148692d2cb953bb9bb2b65979d885cd3bd6bcb687c4579936851219f94016419",
+      "records": 534,
+      "fullDocumentJsonBytes": 2845171
+    },
+    {
+      "file": "apps/demo/public/samples/a.numbers",
+      "same": true,
+      "baselineSha256": "d93d535f9d1040755334b0e35ed895475d402ce055e149cb0be5439c8e4e9dba",
+      "currentSha256": "d93d535f9d1040755334b0e35ed895475d402ce055e149cb0be5439c8e4e9dba",
+      "records": 1425,
+      "fullDocumentJsonBytes": 25270450
+    },
+    {
+      "file": "apps/demo/public/samples/a.pages",
+      "same": true,
+      "baselineSha256": "73146de9a59ec539e604172e7746923dd7a58d8ea5acf8b9ccfd7fd5eff95cc1",
+      "currentSha256": "73146de9a59ec539e604172e7746923dd7a58d8ea5acf8b9ccfd7fd5eff95cc1",
+      "records": 1095,
+      "fullDocumentJsonBytes": 8005137
+    },
+    {
+      "file": "apps/demo/public/samples/filens-weekend.key",
+      "same": true,
+      "baselineSha256": "e16dd254811a345c3cef22b7c378330598f58249d13b546434b20809d177fae0",
+      "currentSha256": "e16dd254811a345c3cef22b7c378330598f58249d13b546434b20809d177fae0",
+      "records": 1083,
+      "fullDocumentJsonBytes": 11172044
+    }
+  ],
+  "previewPixelChecks": [
+    {
+      "sample": "iwork-view-filens-filens-weekend.key.png",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "c3754fc7a470290e3a6da9ed1bf0d33a16a4349762945817f714880f709dd8cb",
+      "previousPngSha256": "c3754fc7a470290e3a6da9ed1bf0d33a16a4349762945817f714880f709dd8cb",
+      "rgbPixelSha256": "3ed83bdddc2f3ef78720ac725109118e19684cf7e3cd47c3b994434d19a2b6a0"
+    },
+    {
+      "sample": "iwork-view-filens-a.numbers.png",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+      "previousPngSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+      "rgbPixelSha256": "5e8075faec78d4d4fee1389ee79ab9ff7f2c79b931d51d35e7900fdd4551fb73"
+    },
+    {
+      "sample": "iwork-view-filens-a.pages.png",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "ccc28b72f1e5922b106e571cfee6dec860686776de9b88c3aa5e37caef5a4a74",
+      "previousPngSha256": "ccc28b72f1e5922b106e571cfee6dec860686776de9b88c3aa5e37caef5a4a74",
+      "rgbPixelSha256": "d129ae4107d8da75d94054f691a1debd614e0cc61d05995e2b3e30c394cf2b59"
+    }
+  ],
+  "numbers": {
+    "sheets": 6,
+    "tables": 14,
+    "nonemptyCells": 5772,
+    "matchesPreviousCellSnapshot": true,
+    "cellSnapshot": "numbers-content-indexed.json.gz",
+    "cellSnapshotSha256": "5b52c705f5f73e413339d209540a5bb9271d0fbf946d3b9217015a7b8d052584",
+    "fullStyledModel": "numbers-styled-model-refined.json.gz",
+    "fullStyledModelJsonBytes": 15306113,
+    "fullStyledModelSha256": "508b2940d6c6a3d64ec2ffb0103d1ebed05b857bb3acc859b26a58b2ebdd394f",
+    "sotaQualified": false,
+    "reason": "The complete styled model remains slower than SheetJS cached-data extraction. No native-preview peer was measured; engineering preview intervals overlap 1.",
+    "matchesPublishedFullStyledModel": true
+  },
+  "engineeringComparisons": [
+    {
+      "family": "numbers-model",
+      "sample": "a.numbers",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 35.35000002384186,
+      "peerMs": 41.105000019073486,
+      "peerOverFilensRatio": 1.1628005655261715,
+      "ratio95PercentBootstrapInterval": [
+        1.1236641201014417,
+        1.2391984066482322
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 129.16499996185303,
+      "peerMs": 134.30999994277954,
+      "peerOverFilensRatio": 1.0398327718998646,
+      "ratio95PercentBootstrapInterval": [
+        0.9880015280690407,
+        1.0976384355321156
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "iwork-view",
+      "sample": "a.pages",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 65.24500000476837,
+      "peerMs": 68.5900000333786,
+      "peerOverFilensRatio": 1.0512682968559393,
+      "ratio95PercentBootstrapInterval": [
+        0.9409309120683915,
+        1.081876868670371
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "iwork-view",
+      "sample": "filens-weekend.key",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 59.644999980926514,
+      "peerMs": 62.06500005722046,
+      "peerOverFilensRatio": 1.0405733938648305,
+      "ratio95PercentBootstrapInterval": [
+        0.905943449911692,
+        1.2415122805934489
+      ],
+      "stableLeadInThisComparison": false
+    }
+  ],
+  "interactions": [
+    {
+      "sample": "a.numbers",
+      "archiveMatches": true,
+      "sheetsMatch": true,
+      "sheets": 6,
+      "tables": 14
+    },
+    {
+      "sample": "a.pages",
+      "archiveMatches": true,
+      "navigated": true,
+      "zoomed": true
+    },
+    {
+      "sample": "filens-weekend.key",
+      "archiveMatches": true,
+      "navigated": true,
+      "zoomed": true
+    }
+  ],
+  "diagnostics": {
+    "numbers-varint-diagnostic.json.gz": "Intermediate variant without the deterministic path sorting. Baseline iteration 0 completed timing but its post-timer content export used the SheetJS branch and failed. All 14 exploratory runs are retained and excluded from final external/engineering comparisons. The harness was corrected before the final A/B runs.",
+    "smallPptx": "Profiling and rendering traces did not establish a stable preview improvement. Core code and published PPTX comparison results are unchanged."
+  },
+  "validation": {
+    "iworkTestsPassed": 297,
+    "iworkBuild": true,
+    "demoBuild": true,
+    "bundleReport": true,
+    "completeDocumentHashCheck": true
+  },
+  "engineeringReproductionArtifacts": {
+    "benchmark-iwork-indexed-ab.mjs": "2490553bf27ad867750daf112840954d06e847b71fc9fe5a21dd18558dd85b5f",
+    "iwork-indexed.patch": "937afe506e810c05ea8d271a1ecff6074a9f583b971a547eb3977db8fd162b53"
+  }
+}

@@ -107,11 +107,12 @@ Good coverage today:
 - master/layout inheritance
 - common preset arrows and polygon shapes
 - slide links and external hyperlinks
+- cached 2D column and pie charts, with titles and legends
 
 Still limited:
 
 - animations
-- charts
+- other chart types and advanced chart formatting
 - SmartArt
 - media playback objects
 - embedded fonts

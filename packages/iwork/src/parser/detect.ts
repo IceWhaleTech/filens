@@ -1,8 +1,8 @@
-import JSZip from 'jszip';
+import { openZipArchive, type ZipEntry } from '@filens/core';
 import { uncompress as snappyUncompress } from 'snappyjs';
 import type { DetectIworkTypeOptions, IworkSource, IworkType } from '../types';
 import { loadSourceBytes } from './load-source';
-import { getArchiveInfoType } from './protobuf';
+import { decodeTypedMessage } from './protobuf';
 
 const EXTENSION_MAP: Record<string, IworkType> = {
   '.key': 'key',
@@ -23,8 +23,8 @@ export async function detectIworkType(source: IworkSource, options: DetectIworkT
   const bytes = await loadSourceBytes(source, {
     signal: options.signal
   });
-  const zip = await JSZip.loadAsync(bytes);
-  const entryNames = Object.keys(zip.files);
+  const zip = await openZipArchive(bytes);
+  const entryNames = [...zip.keys()];
 
   const byArchiveTypes = await detectIworkTypeByArchiveTypes(zip);
   if (byArchiveTypes) {
@@ -71,13 +71,13 @@ function detectIworkTypeFromPath(path: string): IworkType | null {
   return null;
 }
 
-async function detectIworkTypeByArchiveTypes(zip: JSZip): Promise<IworkType | null> {
-  const file = zip.file('Index/Document.iwa');
+async function detectIworkTypeByArchiveTypes(zip: Map<string, ZipEntry>): Promise<IworkType | null> {
+  const file = zip.get('Index/Document.iwa');
   if (!file) {
     return null;
   }
 
-  const bytes = new Uint8Array(await file.async('uint8array'));
+  const bytes = await file.bytes();
   const typeIds = peekMessageTypesFromIwa(bytes);
   if (typeIds.some((typeId) => typeId >= 10000 && typeId < 11000)) {
     return 'pages';
@@ -92,7 +92,6 @@ async function detectIworkTypeByArchiveTypes(zip: JSZip): Promise<IworkType | nu
 }
 
 function peekMessageTypesFromIwa(source: Uint8Array): number[] {
-  const archiveInfoType = getArchiveInfoType();
   const bytes = unsnap(source);
   const types: number[] = [];
   let cursor = 0;
@@ -102,12 +101,7 @@ function peekMessageTypesFromIwa(source: Uint8Array): number[] {
     cursor = lengthInfo.nextOffset;
     const archiveChunk = bytes.subarray(cursor, cursor + lengthInfo.value);
     cursor += lengthInfo.value;
-    const info = archiveInfoType.toObject(archiveInfoType.decode(archiveChunk), {
-      longs: Number,
-      arrays: true,
-      objects: true,
-      defaults: false
-    }) as { messageInfos?: Array<{ type?: number; length?: number }> };
+    const info = decodeTypedMessage('TSP.ArchiveInfo', archiveChunk) as { messageInfos?: Array<{ type?: number; length?: number }> };
     for (const messageInfo of info.messageInfos ?? []) {
       if (typeof messageInfo.type === 'number') {
         types.push(messageInfo.type);
@@ -133,6 +127,7 @@ function unsnap(source: Uint8Array): Uint8Array {
     totalLength += uncompressed.length;
   }
 
+  if (chunks.length === 1) return chunks[0];
   const output = new Uint8Array(totalLength);
   let offset = 0;
   for (const chunk of chunks) {

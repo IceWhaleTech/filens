@@ -196,6 +196,54 @@ describe('loadPptx', () => {
     expect(presentation.warnings).toEqual([]);
   });
 
+  it('parses the pie chart in the real shapes sample instead of an unsupported frame', async () => {
+    const presentation = await loadPptx(await readFixture('../../apps/demo/public/samples/rich-pptx-shapes.pptx'));
+    const chart = presentation.slides[0].items.find((item) => item.kind === 'chart');
+
+    expect(chart).toMatchObject({
+      kind: 'chart',
+      chartType: 'pie',
+      title: 'shapes[4]',
+      firstSliceAngle: 0,
+      categories: ['1st Qtr', '2nd Qtr', '3rd Qtr', '4th Qtr'],
+      legendPosition: 'right',
+      series: [{ name: 'Sales', values: [8.2, 3.2, 1.4, 1.2] }]
+    });
+    if (chart?.kind === 'chart') {
+      expect(chart.series[0].pointStyles?.map((style) => style.color)).toEqual([
+        presentation.theme.colors.accent1,
+        presentation.theme.colors.accent2,
+        presentation.theme.colors.accent3,
+        presentation.theme.colors.accent4
+      ]);
+    }
+    expect(presentation.slides[0].items.some((item) => item.kind === 'unsupported')).toBe(false);
+    expect(presentation.warnings).toEqual([]);
+  });
+
+  it('preserves pie rotation, fixed series colors and individual slice fill overrides', async () => {
+    const zip = await JSZip.loadAsync(await readFixture('../../apps/demo/public/samples/rich-pptx-shapes.pptx'));
+    const chartXml = await zip.file('ppt/charts/chart1.xml')!.async('text');
+    zip.file('ppt/charts/chart1.xml', chartXml
+      .replace('<c:varyColors val="1"', '<c:varyColors val="0"')
+      .replace('<c:firstSliceAng val="0"', '<c:firstSliceAng val="90"')
+      .replace('</c:ser>', `<c:dPt><c:idx val="1"/><c:spPr><a:solidFill><a:srgbClr val="FF0000"><a:alpha val="50000"/></a:srgbClr></a:solidFill></c:spPr></c:dPt></c:ser>`));
+
+    const presentation = await loadPptx(await zip.generateAsync({ type: 'uint8array' }));
+    const chart = presentation.slides[0].items.find((item) => item.kind === 'chart');
+
+    expect(chart?.kind).toBe('chart');
+    if (chart?.kind === 'chart') {
+      expect(chart.firstSliceAngle).toBe(90);
+      expect(chart.series[0].pointStyles).toEqual([
+        { color: chart.series[0].color, alpha: undefined },
+        { color: '#FF0000', alpha: 0.5 },
+        { color: chart.series[0].color, alpha: undefined },
+        { color: chart.series[0].color, alpha: undefined }
+      ]);
+    }
+  });
+
   it('treats an empty root group transform as identity', async () => {
     const zip = await JSZip.loadAsync(await buildDefaultTextStyleFixture());
     const slideXml = await zip.file('ppt/slides/slide1.xml')?.async('text');

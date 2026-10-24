@@ -216,8 +216,8 @@ function applyLocale(): void {
     ?.setAttribute(
       'content',
       t(
-        'filens 在浏览器中预览 Office、iWork、PDF、CAD / STEP、3D、RAW 和全景，本地文件无需上传。按需加载，浏览器与后端共用 WASM 转换核心。',
-        'Preview Office, iWork, PDF, CAD / STEP, 3D, RAW, and panoramas in your browser. Local files stay on your device. On-demand modules share a WASM conversion core with backend tools.'
+        'filens 在浏览器中预览 Office、iWork、PDF、CAD / STEP、3D、RAW 和全景，本地文件无需上传。按需加载，WASM 转换支持浏览器内运行及 CLI / HTTP 服务调用。',
+        'Preview Office, iWork, PDF, CAD / STEP, 3D, RAW, and panoramas in your browser. Local files stay on your device. Modules load on demand; WASM conversion runs in the browser or through CLI / HTTP tools.'
       )
     );
 }
@@ -306,7 +306,7 @@ async function playDemo(): Promise<void> {
               'From Office and iWork to CAD, 3D, RAW, and panoramas. Your local files stay on your device.'
             )
           }}<br />
-          {{ t('需要后端转换时，也能复用同一个 WASM 转换核心。', 'Optional backend converters reuse the same WASM conversion core.') }}
+          {{ t('转换能力也可通过 CLI 或 HTTP 服务独立使用。', 'Conversion is also available independently through CLI tools or HTTP services.') }}
         </p>
         <div class="hero-actions">
           <label class="button button-dark upload-button"
@@ -394,15 +394,15 @@ async function playDemo(): Promise<void> {
             <p>{{ t('文件在浏览器中解析与渲染，本地预览无需上传，也无需部署转换服务。', 'Parse and render files in the browser. Preview local files without uploads or a conversion server.') }}</p>
           </article>
           <article class="principle">
-            <p class="principle-proof"><strong>1</strong><span>{{ t('共用的 WASM 转换核心', 'shared WASM conversion core') }}</span></p>
-            <h2>{{ t('同一个核心，前后端复用', 'One core, browser and backend') }}</h2>
-            <p>{{ t('浏览器与后端 CLI / HTTP 转换工具共用同一个 WASM 转换核心。后端只负责调用与服务接入，转换逻辑集中在核心中。', 'The browser and backend CLI / HTTP converters run the same WASM conversion core. The backend handles hosting and requests; conversion logic stays in the core.') }}</p>
+            <p class="principle-proof"><strong>WASM</strong><span>{{ t('文件转换', 'file conversion') }}</span></p>
+            <h2>{{ t('WASM 转换，灵活部署', 'WASM conversion, flexible deployment') }}</h2>
+            <p>{{ t('转换模块可在浏览器中直接运行，也可通过 CLI 或 HTTP 服务独立使用。文件解析与转换由 WASM 完成，服务端负责请求和文件管理。', 'Run the conversion module directly in the browser or use it independently through CLI tools or HTTP services. WASM handles file parsing and conversion; the server manages requests and files.') }}</p>
             <a :href="`${repo}/tree/main/examples/go-wazero-converter`" target="_blank" rel="noopener noreferrer">
-              {{ t('查看后端转换工具', 'Explore the backend converter') }} <span aria-hidden="true">↗</span>
+              {{ t('查看 CLI / HTTP 转换工具', 'Explore CLI / HTTP converters') }} <span aria-hidden="true">↗</span>
             </a>
           </article>
           <article class="principle">
-            <p class="principle-proof"><strong>≈<!-- bundle-size:converter-core -->317.6<!-- /bundle-size --><span class="proof-unit"> KiB</span></strong><span>{{ t('文档转换 WASM · Brotli', 'document conversion WASM · Brotli') }}</span></p>
+            <p class="principle-proof"><strong>≈<!-- bundle-size:converter-core -->318.0<!-- /bundle-size --><span class="proof-unit"> KiB</span></strong><span>{{ t('文档转换 WASM · Brotli', 'document conversion WASM · Brotli') }}</span></p>
             <h2>{{ t('高性能，极致小巧', 'Fast, tiny, loaded on demand') }}</h2>
             <p>{{ t('按格式分包、按需加载，配合 Worker 解析与页面虚拟化，减少下载与渲染负担。', 'Format-based bundles and lazy loading, with worker parsing and page virtualization to reduce download and rendering work.') }}</p>
             <a :href="`${repo}/blob/main/docs/bundle-sizes.md`" target="_blank" rel="noopener noreferrer">

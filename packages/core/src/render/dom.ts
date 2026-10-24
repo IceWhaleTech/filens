@@ -148,26 +148,51 @@ function toExactArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   return copy.buffer;
 }
 
+interface TextMeasurementScope {
+  context?: CanvasRenderingContext2D | null;
+  baselineWidths?: Array<number | undefined>;
+}
+
+// A render is synchronous. Reuse one canvas while building its text, then
+// release it so later renders see current fonts and the current document.
+let textMeasurementScope: TextMeasurementScope | undefined;
+
+function getTextMeasurementContext(): CanvasRenderingContext2D | null {
+  if (textMeasurementScope?.context !== undefined) return textMeasurementScope.context;
+  const canvas = document.createElement('canvas');
+  const isJsdomCanvas = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent) &&
+    typeof HTMLCanvasElement !== 'undefined' && canvas instanceof HTMLCanvasElement;
+  const context = !isJsdomCanvas && typeof canvas.getContext === 'function' ? canvas.getContext('2d') : null;
+  if (textMeasurementScope) textMeasurementScope.context = context;
+  return context;
+}
+
 export function renderSlideToElement(
   slide: SlideModel,
   presentation: ParsedPresentation,
   options: RenderSlideOptions = {}
 ): HTMLElement {
-  const registry = options.mediaRegistry ?? new MediaRegistry(presentation);
-  const root = document.createElement('div');
-  root.className = ['pptxv-slide', options.thumbnail ? 'pptxv-slide--thumbnail' : '', options.className ?? '']
-    .filter(Boolean)
-    .join(' ');
-  root.style.position = 'relative';
-  root.style.width = `${slide.width}px`;
-  root.style.height = `${slide.height}px`;
-  applyElementFillStyles(root, slide.background, registry);
+  const previousScope = textMeasurementScope;
+  textMeasurementScope = {};
+  try {
+    const registry = options.mediaRegistry ?? new MediaRegistry(presentation);
+    const root = document.createElement('div');
+    root.className = ['pptxv-slide', options.thumbnail ? 'pptxv-slide--thumbnail' : '', options.className ?? '']
+      .filter(Boolean)
+      .join(' ');
+    root.style.position = 'relative';
+    root.style.width = `${slide.width}px`;
+    root.style.height = `${slide.height}px`;
+    applyElementFillStyles(root, slide.background, registry);
 
-  for (const item of slide.items) {
-    root.appendChild(renderItem(item, registry));
+    for (const item of slide.items) {
+      root.appendChild(renderItem(item, registry));
+    }
+
+    return root;
+  } finally {
+    textMeasurementScope = previousScope;
   }
-
-  return root;
 }
 
 function renderItem(item: SlideItem, registry: MediaResolver): HTMLElement {
@@ -840,6 +865,15 @@ function renderTableCell(cell: TableCell, registry: MediaResolver): HTMLTableCel
   return td;
 }
 
+interface ChartPlotBounds {
+  width: number;
+  height: number;
+  plotLeft: number;
+  plotRight: number;
+  plotTop: number;
+  plotBottom: number;
+}
+
 function renderChartItem(item: Extract<SlideItem, { kind: 'chart' }>): HTMLElement {
   const element = createItemBox(item.transform, 'pptxv-item pptxv-item--chart');
   const width = Math.max(item.transform.width, 1);
@@ -850,22 +884,17 @@ function renderChartItem(item: Extract<SlideItem, { kind: 'chart' }>): HTMLEleme
   svg.setAttribute('width', String(width));
   svg.setAttribute('height', String(height));
   svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', item.title ?? item.name ?? 'Column chart');
+  svg.setAttribute('aria-label', item.title ?? item.name ?? (item.chartType === 'pie' ? 'Pie chart' : 'Column chart'));
 
   const legendPosition = item.legendPosition ?? 'right';
   const titleHeight = item.title ? height * 0.13 : height * 0.04;
   const legendBottomHeight = legendPosition === 'bottom' ? height * 0.15 : 0;
   const legendTopHeight = legendPosition === 'top' ? height * 0.13 : 0;
   const legendSideWidth = legendPosition === 'left' || legendPosition === 'right' ? width * 0.2 : 0;
-  const plotLeft = width * 0.125 + (legendPosition === 'left' ? legendSideWidth : 0);
-  const plotRight = width - width * 0.068 - (legendPosition === 'right' ? legendSideWidth : 0);
+  const plotLeft = width * (item.chartType === 'pie' ? 0.04 : 0.125) + (legendPosition === 'left' ? legendSideWidth : 0);
+  const plotRight = width - width * (item.chartType === 'pie' ? 0.04 : 0.068) - (legendPosition === 'right' ? legendSideWidth : 0);
   const plotTop = Math.max(height * 0.08, titleHeight + legendTopHeight + height * 0.035);
   const plotBottom = height - height * 0.08 - legendBottomHeight;
-  const plotWidth = Math.max(plotRight - plotLeft, 1);
-  const plotHeight = Math.max(plotBottom - plotTop, 1);
-  const axis = resolveColumnChartAxis(item);
-  const yForValue = (value: number) => plotBottom - ((value - axis.min) / (axis.max - axis.min)) * plotHeight;
-
   if (item.title) {
     const title = createChartSvgNode('text', {
       x: width / 2,
@@ -878,6 +907,83 @@ function renderChartItem(item: Extract<SlideItem, { kind: 'chart' }>): HTMLEleme
     title.textContent = item.title;
     svg.appendChild(title);
   }
+
+  const bounds = { width, height, plotLeft, plotRight, plotTop, plotBottom };
+  if (item.chartType === 'pie') {
+    renderPieChart(svg, item, bounds);
+  } else {
+    renderColumnChart(svg, item, bounds);
+  }
+  renderChartLegend(svg, item, bounds);
+  element.appendChild(svg);
+  appendItemLinkOverlay(element, item, true);
+  return element;
+}
+
+function renderPieChart(
+  svg: SVGSVGElement,
+  item: Extract<SlideItem, { kind: 'chart' }>,
+  bounds: ChartPlotBounds
+): void {
+  const series = item.series[0];
+  if (!series) {
+    return;
+  }
+
+  const values = series.values.map((value) => value != null && Number.isFinite(value) ? Math.abs(value) : 0);
+  const maximum = Math.max(0, ...values);
+  if (maximum === 0) {
+    return;
+  }
+  // Normalize before summing so finite, very large cached values cannot overflow.
+  const total = values.reduce((sum, value) => sum + value / maximum, 0);
+  const centerX = (bounds.plotLeft + bounds.plotRight) / 2;
+  const centerY = (bounds.plotTop + bounds.plotBottom) / 2;
+  const radius = Math.max(0.5, Math.min(bounds.plotRight - bounds.plotLeft, bounds.plotBottom - bounds.plotTop) / 2);
+  let angle = ((item.firstSliceAngle ?? 0) - 90) * Math.PI / 180;
+
+  values.forEach((value, index) => {
+    if (value === 0) {
+      return;
+    }
+    const fraction = (value / maximum) / total;
+    const sweep = fraction * Math.PI * 2;
+    const endAngle = angle + sweep;
+    const startX = centerX + radius * Math.cos(angle);
+    const startY = centerY + radius * Math.sin(angle);
+    const endX = centerX + radius * Math.cos(endAngle);
+    const endY = centerY + radius * Math.sin(endAngle);
+    const path = createChartSvgNode('path', {});
+    // A single SVG arc cannot draw a complete circle with coincident endpoints.
+    const d = fraction === 1
+      ? `M ${startX} ${startY} A ${radius} ${radius} 0 0 1 ${2 * centerX - startX} ${2 * centerY - startY} A ${radius} ${radius} 0 0 1 ${startX} ${startY} Z`
+      : `M ${centerX} ${centerY} L ${startX} ${startY} A ${radius} ${radius} 0 ${sweep > Math.PI ? 1 : 0} 1 ${endX} ${endY} Z`;
+    path.setAttribute('d', d);
+    path.classList.add('pptxv-chart-slice');
+    const style = series.pointStyles?.[index] ?? series;
+    path.setAttribute('fill', colorWithAlpha(style.color, style.alpha));
+    path.setAttribute('data-series-index', '0');
+    path.setAttribute('data-category-index', String(index));
+    path.setAttribute('data-value', String(series.values[index]));
+    path.setAttribute('data-percentage', String(fraction * 100));
+    const title = createChartSvgNode('title', {});
+    title.textContent = `${item.categories[index] || index + 1}: ${series.values[index]}`;
+    path.appendChild(title);
+    svg.appendChild(path);
+    angle = endAngle;
+  });
+}
+
+function renderColumnChart(
+  svg: SVGSVGElement,
+  item: Extract<SlideItem, { kind: 'chart' }>,
+  bounds: ChartPlotBounds
+): void {
+  const { height, plotLeft, plotRight, plotTop, plotBottom } = bounds;
+  const plotWidth = Math.max(plotRight - plotLeft, 1);
+  const plotHeight = Math.max(plotBottom - plotTop, 1);
+  const axis = resolveColumnChartAxis(item);
+  const yForValue = (value: number) => plotBottom - ((value - axis.min) / (axis.max - axis.min)) * plotHeight;
 
   for (let tick = axis.min; tick <= axis.max + axis.majorUnit / 2; tick += axis.majorUnit) {
     const normalizedTick = Math.abs(tick) < axis.majorUnit / 1000 ? 0 : tick;
@@ -985,11 +1091,6 @@ function renderChartItem(item: Extract<SlideItem, { kind: 'chart' }>): HTMLEleme
     label.textContent = item.categories[categoryIndex] ?? String(categoryIndex + 1);
     svg.appendChild(label);
   }
-
-  renderChartLegend(svg, item, { width, height, plotLeft, plotRight, plotTop, plotBottom });
-  element.appendChild(svg);
-  appendItemLinkOverlay(element, item, true);
-  return element;
 }
 
 function createChartSvgNode(name: string, attributes: Record<string, string | number>): SVGElement {
@@ -1083,14 +1184,22 @@ function applyChartBarStyles(
 function renderChartLegend(
   svg: SVGSVGElement,
   item: Extract<SlideItem, { kind: 'chart' }>,
-  bounds: { width: number; height: number; plotLeft: number; plotRight: number; plotTop: number; plotBottom: number }
+  bounds: ChartPlotBounds
 ): void {
   const position = item.legendPosition ?? 'right';
   if (position === 'none' || !item.series.length) {
     return;
   }
 
-  const entries = position === 'bottom' || position === 'top' ? [...item.series].reverse() : item.series;
+  const entries = item.chartType === 'pie'
+    ? item.series[0].values.map((_, index) => ({
+        ...(item.series[0].pointStyles?.[index] ?? item.series[0]),
+        name: item.categories[index] || String(index + 1),
+        seriesIndex: 0,
+        categoryIndex: index
+      }))
+    : (position === 'bottom' || position === 'top' ? [...item.series].reverse() : item.series)
+      .map((series) => ({ ...series, seriesIndex: item.series.indexOf(series), categoryIndex: undefined }));
   const fontSize = Math.max(9, bounds.height * 0.036);
   const swatchSize = Math.max(8, fontSize * 0.9);
   const legend = createChartSvgNode('g', {});
@@ -1108,7 +1217,10 @@ function renderChartLegend(
       y = bounds.plotTop + (index + 0.5) * Math.min(fontSize * 2.2, (bounds.plotBottom - bounds.plotTop) / entries.length);
     }
 
-    const group = createChartSvgNode('g', { 'data-series-index': item.series.indexOf(series) });
+    const group = createChartSvgNode('g', { 'data-series-index': series.seriesIndex });
+    if (series.categoryIndex != null) {
+      group.setAttribute('data-category-index', String(series.categoryIndex));
+    }
     group.classList.add('pptxv-chart-legend-item');
     const swatch = createChartSvgNode('rect', {
       x,
@@ -1402,6 +1514,9 @@ function renderTextFrame(frame: TextFrame, fallbackColor: string, options: Rende
     }
 
     const paragraphText = collectParagraphText(paragraph);
+    // Advance widths only affect explicit tab stops. Let the browser lay out
+    // ordinary text instead of creating a canvas and measuring every run.
+    const hasTabs = paragraph.runs.some((run) => run.text === '\t');
     for (const run of paragraph.runs) {
       const span = renderTextRun(run, paragraphColor, paragraphText, defaultFontSize, frame.wrap === 'none');
       if (run.text === '\t') {
@@ -1411,7 +1526,7 @@ function renderTextFrame(frame: TextFrame, fallbackColor: string, options: Rende
         lineAdvance += tabWidth;
       } else if (run.text === '\n') {
         lineAdvance = resolveParagraphWrappedLineStart(paragraph, collapseBulletIndent);
-      } else {
+      } else if (hasTabs) {
         lineAdvance += estimateRunAdvance(run, defaultFontSize);
       }
       paragraphElement.appendChild(span);
@@ -1851,8 +1966,7 @@ function measureTextWidthWithCanvas(
   }
 
   try {
-    const canvas = document.createElement('canvas');
-    const context = typeof canvas.getContext === 'function' ? canvas.getContext('2d') : null;
+    const context = getTextMeasurementContext();
     if (!context) {
       return undefined;
     }
@@ -2294,7 +2408,8 @@ function probeExactFontFamilyAvailability(fontFamily: string): boolean {
 
 function detectExactFontFamilyAvailability(fontFamily: string): boolean {
   const baselineFamilies = ['monospace', 'serif', 'sans-serif'] as const;
-  const baselineWidths = baselineFamilies.map((family) => measureFontAvailabilityWidth(family));
+  const baselineWidths = textMeasurementScope?.baselineWidths ?? baselineFamilies.map((family) => measureFontAvailabilityWidth(family));
+  if (textMeasurementScope) textMeasurementScope.baselineWidths = baselineWidths;
   if (baselineWidths.some((width) => width == null)) {
     return true;
   }
@@ -2312,17 +2427,7 @@ function measureFontAvailabilityWidth(fontFamily: string): number | undefined {
   }
 
   try {
-    const canvas = document.createElement('canvas');
-    if (
-      typeof navigator !== 'undefined' &&
-      /jsdom/i.test(navigator.userAgent) &&
-      typeof HTMLCanvasElement !== 'undefined' &&
-      canvas instanceof HTMLCanvasElement
-    ) {
-      return undefined;
-    }
-
-    const context = typeof canvas.getContext === 'function' ? canvas.getContext('2d') : null;
+    const context = getTextMeasurementContext();
     if (!context) {
       return undefined;
     }

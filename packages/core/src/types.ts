@@ -448,12 +448,14 @@ export interface ChartSeries {
   values: Array<number | null>;
   color: string;
   alpha?: number;
+  pointStyles?: Array<{ color: string; alpha?: number }>;
 }
 
 export interface ChartItem extends BaseSlideItem {
   kind: 'chart';
-  chartType: 'column';
+  chartType: 'column' | 'pie';
   grouping: 'clustered' | 'stacked' | 'percentStacked';
+  firstSliceAngle?: number;
   title?: string;
   categories: string[];
   series: ChartSeries[];

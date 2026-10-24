@@ -28,6 +28,20 @@ interface TableCellInfo {
   usePreBnc: boolean;
 }
 
+interface PlainTextTemplates {
+  empty?: TextFrame;
+  text?: TextFrame;
+  multiline?: Map<string, TextFrame>;
+}
+
+interface CellStorage {
+  offsets: number[];
+  buffer: Uint8Array;
+  view: DataView;
+}
+
+type RowOffsetCache = WeakMap<object, { regular: CellStorage; preBnc: CellStorage }>;
+
 interface TableFormatEntry {
   formatType?: number;
   decimalPlaces?: number;
@@ -113,11 +127,6 @@ interface TableStyleDefaults {
   presetVisibleMask?: number;
 }
 
-interface TableUidIndexMap {
-  rows: Map<string, number>;
-  columns: Map<string, number>;
-}
-
 export function buildTableItem(
   archive: IworkArchiveIndex,
   tableDrawable: Record<string, unknown>,
@@ -156,14 +165,13 @@ export function buildTableItem(
   const styleDefaults = resolveTableStyleDefaults(archive, tableModel);
   const columnWidths = resolveColumnWidths(archive, tableModel, baseDataStore);
   const rowHeights = resolveRowHeights(archive, tableDrawable, tableModel, baseDataStore);
-  const uidIndexMap = resolveTableUidIndexMap(archive, tableModel);
   const hiddenColumns = mergeIndexes(
     resolveHiddenHeaderIndexes(
       archive,
       readField(baseDataStore, ['columnHeaders', 'column_headers']),
       totalRows
     ),
-    resolveHiddenStateIndexes(tableModel, uidIndexMap, 'column')
+    resolveHiddenStateIndexes(archive, tableModel, 'column')
   );
   const hiddenRows = mergeIndexes(
     resolveHiddenHeaderIndexes(
@@ -171,14 +179,38 @@ export function buildTableItem(
       readField(baseDataStore, ['rowHeaders', 'row_headers']),
       totalColumns
     ),
-    resolveHiddenStateIndexes(tableModel, uidIndexMap, 'row')
+    resolveHiddenStateIndexes(archive, tableModel, 'row')
   );
   const mergeMap = resolveTableMergeMap(archive, tableModel, baseDataStore);
   const cells: TableCell[] = [];
+  const plainTextStyles = new Map<unknown, PlainTextTemplates>();
+  const richTextFrames = new Map<unknown, Map<unknown, TextFrame>>();
+  // Scope caches to one table build: public archive edits must be reflected
+  // when the caller rebuilds the model.
+  const cellStyles = new Map<number | undefined, {
+    style: ReturnType<typeof resolveMergedStyle>;
+    fill: TableCell['fill'];
+    padding: TextFrame['padding'];
+    verticalAlign: TextFrame['verticalAlign'];
+    wrap: TextFrame['wrap'];
+    borders: Map<number, TableCell['borders']>;
+  }>();
+  const rowOffsets: RowOffsetCache = new WeakMap();
   const tableRows: Array<{ row: number; rowInfo: Record<string, unknown> }> = [];
 
   let rowIndexBase = 0;
-  for (const tileRef of tileRefs) {
+  const tileSize = Number(readField(tileStorage, ['tileSize', 'tile_size']) ?? 0);
+  const rowTree = asObject(readField(baseDataStore, ['rowTileTree', 'row_tile_tree']));
+  const rowNodes = asArray<Record<string, unknown>>(readField(rowTree, ['nodes']));
+  // The row tree maps absolute row starts to positions in the tile list.
+  // Tile IDs and list order alone need not match the document's row order.
+  const orderedTiles = rowNodes.length
+    ? rowNodes.map(node => ({ ref: tileRefs[Number(node.value)], start: Number(node.key) }))
+    : [...tileRefs].sort((left, right) => Number(readField(left, ['tileid', 'tileId', 'tile_id']) ?? 0) - Number(readField(right, ['tileid', 'tileId', 'tile_id']) ?? 0))
+        .map(ref => ({ ref, start: tileSize > 0 ? Number(readField(ref, ['tileid', 'tileId', 'tile_id']) ?? 0) * tileSize : undefined }));
+  for (const { ref: tileRef, start } of orderedTiles) {
+    if (!tileRef) continue;
+    if (start !== undefined) rowIndexBase = start;
     const tile = getRecordValue<Record<string, unknown>>(archive, readField(tileRef, ['tile']));
     if (!tile) {
       continue;
@@ -191,11 +223,11 @@ export function buildTableItem(
       tableRows.push({ row, rowInfo });
     }
 
-    rowIndexBase += rowInfos.length;
+    rowIndexBase += Number(readField<number>(tile, ['numrows']) ?? Math.max(0, ...rowInfos.map(info => Number(readField(info, ['tileRowIndex', 'tile_row_index']) ?? 0) + 1)));
   }
 
   tableRows.sort((left, right) => left.row - right.row);
-  const columnHeaderTexts = resolveColumnHeaderTexts(archive, tableRows, lookup, headerRowCount, columnWidths.length);
+  const columnHeaderTexts = resolveColumnHeaderTexts(archive, tableRows, lookup, headerRowCount, columnWidths.length, rowOffsets);
 
   for (const tableRow of tableRows) {
     const row = tableRow.row;
@@ -204,11 +236,11 @@ export function buildTableItem(
     const preserveEmptyGrid = archive.type === 'pages';
     // Pages is rendered as a DOM table, so omitted empty cells would shift
     // later columns left. Numbers uses a sparse workbook grid instead.
-    const rowColumnCount = preserveEmptyGrid
-      ? Math.max(cellCount, totalColumns, columnWidths.length)
-      : cellCount;
+    // cellCount counts stored cells, not the last occupied column. Sparse
+    // rows can have payloads after holes, including in the final column.
+    const rowColumnCount = Math.max(cellCount, totalColumns, columnWidths.length);
     for (let column = 0; column < rowColumnCount; column += 1) {
-      const cellInfo = parseTableCell(archive.type, rowInfo, column);
+      const cellInfo = parseTableCell(archive.type, rowInfo, column, rowOffsets);
       const cellKey = createCellPositionKey(row, column);
       const mergeSpan = mergeMap.starts.get(cellKey);
       const isMergedContinuation = mergeMap.covered.has(cellKey);
@@ -230,9 +262,33 @@ export function buildTableItem(
           headerColumnCount,
           footerRowCount
         );
-      const cellStyle = resolveMergedStyle(archive, cellStyleRefId);
-      const cellProps = asObject(readField(cellStyle, ['cellProperties', 'cell_properties']));
-      const cellFill = fillFromValue(readField(cellProps, ['cellFill', 'cell_fill']));
+      let cellStyle = cellStyles.get(cellStyleRefId);
+      if (!cellStyle) {
+        const style = resolveMergedStyle(archive, cellStyleRefId);
+        const props = asObject(readField(style, ['cellProperties', 'cell_properties']));
+        cellStyle = {
+          style,
+          fill: fillFromValue(readField(props, ['cellFill', 'cell_fill'])),
+          padding: paddingFromValue(readField(props, ['padding']), 4),
+          verticalAlign: verticalAlignFromValue(readField(props, ['verticalAlignment', 'vertical_alignment'])),
+          wrap: resolveCellTextWrap(props),
+          borders: new Map()
+        };
+        cellStyles.set(cellStyleRefId, cellStyle);
+      }
+      // Every predicate used by resolveTableStyleBorders is represented here.
+      // Interior cells with the same style therefore share border computation.
+      const borderPosition =
+        Number(row === 0) | (Number(row === rowHeights.length - 1) << 1) |
+        (Number(row < headerRowCount) << 2) | (Number(row === headerRowCount - 1) << 3) |
+        (Number(footerRowCount > 0 && row >= rowHeights.length - footerRowCount) << 4) |
+        (Number(row === rowHeights.length - footerRowCount) << 5) |
+        (Number(footerRowCount > 0 && row === rowHeights.length - footerRowCount - 1) << 6) |
+        (Number(column === 0) << 7) | (Number(column === columnWidths.length - 1) << 8) |
+        (Number(column < headerColumnCount) << 9) | (Number(column === headerColumnCount - 1) << 10);
+      if (!cellStyle.borders.has(borderPosition)) {
+        cellStyle.borders.set(borderPosition, createDefaultBorders(cellStyle.style, styleDefaults, row, column, rowHeights.length, columnWidths.length, headerRowCount, headerColumnCount, footerRowCount));
+      }
       const textFrame = resolveTableCellTextFrame(
         archive,
         cellInfo,
@@ -249,10 +305,12 @@ export function buildTableItem(
             headerColumnCount,
             footerRowCount
         ),
-        paddingFromValue(readField(cellProps, ['padding']), 4),
-        verticalAlignFromValue(readField(cellProps, ['verticalAlignment', 'vertical_alignment'])),
-        resolveCellTextWrap(cellProps),
-        columnHeaderTexts[column] ?? ''
+        { ...cellStyle.padding },
+        cellStyle.verticalAlign,
+        cellStyle.wrap,
+        columnHeaderTexts[column] ?? '',
+        plainTextStyles,
+        richTextFrames
       );
 
       cells.push({
@@ -261,8 +319,8 @@ export function buildTableItem(
         rowSpan: mergeSpan?.rowSpan ?? 1,
         colSpan: mergeSpan?.colSpan ?? 1,
         isMergedContinuation,
-        fill: resolveTableCellFill(cellFill, styleDefaults, row, headerRowCount, footerRowCount, rowHeights.length),
-        borders: createDefaultBorders(cellStyle, styleDefaults, row, column, rowHeights.length, columnWidths.length, headerRowCount, headerColumnCount, footerRowCount),
+        fill: cloneCellFill(resolveTableCellFill(cellStyle.fill, styleDefaults, row, headerRowCount, footerRowCount, rowHeights.length)),
+        borders: cloneCellBorders(cellStyle.borders.get(borderPosition)),
         textFrame
       });
     }
@@ -832,14 +890,6 @@ function isHeaderHidden(header: Record<string, unknown>): boolean {
   return typeof hidingState === 'number' && Number.isFinite(hidingState) && hidingState !== 0;
 }
 
-function resolveTableUidIndexMap(archive: IworkArchiveIndex, tableModel: Record<string, unknown>): TableUidIndexMap {
-  const uidList = getRecordValue<Record<string, unknown>>(archive, readField(tableModel, ['baseColumnRowUids', 'base_column_row_uids']));
-  return {
-    rows: createUidLookup(resolveCellUidListUids(uidList, 'row')),
-    columns: createUidLookup(resolveCellUidListUids(uidList, 'column'))
-  };
-}
-
 function resolveCellUidListUids(cellUidList: Record<string, unknown> | undefined, axis: 'row' | 'column'): string[] {
   const directUids = readUuidList(readField(cellUidList, [axis === 'row' ? 'rowUids' : 'columnUids', axis === 'row' ? 'row_uids' : 'column_uids']));
   if (directUids.length) {
@@ -875,8 +925,8 @@ function createUidLookup(uids: string[]): Map<string, number> {
 }
 
 function resolveHiddenStateIndexes(
+  archive: IworkArchiveIndex,
   tableModel: Record<string, unknown>,
-  uidIndexMap: TableUidIndexMap,
   axis: 'row' | 'column'
 ): number[] | undefined {
   const hiddenStatesOwner = asObject(readField(tableModel, ['hiddenStatesOwner', 'hidden_states_owner']));
@@ -885,6 +935,12 @@ function resolveHiddenStateIndexes(
   }
 
   const hiddenIndexes = new Set<number>();
+  // Large UUID lists are irrelevant until an active hidden state names one.
+  // Resolve only the affected axis, within this build so edits remain visible.
+  let uidIndexes: Map<string, number> | undefined;
+  const getUidIndexes = () => uidIndexes ??= createUidLookup(resolveCellUidListUids(
+    getRecordValue(archive, readField(tableModel, ['baseColumnRowUids', 'base_column_row_uids'])), axis
+  ));
   const hiddenStates = asArray<Record<string, unknown>>(readField(hiddenStatesOwner, ['hiddenStates', 'hidden_states']));
   for (const hiddenState of hiddenStates) {
     const extent = asObject(
@@ -897,10 +953,10 @@ function resolveHiddenStateIndexes(
       continue;
     }
 
-    collectHiddenRowColumnStates(hiddenIndexes, uidIndexMap[axis === 'row' ? 'rows' : 'columns'], readField(extent, ['baseHiddenStates', 'base_hidden_states']));
+    collectHiddenRowColumnStates(hiddenIndexes, getUidIndexes, readField(extent, ['baseHiddenStates', 'base_hidden_states']));
     collectHiddenRowColumnStates(
       hiddenIndexes,
-      uidIndexMap[axis === 'row' ? 'rows' : 'columns'],
+      getUidIndexes,
       readField(extent, ['summaryHiddenStates', 'summary_hidden_states'])
     );
   }
@@ -908,7 +964,7 @@ function resolveHiddenStateIndexes(
   return hiddenIndexes.size ? [...hiddenIndexes].sort((left, right) => left - right) : undefined;
 }
 
-function collectHiddenRowColumnStates(hiddenIndexes: Set<number>, uidIndexes: Map<string, number>, statesValue: unknown): void {
+function collectHiddenRowColumnStates(hiddenIndexes: Set<number>, getUidIndexes: () => Map<string, number>, statesValue: unknown): void {
   for (const state of asArray<Record<string, unknown>>(statesValue)) {
     if (!isHiddenStateActive(state)) {
       continue;
@@ -919,7 +975,7 @@ function collectHiddenRowColumnStates(hiddenIndexes: Set<number>, uidIndexes: Ma
       continue;
     }
 
-    const index = uidIndexes.get(uid);
+    const index = getUidIndexes().get(uid);
     if (index != null) {
       hiddenIndexes.add(index);
     }
@@ -969,7 +1025,8 @@ function resolveColumnHeaderTexts(
   tableRows: Array<{ row: number; rowInfo: Record<string, unknown> }>,
   lookup: TableContentLookup,
   headerRowCount: number,
-  columnCount: number
+  columnCount: number,
+  rowOffsets: RowOffsetCache
 ): string[] {
   const headers = Array.from({ length: columnCount }, () => '');
   if (headerRowCount <= 0) {
@@ -985,7 +1042,7 @@ function resolveColumnHeaderTexts(
       if (headers[column]) {
         continue;
       }
-      const cellInfo = parseTableCell(archive.type, tableRow.rowInfo, column);
+      const cellInfo = parseTableCell(archive.type, tableRow.rowInfo, column, rowOffsets);
       const text = resolveCellPlainText(archive, cellInfo, lookup, '');
       if (text.trim().length) {
         headers[column] = text;
@@ -994,6 +1051,27 @@ function resolveColumnHeaderTexts(
   }
 
   return headers;
+}
+
+function cloneCellFill(fill: TableCell['fill']): TableCell['fill'] {
+  const cloned = { ...fill };
+  if (fill.stops) cloned.stops = fill.stops.map(stop => ({ ...stop }));
+  if (fill.crop) cloned.crop = { ...fill.crop };
+  if (fill.gradientFillToRect) cloned.gradientFillToRect = { ...fill.gradientFillToRect };
+  if (fill.gradientTileRect) cloned.gradientTileRect = { ...fill.gradientTileRect };
+  return cloned;
+}
+
+function cloneCellBorder(side: TableBorderSide): TableBorderSide {
+  if (!side) return undefined;
+  const cloned = { ...side };
+  if (side.dashPattern) cloned.dashPattern = [...side.dashPattern];
+  return cloned;
+}
+
+function cloneCellBorders(borders: TableCell['borders']): TableCell['borders'] {
+  if (!borders) return undefined;
+  return { top: cloneCellBorder(borders.top), right: cloneCellBorder(borders.right), bottom: cloneCellBorder(borders.bottom), left: cloneCellBorder(borders.left) };
 }
 
 function createDefaultBorders(
@@ -1475,7 +1553,9 @@ function resolveTableCellTextFrame(
   padding: TextFrame['padding'],
   verticalAlign: TextFrame['verticalAlign'],
   wrap: TextFrame['wrap'],
-  headerText: string
+  headerText: string,
+  plainTextStyles: Map<unknown, PlainTextTemplates>,
+  richTextFrames: Map<unknown, Map<unknown, TextFrame>>
 ): TextFrame {
   // Pages uses a separate cell type for rich payloads. Plain text cells can
   // reuse the same numeric key as a rich-text entry, so consulting the rich
@@ -1486,6 +1566,11 @@ function resolveTableCellTextFrame(
   if (richPayloadRef) {
     const payload = getRecordValue<Record<string, unknown>>(archive, richPayloadRef);
     const storageRef = readField(payload, ['storage']);
+    const styleKey = getRefId(defaultTextStyleRef) ?? defaultTextStyleRef;
+    const storageKey = getRefId(storageRef) ?? storageRef;
+    let templates = richTextFrames.get(styleKey);
+    const cached = templates?.get(storageKey);
+    if (cached) return cloneCellTextFrame(cached, padding, verticalAlign, wrap);
     const frame = buildTextFrameFromStorage(archive, storageRef, {
       defaultParagraphStyleRef: defaultTextStyleRef,
       padding,
@@ -1493,12 +1578,28 @@ function resolveTableCellTextFrame(
     });
     if (frame) {
       frame.wrap = wrap;
-      return frame;
+      if (!templates) richTextFrames.set(styleKey, templates = new Map());
+      templates.set(storageKey, frame);
+      return cloneCellTextFrame(frame, padding, verticalAlign, wrap);
     }
   }
 
   const text = resolveCellPlainText(archive, cellInfo, lookup, headerText);
-  return buildPlainTextFrame(archive, text, defaultTextStyleRef, padding, verticalAlign, wrap);
+  return buildPlainTextFrame(archive, text, defaultTextStyleRef, padding, verticalAlign, wrap, plainTextStyles);
+}
+
+function cloneCellTextFrame(template: TextFrame, padding: TextFrame['padding'], verticalAlign: TextFrame['verticalAlign'], wrap: TextFrame['wrap']): TextFrame {
+  const cloned = {
+    ...template, padding, verticalAlign, wrap,
+    paragraphs: template.paragraphs.map(paragraph => {
+      const clonedParagraph = { ...paragraph, runs: paragraph.runs.map(run => ({ ...run })) };
+      if (paragraph.bullet) clonedParagraph.bullet = { ...paragraph.bullet };
+      if (paragraph.tabStops) clonedParagraph.tabStops = [...paragraph.tabStops];
+      return clonedParagraph;
+    })
+  };
+  if (template.autofit) cloned.autofit = { ...template.autofit };
+  return cloned;
 }
 
 function buildPlainTextFrame(
@@ -1507,18 +1608,36 @@ function buildPlainTextFrame(
   defaultTextStyleRef: unknown,
   padding: TextFrame['padding'],
   verticalAlign: TextFrame['verticalAlign'],
-  wrap: TextFrame['wrap']
+  wrap: TextFrame['wrap'],
+  styles: Map<unknown, PlainTextTemplates>
 ): TextFrame {
+  const plainNumbers = archive.type === 'numbers' && !text.includes('\uFFFC');
+  const multiline = plainNumbers && /[\r\n]/.test(text);
+  const cacheable = plainNumbers && !multiline;
+  const styleKey = getRefId(defaultTextStyleRef) ?? defaultTextStyleRef;
+  const multilineTemplate = multiline ? styles.get(styleKey)?.multiline?.get(text) : undefined;
+  if (multilineTemplate) return cloneCellTextFrame(multilineTemplate, padding, verticalAlign, wrap);
+  const variant = text.length ? 'text' : 'empty';
+  const template = cacheable ? styles.get(styleKey)?.[variant] : undefined;
+  if (template) {
+    const paragraph = template.paragraphs[0];
+    const clonedParagraph = { ...paragraph, runs: [{ ...paragraph.runs[0], text }] };
+    if (paragraph.tabStops) clonedParagraph.tabStops = [...paragraph.tabStops];
+    return {
+      ...template, padding, verticalAlign, wrap,
+      paragraphs: [clonedParagraph]
+    };
+  }
   const mergedStyle = resolveMergedStyle(archive, defaultTextStyleRef);
   const paraProps = asObject(readField(mergedStyle, ['paraProperties', 'para_properties']));
   const charProps = asObject(readField(mergedStyle, ['charProperties', 'char_properties']));
   const baseFrame = buildTextFrameFromStorage(
     archive,
-      {
-        text: [text],
-        tableParaStyle: {
-          entries: []
-        },
+    {
+      text: [text],
+      tableParaStyle: {
+        entries: []
+      },
       tableCharStyle: {
         entries: []
       }
@@ -1532,6 +1651,17 @@ function buildPlainTextFrame(
 
   if (baseFrame) {
     baseFrame.wrap = wrap;
+    if (multiline) {
+      let templates = styles.get(styleKey);
+      if (!templates) styles.set(styleKey, templates = {});
+      if (!templates.multiline) templates.multiline = new Map();
+      templates.multiline.set(text, baseFrame);
+    }
+    if (cacheable && baseFrame.paragraphs.length === 1 && baseFrame.paragraphs[0].runs.length === 1 && !baseFrame.paragraphs[0].bullet) {
+      let templates = styles.get(styleKey);
+      if (!templates) styles.set(styleKey, templates = {});
+      templates[variant] = baseFrame;
+    }
     return baseFrame;
   }
 
@@ -3582,30 +3712,35 @@ function readOptionalString(value: Record<string, unknown>, keys: string[]): str
   return typeof raw === 'string' && raw.length ? raw : undefined;
 }
 
-function parseTableCell(type: IworkArchiveIndex['type'], rowInfo: Record<string, unknown>, column: number): TableCellInfo {
-  const cellCount = Number(readField<number>(rowInfo, ['cellCount', 'cell_count']) ?? 0);
+function parseTableCell(type: IworkArchiveIndex['type'], rowInfo: Record<string, unknown>, column: number, cache: RowOffsetCache): TableCellInfo {
+  let rowOffsets = cache.get(rowInfo);
+  if (!rowOffsets) {
+    rowOffsets = {
+      regular: createCellStorage(readField(rowInfo, ['cellOffsets', 'cell_offsets']), readField(rowInfo, ['cellStorageBuffer', 'cell_storage_buffer'])),
+      preBnc: createCellStorage(readField(rowInfo, ['cellOffsetsPreBnc', 'cell_offsets_pre_bnc']), readField(rowInfo, ['cellStorageBufferPreBnc', 'cell_storage_buffer_pre_bnc']))
+    };
+    cache.set(rowInfo, rowOffsets);
+  }
+  const offsets = rowOffsets.regular;
+  const preOffsets = rowOffsets.preBnc;
   if (type === 'numbers') {
-    const offsets = decodeOffsets(readField(rowInfo, ['cellOffsets', 'cell_offsets']), cellCount);
-    const regular = column < offsets.length ? parseTableCellFromBuffer(type, offsets, readField(rowInfo, ['cellStorageBuffer', 'cell_storage_buffer']), column, false) : emptyCell();
-    const preOffsets = decodeOffsets(readField(rowInfo, ['cellOffsetsPreBnc', 'cell_offsets_pre_bnc']), cellCount);
+    const regular = column < offsets.offsets.length ? parseTableCellFromBuffer(type, offsets, column, false) : emptyCell();
     const fallback =
-      column < preOffsets.length
-        ? parseTableCellFromBuffer(type, preOffsets, readField(rowInfo, ['cellStorageBufferPreBnc', 'cell_storage_buffer_pre_bnc']), column, true)
+      column < preOffsets.offsets.length
+        ? parseTableCellFromBuffer(type, preOffsets, column, true)
         : emptyCell();
     return mergeNumbersCellInfo(regular, fallback);
   }
 
-  const offsets = decodeOffsets(readField(rowInfo, ['cellOffsets', 'cell_offsets']), cellCount);
-  if (column < offsets.length) {
-    const info = parseTableCellFromBuffer(type, offsets, readField(rowInfo, ['cellStorageBuffer', 'cell_storage_buffer']), column, false);
+  if (column < offsets.offsets.length) {
+    const info = parseTableCellFromBuffer(type, offsets, column, false);
     if (info.offset !== 65535) {
       return info;
     }
   }
 
-  const preOffsets = decodeOffsets(readField(rowInfo, ['cellOffsetsPreBnc', 'cell_offsets_pre_bnc']), cellCount);
-  if (column < preOffsets.length) {
-    const info = parseTableCellFromBuffer(type, preOffsets, readField(rowInfo, ['cellStorageBufferPreBnc', 'cell_storage_buffer_pre_bnc']), column, true);
+  if (column < preOffsets.offsets.length) {
+    const info = parseTableCellFromBuffer(type, preOffsets, column, true);
     if (info.offset !== 65535) {
       return info;
     }
@@ -3629,7 +3764,14 @@ function emptyCell(): TableCellInfo {
   };
 }
 
-function decodeOffsets(raw: unknown, _cellCount: number): number[] {
+function createCellStorage(rawOffsets: unknown, rawBuffer: unknown): CellStorage {
+  // A row is immutable during one build. Normalize its buffers and construct
+  // one view here instead of allocating a DataView for every scalar read.
+  const buffer = rawBuffer instanceof Uint8Array ? rawBuffer : rawBuffer ? Uint8Array.from(rawBuffer as number[]) : new Uint8Array(0);
+  return { offsets: decodeOffsets(rawOffsets), buffer, view: new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength) };
+}
+
+function decodeOffsets(raw: unknown): number[] {
   const bytes = raw instanceof Uint8Array ? raw : raw ? Uint8Array.from(raw as number[]) : new Uint8Array(0);
   const count = Math.floor(bytes.length / 2);
   const offsets = new Array<number>(count);
@@ -3642,12 +3784,11 @@ function decodeOffsets(raw: unknown, _cellCount: number): number[] {
 
 function parseTableCellFromBuffer(
   type: IworkArchiveIndex['type'],
-  offsets: number[],
-  rawBuffer: unknown,
+  storage: CellStorage,
   column: number,
   usePreBnc: boolean
 ): TableCellInfo {
-  const buffer = rawBuffer instanceof Uint8Array ? rawBuffer : rawBuffer ? Uint8Array.from(rawBuffer as number[]) : new Uint8Array(0);
+  const { offsets, buffer, view } = storage;
   const info: TableCellInfo = {
     offset: 65535,
     recordEnd: buffer.length,
@@ -3678,30 +3819,30 @@ function parseTableCellFromBuffer(
     const recordType = buffer[offset];
     if (recordType === 4) {
       if (offset + 16 <= buffer.length) {
-        info.styleKey = readUint32(buffer, offset + 12);
+        info.styleKey = view.getUint32(offset + 12, true);
       }
 
       let candidateKeyOffset = -1;
       if (offset + 6 <= buffer.length) {
-        const flags = readUint16(buffer, offset + 4);
+        const flags = view.getUint16(offset + 4, true);
         const keyOffset = popcount(flags) * 4 + 8 + offset;
         if (keyOffset + 4 <= info.recordEnd && keyOffset + 4 <= buffer.length) {
           candidateKeyOffset = keyOffset;
         }
       }
 
-      const candidate16 = offset + 20 <= Math.min(info.recordEnd, buffer.length) ? readUint32(buffer, offset + 16) : 0;
-      const candidate20 = offset + 24 <= Math.min(info.recordEnd, buffer.length) ? readUint32(buffer, offset + 20) : 0;
+      const candidate16 = offset + 20 <= Math.min(info.recordEnd, buffer.length) ? view.getUint32(offset + 16, true) : 0;
+      const candidate20 = offset + 24 <= Math.min(info.recordEnd, buffer.length) ? view.getUint32(offset + 20, true) : 0;
 
       if (info.cellType === 2) {
         if (usePreBnc && candidateKeyOffset >= 0 && candidateKeyOffset + 12 <= info.recordEnd && candidate16 !== 0) {
-          const trailingFormatKey = readUint32(buffer, candidateKeyOffset + 8);
+          const trailingFormatKey = view.getUint32(candidateKeyOffset + 8, true);
           if (trailingFormatKey === candidate16) {
             info.keyOffset = candidateKeyOffset;
             info.formatKey = candidate16;
-            info.numberValue = readFloat64(buffer, candidateKeyOffset);
+            info.numberValue = view.getFloat64(candidateKeyOffset, true);
             info.hasNumber = Number.isFinite(info.numberValue);
-            info.contentKey = readUint32(buffer, candidateKeyOffset);
+            info.contentKey = view.getUint32(candidateKeyOffset, true);
             return info;
           }
         }
@@ -3732,12 +3873,12 @@ function parseTableCellFromBuffer(
       const keyOffset = offset + 12;
       if (keyOffset + 4 <= info.recordEnd && keyOffset + 4 <= buffer.length) {
         info.keyOffset = keyOffset;
-        info.contentKey = readUint32(buffer, keyOffset);
+        info.contentKey = view.getUint32(keyOffset, true);
         info.styleKey = info.contentKey;
       }
     } else if (offset + 16 <= buffer.length) {
       info.keyOffset = offset + 12;
-      info.contentKey = readUint32(buffer, info.keyOffset);
+      info.contentKey = view.getUint32(info.keyOffset, true);
       info.styleKey = info.contentKey;
     }
     return info;
@@ -3747,7 +3888,7 @@ function parseTableCellFromBuffer(
   if (recordType === 4) {
     let keyOffset = info.recordEnd - 4;
     if (offset + 6 <= buffer.length) {
-      const flags = readUint16(buffer, offset + 4);
+      const flags = view.getUint16(offset + 4, true);
       const candidateKeyOffset = popcount(flags) * 4 + 8 + offset;
       if (candidateKeyOffset + 4 <= info.recordEnd) {
         keyOffset = candidateKeyOffset;
@@ -3758,13 +3899,13 @@ function parseTableCellFromBuffer(
     }
 
     info.keyOffset = keyOffset;
-    const rawValue = readUint32(buffer, keyOffset);
+    const rawValue = view.getUint32(keyOffset, true);
     if (usePreBnc && offset + 16 <= info.recordEnd) {
-      info.formatKey = readUint32(buffer, offset + 12);
+      info.formatKey = view.getUint32(offset + 12, true);
     }
     if (info.cellType === 2 || info.cellType === 5) {
       if (keyOffset + 8 <= info.recordEnd) {
-        info.numberValue = readFloat64(buffer, keyOffset);
+        info.numberValue = view.getFloat64(keyOffset, true);
         info.hasNumber = Number.isFinite(info.numberValue);
       }
       if (info.cellType === 5) {
@@ -3773,7 +3914,7 @@ function parseTableCellFromBuffer(
     } else {
       info.contentKey = rawValue;
     }
-    const styleKeys = collectStyleKeys(buffer, offset, keyOffset, info.contentKey);
+    const styleKeys = collectStyleKeys(view, offset, keyOffset, info.contentKey);
     if (styleKeys.length) {
       info.styleKey = styleKeys[0] ?? 0;
     }
@@ -3784,27 +3925,27 @@ function parseTableCellFromBuffer(
     }
     info.keyOffset = keyOffset;
     if (info.cellType === 2) {
-      info.numberValue = readInt32(buffer, keyOffset);
+      info.numberValue = view.getInt32(keyOffset, true);
       info.hasNumber = true;
     } else if (info.cellType === 3 || info.cellType === 9) {
-      info.contentKey = readUint32(buffer, keyOffset);
+      info.contentKey = view.getUint32(keyOffset, true);
     } else if (info.cellType === 5) {
-      info.contentKey = readUint32(buffer, keyOffset);
+      info.contentKey = view.getUint32(keyOffset, true);
       info.numberValue = info.contentKey;
       info.hasNumber = true;
     } else {
-      info.contentKey = readUint32(buffer, keyOffset);
+      info.contentKey = view.getUint32(keyOffset, true);
     }
 
     if (keyOffset + 8 <= info.recordEnd && (info.cellType === 3 || info.cellType === 9)) {
-      const candidateStyle = readUint32(buffer, keyOffset + 4);
+      const candidateStyle = view.getUint32(keyOffset + 4, true);
       if (candidateStyle !== 0 && candidateStyle !== info.contentKey) {
         info.styleKey = candidateStyle;
       }
     }
 
     if (keyOffset + 8 <= info.recordEnd && (info.cellType === 2 || info.cellType === 5)) {
-      info.numberValue = readInt32(buffer, keyOffset);
+      info.numberValue = view.getInt32(keyOffset, true);
       info.hasNumber = true;
     }
   }
@@ -3812,14 +3953,14 @@ function parseTableCellFromBuffer(
   return info;
 }
 
-function collectStyleKeys(buffer: Uint8Array, offset: number, keyOffset: number, key: number): number[] {
+function collectStyleKeys(view: DataView, offset: number, keyOffset: number, key: number): number[] {
   if (keyOffset - offset < 8) {
     return [];
   }
 
   const keys: number[] = [];
   for (let position = keyOffset - 4; position >= offset + 8; position -= 4) {
-    const value = readUint32(buffer, position);
+    const value = view.getUint32(position, true);
     if (value === 0 || value === key || keys.includes(value)) {
       continue;
     }
@@ -3839,9 +3980,10 @@ function mergeNumbersCellInfo(primary: TableCellInfo, fallback: TableCellInfo): 
     return primary;
   }
 
-  const merged = { ...primary };
+  const merged = primary;
   if (!hasRenderablePayload(merged) && hasRenderablePayload(fallback)) {
-    return { ...fallback, styleKey: fallback.styleKey || primary.styleKey };
+    fallback.styleKey ||= primary.styleKey;
+    return fallback;
   }
   if (fallback.hasNumber) {
     merged.hasNumber = true;
@@ -3882,22 +4024,6 @@ function popcount(value: number): number {
     total += 1;
   }
   return total;
-}
-
-function readUint16(buffer: Uint8Array, offset: number): number {
-  return new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength).getUint16(offset, true);
-}
-
-function readUint32(buffer: Uint8Array, offset: number): number {
-  return new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength).getUint32(offset, true);
-}
-
-function readInt32(buffer: Uint8Array, offset: number): number {
-  return new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength).getInt32(offset, true);
-}
-
-function readFloat64(buffer: Uint8Array, offset: number): number {
-  return new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength).getFloat64(offset, true);
 }
 
 function decodeLegacyNumericCellValue(lowBits: number, highBits: number): number | undefined {

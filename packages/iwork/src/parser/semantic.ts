@@ -31,6 +31,7 @@ import {
   colorToHex,
   collectStorageObjectAttributeEntries,
   fillFromValue,
+  findRecordByValue,
   getRecord,
   getRefId,
   getRecordValue,
@@ -41,7 +42,8 @@ import {
   resolveMergedStyle,
   shadowFromValue,
   transformFromGeometry,
-  verticalAlignFromValue
+  verticalAlignFromValue,
+  withStyleResolutionCache
 } from './helpers';
 
 type AnyObject = Record<string, unknown>;
@@ -190,6 +192,10 @@ const DEFAULT_THEME: ThemeModel = {
 };
 
 export function buildParsedDocument(context: SemanticBuildContext, options: SemanticBuildOptions = {}): ParsedIworkDocument {
+  return withStyleResolutionCache(context.archive, () => buildDocument(context, options));
+}
+
+function buildDocument(context: SemanticBuildContext, options: SemanticBuildOptions): ParsedIworkDocument {
   switch (context.archive.type) {
     case 'key':
       return buildKeynoteDocument(context);
@@ -558,6 +564,10 @@ function buildNumbersDocument(context: SemanticBuildContext, sheetIndexes?: Set<
 }
 
 export function buildNumbersSheetAt(context: SemanticBuildContext, index: number): ParsedNumbersSheet | undefined {
+  return withStyleResolutionCache(context.archive, () => buildNumbersSheetAtIndex(context, index));
+}
+
+function buildNumbersSheetAtIndex(context: SemanticBuildContext, index: number): ParsedNumbersSheet | undefined {
   const documentRecord = findRecordByType(context.archive, 'TN.DocumentArchive', ['sheets']);
   const documentValue = asObject(documentRecord?.value) ?? {};
   const pageSize = asObject(readField(documentValue, ['pageSize', 'page_size']));
@@ -3458,13 +3468,6 @@ function findCanvasTitle(items: SlideItem[]): string | undefined {
   return undefined;
 }
 
-function findRecordByValue(
-  archive: IworkArchiveIndex,
-  target: Record<string, unknown>
-): IworkArchiveRecord | undefined {
-  return Object.values(archive.records).find((record) => record.value === target);
-}
-
 function normalizeStorageText(value: unknown): string {
   return asArray<string>(value).join('').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 }
@@ -4285,7 +4288,7 @@ function resolvePagesAttachmentRelativeRatio(params: {
 }
 
 function findRecordIdByValue(archive: IworkArchiveIndex, value: Record<string, unknown>): number | undefined {
-  return Object.values(archive.records).find((record) => record.value === value)?.id;
+  return findRecordByValue(archive, value)?.id;
 }
 
 function pushUniqueArchiveWarning(archive: IworkArchiveIndex, message: string): void {

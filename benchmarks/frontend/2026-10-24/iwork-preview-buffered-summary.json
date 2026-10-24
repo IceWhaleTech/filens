@@ -1,0 +1,102 @@
+{
+  "sourceSha256": "c9f034a1f7a87d9005a04239a85352881ba495afefd2df3ade487422f10a7e18",
+  "date": "2026-10-24T00:42:38.635Z",
+  "cpu": "Apple M4 Pro",
+  "platform": "darwin 25.6.0 arm64",
+  "browser": "147.0.7727.15",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "devicePixelRatio": 1
+  },
+  "versions": {
+    "pptxtojson": "2.2.0",
+    "pptx-preview": "1.0.7",
+    "@vue-office/pptx": "1.0.1",
+    "libraw-wasm": "1.6.0",
+    "@photo-sphere-viewer/core": "5.15.1",
+    "sheetjs": "0.20.3"
+  },
+  "iterations": 7,
+  "totalRuns": 21,
+  "filensSuccessfulRuns": 21,
+  "method": "Ratios are peer / filens (higher means filens is faster). Paired bootstrap of per-iteration measurements, 10000 resamples, percentile 95% interval, LCG seed 12345. Small single-machine sample; not an independent benchmark or a global SOTA proof.",
+  "comparisons": [],
+  "timingLeads": [
+    {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "iwork-view",
+      "sample": "a.pages",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "iwork-view",
+      "sample": "filens-weekend.key",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    }
+  ],
+  "aggregates": [],
+  "summary": [
+    {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 132.61000001430511,
+      "minMs": 130.5550000667572,
+      "medianProcessingMs": null,
+      "maxMs": 135.55999994277954,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 5.634967803955078,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 6
+      },
+      "failures": []
+    },
+    {
+      "family": "iwork-view",
+      "sample": "a.pages",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 71.60000002384186,
+      "minMs": 67.875,
+      "medianProcessingMs": null,
+      "maxMs": 90.6599999666214,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.4917182922363281,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "iwork-view",
+      "sample": "filens-weekend.key",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 64.34500002861023,
+      "minMs": 51.83499991893768,
+      "medianProcessingMs": null,
+      "maxMs": 72.56500005722046,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.5213584899902344,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 0
+      },
+      "failures": []
+    }
+  ]
+}

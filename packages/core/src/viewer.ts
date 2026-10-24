@@ -39,6 +39,7 @@ export class PptxViewer implements ViewerInstance {
   private presentation: ParsedPresentation | null = null;
   private lastViewedSlide: number | null = null;
   private navigationSourceSlide: number | null = null;
+  private navigationTargetSlide: number | null = null;
   private navigationSettleTimer = 0;
 
   private state: ViewerState = {
@@ -176,6 +177,7 @@ export class PptxViewer implements ViewerInstance {
     }
 
     this.beginProgrammaticNavigation();
+    this.navigationTargetSlide = normalized;
     shell.scrollIntoView({
       behavior: getPreferredScrollBehavior(),
       block: 'start'
@@ -225,6 +227,8 @@ export class PptxViewer implements ViewerInstance {
     this.state.currentSlide = 0;
     this.state.warnings = presentation.warnings;
 
+    // Measuring the viewport should not lay out stale slides/loading text.
+    this.clearRenderedSlides();
     if (this.state.fit !== 'none') {
       this.applyFitScale();
     } else {
@@ -312,8 +316,25 @@ export class PptxViewer implements ViewerInstance {
         allowed.add(index);
       }
     } else {
-      for (let index = Math.max(0, this.state.currentSlide - 2); index <= Math.min(this.presentation.slides.length - 1, this.state.currentSlide + 2); index += 1) {
-        allowed.add(index);
+      allowed.add(this.state.currentSlide);
+      if (this.navigationTargetSlide != null) allowed.add(this.navigationTargetSlide);
+      const viewport = this.getTrackingViewport();
+      if (viewport) {
+        let anchor = this.state.currentSlide;
+        const currentRect = this.shells[anchor]?.getBoundingClientRect();
+        if (currentRect && (currentRect.bottom <= viewport.top || currentRect.top >= viewport.bottom)) {
+          anchor = this.findTrackedSlideIndex() ?? anchor;
+          allowed.add(anchor);
+        }
+        // Render every visible neighbor, including short slides at low zoom,
+        // without making offscreen fonts/images part of the first preview.
+        for (const direction of [-1, 1]) {
+          for (let index = anchor + direction; index >= 0 && index < this.shells.length; index += direction) {
+            const rect = this.shells[index].getBoundingClientRect();
+            if (rect.height <= 0 || rect.bottom <= viewport.top || rect.top >= viewport.bottom) break;
+            allowed.add(index);
+          }
+        }
       }
     }
 
@@ -445,10 +466,28 @@ export class PptxViewer implements ViewerInstance {
     let nearestIndex = 0;
     let nearestDistance = Number.POSITIVE_INFINITY;
 
-    this.shells.forEach((shell, index) => {
-      const rect = shell.getBoundingClientRect();
+    // Slide shells form an ordered vertical stack. Locate the viewport with
+    // logarithmic layout reads instead of measuring every slide on each scroll.
+    const rects = new Map<number, DOMRect>();
+    const readRect = (index: number) => {
+      let rect = rects.get(index);
+      if (!rect) { rect = this.shells[index].getBoundingClientRect(); rects.set(index, rect); }
+      return rect;
+    };
+    let low = 0, high = this.shells.length, scanAll = false;
+    while (low < high) {
+      const middle = Math.floor((low + high) / 2), rect = readRect(middle);
       if (!Number.isFinite(rect.top) || !Number.isFinite(rect.height) || rect.height <= 0) {
-        return;
+        scanAll = true;
+        break;
+      }
+      if (rect.bottom <= viewport.top) low = middle + 1;
+      else high = middle;
+    }
+    for (let index = scanAll ? 0 : Math.max(0, low - 1); index < this.shells.length; index++) {
+      const rect = readRect(index);
+      if (!Number.isFinite(rect.top) || !Number.isFinite(rect.height) || rect.height <= 0) {
+        continue;
       }
 
       const shellCenter = rect.top + rect.height / 2;
@@ -462,7 +501,8 @@ export class PptxViewer implements ViewerInstance {
       const visibleBottom = Math.min(rect.bottom, viewport.bottom);
       const visibleHeight = visibleBottom - visibleTop;
       if (visibleHeight <= 0) {
-        return;
+        if (!scanAll && rect.top >= viewport.bottom) break;
+        continue;
       }
 
       const visibleRatio = visibleHeight / rect.height;
@@ -477,7 +517,7 @@ export class PptxViewer implements ViewerInstance {
         bestVisibleRatio = visibleRatio;
         bestVisibleDistance = visibleDistance;
       }
-    });
+    }
 
     return bestVisibleIndex ?? nearestIndex;
   }
@@ -581,10 +621,13 @@ export class PptxViewer implements ViewerInstance {
     this.navigationSettleTimer = window.setTimeout(() => {
       this.navigationSettleTimer = 0;
       this.navigationSourceSlide = null;
+      this.navigationTargetSlide = null;
+      this.syncMountedSlides();
     }, releaseDelay);
   }
 
   private clearNavigationSettleTimer(): void {
+    this.navigationTargetSlide = null;
     if (!this.navigationSettleTimer) {
       return;
     }

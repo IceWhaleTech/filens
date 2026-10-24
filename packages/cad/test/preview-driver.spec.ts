@@ -2,6 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { createCadPreviewDriver, createCadPreviewRoutes, loadDxfDrawing } from '../src';
 
 describe('CAD preview driver', () => {
+  it('computes bounds of large drawings without exceeding JavaScript argument limits', () => {
+    const lines = Array.from({ length: 70_000 }, (_, index) => `0\nLINE\n8\n0\n10\n${index}\n20\n0\n11\n${index + 1}\n21\n1\n`).join('');
+    const drawing = loadDxfDrawing(`0\nSECTION\n2\nENTITIES\n${lines}0\nENDSEC\n0\nEOF\n`);
+    expect(drawing.entities).toHaveLength(70_000);
+    expect(drawing.bounds).toEqual({ minX: 0, minY: 0, maxX: 70_000, maxY: 1 });
+  });
+
   it('parses common DXF entities into a drawing model', () => {
     const drawing = loadDxfDrawing(createDxfFixture());
 

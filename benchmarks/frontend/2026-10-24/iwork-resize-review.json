@@ -1,0 +1,206 @@
+{
+  "method": "Seven fresh-context repeats per final native-preview and rotating new/old engineering configuration; no concurrent builds or tests. Native-preview boundaries include input parsing, real worker transfer, content decoding, fonts and two rAFs. No parser/model fields or rendered rows were removed. Browser resize/scroll reviews run after timing; single-run functional and profiled/traced diagnostics are excluded from timing rankings.",
+  "externalComparisonRunsAdded": 21,
+  "successfulFilensExternalRunsAdded": 21,
+  "engineeringComparisonRuns": 42,
+  "initialNumbersOnlyEngineeringRuns": 14,
+  "browserReviewRuns": 3,
+  "browserDiagnosticRuns": 3,
+  "sources": {
+    "iwork-preview-resize.json.gz": {
+      "uncompressedSha256": "62e02a4834f0b23f702dea446313b91ad746e13042456308f6a3e6076db031f5",
+      "compressedSha256": "faf14ef9058b833968baf781b8d174b13eba6181780cd7b41a6060bb76871a5c",
+      "runs": 21
+    },
+    "iwork-preview-resize-ab.json.gz": {
+      "uncompressedSha256": "e8bfd32f9de67380f1b91254796f4a1cd0fe1e79c72956a4d72bd5384a22c3c0",
+      "compressedSha256": "675b6ecf727bb78f66d9862518f3beb75f30f03bee8b467c5d59f08a4a566b4c",
+      "runs": 42
+    },
+    "numbers-preview-resize-initial-ab.json.gz": {
+      "uncompressedSha256": "b9a48990b7d7696f479604814ef24e638fde64749d9d686e7a3680aab8e73471",
+      "compressedSha256": "983decba673ae0afbddae5b7b005fd14a344b462d2a8651fb9c0de42d4c796cb",
+      "runs": 14
+    },
+    "iwork-resize-browser-review.json.gz": {
+      "uncompressedSha256": "c5d4b52fd3fa03532595379c0b97e91ecb29cff8b744edf217ac4268eb4aa397",
+      "compressedSha256": "0467d8991165b4fedde9f9b1dd2fd3e3d9d3250cb1fb0a7fc0f867a223f44e10",
+      "runs": 3
+    },
+    "iwork-resize-browser-diagnostic.json.gz": {
+      "uncompressedSha256": "8650e7262d53809cd31ad70575e860c5e728094f6e39518f84b0b13fa3e8e775",
+      "compressedSha256": "6f6d105186b7b6113476b9aa125086174c27d1af8b7ccc055e9513d61f1957c3",
+      "runs": 3
+    }
+  },
+  "artifacts": {
+    "scripts/benchmark-frontends.mjs": "f1633e7518ef1823c735ccbcccef362b0d2e9fcc2f53f61fe6a0fb86743532f7",
+    "packages/core/dist/index.js": "2e6a26185978c4859da62053a962e1bdc878bdb9beeeeb8a4dd4cee2471dea46",
+    "packages/iwork/dist/index.js": "4cc28ba6728681f46be1d9ae179ff351d6ceda9aadf5db773c1803ae95967283",
+    "packages/panorama/dist/index.js": "a5b7b32c337f24fccb9e97338d5c1c475a656ab5d49d968d96b5b72d0bc284d6",
+    "packages/converter-client/dist/index.js": "cbd8f90f4151fced4c6fd4d89da5fc0b1b3ea932c17ae038a90b29bfbf6dee5d",
+    "packages/xlsx/dist/index.js": "37ea0dd6c6a0bf5ffbfbb7efc691b1cd9d30dd11d3415370018bb9de876fe07a",
+    "wasm/converter-core/dist/converter-core.wasm": "9fd03adbdccdd6ab5f05bd625e2ac382dc57a1e6320effacd618c35e4e29fbb4",
+    "wasm/converter-image/dist/converter-image.wasm": "adb3351801f0ff7ef209481013e75f9d708ab87230c4d3918576dd5f7630c7aa",
+    "tmp/performance-sota/package-lock.json": "088496502d26bb7550e7eb3eb4c3dbe2f543a8406caff1af4e7d25f3525bc06c",
+    "tmp/performance-sota/xlsx-0.20.3.full.min.js": "cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41"
+  },
+  "implementationSources": {
+    "packages/iwork/src/viewer/create-iwork-viewer.ts": "128ecd449e8eccce9dea7cac71d72b474f4aa8014fa7e6dc7f33258a401b0917",
+    "packages/iwork/test/viewer.spec.ts": "dd2680fbf0125057152dc6a69a1e81b81dd81adbf27bb608faf90864145b23cb"
+  },
+  "engineeringReproductionArtifacts": {
+    "benchmark-iwork-resize-ab.mjs": "753ea9d2a8028f97fdea807806480516d17e617b86f01346016b9fab7ea9b378",
+    "benchmark-iwork-resize-review.mjs": "01aca0ee6e3607dce44027b598efb0b46e4c7888d4778e2fc777cf990458abfc",
+    "iwork-resize.patch": "a13964877e75b30d77658cc3483de79e857dc240db7ce126465ee6da4f3c61d8"
+  },
+  "baseline": {
+    "artifactPath": "tmp/performance-sota/oct24-render-baseline/iwork-dist/index.js",
+    "artifactSha256": "8c5b13d61f31e6f6ce4102968bf65ce661c23c73ce4fc3c98581bc9ba7b5b7a1",
+    "viewerSourceSha256": "effc84bdfa0cb8917ce59136434fe10f7221e9e1d7e393e3e3d8650ef8486859",
+    "reproduction": "Apply iwork-resize.patch in reverse to restore the previous viewer, build @filens/iwork and copy its dist to tmp/performance-sota/oct24-render-baseline/iwork-dist. Restore/apply the patch and rebuild the current package, then run the derived A/B harness from the repository root with --family iwork-view --iterations 7 --review-content. Core, parsing and worker sources remain the same."
+  },
+  "engineeringComparisons": [
+    {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 100.74500000476837,
+      "peerMs": 125.88499999046326,
+      "peerOverFilensRatio": 1.249540919991116,
+      "ratio95PercentBootstrapInterval": [
+        1.2077315830699076,
+        1.2894342253123134
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "iwork-view",
+      "sample": "a.pages",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 66.02499997615814,
+      "peerMs": 65.13999998569489,
+      "peerOverFilensRatio": 0.9865959865084009,
+      "ratio95PercentBootstrapInterval": [
+        0.9124672185860465,
+        1.082855318677154
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "iwork-view",
+      "sample": "filens-weekend.key",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 61.74500000476837,
+      "peerMs": 58.92999994754791,
+      "peerOverFilensRatio": 0.9544092629848074,
+      "ratio95PercentBootstrapInterval": [
+        0.8075329860819277,
+        1.230754535209254
+      ],
+      "stableLeadInThisComparison": false
+    }
+  ],
+  "previewPixelChecks": [
+    {
+      "sample": "iwork-view-filens-filens-weekend.key.png",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "c3754fc7a470290e3a6da9ed1bf0d33a16a4349762945817f714880f709dd8cb",
+      "previousPngSha256": "c3754fc7a470290e3a6da9ed1bf0d33a16a4349762945817f714880f709dd8cb",
+      "rgbPixelSha256": "3ed83bdddc2f3ef78720ac725109118e19684cf7e3cd47c3b994434d19a2b6a0"
+    },
+    {
+      "sample": "iwork-view-filens-a.numbers.png",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+      "previousPngSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+      "rgbPixelSha256": "5e8075faec78d4d4fee1389ee79ab9ff7f2c79b931d51d35e7900fdd4551fb73"
+    },
+    {
+      "sample": "iwork-view-filens-a.pages.png",
+      "sameDecodedPixels": true,
+      "currentPngSha256": "ccc28b72f1e5922b106e571cfee6dec860686776de9b88c3aa5e37caef5a4a74",
+      "previousPngSha256": "ccc28b72f1e5922b106e571cfee6dec860686776de9b88c3aa5e37caef5a4a74",
+      "rgbPixelSha256": "d129ae4107d8da75d94054f691a1debd614e0cc61d05995e2b3e30c394cf2b59"
+    }
+  ],
+  "contentAndInteractions": [
+    {
+      "sample": "a.numbers",
+      "archiveMatches": true,
+      "sheetsMatch": true,
+      "sheets": 6,
+      "tables": 14
+    },
+    {
+      "sample": "a.pages",
+      "archiveMatches": true,
+      "navigated": true,
+      "zoomed": true
+    },
+    {
+      "sample": "filens-weekend.key",
+      "archiveMatches": true,
+      "navigated": true,
+      "zoomed": true
+    }
+  ],
+  "browserResizeChecks": [
+    {
+      "sample": "a.numbers",
+      "originalRows": [
+        47,
+        47,
+        47,
+        46,
+        46
+      ],
+      "loadedRows": [
+        47,
+        47,
+        47,
+        46,
+        46
+      ],
+      "scrollLoadedMore": null,
+      "tablesPreserved": true,
+      "loadedRowsPreserved": true,
+      "scrollPreserved": true,
+      "floatingScaleMatches": true,
+      "selectedSheetPreserved": true
+    },
+    {
+      "sample": "a.pages",
+      "retainedContentPreserved": true,
+      "selectedContentPreserved": true,
+      "selectedPagePreserved": true,
+      "canvasScaleMatches": true
+    },
+    {
+      "sample": "filens-weekend.key",
+      "retainedContentPreserved": true,
+      "selectedContentPreserved": true,
+      "selectedPagePreserved": true,
+      "canvasScaleMatches": true
+    }
+  ],
+  "qualifications": {
+    "sotaQualified": false,
+    "reason": "No equivalent native frontend iWork preview peer is included. The stable Numbers speedup is against the previous filens implementation, not an external competitor. Pages and Keynote engineering intervals overlap 1, so their times are retained without claiming gains. Full-model parsing remains at the prior measured 35.4 ms versus SheetJS cached-data extraction at 26.0 ms; parsing code is unchanged."
+  },
+  "diagnostics": {
+    "initialNumbersComparison": "The 14-run initial engineering comparison tested the Numbers resize fix before the paged-canvas update. It is retained separately from the final 42-run comparison.",
+    "browserReview": "The real Numbers fixture has fewer than 100 rows per table, so scrollLoadedMore is null. A 200-row unit regression separately checks progressive loading, preservation of all loaded rows, scroll position and floating-object scaling across resize.",
+    "browserDiagnostic": "The initial three-run browser review required scrollLoadedMore even on short tables, and required identical null/mounted states for all virtual pages after resizing. Two post-timer assertions failed due to those invalid assumptions. These raw records are retained separately; the corrected review permits normal virtualization and checks retained content and the selected page. All corrected checks pass."
+  },
+  "validation": {
+    "iworkTestsPassed": 299,
+    "iworkBuild": true,
+    "demoBuild": true,
+    "bundleReport": true,
+    "coreAndParserSourcesChanged": false
+  }
+}

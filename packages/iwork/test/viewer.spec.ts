@@ -105,6 +105,7 @@ function createKeynoteDocument(slideCount = 1): ParsedKeynoteDocument {
 describe('iWork viewer', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     parseMock.mockReset();
     parseSheetMock.mockReset();
     document.body.innerHTML = '';
@@ -340,6 +341,85 @@ describe('iWork viewer', () => {
     expect(container.querySelector('.xlsxv-table')?.textContent).toContain('Revenue');
     expect(container.querySelector<HTMLImageElement>('.iworkv-cell-image')?.loading).toBe('lazy');
     expect(container.querySelector('.iworkv-numbers-objects .pptxv-item--image')).not.toBeNull();
+    viewer.destroy();
+  });
+
+  it('preserves scrolled Numbers rows while resizing floating sheet objects', async () => {
+    let notifyResize!: ResizeObserverCallback;
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: ResizeObserverCallback) { notifyResize = callback; }
+      observe(): void {}
+      disconnect(): void {}
+    });
+    let width = 832;
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() =>
+      ({ x: 0, y: 0, top: 0, left: 0, width, height: 600, right: width, bottom: 600 }) as DOMRect);
+    const canvas = createPagesDocument().pages[0].canvas;
+    canvas.slide.items.push({
+      id: 'shape', kind: 'shape', shapeType: 'rect', order: 0, groupPath: [],
+      transform: { x: 0, y: 0, width: 50, height: 50, rotation: 0, flipH: false, flipV: false },
+      fill: { type: 'solid', color: '#ff0000' }
+    });
+    parseMock.mockResolvedValue({
+      kind: 'numbers', archive: { records: {} }, media: {}, warnings: [],
+      sheets: [{ id: 'one', name: 'One', index: 0, canvas, tables: [{ id: 'table', item: {
+        id: 'table', columns: [100], rows: Array.from({ length: 200 }, () => 26),
+        cells: [0, 199].map(row => ({
+          row, column: 0, fill: { type: 'none' },
+          textFrame: { paragraphs: [{ runs: [{ text: row === 0 ? 'First' : 'Last' }] }] }
+        }))
+      } }] }]
+    });
+    const container = document.body.appendChild(document.createElement('div'));
+    const viewer = createIworkViewer(container);
+    await viewer.preview(new Uint8Array([1, 2, 3]));
+    const table = container.querySelector<HTMLTableElement>('.xlsxv-table')!;
+    const grid = container.querySelector<HTMLElement>('.xlsxv-grid')!;
+    expect(table.tBodies[0].rows).toHaveLength(100);
+    Object.defineProperties(grid, { scrollHeight: { value: 6000 }, clientHeight: { value: 800 } });
+    grid.scrollTop = 5200;
+    grid.dispatchEvent(new Event('scroll'));
+    expect(table.tBodies[0].rows).toHaveLength(200);
+    const resized = () => notifyResize([], {} as ResizeObserver);
+    resized();
+    width = 432;
+    resized();
+    expect(container.querySelector('.xlsxv-table')).toBe(table);
+    expect(table.tBodies[0].rows).toHaveLength(200);
+    expect(table.tBodies[0].rows[199].textContent).toContain('Last');
+    expect(grid.scrollTop).toBe(5200);
+    const shell = container.querySelector<HTMLElement>('.iworkv-numbers-objects .iworkv-page-shell')!;
+    expect(shell.style.width).toBe('400px');
+    expect((shell.firstElementChild as HTMLElement).style.transform).toBe('scale(0.5)');
+    viewer.destroy();
+  });
+
+  it('resizes mounted pages without replacing their content or resetting visible pages', async () => {
+    let notifyResize!: ResizeObserverCallback;
+    vi.stubGlobal('ResizeObserver', class {
+      constructor(callback: ResizeObserverCallback) { notifyResize = callback; }
+      observe(): void {}
+      disconnect(): void {}
+    });
+    let width = 832;
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() =>
+      ({ top: 0, left: 0, width, height: 600, right: width, bottom: 600 }) as DOMRect);
+    parseMock.mockResolvedValue(createPagesDocument());
+    const container = document.body.appendChild(document.createElement('div'));
+    const viewer = createIworkViewer(container);
+    await viewer.preview(new Uint8Array([1, 2, 3]));
+    const shells = Array.from(container.querySelectorAll<HTMLElement>('.iworkv-page-shell'));
+    shells[2].scrollIntoView = vi.fn();
+    viewer.goToPage(2);
+    const content = shells[2].firstElementChild as HTMLElement;
+    width = 432;
+    notifyResize([], {} as ResizeObserver);
+    expect(viewer.getState().currentPage).toBe(2);
+    expect(shells[2].firstElementChild).toBe(content);
+    expect(shells.map(shell => shell.childElementCount)).toEqual([0, 0, 1]);
+    expect(shells[2].style.width).toBe('400px');
+    expect(content.style.transform).toBe('scale(0.5)');
+    expect(viewer.getState().scale).toBe(0.5);
     viewer.destroy();
   });
 

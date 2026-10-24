@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import { openZipArchive, type ZipEntry } from '@filens/core';
 import { uncompress as snappyUncompress } from 'snappyjs';
 import type {
   IworkArchiveDataEntry,
@@ -7,13 +7,14 @@ import type {
   IworkImageAsset,
   IworkType
 } from '../types';
-import { decodeTypedMessage, getArchiveInfoType, getTypeName } from './protobuf';
+import { decodeTypedMessage, getTypeName } from './protobuf';
+import { deferRecordValue } from './helpers';
 
 export interface LoadedArchivePackage {
   type: IworkType;
   archive: IworkArchiveIndex;
   media: Record<string, IworkImageAsset>;
-  zip: JSZip;
+  zip: Map<string, ZipEntry>;
 }
 
 export interface LoadArchivePackageOptions {
@@ -35,7 +36,7 @@ export async function loadArchivePackage(
   type: IworkType,
   options: LoadArchivePackageOptions = {}
 ): Promise<LoadedArchivePackage> {
-  const zip = await JSZip.loadAsync(bytes);
+  const zip = await openZipArchive(bytes);
   const archive = await decodeArchiveZip(zip, type, options);
   const media = await buildMediaMap(zip, archive);
   return {
@@ -47,7 +48,7 @@ export async function loadArchivePackage(
 }
 
 async function decodeArchiveZip(
-  zip: JSZip,
+  zip: Map<string, ZipEntry>,
   type: IworkType,
   options: LoadArchivePackageOptions = {}
 ): Promise<IworkArchiveIndex> {
@@ -55,17 +56,19 @@ async function decodeArchiveZip(
   const warnings: string[] = [];
   const unsupportedRecordTypes = new Map<number, { count: number; examples: number[] }>();
 
-  const iwaEntries = Object.keys(zip.files)
+  const iwaEntries = [...zip.keys()]
     .filter((name) => name.endsWith('.iwa'))
-    .sort((left, right) => left.localeCompare(right));
+    // These are package paths, so use a deterministic code-unit order rather
+    // than initializing locale-aware collation for each document.
+    .sort();
 
   for (const entryName of iwaEntries) {
-    const file = zip.file(entryName);
+    const file = zip.get(entryName);
     if (!file) {
       continue;
     }
 
-    const chunk = new Uint8Array(await file.async('uint8array'));
+    const chunk = await file.bytes();
     decodeIwaBuffer(chunk, type, records, warnings, unsupportedRecordTypes);
   }
 
@@ -97,7 +100,6 @@ function decodeIwaBuffer(
   unsupportedRecordTypes: Map<number, { count: number; examples: number[] }>
 ): void {
   const bytes = unsnap(source);
-  const archiveInfoType = getArchiveInfoType();
   let cursor = 0;
 
   while (cursor < bytes.length) {
@@ -109,13 +111,7 @@ function decodeIwaBuffer(
 
     const archiveChunk = bytes.subarray(cursor, cursor + lengthInfo.value);
     cursor += lengthInfo.value;
-    const archiveInfo = archiveInfoType.decode(archiveChunk);
-    const infoValue = archiveInfoType.toObject(archiveInfo, {
-      defaults: false,
-      arrays: true,
-      objects: true,
-      longs: Number
-    }) as ArchiveInfoValue;
+    const infoValue = decodeTypedMessage('TSP.ArchiveInfo', archiveChunk) as ArchiveInfoValue;
     const archiveId = Number(infoValue.identifier ?? 0);
 
     for (let index = 0; index < (infoValue.messageInfos?.length ?? 0); index += 1) {
@@ -126,17 +122,7 @@ function decodeIwaBuffer(
 
       const typeId = Number(messageInfo?.type ?? 0);
       const typeName = getTypeName(type, typeId);
-      let value: unknown = null;
-
-      if (typeName) {
-        try {
-          value = decodeTypedMessage(typeName, payload);
-        } catch (error) {
-          warnings.push(
-            `Failed to decode iWork record ${archiveId} as ${typeName}: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      } else {
+      if (!typeName) {
         noteUnsupportedRecordType(unsupportedRecordTypes, typeId, archiveId);
       }
 
@@ -146,13 +132,25 @@ function decodeIwaBuffer(
         messageIndex: index,
         typeId,
         typeName: typeName ?? `unknown:${typeId}`,
-        value,
-        objectReferences: (messageInfo?.objectReferences ?? []).map(Number),
-        dataReferences: (messageInfo?.dataReferences ?? []).map(Number)
+        value: null,
+        objectReferences: messageInfo?.objectReferences ?? [],
+        dataReferences: messageInfo?.dataReferences ?? []
       };
+      if (typeName) {
+        deferRecordValue(nextRecord, () => {
+          try {
+            return decodeTypedMessage(typeName, payload);
+          } catch (error) {
+            warnings.push(
+              `Failed to decode iWork record ${archiveId} as ${typeName}: ${error instanceof Error ? error.message : String(error)}`
+            );
+            return null;
+          }
+        });
+      }
 
       const existing = records[String(archiveId)];
-      if (value != null || !existing) {
+      if (!existing || nextRecord.value != null) {
         records[String(archiveId)] = nextRecord;
       }
     }
@@ -196,6 +194,7 @@ function unsnap(source: Uint8Array): Uint8Array {
     totalLength += normalized.length;
   }
 
+  if (chunks.length === 1) return chunks[0];
   const output = new Uint8Array(totalLength);
   let offset = 0;
   for (const chunk of chunks) {
@@ -402,7 +401,7 @@ function readField<T = unknown>(value: Record<string, unknown> | undefined, keys
   return undefined;
 }
 
-async function buildMediaMap(zip: JSZip, archive: IworkArchiveIndex): Promise<Record<string, IworkImageAsset>> {
+async function buildMediaMap(zip: Map<string, ZipEntry>, archive: IworkArchiveIndex): Promise<Record<string, IworkImageAsset>> {
   const media: Record<string, IworkImageAsset> = {};
 
   for (const entry of Object.values(archive.dataEntries)) {
@@ -410,12 +409,12 @@ async function buildMediaMap(zip: JSZip, archive: IworkArchiveIndex): Promise<Re
       continue;
     }
 
-    const file = zip.file(entry.path);
+    const file = zip.get(entry.path);
     if (!file) {
       continue;
     }
 
-    const data = new Uint8Array(await file.async('uint8array'));
+    const data = await file.bytes();
     media[String(entry.id)] = {
       id: String(entry.id),
       path: entry.path,

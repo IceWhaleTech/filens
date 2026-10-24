@@ -47,6 +47,35 @@ afterAll(() => {
 });
 
 describe('PptxViewer', () => {
+  it('mounts the first slide and then every visible short slide without offscreen pre-rendering', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const viewer = createViewer(container, { fit: 'none', virtual: true });
+    const internal = viewer as unknown as {
+      applyPresentation(presentation: ParsedPresentation): void;
+      syncCurrentSlideToViewport(): void;
+    };
+    internal.applyPresentation(createPresentationWithSlideCount(8));
+    expect(container.querySelectorAll('.pptxv-slide-stage')).toHaveLength(1);
+    const area = container.querySelector('.pptxv-scroll-area') as HTMLDivElement;
+    area.getBoundingClientRect = () => createRect({ top: 20, bottom: 380, height: 360 });
+    const shells = [...container.querySelectorAll('.pptxv-slide-shell')] as HTMLDivElement[];
+    shells.forEach((shell, index) => {
+      const top = 20 + index * 120;
+      shell.getBoundingClientRect = () => createRect({ top, bottom: top + 100, height: 100 });
+    });
+    internal.syncCurrentSlideToViewport();
+    expect(container.querySelectorAll('.pptxv-slide-stage')).toHaveLength(3);
+    expect(shells[3].querySelector('.pptxv-slide-stage')).toBeNull();
+    viewer.goToSlide(7);
+    expect(shells[7].querySelector('.pptxv-slide-stage')).toBeTruthy();
+    expect(shells[0].querySelector('.pptxv-slide-stage')).toBeTruthy();
+    internal.syncCurrentSlideToViewport();
+    expect(shells[7].querySelector('.pptxv-slide-stage')).toBeTruthy();
+    viewer.destroy();
+    container.remove();
+  });
+
   it('reuses mounted slide DOM when the scale changes', async () => {
     const bytes = await readFixture('fixtures-text-theme.pptx');
     const container = document.createElement('div');
@@ -271,6 +300,27 @@ describe('PptxViewer', () => {
     container.remove();
   });
 
+  it('tracks a viewport deep in a long presentation without measuring every slide', () => {
+    const container = document.createElement('div'); document.body.append(container);
+    const viewer = createViewer(container, { fit: 'none' });
+    const internal = viewer as unknown as { applyPresentation(p: ParsedPresentation): void; findTrackedSlideIndex(): number | null };
+    internal.applyPresentation(createPresentationWithSlideCount(1024));
+    const area = container.querySelector('.pptxv-scroll-area') as HTMLDivElement;
+    area.getBoundingClientRect = () => createRect({ top: 20, bottom: 380, height: 360 });
+    const shells = [...container.querySelectorAll('.pptxv-slide-shell')];
+    let reads = 0;
+    shells.forEach((shell, index) => {
+      shell.getBoundingClientRect = () => {
+        reads++;
+        const top = (index - 750) * 120 + 100;
+        return createRect({ top, bottom: top + 100, height: 100 });
+      };
+    });
+    expect(internal.findTrackedSlideIndex()).toBe(750);
+    expect(reads).toBeLessThan(30);
+    viewer.destroy(); container.remove();
+  });
+
   it('navigates with PowerPoint action links', async () => {
     const bytes = await readFixture('../../apps/demo/public/samples/sample-deck.pptx');
     const container = document.createElement('div');
@@ -306,13 +356,13 @@ describe('PptxViewer', () => {
     await viewer.preview(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 
     const jumpLink = container.querySelector('[data-slide-index="2"]') as HTMLAnchorElement | null;
-    const lastViewedLink = container.querySelector('[data-slide-action="lastViewed"]') as HTMLAnchorElement | null;
     expect(jumpLink).toBeTruthy();
-    expect(lastViewedLink).toBeTruthy();
 
     jumpLink?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     expect(viewer.getState().currentSlide).toBe(2);
 
+    const lastViewedLink = container.querySelector('[data-slide-action="lastViewed"]') as HTMLAnchorElement | null;
+    expect(lastViewedLink).toBeTruthy();
     lastViewedLink?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
     expect(viewer.getState().currentSlide).toBe(0);
 

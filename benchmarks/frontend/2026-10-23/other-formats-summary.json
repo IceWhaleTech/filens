@@ -1,0 +1,3633 @@
+{
+  "date": "2026-10-23T14:55:07.318Z",
+  "cpu": "Apple M4 Pro",
+  "browser": "147.0.7727.15",
+  "versions": {
+    "dxf-parser": "1.1.2",
+    "occt-import-js": "0.0.23",
+    "sheetjs": "0.20.3",
+    "papaparse": "5.7.0",
+    "zip.js": "2.24.0",
+    "fflate": "0.8.2",
+    "x2t": "v9.3.2+3"
+  },
+  "iterations": 7,
+  "totalRuns": 497,
+  "filensRuns": 231,
+  "filensSuccessfulRuns": 231,
+  "method": "Peer / filens ratios; 10,000 paired percentile bootstrap resamples, LCG seed 12345. Eligibility requires a matching recorded output signature and >=7 iterations. Legacy XLS conversion can qualify when all resolved nonempty cell addresses/text match in the same viewer; tiny decimal differences (12 significant digits) and trailing blank grid space are accepted for preview. Editable formula/structure parity is not required. STEP metadata is deliberately omitted from filens; signatures compare oriented world-space triangles/normals, rounded to 1e-5, with independent full numerical regression checks. No global SOTA proof.",
+  "previewReview": {
+    "path": "preview-review.json",
+    "benchmarkResultSha256": "6d7caa42ea27d0ce562cbc3e6f5bb3068e8587f7d0791c18662c26e49af88364"
+  },
+  "summary": [
+    {
+      "family": "dxf",
+      "sample": "filens-cafe.dxf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 5.195000052452087,
+      "initMs": 0,
+      "firstOperationMs": 5.195000052452087,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 223,
+        "types": {
+          "line": 173,
+          "arc": 1,
+          "text": 15,
+          "circle": 34
+        },
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "filens-cafe.dxf",
+      "engine": "dxf-parser",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.9300000667572021,
+      "initMs": 0,
+      "firstOperationMs": 0.9300000667572021,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 223,
+        "types": {
+          "LINE": 173,
+          "ARC": 1,
+          "TEXT": 15,
+          "CIRCLE": 34
+        },
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "api-cw750-details.dxf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 50.09999990463257,
+      "initMs": 0,
+      "firstOperationMs": 50.09999990463257,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 5179,
+        "types": {
+          "polyline": 310,
+          "line": 3264,
+          "hatch": 77,
+          "circle": 58,
+          "face": 42,
+          "text": 509,
+          "point": 844,
+          "arc": 75
+        },
+        "warnings": [
+          "DXF references SHX font files (ITALIC.SHX, romans.shx, simplex.shx), which browsers cannot render directly; CSS fallback fonts are used."
+        ]
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "api-cw750-details.dxf",
+      "engine": "dxf-parser",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 21.09499990940094,
+      "initMs": 0,
+      "firstOperationMs": 21.09499990940094,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 1244,
+        "types": {
+          "LWPOLYLINE": 147,
+          "LINE": 540,
+          "INSERT": 132,
+          "DIMENSION": 293,
+          "ARC": 61,
+          "CIRCLE": 39,
+          "MTEXT": 30,
+          "TEXT": 2
+        },
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "blocks2.dxf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.48500001430511475,
+      "initMs": 0,
+      "firstOperationMs": 0.48500001430511475,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 0,
+        "types": {},
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "blocks2.dxf",
+      "engine": "dxf-parser",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.26499998569488525,
+      "initMs": 0,
+      "firstOperationMs": 0.26499998569488525,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 0,
+        "types": {},
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "splines.dxf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.6799999475479126,
+      "initMs": 0,
+      "firstOperationMs": 0.6799999475479126,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 2,
+        "types": {
+          "spline": 2
+        },
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "splines.dxf",
+      "engine": "dxf-parser",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.38499999046325684,
+      "initMs": 0,
+      "firstOperationMs": 0.38499999046325684,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 2,
+        "types": {
+          "SPLINE": 2
+        },
+        "warnings": []
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "generated-20000-lines.dxf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 39.25,
+      "initMs": 0,
+      "firstOperationMs": 39.25,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 20000,
+        "types": {
+          "line": 20000
+        },
+        "warnings": [],
+        "contentSha256": "84c8f06f139aff1d911170e96223581ab85468777a078f108c3833707a903508"
+      },
+      "failures": []
+    },
+    {
+      "family": "dxf",
+      "sample": "generated-20000-lines.dxf",
+      "engine": "dxf-parser",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 18.944999933242798,
+      "initMs": 0,
+      "firstOperationMs": 18.944999933242798,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "entities": 20000,
+        "types": {
+          "LINE": 20000
+        },
+        "warnings": [],
+        "contentSha256": "84c8f06f139aff1d911170e96223581ab85468777a078f108c3833707a903508"
+      },
+      "failures": []
+    },
+    {
+      "family": "xlsx",
+      "sample": "filens-observatory.xlsx",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 6.575000047683716,
+      "initMs": 0,
+      "firstOperationMs": 6.575000047683716,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 3,
+        "cells": 395,
+        "contentSha256": "db39ce55559da448484ee77eaaf96078abf45dfdf1d987eeac5b13b2d8ed6028"
+      },
+      "failures": []
+    },
+    {
+      "family": "xlsx",
+      "sample": "filens-observatory.xlsx",
+      "engine": "sheetjs",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 6.914999961853027,
+      "initMs": 0,
+      "firstOperationMs": 6.914999961853027,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 3,
+        "cells": 395,
+        "contentSha256": "db39ce55559da448484ee77eaaf96078abf45dfdf1d987eeac5b13b2d8ed6028"
+      },
+      "failures": []
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-data-types.xlsx",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 4.299999952316284,
+      "initMs": 0,
+      "firstOperationMs": 4.299999952316284,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "cells": 12,
+        "contentSha256": "4e782f0ffca72c046d514518ad8126dbd9fb37ca5fae36c00d49fa9a7c0483e9"
+      },
+      "failures": []
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-data-types.xlsx",
+      "engine": "sheetjs",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 5.965000033378601,
+      "initMs": 0,
+      "firstOperationMs": 5.965000033378601,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "cells": 12,
+        "contentSha256": "4e782f0ffca72c046d514518ad8126dbd9fb37ca5fae36c00d49fa9a7c0483e9"
+      },
+      "failures": []
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-formulas.xlsx",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 4.254999995231628,
+      "initMs": 0,
+      "firstOperationMs": 4.254999995231628,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "cells": 4,
+        "contentSha256": "3f6213122ae6bbd59e19ba1a209b4cba4f2af757b130355a1a6e25cf1796c7f7"
+      },
+      "failures": []
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-formulas.xlsx",
+      "engine": "sheetjs",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 5.804999947547913,
+      "initMs": 0,
+      "firstOperationMs": 5.804999947547913,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "cells": 4,
+        "contentSha256": "68e11fd41b1ad9b9fb7d2a7467e4d6f01ecbdde6ec5ce42b5dcfde7a7c22c65d"
+      },
+      "failures": []
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-many-columns.xlsx",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 4.434999942779541,
+      "initMs": 0,
+      "firstOperationMs": 4.434999942779541,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "cells": 32,
+        "contentSha256": "3c719bb91cf317a72886895d01e5229fb2c7ec6dc090d6766d284621c4c22714"
+      },
+      "failures": []
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-many-columns.xlsx",
+      "engine": "sheetjs",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 5.679999947547913,
+      "initMs": 0,
+      "firstOperationMs": 5.679999947547913,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "cells": 32,
+        "contentSha256": "3c719bb91cf317a72886895d01e5229fb2c7ec6dc090d6766d284621c4c22714"
+      },
+      "failures": []
+    },
+    {
+      "family": "xlsx",
+      "sample": "generated-80000-cells.xlsx",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 145.64000010490417,
+      "initMs": 0,
+      "firstOperationMs": 145.64000010490417,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "cells": 80000,
+        "contentSha256": "19b3ea0852d7affc549bfa394f593552624b1e5f75074c2d6cf9bd8986887e20"
+      },
+      "failures": []
+    },
+    {
+      "family": "xlsx",
+      "sample": "generated-80000-cells.xlsx",
+      "engine": "sheetjs",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 104.04499995708466,
+      "initMs": 0,
+      "firstOperationMs": 104.04499995708466,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "cells": 80000,
+        "contentSha256": "19b3ea0852d7affc549bfa394f593552624b1e5f75074c2d6cf9bd8986887e20"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 18.230000019073486,
+      "initMs": 0,
+      "firstOperationMs": 18.230000019073486,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 20000,
+        "cells": 160000,
+        "contentSha256": "1fb91547152fcb454415d82c84fd432ed4c072ce26bae3a51f5ac1584609ebd9"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "engine": "papaparse",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 7.754999995231628,
+      "initMs": 0,
+      "firstOperationMs": 7.754999995231628,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 20000,
+        "cells": 160000,
+        "contentSha256": "1fb91547152fcb454415d82c84fd432ed4c072ce26bae3a51f5ac1584609ebd9"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "engine": "sheetjs",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 41.175000071525574,
+      "initMs": 0,
+      "firstOperationMs": 41.175000071525574,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 20000,
+        "cells": 160000,
+        "contentSha256": "1fb91547152fcb454415d82c84fd432ed4c072ce26bae3a51f5ac1584609ebd9"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 9.31499993801117,
+      "initMs": 0,
+      "firstOperationMs": 9.31499993801117,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 10000,
+        "cells": 40000,
+        "contentSha256": "fcad32fdd9888fc631ee4e1f32a4224038f8adff34ef384c7d1374b4f2091e05"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "engine": "papaparse",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 7.775000095367432,
+      "initMs": 0,
+      "firstOperationMs": 7.775000095367432,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 10000,
+        "cells": 40000,
+        "contentSha256": "fcad32fdd9888fc631ee4e1f32a4224038f8adff34ef384c7d1374b4f2091e05"
+      },
+      "failures": []
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "engine": "sheetjs",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 14.495000004768372,
+      "initMs": 0,
+      "firstOperationMs": 14.495000004768372,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [],
+        "sheets": 1,
+        "rows": 10000,
+        "cells": 40000,
+        "contentSha256": "a28a331f1ee9854b9926f13faca68b9943f4d0383c0aa9310a2e0a2574d9479d"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 5.639999985694885,
+      "initMs": 0,
+      "firstOperationMs": 5.639999985694885,
+      "indexMs": 4.679999947547913,
+      "extractMs": 0.9800000190734863,
+      "output": {
+        "files": 4,
+        "expandedBytes": 10128,
+        "contentSha256": "42035bd936b5b994c9da53fc8ac7fea99e9498443320ca3188f21332d0d2e62d"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "engine": "zip.js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 3.365000009536743,
+      "initMs": 0,
+      "firstOperationMs": 3.365000009536743,
+      "indexMs": 1.565000057220459,
+      "extractMs": 1.809999942779541,
+      "output": {
+        "files": 4,
+        "expandedBytes": 10128,
+        "contentSha256": "42035bd936b5b994c9da53fc8ac7fea99e9498443320ca3188f21332d0d2e62d"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "engine": "fflate",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 0.19999992847442627,
+      "initMs": 0,
+      "firstOperationMs": 0.19999992847442627,
+      "indexMs": 0.12999999523162842,
+      "extractMs": 0.06999993324279785,
+      "output": {
+        "files": 4,
+        "expandedBytes": 10128,
+        "contentSha256": "42035bd936b5b994c9da53fc8ac7fea99e9498443320ca3188f21332d0d2e62d"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 54.7700001001358,
+      "initMs": 0,
+      "firstOperationMs": 54.7700001001358,
+      "indexMs": 10.649999976158142,
+      "extractMs": 44.140000104904175,
+      "output": {
+        "files": 1000,
+        "expandedBytes": 1213890,
+        "contentSha256": "e30343b2cadc4abe127ab29acd03e4390368f16e68f5898229f6d92a7968342a"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "engine": "zip.js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 216.55000007152557,
+      "initMs": 0,
+      "firstOperationMs": 216.55000007152557,
+      "indexMs": 8.02999997138977,
+      "extractMs": 208.5,
+      "output": {
+        "files": 1000,
+        "expandedBytes": 1213890,
+        "contentSha256": "e30343b2cadc4abe127ab29acd03e4390368f16e68f5898229f6d92a7968342a"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "engine": "fflate",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 4.200000047683716,
+      "initMs": 0,
+      "firstOperationMs": 4.200000047683716,
+      "indexMs": 0.565000057220459,
+      "extractMs": 3.625,
+      "output": {
+        "files": 1000,
+        "expandedBytes": 1213890,
+        "contentSha256": "e30343b2cadc4abe127ab29acd03e4390368f16e68f5898229f6d92a7968342a"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 26.475000023841858,
+      "initMs": 0,
+      "firstOperationMs": 26.475000023841858,
+      "indexMs": 1.5500000715255737,
+      "extractMs": 24.889999985694885,
+      "output": {
+        "files": 1,
+        "expandedBytes": 16777216,
+        "contentSha256": "0ba44651ac8ffb4b04464a866415776213fd36d4a8fe20ea462f0664969f11b5"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "engine": "zip.js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 12.059999942779541,
+      "initMs": 0,
+      "firstOperationMs": 12.059999942779541,
+      "indexMs": 1.6450001001358032,
+      "extractMs": 10.409999966621399,
+      "output": {
+        "files": 1,
+        "expandedBytes": 16777216,
+        "contentSha256": "0ba44651ac8ffb4b04464a866415776213fd36d4a8fe20ea462f0664969f11b5"
+      },
+      "failures": []
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "engine": "fflate",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 45.00499999523163,
+      "initMs": 0,
+      "firstOperationMs": 45.00499999523163,
+      "indexMs": 0.11500000953674316,
+      "extractMs": 44.88499999046326,
+      "output": {
+        "files": 1,
+        "expandedBytes": 16777216,
+        "contentSha256": "0ba44651ac8ffb4b04464a866415776213fd36d4a8fe20ea462f0664969f11b5"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "cube.stp",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 45.24500000476837,
+      "initMs": 2.225000023841858,
+      "firstOperationMs": 47.49000000953674,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 12,
+        "meshes": 1,
+        "bounds": [
+          -160.000000000001,
+          -140,
+          0,
+          140,
+          160,
+          300
+        ],
+        "contentSha256": "b7c170021519017b1707ec7eb79a5d066f60509726b3a633f7220e9dc94a5919"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "cube.stp",
+      "engine": "occt-import-js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 70.19500005245209,
+      "initMs": 4.230000019073486,
+      "firstOperationMs": 74.42500007152557,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 12,
+        "meshes": 1,
+        "bounds": [
+          -160.000000000001,
+          -140,
+          0,
+          140,
+          160,
+          300
+        ],
+        "contentSha256": "b7c170021519017b1707ec7eb79a5d066f60509726b3a633f7220e9dc94a5919"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "rounded-cube.step",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 53.71000003814697,
+      "initMs": 2.2350000143051147,
+      "firstOperationMs": 55.980000019073486,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 84,
+        "meshes": 1,
+        "bounds": [
+          0,
+          0,
+          0,
+          10,
+          10,
+          10
+        ],
+        "contentSha256": "4c9a0ef755520f31f40c2ea9373569f7ecd130c744da6b4b16f3f1e8227326b1"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "rounded-cube.step",
+      "engine": "occt-import-js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 79.10500001907349,
+      "initMs": 4.360000014305115,
+      "firstOperationMs": 83.49000012874603,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 84,
+        "meshes": 1,
+        "bounds": [
+          0,
+          0,
+          0,
+          10,
+          10,
+          10
+        ],
+        "contentSha256": "4c9a0ef755520f31f40c2ea9373569f7ecd130c744da6b4b16f3f1e8227326b1"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "as1_pe_203.stp",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 144.02499997615814,
+      "initMs": 2.240000009536743,
+      "firstOperationMs": 146.24000000953674,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 3848,
+        "meshes": 1,
+        "bounds": [
+          -3810,
+          -685.8,
+          -1905,
+          1270,
+          1524.0000000000014,
+          1905
+        ],
+        "contentSha256": "f0deaea221d5c7818fbf9e980025af31083b00d0a3400873d2f79f2cbf368ede"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "as1_pe_203.stp",
+      "engine": "occt-import-js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 179.75499999523163,
+      "initMs": 4.370000004768372,
+      "firstOperationMs": 184.11500000953674,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 3848,
+        "meshes": 18,
+        "bounds": [
+          -3810,
+          -685.8,
+          -1905,
+          1270,
+          1524.0000000000014,
+          1905
+        ],
+        "contentSha256": "f0deaea221d5c7818fbf9e980025af31083b00d0a3400873d2f79f2cbf368ede"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "as1-oc-214.stp",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 259.50999999046326,
+      "initMs": 2.1799999475479126,
+      "firstOperationMs": 261.74000000953674,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 5040,
+        "meshes": 1,
+        "bounds": [
+          -10,
+          0,
+          -4.000000000000043,
+          190,
+          150,
+          80
+        ],
+        "contentSha256": "6c805f47fc71381932b0ccaab5016de5683606f37a52174f5f005bea50672035"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "as1-oc-214.stp",
+      "engine": "occt-import-js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 278.5699999332428,
+      "initMs": 4.099999904632568,
+      "firstOperationMs": 282.66999983787537,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 5040,
+        "meshes": 18,
+        "bounds": [
+          -10,
+          0,
+          -4.000000000000043,
+          190,
+          150,
+          80
+        ],
+        "contentSha256": "6c805f47fc71381932b0ccaab5016de5683606f37a52174f5f005bea50672035"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "dm1-oc-214.stp",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 167.49000000953674,
+      "initMs": 2.209999918937683,
+      "firstOperationMs": 169.69999992847443,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 1904,
+        "meshes": 1,
+        "bounds": [
+          0,
+          -100,
+          -24.000000000000043,
+          52.5,
+          0,
+          60
+        ],
+        "contentSha256": "53eee15b22a502ccc89d885288117248ea1134c36f1b3d4f8fea3717886a368f"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "dm1-oc-214.stp",
+      "engine": "occt-import-js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 190.53999996185303,
+      "initMs": 4.314999938011169,
+      "firstOperationMs": 194.73500001430511,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 1904,
+        "meshes": 7,
+        "bounds": [
+          0,
+          -100,
+          -24.000000000000043,
+          52.5,
+          0,
+          60
+        ],
+        "contentSha256": "53eee15b22a502ccc89d885288117248ea1134c36f1b3d4f8fea3717886a368f"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "tailturbine.stp",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 146.38499999046326,
+      "initMs": 2.2350000143051147,
+      "firstOperationMs": 148.7149999141693,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 3622,
+        "meshes": 1,
+        "bounds": [
+          1.483142428,
+          -50,
+          -36,
+          140,
+          50,
+          36
+        ],
+        "contentSha256": "3ae0374f6de232867f45a3b78b28d57d218940ab6e07ed61144f748429381752"
+      },
+      "failures": []
+    },
+    {
+      "family": "step",
+      "sample": "tailturbine.stp",
+      "engine": "occt-import-js",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 167.625,
+      "initMs": 4.235000014305115,
+      "firstOperationMs": 172.06500005722046,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "triangles": 3622,
+        "meshes": 1,
+        "bounds": [
+          1.483142428,
+          -50,
+          -36,
+          140,
+          50,
+          36
+        ],
+        "contentSha256": "3ae0374f6de232867f45a3b78b28d57d218940ab6e07ed61144f748429381752"
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "legacy-project-workflow.doc",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 22.06500005722046,
+      "initMs": 0,
+      "firstOperationMs": 22.06500005722046,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "Word binary backend uses the built-in CFB/piece-table parser; paragraph/run styles (including inherited spacing, indentation, alignment, fonts, colors, and rich text), section page setup, manual and last-saved/estimated pagination, columns, page borders, header/footer stories, common fields with cached results, OfficeArt FSPA/Escher picture positions, custom wrapping, rotation, flips, crop, opacity, and z-order, multi-level lists, table grids, merges, cell borders/layout, row pagination, heading-like lines, and embedded raster/WMF/EMF images are preserved, while editable legacy OfficeArt shapes, nested or complex fields, macros, and embedded objects may be simplified or omitted."
+        ],
+        "textSha256": "9fa32b6f7a310e12b0acb92130c40dceab1f5f2a7c656bb507c6d981bf63b330",
+        "textCharacters": 15780,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 179,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 1,
+        "outputBytes": 28895
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "legacy-project-workflow.doc",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 41.739999890327454,
+      "initMs": 28.02500009536743,
+      "firstOperationMs": 71.86499989032745,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "textSha256": "d0161f01c0a1821e60e9ade1e75b3ea36574ed3be4449adb06061af70a7695c2",
+        "textCharacters": 15691,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 213,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 1,
+        "outputBytes": 38250
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "hyperlink.doc",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 10.769999980926514,
+      "initMs": 0,
+      "firstOperationMs": 10.769999980926514,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "Word binary backend uses the built-in CFB/piece-table parser; paragraph/run styles (including inherited spacing, indentation, alignment, fonts, colors, and rich text), section page setup, manual and last-saved/estimated pagination, columns, page borders, header/footer stories, common fields with cached results, OfficeArt FSPA/Escher picture positions, custom wrapping, rotation, flips, crop, opacity, and z-order, multi-level lists, table grids, merges, cell borders/layout, row pagination, heading-like lines, and embedded raster/WMF/EMF images are preserved, while editable legacy OfficeArt shapes, nested or complex fields, macros, and embedded objects may be simplified or omitted."
+        ],
+        "textSha256": "4c1aa6f5ce2f0ac11c3e3a76372f74df43762d45a297674db69eab7ae133b4a7",
+        "textCharacters": 39,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 1,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 2002
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "hyperlink.doc",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 21.454999923706055,
+      "initMs": 29.674999952316284,
+      "firstOperationMs": 52.58499991893768,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "textSha256": "4c1aa6f5ce2f0ac11c3e3a76372f74df43762d45a297674db69eab7ae133b4a7",
+        "textCharacters": 39,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 1,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 6372
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "table-merges.doc",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 11.324999928474426,
+      "initMs": 0,
+      "firstOperationMs": 11.324999928474426,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "Word binary backend uses the built-in CFB/piece-table parser; paragraph/run styles (including inherited spacing, indentation, alignment, fonts, colors, and rich text), section page setup, manual and last-saved/estimated pagination, columns, page borders, header/footer stories, common fields with cached results, OfficeArt FSPA/Escher picture positions, custom wrapping, rotation, flips, crop, opacity, and z-order, multi-level lists, table grids, merges, cell borders/layout, row pagination, heading-like lines, and embedded raster/WMF/EMF images are preserved, while editable legacy OfficeArt shapes, nested or complex fields, macros, and embedded objects may be simplified or omitted."
+        ],
+        "textSha256": "62ee2337525d8cf6e6529cf8579d51191555cb32c033c903bedb8ca295e03f81",
+        "textCharacters": 11,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 11,
+          "tables": 1,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 2318
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "table-merges.doc",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 22.024999976158142,
+      "initMs": 28.419999957084656,
+      "firstOperationMs": 50.330000042915344,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "textSha256": "62ee2337525d8cf6e6529cf8579d51191555cb32c033c903bedb8ca295e03f81",
+        "textCharacters": 11,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 12,
+          "tables": 1,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 6647
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "Simple.xls",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 10.055000066757202,
+      "initMs": 0,
+      "firstOperationMs": 10.055000066757202,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "BIFF conversion core performed lightweight binary spreadsheet extraction; basic formulas and formatting are preserved, but charts, macros, embedded objects, and unsupported formula tokens are not preserved."
+        ],
+        "cells": 1,
+        "contentSha256": "02aa9b7c1631bddd8a0237f7fd254915dfa5d28fc33d3d1e856e91b4128d6fb9",
+        "textSha256": "5b1e4a95cc1d63e834436954af2ad679dbbbbdbd856c06f2f247b8af18637529",
+        "textCharacters": 9,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 0,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 2555
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "Simple.xls",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 25.7150000333786,
+      "initMs": 27.65499997138977,
+      "firstOperationMs": 53.37000000476837,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "cells": 1,
+        "contentSha256": "02aa9b7c1631bddd8a0237f7fd254915dfa5d28fc33d3d1e856e91b4128d6fb9",
+        "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "textCharacters": 0,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 0,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 7960
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "SimpleWithFormula.xls",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 9.97000002861023,
+      "initMs": 0,
+      "firstOperationMs": 9.97000002861023,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "BIFF conversion core performed lightweight binary spreadsheet extraction; basic formulas and formatting are preserved, but charts, macros, embedded objects, and unsupported formula tokens are not preserved."
+        ],
+        "cells": 3,
+        "contentSha256": "d4c21c799c4f6678323b98b84759ff91efc73920129e9400267af2dbbb626cc5",
+        "textSha256": "a7ed166995af130fc1262bb87aa89aefb5ac83d25c5f5b947be353ab169e75d6",
+        "textCharacters": 36,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 0,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 2574
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "SimpleWithFormula.xls",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 29.575000047683716,
+      "initMs": 27.43999993801117,
+      "firstOperationMs": 58.1949999332428,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "cells": 3,
+        "contentSha256": "d4c21c799c4f6678323b98b84759ff91efc73920129e9400267af2dbbb626cc5",
+        "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "textCharacters": 0,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 0,
+          "tables": 0,
+          "formulas": 1,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 8015
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "SOLVSAMP.XLS",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 12.014999985694885,
+      "initMs": 0,
+      "firstOperationMs": 12.014999985694885,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "BIFF conversion core performed lightweight binary spreadsheet extraction; basic formulas and formatting are preserved, but charts, macros, embedded objects, and unsupported formula tokens are not preserved."
+        ],
+        "cells": 458,
+        "contentSha256": "511e712986b2564106135064775a6c094613ffedc58011541e4a0056d4e59a51",
+        "textSha256": "e4eeb29043af01a6f066ffc6f834633341bb0ee641a2a0e77b066b7f7e3dd122",
+        "textCharacters": 2998,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 0,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 8054
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "SOLVSAMP.XLS",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 48.139999985694885,
+      "initMs": 28.27999997138977,
+      "firstOperationMs": 76.97000002861023,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "cells": 458,
+        "contentSha256": "511e712986b2564106135064775a6c094613ffedc58011541e4a0056d4e59a51",
+        "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "textCharacters": 0,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 0,
+          "tables": 0,
+          "formulas": 105,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 23814
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "legacy-sample-show.ppt",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 10.190000057220459,
+      "initMs": 0,
+      "firstOperationMs": 10.190000057220459,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "PowerPoint binary backend preserves embedded full-slide JPEG/PNG artwork where available and otherwise extracts text; editable layout, animations, charts, macros, and embedded objects are not preserved."
+        ],
+        "textSha256": "8322b3f441faf68f82b70946c45f2143019132e9697158b43d33aacfa9006502",
+        "textCharacters": 216,
+        "structure": {
+          "slides": 2,
+          "paragraphs": 4,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 4
+        },
+        "media": 0,
+        "outputBytes": 2921
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "legacy-sample-show.ppt",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 46.45999991893768,
+      "initMs": 28.875,
+      "firstOperationMs": 75.33999991416931,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "textSha256": "df9d685563f6f84da8c157e531d24fa56d3074a7f1e46ccae31b0f4fb1f3a4ca",
+        "textCharacters": 213,
+        "structure": {
+          "slides": 2,
+          "paragraphs": 8,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 4
+        },
+        "media": 0,
+        "outputBytes": 22736
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "rich-text.rtf",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 11.415000081062317,
+      "initMs": 0,
+      "firstOperationMs": 11.415000081062317,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "RTF backend performed lightweight text extraction; complex layout, embedded objects, and full style fidelity are not preserved."
+        ],
+        "textSha256": "ab443a30a84e760d65795c68337a45671e2e8e9a7c0c561c8fa5622fdf1d4a57",
+        "textCharacters": 1030,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 19,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 3267
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "rich-text.rtf",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 25.94000005722046,
+      "initMs": 29.97000002861023,
+      "firstOperationMs": 56.450000047683716,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "textSha256": "f3c3a5b4777743d6d800d34fbee2a6c095a0f89cb917e3f1b4df37e7c074a9e8",
+        "textCharacters": 1041,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 30,
+          "tables": 1,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 9549
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "sample.odt",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 10.824999928474426,
+      "initMs": 0,
+      "firstOperationMs": 10.824999928474426,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "ODF backend performed lightweight OpenDocument extraction; layout, styles, media, formulas, and macros are not preserved."
+        ],
+        "textSha256": "5fddf95e8880ff13fa905adf0be19fb971aa4004d280df4858c7c266ee615121",
+        "textCharacters": 226,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 7,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 2710
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "sample.odt",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 0,
+      "operationMs": null,
+      "initMs": null,
+      "firstOperationMs": null,
+      "indexMs": null,
+      "extractMs": null,
+      "output": null,
+      "failures": [
+        "Error: page.evaluate: Error: Invalid OpenXML package; entries: \n    at eval (eval at evaluate (:302:30), <anonymous>:91:85)\n    at async <anonymous>:328:30"
+      ]
+    },
+    {
+      "family": "conversion",
+      "sample": "convert-numeric.csv",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 91.44000005722046,
+      "initMs": 0,
+      "firstOperationMs": 91.44000005722046,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "Text backend performed lightweight delimited spreadsheet extraction; formulas, formatting, encodings, comments, and external data are not preserved."
+        ],
+        "cells": 80000,
+        "contentSha256": "23fe3197c15e6f322879638fb6d021bca27aafd1704fc4aac66fbeccc0140afe",
+        "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "textCharacters": 0,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 0,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 301488
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "convert-numeric.csv",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 197.48500001430511,
+      "initMs": 27.74500000476837,
+      "firstOperationMs": 227.01499998569489,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "cells": 160000,
+        "contentSha256": "3c7596d2794ef3d4207fc570cc5487bbc33edf08182a6101ece87635456d817f",
+        "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "textCharacters": 0,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 0,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 579882
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "convert-numeric-8000.csv",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 66.375,
+      "initMs": 0,
+      "firstOperationMs": 66.375,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "Text backend performed lightweight delimited spreadsheet extraction; formulas, formatting, encodings, comments, and external data are not preserved."
+        ],
+        "cells": 64000,
+        "contentSha256": "d469be840a2b0a7d28cce408b45451ec3570daadbd211c8dbeb9201fb734ee0b",
+        "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "textCharacters": 0,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 0,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 241760
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "convert-numeric-8000.csv",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 95.04999995231628,
+      "initMs": 27.009999990463257,
+      "firstOperationMs": 123.76499998569489,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "cells": 64000,
+        "contentSha256": "d469be840a2b0a7d28cce408b45451ec3570daadbd211c8dbeb9201fb734ee0b",
+        "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "textCharacters": 0,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 0,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 232796
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "generated-notes.txt",
+      "engine": "filens",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 14.615000009536743,
+      "initMs": 0,
+      "firstOperationMs": 14.615000009536743,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "warnings": [
+          "Text backend performed lightweight plain text extraction; layout, rich Markdown markup, embedded media, and styling are not preserved."
+        ],
+        "textSha256": "c73bca1514139e0c8f52aa9c74bef9a1375bf64f0b0bde5319c1c612d51c31e2",
+        "textCharacters": 90890,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 1,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 7558
+      },
+      "failures": []
+    },
+    {
+      "family": "conversion",
+      "sample": "generated-notes.txt",
+      "engine": "x2t",
+      "attempted": 7,
+      "successes": 7,
+      "operationMs": 22.34500002861023,
+      "initMs": 27.81500005722046,
+      "firstOperationMs": 50.19000005722046,
+      "indexMs": null,
+      "extractMs": null,
+      "output": {
+        "textSha256": "c73bca1514139e0c8f52aa9c74bef9a1375bf64f0b0bde5319c1c612d51c31e2",
+        "textCharacters": 90890,
+        "structure": {
+          "slides": 0,
+          "paragraphs": 2000,
+          "tables": 0,
+          "formulas": 0,
+          "shapes": 0
+        },
+        "media": 0,
+        "outputBytes": 14725
+      },
+      "failures": []
+    }
+  ],
+  "comparisons": [
+    {
+      "family": "dxf",
+      "sample": "filens-cafe.dxf",
+      "peer": "dxf-parser",
+      "metric": "operationMs",
+      "filensMs": 5.195000052452087,
+      "peerMs": 0.9300000667572021,
+      "ratio": 0.1790182978570392,
+      "ratio95PercentBootstrapInterval": [
+        0.17031398320430713,
+        0.18102614662428493
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "filens-cafe.dxf",
+      "peer": "dxf-parser",
+      "metric": "firstOperationMs",
+      "filensMs": 5.195000052452087,
+      "peerMs": 0.9300000667572021,
+      "ratio": 0.1790182978570392,
+      "ratio95PercentBootstrapInterval": [
+        0.17031398320430713,
+        0.18102614662428493
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "api-cw750-details.dxf",
+      "peer": "dxf-parser",
+      "metric": "operationMs",
+      "filensMs": 50.09999990463257,
+      "peerMs": 21.09499990940094,
+      "ratio": 0.42105788322467363,
+      "ratio95PercentBootstrapInterval": [
+        0.41229370496114826,
+        0.435307467866184
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "api-cw750-details.dxf",
+      "peer": "dxf-parser",
+      "metric": "firstOperationMs",
+      "filensMs": 50.09999990463257,
+      "peerMs": 21.09499990940094,
+      "ratio": 0.42105788322467363,
+      "ratio95PercentBootstrapInterval": [
+        0.41229370496114826,
+        0.435307467866184
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "blocks2.dxf",
+      "peer": "dxf-parser",
+      "metric": "operationMs",
+      "filensMs": 0.48500001430511475,
+      "peerMs": 0.26499998569488525,
+      "ratio": 0.5463917069663695,
+      "ratio95PercentBootstrapInterval": [
+        0.5098041461459168,
+        0.5894735943907891
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "blocks2.dxf",
+      "peer": "dxf-parser",
+      "metric": "firstOperationMs",
+      "filensMs": 0.48500001430511475,
+      "peerMs": 0.26499998569488525,
+      "ratio": 0.5463917069663695,
+      "ratio95PercentBootstrapInterval": [
+        0.5145633247865286,
+        0.5894735943907891
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "splines.dxf",
+      "peer": "dxf-parser",
+      "metric": "operationMs",
+      "filensMs": 0.6799999475479126,
+      "peerMs": 0.38499999046325684,
+      "ratio": 0.5661765002358766,
+      "ratio95PercentBootstrapInterval": [
+        0.5434782157998943,
+        0.6268656477415087
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "splines.dxf",
+      "peer": "dxf-parser",
+      "metric": "firstOperationMs",
+      "filensMs": 0.6799999475479126,
+      "peerMs": 0.38499999046325684,
+      "ratio": 0.5661765002358766,
+      "ratio95PercentBootstrapInterval": [
+        0.5434782157998943,
+        0.6268656477415087
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "generated-20000-lines.dxf",
+      "peer": "dxf-parser",
+      "metric": "operationMs",
+      "filensMs": 39.25,
+      "peerMs": 18.944999933242798,
+      "ratio": 0.48267515753484835,
+      "ratio95PercentBootstrapInterval": [
+        0.47700858955938963,
+        0.4899613888015395
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "dxf",
+      "sample": "generated-20000-lines.dxf",
+      "peer": "dxf-parser",
+      "metric": "firstOperationMs",
+      "filensMs": 39.25,
+      "peerMs": 18.944999933242798,
+      "ratio": 0.48267515753484835,
+      "ratio95PercentBootstrapInterval": [
+        0.47700858955938963,
+        0.4899613888015395
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "xlsx",
+      "sample": "filens-observatory.xlsx",
+      "peer": "sheetjs",
+      "metric": "operationMs",
+      "filensMs": 6.575000047683716,
+      "peerMs": 6.914999961853027,
+      "ratio": 1.05171101318685,
+      "ratio95PercentBootstrapInterval": [
+        0.9203539923548623,
+        1.1136363632258632
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "xlsx",
+      "sample": "filens-observatory.xlsx",
+      "peer": "sheetjs",
+      "metric": "firstOperationMs",
+      "filensMs": 6.575000047683716,
+      "peerMs": 6.914999961853027,
+      "ratio": 1.05171101318685,
+      "ratio95PercentBootstrapInterval": [
+        0.9203539923548623,
+        1.1136363632258632
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-data-types.xlsx",
+      "peer": "sheetjs",
+      "metric": "operationMs",
+      "filensMs": 4.299999952316284,
+      "peerMs": 5.965000033378601,
+      "ratio": 1.3872093254711386,
+      "ratio95PercentBootstrapInterval": [
+        1.3393664830088468,
+        1.4591961402325264
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-data-types.xlsx",
+      "peer": "sheetjs",
+      "metric": "firstOperationMs",
+      "filensMs": 4.299999952316284,
+      "peerMs": 5.965000033378601,
+      "ratio": 1.3872093254711386,
+      "ratio95PercentBootstrapInterval": [
+        1.3393664830088468,
+        1.4591961402325264
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-formulas.xlsx",
+      "peer": "sheetjs",
+      "metric": "operationMs",
+      "filensMs": 4.254999995231628,
+      "peerMs": 5.804999947547913,
+      "ratio": 1.3642773100007741,
+      "ratio95PercentBootstrapInterval": [
+        1.319907934762312,
+        1.3926453044564222
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-formulas.xlsx",
+      "peer": "sheetjs",
+      "metric": "firstOperationMs",
+      "filensMs": 4.254999995231628,
+      "peerMs": 5.804999947547913,
+      "ratio": 1.3642773100007741,
+      "ratio95PercentBootstrapInterval": [
+        1.319907934762312,
+        1.3860684734216064
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-many-columns.xlsx",
+      "peer": "sheetjs",
+      "metric": "operationMs",
+      "filensMs": 4.434999942779541,
+      "peerMs": 5.679999947547913,
+      "ratio": 1.2807215379552168,
+      "ratio95PercentBootstrapInterval": [
+        1.2235817562103466,
+        1.310580208295925
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "xlsx",
+      "sample": "rich-xlsx-many-columns.xlsx",
+      "peer": "sheetjs",
+      "metric": "firstOperationMs",
+      "filensMs": 4.434999942779541,
+      "peerMs": 5.679999947547913,
+      "ratio": 1.2807215379552168,
+      "ratio95PercentBootstrapInterval": [
+        1.2235817562103466,
+        1.310580208295925
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "xlsx",
+      "sample": "generated-80000-cells.xlsx",
+      "peer": "sheetjs",
+      "metric": "operationMs",
+      "filensMs": 145.64000010490417,
+      "peerMs": 104.04499995708466,
+      "ratio": 0.714398516081717,
+      "ratio95PercentBootstrapInterval": [
+        0.6997438312589983,
+        0.7269961976077037
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "xlsx",
+      "sample": "generated-80000-cells.xlsx",
+      "peer": "sheetjs",
+      "metric": "firstOperationMs",
+      "filensMs": 145.64000010490417,
+      "peerMs": 104.04499995708466,
+      "ratio": 0.714398516081717,
+      "ratio95PercentBootstrapInterval": [
+        0.6997438312589983,
+        0.7269961976077037
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "peer": "papaparse",
+      "metric": "operationMs",
+      "filensMs": 18.230000019073486,
+      "peerMs": 7.754999995231628,
+      "ratio": 0.4253976953986731,
+      "ratio95PercentBootstrapInterval": [
+        0.4076552479078754,
+        0.5203070032251546
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "peer": "papaparse",
+      "metric": "firstOperationMs",
+      "filensMs": 18.230000019073486,
+      "peerMs": 7.754999995231628,
+      "ratio": 0.4253976953986731,
+      "ratio95PercentBootstrapInterval": [
+        0.4076552479078754,
+        0.5203070032251546
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "peer": "sheetjs",
+      "metric": "operationMs",
+      "filensMs": 18.230000019073486,
+      "peerMs": 41.175000071525574,
+      "ratio": 2.258639606606991,
+      "ratio95PercentBootstrapInterval": [
+        2.173983309941707,
+        2.7073872689175382
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "csv",
+      "sample": "generated-numeric.csv",
+      "peer": "sheetjs",
+      "metric": "firstOperationMs",
+      "filensMs": 18.230000019073486,
+      "peerMs": 41.175000071525574,
+      "ratio": 2.258639606606991,
+      "ratio95PercentBootstrapInterval": [
+        2.173983309941707,
+        2.7073872689175382
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "peer": "papaparse",
+      "metric": "operationMs",
+      "filensMs": 9.31499993801117,
+      "peerMs": 7.775000095367432,
+      "ratio": 0.8346752707577,
+      "ratio95PercentBootstrapInterval": [
+        0.8328869912796266,
+        0.8966613640959256
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "peer": "papaparse",
+      "metric": "firstOperationMs",
+      "filensMs": 9.31499993801117,
+      "peerMs": 7.775000095367432,
+      "ratio": 0.8346752707577,
+      "ratio95PercentBootstrapInterval": [
+        0.8328869912796266,
+        0.8966613640959256
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "peer": "sheetjs",
+      "metric": "operationMs",
+      "filensMs": 9.31499993801117,
+      "peerMs": 14.495000004768372,
+      "ratio": 1.5560923350755465,
+      "ratio95PercentBootstrapInterval": [
+        1.4530327489740418,
+        1.635300671581063
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "csv",
+      "sample": "generated-quoted.csv",
+      "peer": "sheetjs",
+      "metric": "firstOperationMs",
+      "filensMs": 9.31499993801117,
+      "peerMs": 14.495000004768372,
+      "ratio": 1.5560923350755465,
+      "ratio95PercentBootstrapInterval": [
+        1.4530327489740418,
+        1.635300671581063
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "zip.js",
+      "metric": "operationMs",
+      "filensMs": 5.639999985694885,
+      "peerMs": 3.365000009536743,
+      "ratio": 0.596631208877947,
+      "ratio95PercentBootstrapInterval": [
+        0.5852173929629119,
+        0.618962427918364
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "zip.js",
+      "metric": "firstOperationMs",
+      "filensMs": 5.639999985694885,
+      "peerMs": 3.365000009536743,
+      "ratio": 0.596631208877947,
+      "ratio95PercentBootstrapInterval": [
+        0.5852173929629119,
+        0.618962427918364
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "zip.js",
+      "metric": "indexMs",
+      "filensMs": 4.679999947547913,
+      "peerMs": 1.565000057220459,
+      "ratio": 0.33440172537618107,
+      "ratio95PercentBootstrapInterval": [
+        0.3308668183741385,
+        0.35357918271660754
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "zip.js",
+      "metric": "extractMs",
+      "filensMs": 0.9800000190734863,
+      "peerMs": 1.809999942779541,
+      "ratio": 1.846938681175491,
+      "ratio95PercentBootstrapInterval": [
+        1.790000081062317,
+        1.9270832815931924
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "fflate",
+      "metric": "operationMs",
+      "filensMs": 5.639999985694885,
+      "peerMs": 0.19999992847442627,
+      "ratio": 0.035460980315904195,
+      "ratio95PercentBootstrapInterval": [
+        0.03309482376196459,
+        0.036585372438687695
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "fflate",
+      "metric": "firstOperationMs",
+      "filensMs": 5.639999985694885,
+      "peerMs": 0.19999992847442627,
+      "ratio": 0.035460980315904195,
+      "ratio95PercentBootstrapInterval": [
+        0.03309482376196459,
+        0.036585372438687695
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "fflate",
+      "metric": "indexMs",
+      "filensMs": 4.679999947547913,
+      "peerMs": 0.12999999523162842,
+      "ratio": 0.027777777070220257,
+      "ratio95PercentBootstrapInterval": [
+        0.026030370390252952,
+        0.028301884198998938
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "sample-nested-archives.zip",
+      "peer": "fflate",
+      "metric": "extractMs",
+      "filensMs": 0.9800000190734863,
+      "peerMs": 0.06999993324279785,
+      "ratio": 0.07142850191878296,
+      "ratio95PercentBootstrapInterval": [
+        0.061224430216099676,
+        0.07291671840680765
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "zip.js",
+      "metric": "operationMs",
+      "filensMs": 54.7700001001358,
+      "peerMs": 216.55000007152557,
+      "ratio": 3.9538068226329735,
+      "ratio95PercentBootstrapInterval": [
+        3.8225966298267537,
+        4.002104878000491
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "zip.js",
+      "metric": "firstOperationMs",
+      "filensMs": 54.7700001001358,
+      "peerMs": 216.55000007152557,
+      "ratio": 3.9538068226329735,
+      "ratio95PercentBootstrapInterval": [
+        3.8225966298267537,
+        4.002104878000491
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "zip.js",
+      "metric": "indexMs",
+      "filensMs": 10.649999976158142,
+      "peerMs": 8.02999997138977,
+      "ratio": 0.7539906093301697,
+      "ratio95PercentBootstrapInterval": [
+        0.7360219977962562,
+        0.7890357235871397
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "zip.js",
+      "metric": "extractMs",
+      "filensMs": 44.140000104904175,
+      "peerMs": 208.5,
+      "ratio": 4.7236066947094235,
+      "ratio95PercentBootstrapInterval": [
+        4.554390265725074,
+        4.770842762520744
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "fflate",
+      "metric": "operationMs",
+      "filensMs": 54.7700001001358,
+      "peerMs": 4.200000047683716,
+      "ratio": 0.07668431696192934,
+      "ratio95PercentBootstrapInterval": [
+        0.07496170765409413,
+        0.08060084434286661
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "fflate",
+      "metric": "firstOperationMs",
+      "filensMs": 54.7700001001358,
+      "peerMs": 4.200000047683716,
+      "ratio": 0.07668431696192934,
+      "ratio95PercentBootstrapInterval": [
+        0.07496170765409413,
+        0.08060084434286661
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "fflate",
+      "metric": "indexMs",
+      "filensMs": 10.649999976158142,
+      "peerMs": 0.565000057220459,
+      "ratio": 0.05305164868406656,
+      "ratio95PercentBootstrapInterval": [
+        0.0508707670444727,
+        0.05531082284623212
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-1000-files.zip",
+      "peer": "fflate",
+      "metric": "extractMs",
+      "filensMs": 44.140000104904175,
+      "peerMs": 3.625,
+      "ratio": 0.08212505644278974,
+      "ratio95PercentBootstrapInterval": [
+        0.08010710763795237,
+        0.08580858030288699
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "zip.js",
+      "metric": "operationMs",
+      "filensMs": 26.475000023841858,
+      "peerMs": 12.059999942779541,
+      "ratio": 0.455524076748593,
+      "ratio95PercentBootstrapInterval": [
+        0.4096467363906035,
+        0.5110481570993554
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "zip.js",
+      "metric": "firstOperationMs",
+      "filensMs": 26.475000023841858,
+      "peerMs": 12.059999942779541,
+      "ratio": 0.455524076748593,
+      "ratio95PercentBootstrapInterval": [
+        0.4096467363906035,
+        0.5110481570993554
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "zip.js",
+      "metric": "indexMs",
+      "filensMs": 1.5500000715255737,
+      "peerMs": 1.6450001001358032,
+      "ratio": 1.0612903382105825,
+      "ratio95PercentBootstrapInterval": [
+        1.0516128516222039,
+        1.0930233258124549
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "zip.js",
+      "metric": "extractMs",
+      "filensMs": 24.889999985694885,
+      "peerMs": 10.409999966621399,
+      "ratio": 0.4182402560307101,
+      "ratio95PercentBootstrapInterval": [
+        0.3732520590701219,
+        0.4762957021248273
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "fflate",
+      "metric": "operationMs",
+      "filensMs": 26.475000023841858,
+      "peerMs": 45.00499999523163,
+      "ratio": 1.6999055695827279,
+      "ratio95PercentBootstrapInterval": [
+        1.4792798908587126,
+        1.8921568697134479
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "fflate",
+      "metric": "firstOperationMs",
+      "filensMs": 26.475000023841858,
+      "peerMs": 45.00499999523163,
+      "ratio": 1.6999055695827279,
+      "ratio95PercentBootstrapInterval": [
+        1.4792798908587126,
+        1.8343183230673978
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "fflate",
+      "metric": "indexMs",
+      "filensMs": 1.5500000715255737,
+      "peerMs": 0.11500000953674316,
+      "ratio": 0.07419355111613346,
+      "ratio95PercentBootstrapInterval": [
+        0.06586826902979918,
+        0.08414239407289853
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": false,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "zip",
+      "sample": "generated-16mib.zip",
+      "peer": "fflate",
+      "metric": "extractMs",
+      "filensMs": 24.889999985694885,
+      "peerMs": 44.88499999046326,
+      "ratio": 1.803334673212542,
+      "ratio95PercentBootstrapInterval": [
+        1.5553961933332403,
+        2.0083031795840927
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "step",
+      "sample": "cube.stp",
+      "peer": "occt-import-js",
+      "metric": "operationMs",
+      "filensMs": 45.24500000476837,
+      "peerMs": 70.19500005245209,
+      "ratio": 1.5514421492994637,
+      "ratio95PercentBootstrapInterval": [
+        1.4299246283300713,
+        1.6806819466747036
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "cube.stp",
+      "peer": "occt-import-js",
+      "metric": "initMs",
+      "filensMs": 2.225000023841858,
+      "peerMs": 4.230000019073486,
+      "ratio": 1.9011235837065923,
+      "ratio95PercentBootstrapInterval": [
+        1.7749469354151914,
+        2.0983606182087695
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "cube.stp",
+      "peer": "occt-import-js",
+      "metric": "firstOperationMs",
+      "filensMs": 47.49000000953674,
+      "peerMs": 74.42500007152557,
+      "ratio": 1.5671720374095568,
+      "ratio95PercentBootstrapInterval": [
+        1.4529038562593586,
+        1.7013843058877778
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "rounded-cube.step",
+      "peer": "occt-import-js",
+      "metric": "operationMs",
+      "filensMs": 53.71000003814697,
+      "peerMs": 79.10500001907349,
+      "ratio": 1.4728169793872645,
+      "ratio95PercentBootstrapInterval": [
+        1.391014073028738,
+        1.5240975409868054
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "rounded-cube.step",
+      "peer": "occt-import-js",
+      "metric": "initMs",
+      "filensMs": 2.2350000143051147,
+      "peerMs": 4.360000014305115,
+      "ratio": 1.9507829916773782,
+      "ratio95PercentBootstrapInterval": [
+        1.8612335063180925,
+        2.1087469970813735
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "rounded-cube.step",
+      "peer": "occt-import-js",
+      "metric": "firstOperationMs",
+      "filensMs": 55.980000019073486,
+      "peerMs": 83.49000012874603,
+      "ratio": 1.4914255109020962,
+      "ratio95PercentBootstrapInterval": [
+        1.4121777815123284,
+        1.5480210333006656
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "as1_pe_203.stp",
+      "peer": "occt-import-js",
+      "metric": "operationMs",
+      "filensMs": 144.02499997615814,
+      "peerMs": 179.75499999523163,
+      "ratio": 1.248081930393947,
+      "ratio95PercentBootstrapInterval": [
+        1.1994959083953984,
+        1.2871380278382192
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "as1_pe_203.stp",
+      "peer": "occt-import-js",
+      "metric": "initMs",
+      "filensMs": 2.240000009536743,
+      "peerMs": 4.370000004768372,
+      "ratio": 1.9508928509657177,
+      "ratio95PercentBootstrapInterval": [
+        1.9322798676717705,
+        2.0091953384181713
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "as1_pe_203.stp",
+      "peer": "occt-import-js",
+      "metric": "firstOperationMs",
+      "filensMs": 146.24000000953674,
+      "peerMs": 184.11500000953674,
+      "ratio": 1.2589920678168085,
+      "ratio95PercentBootstrapInterval": [
+        1.2110188523864738,
+        1.2979198121388615
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "as1-oc-214.stp",
+      "peer": "occt-import-js",
+      "metric": "operationMs",
+      "filensMs": 259.50999999046326,
+      "peerMs": 278.5699999332428,
+      "ratio": 1.073446109758699,
+      "ratio95PercentBootstrapInterval": [
+        1.0679164579424596,
+        1.084413058064889
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "as1-oc-214.stp",
+      "peer": "occt-import-js",
+      "metric": "initMs",
+      "filensMs": 2.1799999475479126,
+      "peerMs": 4.099999904632568,
+      "ratio": 1.8807339464591697,
+      "ratio95PercentBootstrapInterval": [
+        1.843891392463729,
+        2.115108037067744
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "as1-oc-214.stp",
+      "peer": "occt-import-js",
+      "metric": "firstOperationMs",
+      "filensMs": 261.74000000953674,
+      "peerMs": 282.66999983787537,
+      "ratio": 1.0799648499563537,
+      "ratio95PercentBootstrapInterval": [
+        1.07566669238953,
+        1.0908880489907742
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "dm1-oc-214.stp",
+      "peer": "occt-import-js",
+      "metric": "operationMs",
+      "filensMs": 167.49000000953674,
+      "peerMs": 190.53999996185303,
+      "ratio": 1.1376201561347175,
+      "ratio95PercentBootstrapInterval": [
+        1.1042642921118395,
+        1.1647016361505107
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "dm1-oc-214.stp",
+      "peer": "occt-import-js",
+      "metric": "initMs",
+      "filensMs": 2.209999918937683,
+      "peerMs": 4.314999938011169,
+      "ratio": 1.9524887313504207,
+      "ratio95PercentBootstrapInterval": [
+        1.900452526031453,
+        2.0987951416844024
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "dm1-oc-214.stp",
+      "peer": "occt-import-js",
+      "metric": "firstOperationMs",
+      "filensMs": 169.69999992847443,
+      "peerMs": 194.73500001430511,
+      "ratio": 1.1475250447635976,
+      "ratio95PercentBootstrapInterval": [
+        1.1154068746865733,
+        1.1753792261167897
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "tailturbine.stp",
+      "peer": "occt-import-js",
+      "metric": "operationMs",
+      "filensMs": 146.38499999046326,
+      "peerMs": 167.625,
+      "ratio": 1.145096833766578,
+      "ratio95PercentBootstrapInterval": [
+        1.1160098274929924,
+        1.1799235248404596
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "tailturbine.stp",
+      "peer": "occt-import-js",
+      "metric": "initMs",
+      "filensMs": 2.2350000143051147,
+      "peerMs": 4.235000014305115,
+      "ratio": 1.8948545804022383,
+      "ratio95PercentBootstrapInterval": [
+        1.806034559390635,
+        2.004555913068782
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "step",
+      "sample": "tailturbine.stp",
+      "peer": "occt-import-js",
+      "metric": "firstOperationMs",
+      "filensMs": 148.7149999141693,
+      "peerMs": 172.06500005722046,
+      "ratio": 1.1570117349058775,
+      "ratio95PercentBootstrapInterval": [
+        1.1273293988496647,
+        1.1926536994645742
+      ],
+      "matchingOutput": true,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "conversion",
+      "sample": "legacy-project-workflow.doc",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 22.06500005722046,
+      "peerMs": 41.739999890327454,
+      "ratio": 1.891683652031926,
+      "ratio95PercentBootstrapInterval": [
+        1.7878987971722309,
+        2.1949611482413913
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "legacy-project-workflow.doc",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 22.06500005722046,
+      "peerMs": 71.86499989032745,
+      "ratio": 3.2569680355296735,
+      "ratio95PercentBootstrapInterval": [
+        3.0006600758713495,
+        3.56581115415077
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "hyperlink.doc",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 10.769999980926514,
+      "peerMs": 21.454999923706055,
+      "ratio": 1.9921077030364431,
+      "ratio95PercentBootstrapInterval": [
+        1.9060219007477381,
+        2.1737505733432285
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "hyperlink.doc",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 10.769999980926514,
+      "peerMs": 52.58499991893768,
+      "ratio": 4.882544105112797,
+      "ratio95PercentBootstrapInterval": [
+        4.435218974847101,
+        5.062120489488819
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "table-merges.doc",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 11.324999928474426,
+      "peerMs": 22.024999976158142,
+      "ratio": 1.9448123722085617,
+      "ratio95PercentBootstrapInterval": [
+        1.92188878143686,
+        2.0045289920016613
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "table-merges.doc",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 11.324999928474426,
+      "peerMs": 50.330000042915344,
+      "ratio": 4.444150142232735,
+      "ratio95PercentBootstrapInterval": [
+        4.390556019164771,
+        4.747902898059426
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "Simple.xls",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 10.055000066757202,
+      "peerMs": 25.7150000333786,
+      "ratio": 2.5574340987221738,
+      "ratio95PercentBootstrapInterval": [
+        2.5391089030088554,
+        2.6423541080984077
+      ],
+      "matchingOutput": true,
+      "matchingPreview": true,
+      "matchingExactPreview": true,
+      "matchingPreviewContent": true,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "conversion",
+      "sample": "Simple.xls",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 10.055000066757202,
+      "peerMs": 53.37000000476837,
+      "ratio": 5.307807026398212,
+      "ratio95PercentBootstrapInterval": [
+        5.282673256745024,
+        5.433601589412412
+      ],
+      "matchingOutput": true,
+      "matchingPreview": true,
+      "matchingExactPreview": true,
+      "matchingPreviewContent": true,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "conversion",
+      "sample": "SimpleWithFormula.xls",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 9.97000002861023,
+      "peerMs": 29.575000047683716,
+      "ratio": 2.9663991938630243,
+      "ratio95PercentBootstrapInterval": [
+        2.856508883061271,
+        3.1284125482277814
+      ],
+      "matchingOutput": true,
+      "matchingPreview": true,
+      "matchingExactPreview": true,
+      "matchingPreviewContent": true,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "conversion",
+      "sample": "SimpleWithFormula.xls",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 9.97000002861023,
+      "peerMs": 58.1949999332428,
+      "ratio": 5.837011009653418,
+      "ratio95PercentBootstrapInterval": [
+        5.540927035626472,
+        5.9944388444471
+      ],
+      "matchingOutput": true,
+      "matchingPreview": true,
+      "matchingExactPreview": true,
+      "matchingPreviewContent": true,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "conversion",
+      "sample": "SOLVSAMP.XLS",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 12.014999985694885,
+      "peerMs": 48.139999985694885,
+      "ratio": 4.006658347316737,
+      "ratio95PercentBootstrapInterval": [
+        3.727056957943972,
+        4.121032560491223
+      ],
+      "matchingOutput": true,
+      "matchingPreview": true,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": true,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "conversion",
+      "sample": "SOLVSAMP.XLS",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 12.014999985694885,
+      "peerMs": 76.97000002861023,
+      "ratio": 6.4061589779651325,
+      "ratio95PercentBootstrapInterval": [
+        5.967563293743243,
+        6.514600055509253
+      ],
+      "matchingOutput": true,
+      "matchingPreview": true,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": true,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "conversion",
+      "sample": "legacy-sample-show.ppt",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 10.190000057220459,
+      "peerMs": 46.45999991893768,
+      "ratio": 4.559371899710337,
+      "ratio95PercentBootstrapInterval": [
+        4.294761907486689,
+        4.622885586007368
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "legacy-sample-show.ppt",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 10.190000057220459,
+      "peerMs": 75.33999991416931,
+      "ratio": 7.393523011885037,
+      "ratio95PercentBootstrapInterval": [
+        7.076190483002436,
+        7.745273660049029
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "rich-text.rtf",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 11.415000081062317,
+      "peerMs": 25.94000005722046,
+      "ratio": 2.2724485215077106,
+      "ratio95PercentBootstrapInterval": [
+        2.063909773088255,
+        2.4520547860199793
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "rich-text.rtf",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 11.415000081062317,
+      "peerMs": 56.450000047683716,
+      "ratio": 4.94524745044332,
+      "ratio95PercentBootstrapInterval": [
+        4.484126979384601,
+        5.263470295843053
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "convert-numeric.csv",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 91.44000005722046,
+      "peerMs": 197.48500001430511,
+      "ratio": 2.1597222210271743,
+      "ratio95PercentBootstrapInterval": [
+        2.0516622435168195,
+        2.1963582667592996
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "convert-numeric.csv",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 91.44000005722046,
+      "peerMs": 227.01499998569489,
+      "ratio": 2.4826662275113254,
+      "ratio95PercentBootstrapInterval": [
+        2.3435825396636303,
+        2.512180269557614
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "convert-numeric-8000.csv",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 66.375,
+      "peerMs": 95.04999995231628,
+      "ratio": 1.4320150651949723,
+      "ratio95PercentBootstrapInterval": [
+        1.3698640108867843,
+        1.521789256472539
+      ],
+      "matchingOutput": true,
+      "matchingPreview": true,
+      "matchingExactPreview": true,
+      "matchingPreviewContent": true,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "conversion",
+      "sample": "convert-numeric-8000.csv",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 66.375,
+      "peerMs": 123.76499998569489,
+      "ratio": 1.8646327681460624,
+      "ratio95PercentBootstrapInterval": [
+        1.7443095058552065,
+        1.934132657442529
+      ],
+      "matchingOutput": true,
+      "matchingPreview": true,
+      "matchingExactPreview": true,
+      "matchingPreviewContent": true,
+      "stableTimingLead": true,
+      "scopedLead": true,
+      "pairwiseScopedLead": true,
+      "bestAmongMeasuredPeers": true
+    },
+    {
+      "family": "conversion",
+      "sample": "generated-notes.txt",
+      "peer": "x2t",
+      "metric": "operationMs",
+      "filensMs": 14.615000009536743,
+      "peerMs": 22.34500002861023,
+      "ratio": 1.528908656450867,
+      "ratio95PercentBootstrapInterval": [
+        1.5006765893425313,
+        1.5754361930300111
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    },
+    {
+      "family": "conversion",
+      "sample": "generated-notes.txt",
+      "peer": "x2t",
+      "metric": "firstOperationMs",
+      "filensMs": 14.615000009536743,
+      "peerMs": 50.19000005722046,
+      "ratio": 3.4341430054375586,
+      "ratio95PercentBootstrapInterval": [
+        3.4165238116815915,
+        3.569012177462853
+      ],
+      "matchingOutput": false,
+      "matchingPreview": false,
+      "matchingExactPreview": false,
+      "matchingPreviewContent": false,
+      "stableTimingLead": true,
+      "scopedLead": false,
+      "pairwiseScopedLead": false,
+      "bestAmongMeasuredPeers": false
+    }
+  ]
+}

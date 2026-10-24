@@ -9,12 +9,13 @@ path = "src/main.rs"
 
 [dependencies]
 jpeg-encoder = { version = "0.7.1", default-features = false }
-rawloader = "0.37.2"
+memchr = "2.8.3"
+rawloader = { version = "0.37.2", path = "vendor/rawloader" }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 
 [profile.release]
-opt-level = "z"
+opt-level = 3
 lto = true
 codegen-units = 1
 panic = "abort"

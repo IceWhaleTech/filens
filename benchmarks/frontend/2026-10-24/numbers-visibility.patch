@@ -1,0 +1,26 @@
+--- a/packages/iwork/src/viewer/create-iwork-viewer.ts
++++ b/packages/iwork/src/viewer/create-iwork-viewer.ts
+@@ -123,6 +123,10 @@
+     const renderedTables = (activeSheet?.tables ?? []).map(({ item }, index) => {
+       const sheet = numbersTableToSheet(item, index);
+       const section = document.createElement('section');
++      section.className = 'iworkv-numbers-table';
++      // Keep offscreen tables searchable and mounted, but defer their layout.
++      // Estimate the initial height from the grid's 26px rows until measured.
++      section.style.containIntrinsicBlockSize = `auto ${(Math.min(Math.max(sheet.rowCount, 1), ROW_BATCH_SIZE) + 1) * 26}px`;
+       if ((activeSheet?.tables.length ?? 0) > 1) {
+         const title = document.createElement('h3');
+         title.className = 'iworkv-numbers-table-title';
+--- a/packages/iwork/src/styles/index.css
++++ b/packages/iwork/src/styles/index.css
+@@ -45,6 +45,10 @@
+   font: 600 12px/1.3 system-ui, sans-serif;
+ }
+ 
++.iworkv-numbers-table {
++  content-visibility: auto;
++}
++
+ .iworkv-cell-image {
+   display: block;
+   width: 100%;

@@ -7132,6 +7132,73 @@ describe('renderSlideToElement', () => {
     expect(clusteredBars[0]?.getAttribute('data-value')).toBe('4');
   });
 
+  it('renders the real shapes sample pie chart with its cached data and category legend', async () => {
+    const presentation = await loadPptx(await readFixture('../../apps/demo/public/samples/rich-pptx-shapes.pptx'));
+    const rendered = renderSlideToElement(presentation.slides[0], presentation);
+    const chart = rendered.querySelector('.pptxv-item--chart');
+    const slices = chart?.querySelectorAll('.pptxv-chart-slice') ?? [];
+
+    expect(slices).toHaveLength(4);
+    expect(Array.from(slices, (slice) => slice.getAttribute('data-value'))).toEqual(['8.2', '3.2', '1.4', '1.2']);
+    expect(Array.from(slices, (slice) => slice.querySelector('title')?.textContent)).toEqual([
+      '1st Qtr: 8.2', '2nd Qtr: 3.2', '3rd Qtr: 1.4', '4th Qtr: 1.2'
+    ]);
+    expect(Array.from(chart?.querySelectorAll('.pptxv-chart-legend-item text') ?? [], (label) => label.textContent))
+      .toEqual(['1st Qtr', '2nd Qtr', '3rd Qtr', '4th Qtr']);
+    expect(new Set(Array.from(slices, (slice) => slice.getAttribute('fill'))).size).toBe(4);
+    expect(chart?.querySelector('.pptxv-chart-title')?.textContent).toBe('shapes[4]');
+    expect(chart?.querySelector('.pptxv-chart-axis')).toBeNull();
+    expect(rendered.querySelector('.pptxv-item--unsupported')).toBeNull();
+    const percentages = Array.from(slices, (slice) => Number(slice.getAttribute('data-percentage')));
+    expect(percentages.reduce((sum, value) => sum + value, 0)).toBeCloseTo(100);
+    expect(percentages[0]).toBeCloseTo(8.2 / 14 * 100);
+  });
+
+  it('renders a single nonzero pie slice as a full circle and retains its original category index', () => {
+    const item: ChartItem = {
+      ...createChartItem('pie', 'clustered', 0),
+      chartType: 'pie',
+      firstSliceAngle: 90,
+      categories: ['Missing', 'Zero', 'Only'],
+      series: [{ name: 'Values', values: [null, 0, 5], color: '#4472C4', pointStyles: [
+        { color: '#4472C4' }, { color: '#ED7D31' }, { color: '#00FF00', alpha: 0.5 }
+      ] }]
+    };
+    const slide = createBaseSlide([item]);
+    const rendered = renderSlideToElement(slide, createPresentation(slide));
+    const slices = rendered.querySelectorAll('.pptxv-chart-slice');
+    const path = slices[0]?.getAttribute('d');
+
+    expect(slices).toHaveLength(1);
+    expect(path?.match(/ A /g)).toHaveLength(2);
+    expect(path).not.toMatch(/NaN|Infinity/);
+    expect(slices[0]?.getAttribute('data-category-index')).toBe('2');
+    expect(slices[0]?.getAttribute('data-percentage')).toBe('100');
+    expect(slices[0]?.getAttribute('fill')).toBe('rgba(0, 255, 0, 0.5)');
+    expect(slices[0]?.querySelector('title')?.textContent).toBe('Only: 5');
+    expect(rendered.querySelectorAll('.pptxv-chart-legend-item')).toHaveLength(3);
+  });
+
+  it.each([
+    { values: [0, null, 0], percentages: [] },
+    { values: [-2, 2], percentages: [50, 50] },
+    { values: [1e308, 1e308], percentages: [50, 50] }
+  ])('handles pie values $values without invalid SVG geometry', ({ values, percentages }) => {
+    const item: ChartItem = {
+      ...createChartItem('pie', 'clustered', 0),
+      chartType: 'pie',
+      series: [{ name: 'Values', values, color: '#4472C4' }]
+    };
+    const slide = createBaseSlide([item]);
+    const rendered = renderSlideToElement(slide, createPresentation(slide));
+    const slices = rendered.querySelectorAll('.pptxv-chart-slice');
+
+    expect(Array.from(slices, (slice) => Number(slice.getAttribute('data-percentage')))).toEqual(percentages);
+    for (const slice of slices) {
+      expect(slice.getAttribute('d')).not.toMatch(/NaN|Infinity/);
+    }
+  });
+
   it('renders SVG markers for arrow and endpoint line styles', () => {
     const slide = createBaseSlide([
       {

@@ -1,0 +1,17 @@
+[
+  {
+    "name": "SampleShow.pptx",
+    "source": "https://raw.githubusercontent.com/apache/poi/trunk/test-data/slideshow/SampleShow.pptx",
+    "gitBlobSha": "4496c269530b69ad70631e2543f8c3a360866238"
+  },
+  {
+    "name": "pie-chart.pptx",
+    "source": "https://raw.githubusercontent.com/apache/poi/trunk/test-data/slideshow/pie-chart.pptx",
+    "gitBlobSha": "33d28e154c47c74b51b031618267151a6d08a772"
+  },
+  {
+    "name": "2411-Performance_Up.pptx",
+    "source": "https://raw.githubusercontent.com/apache/poi/trunk/test-data/slideshow/2411-Performance_Up.pptx",
+    "gitBlobSha": "46fe3972c3b1c5f24f6ccccfc3fd3092ff1bcfd2"
+  }
+]

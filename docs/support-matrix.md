@@ -139,6 +139,7 @@ Listed pairs normalize files for preview; they do not promise to preserve every 
 | --- | --- |
 | Macro-enabled OpenXML | Macro parts are removed before normalization. |
 | Legacy binary, ODF, and table-like inputs | Layout, styles, media, charts, formulas, and embedded objects may be simplified or omitted. |
+| CSV / TSV / TAB / PSV → XLSX | Reads complete input, including CRLF / CR / LF and quoted newlines, up to 1,000,000 cells, 16,384 columns per row and the XLSX row limit. Exceeding a limit raises an explicit error instead of producing a truncated workbook. Direct CSV preview does not use this conversion limit. |
 | PPM | Dimensions and RGB samples are retained at 8/16-bit depth; nonstandard maxval values are scaled to the PNG range with rounding. Comments are not copied to PNG metadata. |
 | Conversion warnings | Describe the fallback actually used for the input. |
 | Valid OpenXML output | Confirms output structure; does not establish visual fidelity. |
@@ -186,7 +187,7 @@ Listed pairs normalize files for preview; they do not promise to preserve every 
 | Decode path | Coverage | Limits |
 | --- | --- | --- |
 | Embedded preview | Core copies the largest standard 8-bit embedded JPEG. | Requires a suitable embedded JPEG. |
-| Sensor fallback | Optional `converter-image.wasm` performs lightweight sensor decoding and downsampling. | Used when no suitable embedded JPEG is present; camera/file variants affect decoding. |
+| Sensor fallback | Optional `converter-image.wasm` performs lightweight sensor decoding and downsampling with camera WB, sRGB color and DNG exposure metadata. No-JPEG DNG, Nikon D3S NEF, Canon 40D sRAW CR2, PEF and ORF samples are [verified](performance-comparison.md). | Up to 2048 px; camera/file variants affect decoding. Invalid color calibration raises an error. |
 | Calibrated panorama DNG | One RS and X5 metadata can select static spherical stitching before ordinary conversion. Uses full-sensor development, exposure matching and content-aware seams. | Requires both panorama WASM modules; preview up to 4096 px, experimental calibration and camera-dependent decoding. Unsupported calibration stays flat. |
 | Full RAW development | Unavailable. | Full-resolution development, custom picture profiles, and camera edits are not preserved. |
 
@@ -215,7 +216,7 @@ The Vue preview enables calibrated DNG inspection when `converter` and
 | Unsupported content placeholders | Supported | Unsupported content can be represented by placeholders. |
 | Exact source-font parity | Partial | Depends on installed fonts, app-provided webfonts, and format metadata. Embedded Office/iWork font loading is not implemented. |
 | Animations and transitions | Unavailable | Not implemented in the PPTX renderer. |
-| Charts | Unavailable | Chart rendering is not implemented. |
+| Charts | Partial | Cached 2D column charts (clustered, stacked and percent-stacked) and pie charts, including titles and legends. Other chart types and advanced formatting are unavailable. |
 | Embedded audio/video | Unavailable | Standalone media playback does not imply playback inside slides. |
 | OLE objects | Unavailable | Embedded object rendering is not implemented. |
 | Comments, notes, and review metadata | Unavailable | Not exposed by the PPTX renderer. |

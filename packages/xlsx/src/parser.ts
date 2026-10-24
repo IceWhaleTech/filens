@@ -1,7 +1,7 @@
 import { XMLParser } from 'fast-xml-parser';
-import JSZip from 'jszip';
-import type { PreviewLoadContext, PreviewSource } from '@filens/core';
+import { openZipArchive, type ZipEntry, type PreviewLoadContext, type PreviewSource } from '@filens/core';
 import type { ParsedCell, ParsedRow, ParsedSheet, ParsedWorkbook } from './types';
+import { readSimpleWorksheet } from './simple-worksheet';
 
 const MAX_XML_ENTITY_EXPANSIONS = 100_000;
 
@@ -11,6 +11,7 @@ const parser = new XMLParser({
   textNodeName: '#text',
   parseTagValue: false,
   parseAttributeValue: false,
+  trimValues: false,
   processEntities: {
     enabled: true,
     maxEntitySize: 10_000,
@@ -39,7 +40,7 @@ export async function loadXlsxWorkbook(source: PreviewSource, context?: PreviewL
   }
 
   const bytes = await sourceToBytes(source, context);
-  const zip = await JSZip.loadAsync(bytes);
+  const zip = await openZipArchive(bytes);
   const warnings: string[] = [];
   const workbookXml = await readRequiredText(zip, 'xl/workbook.xml');
   const relsXml = await readRequiredText(zip, 'xl/_rels/workbook.xml.rels');
@@ -57,7 +58,7 @@ export async function loadXlsxWorkbook(source: PreviewSource, context?: PreviewL
     }
 
     const sheetPath = resolveWorkbookTarget(relationship.target);
-    const sheetXml = await zip.file(sheetPath)?.async('text');
+    const sheetXml = await zip.get(sheetPath)?.text();
     if (!sheetXml) {
       warnings.push(`Missing worksheet file for sheet ${sheet.name}.`);
       continue;
@@ -80,10 +81,11 @@ export async function loadCsvWorkbook(source: PreviewSource, context?: PreviewLo
   const text = await sourceToText(source, context);
   const records = parseCsv(text);
   const columnCount = records.reduce((max, row) => Math.max(max, row.length), 0);
+  const columnNames = Array.from({ length: columnCount }, (_, index) => columnIndexToName(index + 1));
   const rows: ParsedRow[] = records.map((record, rowIndex) => ({
     index: rowIndex + 1,
     cells: record.map((value, columnIndex) => ({
-      ref: `${columnIndexToName(columnIndex + 1)}${rowIndex + 1}`,
+      ref: `${columnNames[columnIndex]}${rowIndex + 1}`,
       row: rowIndex + 1,
       column: columnIndex + 1,
       value
@@ -170,6 +172,12 @@ function readDataUrlText(source: string): string {
 }
 
 function parseCsv(text: string): string[][] {
+  text = text.replace(/^\uFEFF/, '');
+  if (!text.includes('"')) {
+    const lines = text.split(/\r\n|\r|\n/);
+    if (text.length && /[\r\n]$/.test(text)) lines.pop();
+    return lines.map(line => line.split(','));
+  }
   const rows: string[][] = [];
   let row: string[] = [];
   let cell = '';
@@ -229,20 +237,20 @@ function parseCsv(text: string): string[][] {
   return rows;
 }
 
-async function readRequiredText(zip: JSZip, path: string): Promise<string> {
-  const file = zip.file(path);
+async function readRequiredText(zip: Map<string, ZipEntry>, path: string): Promise<string> {
+  const file = zip.get(path);
   if (!file) {
     throw new Error(`Invalid XLSX file: missing ${path}.`);
   }
-  return file.async('text');
+  return file.text();
 }
 
-async function readSharedStrings(zip: JSZip): Promise<string[]> {
-  const file = zip.file('xl/sharedStrings.xml');
+async function readSharedStrings(zip: Map<string, ZipEntry>): Promise<string[]> {
+  const file = zip.get('xl/sharedStrings.xml');
   if (!file) {
     return [];
   }
-  const xml = await file.async('text');
+  const xml = await file.text();
   const document = parser.parse(xml) as Record<string, unknown>;
   const items = toArray(readPath(document, ['sst', 'si']));
   return items.map(readSharedStringItem);
@@ -250,21 +258,26 @@ async function readSharedStrings(zip: JSZip): Promise<string[]> {
 
 function readSharedStringItem(item: unknown): string {
   const text = readPath(item, ['t']);
-  if (typeof text === 'string') {
-    return text;
+  if (text != null) {
+    return readTextValue(text);
   }
 
   const runs = toArray(readPath(item, ['r']));
   if (runs.length) {
     return runs
       .map((run) => {
-        const runText = readPath(run, ['t']);
-        return typeof runText === 'string' ? runText : '';
+        return readTextValue(readPath(run, ['t']));
       })
       .join('');
   }
 
   return '';
+}
+
+function readTextValue(node: unknown): string {
+  if (typeof node === 'string') return node;
+  const text = readPath(node, ['#text']);
+  return typeof text === 'string' ? text : '';
 }
 
 function readRelationships(xml: string): RelationshipRef[] {
@@ -295,13 +308,17 @@ function readWorksheet(
     sharedStrings: string[];
   }
 ): ParsedSheet {
+  const simple = readSimpleWorksheet(xml, options);
+  if (simple) return simple;
   const document = parser.parse(xml) as Record<string, unknown>;
   const rowEntries = toArray(readPath(document, ['worksheet', 'sheetData', 'row']));
   const rows: ParsedRow[] = [];
   let maxColumn = 0;
+  let maxRow = 0;
 
   for (const rowEntry of rowEntries) {
     const rowIndex = Number(readPath(rowEntry, ['r']) ?? rows.length + 1);
+    maxRow = Math.max(maxRow, rowIndex);
     const cells = toArray(readPath(rowEntry, ['c']))
       .map((cellEntry) => readCell(cellEntry, options.sharedStrings))
       .filter((cell): cell is ParsedCell => cell != null);
@@ -319,7 +336,7 @@ function readWorksheet(
     name: options.name,
     rows,
     columnCount: maxColumn,
-    rowCount: rows.length ? Math.max(...rows.map((row) => row.index)) : 0
+    rowCount: maxRow
   };
 }
 
@@ -338,10 +355,10 @@ function readCell(cellEntry: unknown, sharedStrings: string[]): ParsedCell | nul
   if (valueType === 's') {
     value = sharedStrings[Number(rawValue ?? '')] ?? '';
   } else if (valueType === 'b') {
-    value = rawValue === '1' ? 'TRUE' : 'FALSE';
+    const boolean = rawValue?.trim();
+    value = boolean === '1' || boolean === 'true' ? 'TRUE' : 'FALSE';
   } else if (valueType === 'inlineStr') {
-    const inlineText = readPath(cellEntry, ['is', 't']);
-    value = typeof inlineText === 'string' ? inlineText : '';
+    value = readSharedStringItem(readPath(cellEntry, ['is']));
   }
 
   return {
@@ -392,10 +409,17 @@ export function resolveCellValue(sheet: ParsedSheet, cell: ParsedCell, resolving
   return cell.value;
 }
 
+const formulaCellIndexes = new WeakMap<ParsedSheet, Map<string, ParsedCell>>();
+
 function readFormulaCellNumber(sheet: ParsedSheet, ref: string, resolving: Set<string>): number {
   const position = parseCellRef(ref.replace(/\$/g, ''));
-  // ponytail: linear lookup is enough for preview-sized sheets; add an index if profiling shows it matters.
-  const cell = sheet.rows.find((row) => row.index === position.row)?.cells.find((entry) => entry.column === position.column);
+  let cells = formulaCellIndexes.get(sheet);
+  if (!cells) {
+    cells = new Map();
+    for (const row of sheet.rows) for (const cell of row.cells) cells.set(`${row.index}:${cell.column}`, cell);
+    formulaCellIndexes.set(sheet, cells);
+  }
+  const cell = cells.get(`${position.row}:${position.column}`);
   if (!cell) {
     return 0;
   }

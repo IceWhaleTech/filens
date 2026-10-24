@@ -1,0 +1,199 @@
+{
+  "sourceSha256": "e8bfd32f9de67380f1b91254796f4a1cd0fe1e79c72956a4d72bd5384a22c3c0",
+  "date": "2026-10-24T01:49:40.825Z",
+  "cpu": "Apple M4 Pro",
+  "platform": "darwin 25.6.0 arm64",
+  "browser": "147.0.7727.15",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "devicePixelRatio": 1
+  },
+  "versions": {
+    "pptxtojson": "2.2.0",
+    "pptx-preview": "1.0.7",
+    "@vue-office/pptx": "1.0.1",
+    "libraw-wasm": "1.6.0",
+    "@photo-sphere-viewer/core": "5.15.1",
+    "sheetjs": "0.20.3"
+  },
+  "iterations": 7,
+  "totalRuns": 42,
+  "filensSuccessfulRuns": 21,
+  "method": "Ratios are peer / filens (higher means filens is faster). Paired bootstrap of per-iteration measurements, 10000 resamples, percentile 95% interval, LCG seed 12345. Small single-machine sample; not an independent benchmark or a global SOTA proof.",
+  "comparisons": [
+    {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 100.74500000476837,
+      "peerMs": 125.88499999046326,
+      "peerOverFilensRatio": 1.249540919991116,
+      "ratio95PercentBootstrapInterval": [
+        1.2077315830699076,
+        1.2894342253123134
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "iwork-view",
+      "sample": "a.pages",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 66.02499997615814,
+      "peerMs": 65.13999998569489,
+      "peerOverFilensRatio": 0.9865959865084009,
+      "ratio95PercentBootstrapInterval": [
+        0.9124672185860465,
+        1.082855318677154
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "iwork-view",
+      "sample": "filens-weekend.key",
+      "peer": "filens-baseline",
+      "metric": "readyMs",
+      "filensMs": 61.74500000476837,
+      "peerMs": 58.92999994754791,
+      "peerOverFilensRatio": 0.9544092629848074,
+      "ratio95PercentBootstrapInterval": [
+        0.8075329860819277,
+        1.230754535209254
+      ],
+      "stableLeadInThisComparison": false
+    }
+  ],
+  "timingLeads": [
+    {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "allMeasuredPeersHaveStableTimingLead": true,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "iwork-view",
+      "sample": "a.pages",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "iwork-view",
+      "sample": "filens-weekend.key",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    }
+  ],
+  "aggregates": [],
+  "summary": [
+    {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 100.74500000476837,
+      "minMs": 96.74500000476837,
+      "medianProcessingMs": null,
+      "maxMs": 107.26499998569489,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 5.597682952880859,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 6
+      },
+      "failures": []
+    },
+    {
+      "family": "iwork-view",
+      "sample": "a.numbers",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 125.88499999046326,
+      "minMs": 123.9449999332428,
+      "medianProcessingMs": null,
+      "maxMs": 135.45500004291534,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 5.634971618652344,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 6
+      },
+      "failures": []
+    },
+    {
+      "family": "iwork-view",
+      "sample": "a.pages",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 66.02499997615814,
+      "minMs": 61.8050000667572,
+      "medianProcessingMs": null,
+      "maxMs": 71.36500000953674,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.4820480346679688,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "iwork-view",
+      "sample": "a.pages",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 65.13999998569489,
+      "minMs": 62.90499997138977,
+      "medianProcessingMs": null,
+      "maxMs": 69.13500010967255,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.4917182922363281,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "iwork-view",
+      "sample": "filens-weekend.key",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 61.74500000476837,
+      "minMs": 51.37000000476837,
+      "medianProcessingMs": null,
+      "maxMs": 69.16500008106232,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.5029373168945312,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "iwork-view",
+      "sample": "filens-weekend.key",
+      "engine": "filens-baseline",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 58.92999994754791,
+      "minMs": 51.294999957084656,
+      "medianProcessingMs": null,
+      "maxMs": 67.11500000953674,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.5213584899902344,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "sheets": 0
+      },
+      "failures": []
+    }
+  ]
+}

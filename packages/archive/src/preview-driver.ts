@@ -1,7 +1,7 @@
-import JSZip from 'jszip';
 import { gunzipSync } from 'fflate';
 import {
   createDefaultPreviewRoutes,
+  openZipArchive,
   type ArchivePreviewState,
   type FormatDefinition,
   type PreviewDriver,
@@ -654,15 +654,15 @@ export async function createZipResourceResolver(
 
 async function readArchive(bytes: Uint8Array, format: string, label: string): Promise<ArchiveFrame> {
   if (isZipFormat(format)) {
-    const zip = await JSZip.loadAsync(bytes);
+    const zip = await openZipArchive(bytes);
     return {
       label,
-      entries: Object.values(zip.files).map((entry) => ({
+      entries: [...zip.values()].map((entry) => ({
         name: entry.name,
-        type: entry.dir ? 'directory' as const : 'file' as const,
-        size: entry.dir ? undefined : getEntrySize(entry),
-        modified: entry.date?.getTime(),
-        read: () => entry.async('uint8array')
+        type: entry.directory ? 'directory' as const : 'file' as const,
+        size: entry.directory ? undefined : entry.size,
+        modified: entry.modified,
+        read: () => entry.bytes()
       })).sort(compareArchiveEntries)
     };
   }
@@ -919,15 +919,6 @@ function formatBytes(size: number): string {
     unitIndex += 1;
   }
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unitIndex]}`;
-}
-
-function getEntrySize(entry: JSZip.JSZipObject): number | undefined {
-  const metadata = entry as JSZip.JSZipObject & {
-    _data?: {
-      uncompressedSize?: number;
-    };
-  };
-  return metadata._data?.uncompressedSize;
 }
 
 function normalizeFormat(format: string | undefined): string {

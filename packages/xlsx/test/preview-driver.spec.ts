@@ -3,6 +3,30 @@ import { describe, expect, it } from 'vitest';
 import { createXlsxPreviewDriver, createXlsxPreviewRoutes, loadCsvWorkbook, loadXlsxWorkbook, resolveCellValue } from '../src';
 
 describe('XLSX preview driver', () => {
+  it('returns identical cells for the fast and general worksheet parsers', async () => {
+    const zip = await JSZip.loadAsync(await createWorkbookFixture());
+    const rows = Array.from({ length: 500 }, (_, index) => {
+      const r = index * 3 + 1;
+      return `<row r='${r}' spans="1:5"><c s="2" r='A${r}'><v> ${index - 200}.125e-2 </v></c>` +
+        `<c r="B${r}" t="s"><v>0</v></c><c r="C${r}" t="b"><v>${index % 2 ? 'true' : '0'}</v></c>` +
+        `<c r="D${r}"/><c r="E${r}"><v/></c></row>`;
+    }).join('\n');
+    const xml = `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>\n${rows}\n</sheetData></worksheet>`;
+    zip.file('xl/worksheets/sheet1.xml', xml);
+    const fast = await loadXlsxWorkbook(await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }));
+    zip.file('xl/worksheets/sheet1.xml', xml.replace('<sheetData>', '<sheetData><!-- general parser -->'));
+    const general = await loadXlsxWorkbook(await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }));
+    expect(fast).toEqual(general);
+    expect(fast.sheets[0].rows.at(-1)?.cells[0].value).toBe(' 299.125e-2 ');
+    expect(fast.sheets[0].rowCount).toBe(1498);
+  });
+
+  it('preserves CRLF, blank rows, trailing fields and BOM in unquoted CSV', async () => {
+    const workbook = await loadCsvWorkbook(new TextEncoder().encode('\uFEFFa,b,\r\n\r\nc,d,\r'));
+    expect(workbook.sheets[0].rows.map(row => row.cells.map(cell => cell.value)))
+      .toEqual([['a', 'b', ''], [''], ['c', 'd', '']]);
+  });
+
   it('exposes direct XLSX routes and driver support', () => {
     const routes = createXlsxPreviewRoutes();
     const xlsxRoute = routes.find((route) => route.extensions.includes('xlsx'));
@@ -50,6 +74,24 @@ describe('XLSX preview driver', () => {
     expect(cell?.value).toBe(cellValue);
   });
 
+  it('renders shared and inline rich strings with preserved spaces from Office converters', async () => {
+    const zip = await JSZip.loadAsync(await createWorkbookFixture(
+      '<c r="C1" t="s"><v>1</v></c>' +
+      '<c r="D1" t="inlineStr"><is><r><t xml:space="preserve"> inline </t></r><r><t>text</t></r></is></c>'
+    ));
+    zip.file('xl/sharedStrings.xml', '<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<si><t xml:space="preserve"> Name </t></si>' +
+      '<si><r><t xml:space="preserve"> 中文 &amp; </t></r><r><t>text</t></r></si></sst>');
+    const host = document.createElement('div');
+    const session = createXlsxPreviewDriver().createSession(host);
+    await session.load(await zip.generateAsync({ type: 'uint8array' }), {
+      descriptor: { source: new Uint8Array(), name: 'converted.xlsx', extension: 'xlsx' }
+    });
+    expect(Array.from(host.querySelectorAll('tbody tr:first-child td')).map(cell => cell.textContent))
+      .toEqual([' Name ', '42', ' 中文 & text', ' inline text']);
+    session.destroy();
+  });
+
   it('calculates formulas without cached values only when read', async () => {
     const workbook = await loadXlsxWorkbook(await createWorkbookFixture('<c r="C1"><f>SUM(B1:B2)+1</f></c>'));
     const sheet = workbook.sheets[0]!;
@@ -58,6 +100,15 @@ describe('XLSX preview driver', () => {
     expect(cell).toMatchObject({ formula: 'SUM(B1:B2)+1', value: '', needsCalculation: true });
     expect(resolveCellValue(sheet, cell!)).toBe('50');
     expect(cell).toMatchObject({ value: '50', needsCalculation: false });
+  });
+
+  it('reads both numeric and XML boolean cached values', async () => {
+    const workbook = await loadXlsxWorkbook(await createWorkbookFixture(
+      ['true', 'false', ' 1 ', '0'].map((value, index) =>
+        `<c r="${String.fromCharCode(67 + index)}1" t="b"><v>${value}</v></c>`).join('')
+    ));
+    expect(workbook.sheets[0]?.rows[0]?.cells.slice(2).map(cell => cell.value))
+      .toEqual(['TRUE', 'FALSE', 'TRUE', 'FALSE']);
   });
 
   it('renders workbook sources into a sheet grid', async () => {

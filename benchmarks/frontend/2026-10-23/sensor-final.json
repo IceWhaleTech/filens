@@ -1,0 +1,35 @@
+{
+  "environment": "Node v20.20.2 / V8 WASM, Apple M4 Pro; full sensor geometry, same JPEG output; first invocation cold, later ones warm module code",
+  "input": "pentax-k-r.dng",
+  "results": [
+    {
+      "iteration": 0,
+      "ms": 371.617416,
+      "exit": 0,
+      "sha256": "c4ca16f30ea271612226183e3f71f35776d4c6879d14931bfbf5ccce27c2eceb",
+      "bytes": 433298
+    },
+    {
+      "iteration": 1,
+      "ms": 283.815625,
+      "exit": 0,
+      "sha256": "c4ca16f30ea271612226183e3f71f35776d4c6879d14931bfbf5ccce27c2eceb",
+      "bytes": 433298
+    },
+    {
+      "iteration": 2,
+      "ms": 278.824708,
+      "exit": 0,
+      "sha256": "c4ca16f30ea271612226183e3f71f35776d4c6879d14931bfbf5ccce27c2eceb",
+      "bytes": 433298
+    },
+    {
+      "iteration": 3,
+      "ms": 279.78558299999986,
+      "exit": 0,
+      "sha256": "c4ca16f30ea271612226183e3f71f35776d4c6879d14931bfbf5ccce27c2eceb",
+      "bytes": 433298
+    }
+  ],
+  "coreSha256": "ab3666e47296596ea764af30fca5bf2b12d2c78b1d5ed8ee8195acf0f250dfcc"
+}

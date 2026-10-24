@@ -650,16 +650,19 @@ export function createCadPreviewRoutes(baseRoutes = createDefaultPreviewRoutes()
 }
 
 export function loadDxfDrawing(source: string): CadDrawing {
-  const pairs = readDxfPairs(source);
-  const headerBounds = readHeaderBounds(pairs);
-  const header = readHeaderMetadata(pairs);
-  const textStyleMap = readTextStyleMap(pairs);
-  const imageDefinitionMap = readImageDefinitionMap(pairs);
-  const lineTypeMap = readLineTypeMap(pairs);
-  const layerMap = readLayerMap(pairs, lineTypeMap);
+  const sections = readDxfSections(readDxfPairs(source));
+  const headerPairs = sections.get('HEADER') ?? [];
+  const tablePairs = sections.get('TABLES') ?? [];
+  const headerBounds = readHeaderBounds(headerPairs);
+  const header = readHeaderMetadata(headerPairs);
+  const textStyleMap = readTextStyleMap(tablePairs);
+  const imageDefinitionMap = readImageDefinitionMap(sections.get('OBJECTS') ?? []);
+  const lineTypeMap = readLineTypeMap(tablePairs);
+  const layerMap = readLayerMap(tablePairs, lineTypeMap);
   const entities: CadEntity[] = [];
   const warnings: string[] = [];
-  const blockMap = readBlockMap(pairs, textStyleMap, warnings, imageDefinitionMap);
+  const blockMap = readBlockMap(sections.get('BLOCKS') ?? [], textStyleMap, warnings, imageDefinitionMap);
+  const pairs = sections.get('ENTITIES') ?? [];
   let inEntities = false;
   let index = 0;
 
@@ -738,18 +741,35 @@ export function loadDxfDrawing(source: string): CadDrawing {
   };
 }
 
-function readDxfPairs(source: string): DxfPair[] {
-  const lines = source.replace(/\r/g, '').split('\n');
-  const pairs: DxfPair[] = [];
-  for (let index = 0; index < lines.length - 1; index += 2) {
-    const code = Number(lines[index]?.trim());
-    if (!Number.isFinite(code)) {
-      continue;
+function readDxfSections(pairs: DxfPair[]): Map<string, DxfPair[]> {
+  const sections = new Map<string, DxfPair[]>();
+  for (let index = 0; index < pairs.length; index++) {
+    if (pairs[index].code !== 0 || pairs[index].value !== 'SECTION' || pairs[index + 1]?.code !== 2) continue;
+    const start = index;
+    const name = pairs[index + 1].value;
+    index += 2;
+    while (index < pairs.length && !(pairs[index].code === 0 && pairs[index].value === 'ENDSEC')) index++;
+    const section = sections.get(name);
+    if (section) {
+      for (let cursor = start; cursor <= index && cursor < pairs.length; cursor++) section.push(pairs[cursor]);
+    } else {
+      sections.set(name, pairs.slice(start, index + 1));
     }
-    pairs.push({
-      code,
-      value: lines[index + 1]?.trimEnd() ?? ''
-    });
+  }
+  return sections;
+}
+
+function readDxfPairs(source: string): DxfPair[] {
+  const pairs: DxfPair[] = [];
+  let offset = 0;
+  while (offset < source.length) {
+    const codeEnd = source.indexOf('\n', offset);
+    if (codeEnd < 0) break;
+    const valueEnd = source.indexOf('\n', codeEnd + 1);
+    const end = valueEnd < 0 ? source.length : valueEnd;
+    const code = Number(source.slice(offset, codeEnd).trim());
+    if (Number.isFinite(code)) pairs.push({ code, value: source.slice(codeEnd + 1, end).trimEnd() });
+    offset = end + 1;
   }
   return pairs;
 }
@@ -2720,39 +2740,38 @@ function toSvgPoint(cadPoint: CadPoint, bounds: CadDrawing['bounds']): CadPoint 
 }
 
 function computeBounds(entities: CadEntity[], headerBounds?: CadDrawing['bounds']): CadDrawing['bounds'] {
-  const points: CadPoint[] = [];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  let count = 0;
+  const include = (cadPoint: CadPoint) => {
+    minX = Math.min(minX, cadPoint.x);
+    minY = Math.min(minY, cadPoint.y);
+    maxX = Math.max(maxX, cadPoint.x);
+    maxY = Math.max(maxY, cadPoint.y);
+    count++;
+  };
+  const includeAll = (points: CadPoint[]) => { for (const cadPoint of points) include(cadPoint); };
   if (headerBounds) {
-    points.push(
-      {
-        x: headerBounds.minX,
-        y: headerBounds.minY
-      },
-      {
-        x: headerBounds.maxX,
-        y: headerBounds.maxY
-      }
-    );
+    include({ x: headerBounds.minX, y: headerBounds.minY });
+    include({ x: headerBounds.maxX, y: headerBounds.maxY });
   }
   for (const entity of entities) {
-    if (entity.type === 'line') points.push(entity.start, entity.end);
-    if (entity.type === 'construction-line') points.push(entity.point);
-    if (entity.type === 'dimension') points.push(entity.start, entity.end, ...textBoundsPoints(dimensionTextEntity(entity)));
-    if (entity.type === 'point') points.push(entity.point);
+    if (entity.type === 'line') { include(entity.start); include(entity.end); }
+    if (entity.type === 'construction-line') include(entity.point);
+    if (entity.type === 'dimension') { include(entity.start); include(entity.end); includeAll(textBoundsPoints(dimensionTextEntity(entity))); }
+    if (entity.type === 'point') include(entity.point);
     if (entity.type === 'circle' || entity.type === 'arc') {
-      points.push(
-        { x: entity.center.x - entity.radius, y: entity.center.y - entity.radius },
-        { x: entity.center.x + entity.radius, y: entity.center.y + entity.radius }
-      );
+      include({ x: entity.center.x - entity.radius, y: entity.center.y - entity.radius });
+      include({ x: entity.center.x + entity.radius, y: entity.center.y + entity.radius });
     }
-    if (entity.type === 'ellipse') points.push(...sampleEllipsePoints(entity, 144));
-    if (entity.type === 'polyline') points.push(...expandStrokeBounds(samplePolylinePoints(entity), entity.strokeWidth));
-    if (entity.type === 'face') points.push(...entity.points);
-    if (entity.type === 'hatch') points.push(...entity.loops.flat());
-    if (entity.type === 'spline') points.push(...entity.points);
-    if (entity.type === 'text') points.push(...textBoundsPoints(entity));
-    if (entity.type === 'image') points.push(...imageBoundaryPoints(entity));
+    if (entity.type === 'ellipse') includeAll(sampleEllipsePoints(entity, 144));
+    if (entity.type === 'polyline') includeAll(expandStrokeBounds(samplePolylinePoints(entity), entity.strokeWidth));
+    if (entity.type === 'face') includeAll(entity.points);
+    if (entity.type === 'hatch') { for (const loop of entity.loops) includeAll(loop); }
+    if (entity.type === 'spline') includeAll(entity.points);
+    if (entity.type === 'text') includeAll(textBoundsPoints(entity));
+    if (entity.type === 'image') includeAll(imageBoundaryPoints(entity));
   }
-  if (!points.length) {
+  if (!count) {
     return {
       minX: 0,
       minY: 0,
@@ -2760,12 +2779,7 @@ function computeBounds(entities: CadEntity[], headerBounds?: CadDrawing['bounds'
       maxY: 100
     };
   }
-  return {
-    minX: Math.min(...points.map((item) => item.x)),
-    minY: Math.min(...points.map((item) => item.y)),
-    maxX: Math.max(...points.map((item) => item.x)),
-    maxY: Math.max(...points.map((item) => item.y))
-  };
+  return { minX, minY, maxX, maxY };
 }
 
 function expandStrokeBounds(points: CadPoint[], strokeWidth: number | undefined): CadPoint[] {
@@ -3126,9 +3140,13 @@ function readPointSeries(values: DxfPair[], xCode: number, yCode: number): CadPo
 }
 
 function readNumber(values: DxfPair[], code: number): number | undefined {
-  const raw = values.find((pair) => pair.code === code)?.value;
-  const value = Number(raw);
-  return Number.isFinite(value) ? value : undefined;
+  for (const pair of values) {
+    if (pair.code === code) {
+      const value = Number(pair.value);
+      return Number.isFinite(value) ? value : undefined;
+    }
+  }
+  return undefined;
 }
 
 function readNumbers(values: DxfPair[], code: number): number[] {
@@ -3377,24 +3395,22 @@ function resolveEntityStyles(
   lineTypeMap: Map<string, CadLineType>,
   globalLineTypeScale = 1
 ): CadEntity[] {
-  return entities.map((entity) => {
+  for (const entity of entities) {
     const layer = entity.layer ? layerMap.get(normalizeLayerName(entity.layer)) : undefined;
     const explicitColor = entity.trueColor ?? aciToHex(entity.colorIndex);
     const lineType = entity.lineType ?? layer?.lineType;
     const lineTypePattern = entity.lineTypePattern ?? resolveLineTypePattern(lineType, lineTypeMap) ?? layer?.lineTypePattern;
     const lineTypeScale = resolveLineTypeScale(entity.lineTypeScale, globalLineTypeScale);
-    return {
-      ...entity,
-      lineType,
-      lineTypePattern,
-      lineTypeScale,
-      lineWeight: entity.lineWeight ?? layer?.lineWeight,
-      trueColor: entity.trueColor ?? layer?.trueColor,
-      opacity: entity.opacity ?? layer?.opacity,
-      color: explicitColor ?? layer?.color ?? DEFAULT_CAD_COLOR,
-      visible: (entity.entityVisible ?? true) && (layer?.visible ?? true)
-    };
-  });
+    entity.lineType = lineType;
+    entity.lineTypePattern = lineTypePattern;
+    entity.lineTypeScale = lineTypeScale;
+    entity.lineWeight ??= layer?.lineWeight;
+    entity.trueColor ??= layer?.trueColor;
+    entity.opacity ??= layer?.opacity;
+    entity.color = explicitColor ?? layer?.color ?? DEFAULT_CAD_COLOR;
+    entity.visible = (entity.entityVisible ?? true) && (layer?.visible ?? true);
+  }
+  return entities;
 }
 
 function resolveLineTypeScale(entityLineTypeScale: number | undefined, globalLineTypeScale: number | undefined): number | undefined {
@@ -3468,7 +3484,12 @@ function entityVisibility(value: number | undefined): boolean | undefined {
 }
 
 function uniqueSorted(values: string[]): string[] {
-  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort((left, right) => left.localeCompare(right));
+  const unique = new Set<string>();
+  for (const value of values) {
+    const name = value.trim();
+    if (name) unique.add(name);
+  }
+  return [...unique].sort();
 }
 
 function normalizeLayerName(name: string): string {

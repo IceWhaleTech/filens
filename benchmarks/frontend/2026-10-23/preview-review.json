@@ -1,0 +1,640 @@
+{
+  "date": "2026-10-23T14:57:05.321Z",
+  "browser": "147.0.7727.15",
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "benchmarkResultSha256": "6d7caa42ea27d0ce562cbc3e6f5bb3068e8587f7d0791c18662c26e49af88364",
+  "artifacts": [
+    {
+      "path": "packages/core/dist/index.js",
+      "sha256": "444a9d9d62e11285f4f459de364978f0517849d0548ee20b115709db0cc77fee"
+    },
+    {
+      "path": "packages/docx/dist/index.js",
+      "sha256": "eb2879dca36afe8d9a2c99d2306bae15dc22add6ba6c7c1e3b093495e84d0855"
+    },
+    {
+      "path": "packages/xlsx/dist/index.js",
+      "sha256": "25a14bbbc00f332aafb9df4c25abab8ef33fb681e94ef146b1b20fb9f0dd96b1"
+    }
+  ],
+  "method": "Both saved outputs rendered by identical production filens drivers. Exact XLSX display signatures include resolved cells, sheet dimensions and sheet order, ignoring tab names. A separate preview-content signature ignores trailing empty rows/columns and rounds decimal display values to 12 significant digits; every nonempty cell address and text remains checked. Screenshots cover each sheet/slide and first/last DOCX view. This checks preview similarity, not editable round-trip fidelity.",
+  "runs": [
+    {
+      "sample": "legacy-project-workflow.doc",
+      "engine": "filens",
+      "outputSha256": "bcb5e231a145c14c4d870cc9bde93c6267f15df1fec7b9816f9af4cd8532411f",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-legacy-project-workflow.doc-0.png",
+          "sha256": "b5b0ec2bc42a0cebb2f72c40ebab7373c5fe0b4922c9d091c278be115a76df58"
+        },
+        {
+          "path": "filens-legacy-project-workflow.doc-1.png",
+          "sha256": "dd10643f8c00e8495121de302e71e98cde8a88f596878934f6eb361c9e2fa7e8"
+        }
+      ],
+      "views": 2,
+      "pages": 10
+    },
+    {
+      "sample": "legacy-project-workflow.doc",
+      "engine": "x2t",
+      "outputSha256": "8acee2157d69a5e45f5b408ef306903d1afc1d7372eda91438ec917f8ff87fe8",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-legacy-project-workflow.doc-0.png",
+          "sha256": "238b6bf17ca53dda31b8741060d6dec9c045cbba95565d28f28f716cef6147d1"
+        },
+        {
+          "path": "x2t-legacy-project-workflow.doc-1.png",
+          "sha256": "f290ee1800ca728557d4352d4c978fa2ee85066db680d45e68649858e307d120"
+        }
+      ],
+      "views": 2,
+      "pages": 1
+    },
+    {
+      "sample": "hyperlink.doc",
+      "engine": "filens",
+      "outputSha256": "ff6235d37b355d5fae308c52be531fe03d9c8dc702f8953c7bc25e1cb36b520d",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-hyperlink.doc-0.png",
+          "sha256": "ca4cf4aaec4617125eda54a7ae8eab800ee51ef7d008c0ede85236a5f00f76c8"
+        },
+        {
+          "path": "filens-hyperlink.doc-1.png",
+          "sha256": "0217a2d06e6093eba7424ba3ed3dd39bccb321f7675f828283561d0acc607d40"
+        }
+      ],
+      "views": 2,
+      "pages": 1
+    },
+    {
+      "sample": "hyperlink.doc",
+      "engine": "x2t",
+      "outputSha256": "f0a4b4a52fd630397184059ed7d18997263d83e319b582f011bced906dc20750",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-hyperlink.doc-0.png",
+          "sha256": "968e7c9302dae33a09e8d1696c0bcee6d8e760323b67bea66045e97dacf3aa5c"
+        },
+        {
+          "path": "x2t-hyperlink.doc-1.png",
+          "sha256": "0217a2d06e6093eba7424ba3ed3dd39bccb321f7675f828283561d0acc607d40"
+        }
+      ],
+      "views": 2,
+      "pages": 1
+    },
+    {
+      "sample": "table-merges.doc",
+      "engine": "filens",
+      "outputSha256": "b86269716077ff6d5ffc7361456840b2c97240e8b3868d7eb5e91f6902b20bd7",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-table-merges.doc-0.png",
+          "sha256": "e6c60de44a7e5b2db789a71f2fc8e06fe78df88e6a9baf391aab9e454d8c4204"
+        },
+        {
+          "path": "filens-table-merges.doc-1.png",
+          "sha256": "0217a2d06e6093eba7424ba3ed3dd39bccb321f7675f828283561d0acc607d40"
+        }
+      ],
+      "views": 2,
+      "pages": 1
+    },
+    {
+      "sample": "table-merges.doc",
+      "engine": "x2t",
+      "outputSha256": "bf95f71854d952eefedbb8836012d88e788cfbf36b7906c0a4430df92d5d63bc",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-table-merges.doc-0.png",
+          "sha256": "8ee702f5738cce7c57566a2c461b2a833eaded82a4a599ab6cc62faa97734890"
+        },
+        {
+          "path": "x2t-table-merges.doc-1.png",
+          "sha256": "0217a2d06e6093eba7424ba3ed3dd39bccb321f7675f828283561d0acc607d40"
+        }
+      ],
+      "views": 2,
+      "pages": 1
+    },
+    {
+      "sample": "Simple.xls",
+      "engine": "filens",
+      "outputSha256": "f453004d17c10517252c4669ac5f670358c91081c7e2e986b912f733beb9be05",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-Simple.xls-0.png",
+          "sha256": "9bce23b446b269289657d40bbccf67c3243c5ff03d47516fa4c13539f4ffe52c"
+        },
+        {
+          "path": "filens-Simple.xls-1.png",
+          "sha256": "24df57e3ef2e8641ac793fc709df21fc73744974e0dee659071dadb9bb21ee57"
+        },
+        {
+          "path": "filens-Simple.xls-2.png",
+          "sha256": "b515d0ab2afe8235500b4f4fc64ed5b8e41ecc01ac99052e57032ad33b9749c7"
+        }
+      ],
+      "views": 3,
+      "displaySha256": "a3548e26bdc3a4cc872549c7b3b6125b9f21f161f108751396465b58a50a7c06",
+      "previewContentSha256": "02aa9b7c1631bddd8a0237f7fd254915dfa5d28fc33d3d1e856e91b4128d6fb9",
+      "sheets": [
+        {
+          "rows": 1,
+          "columns": 1,
+          "cells": 1
+        },
+        {
+          "rows": 0,
+          "columns": 0,
+          "cells": 0
+        },
+        {
+          "rows": 0,
+          "columns": 0,
+          "cells": 0
+        }
+      ]
+    },
+    {
+      "sample": "Simple.xls",
+      "engine": "x2t",
+      "outputSha256": "af13242ee9adcc18cca17cb402c46f6da539dd67196848db6a3149e555f1419b",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-Simple.xls-0.png",
+          "sha256": "9bce23b446b269289657d40bbccf67c3243c5ff03d47516fa4c13539f4ffe52c"
+        },
+        {
+          "path": "x2t-Simple.xls-1.png",
+          "sha256": "24df57e3ef2e8641ac793fc709df21fc73744974e0dee659071dadb9bb21ee57"
+        },
+        {
+          "path": "x2t-Simple.xls-2.png",
+          "sha256": "b515d0ab2afe8235500b4f4fc64ed5b8e41ecc01ac99052e57032ad33b9749c7"
+        }
+      ],
+      "views": 3,
+      "displaySha256": "a3548e26bdc3a4cc872549c7b3b6125b9f21f161f108751396465b58a50a7c06",
+      "previewContentSha256": "02aa9b7c1631bddd8a0237f7fd254915dfa5d28fc33d3d1e856e91b4128d6fb9",
+      "sheets": [
+        {
+          "rows": 1,
+          "columns": 1,
+          "cells": 1
+        },
+        {
+          "rows": 0,
+          "columns": 0,
+          "cells": 0
+        },
+        {
+          "rows": 0,
+          "columns": 0,
+          "cells": 0
+        }
+      ]
+    },
+    {
+      "sample": "SimpleWithFormula.xls",
+      "engine": "filens",
+      "outputSha256": "47c1138fb8a2f4a98b4d593211112c22f42399010ecd622a26b10f952886baf0",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-SimpleWithFormula.xls-0.png",
+          "sha256": "18e8b2ea5d40761f7421c382a1b0885cf28ae79815eb5a00b49938e43fea3e44"
+        },
+        {
+          "path": "filens-SimpleWithFormula.xls-1.png",
+          "sha256": "24df57e3ef2e8641ac793fc709df21fc73744974e0dee659071dadb9bb21ee57"
+        },
+        {
+          "path": "filens-SimpleWithFormula.xls-2.png",
+          "sha256": "b515d0ab2afe8235500b4f4fc64ed5b8e41ecc01ac99052e57032ad33b9749c7"
+        }
+      ],
+      "views": 3,
+      "displaySha256": "cafe3debc983b946837f55454338cb1f2316c005393fb6d178e67b779bcb406b",
+      "previewContentSha256": "d4c21c799c4f6678323b98b84759ff91efc73920129e9400267af2dbbb626cc5",
+      "sheets": [
+        {
+          "rows": 3,
+          "columns": 1,
+          "cells": 3
+        },
+        {
+          "rows": 0,
+          "columns": 0,
+          "cells": 0
+        },
+        {
+          "rows": 0,
+          "columns": 0,
+          "cells": 0
+        }
+      ]
+    },
+    {
+      "sample": "SimpleWithFormula.xls",
+      "engine": "x2t",
+      "outputSha256": "debe3cff510e59e1d7a7d68b5ffb092562ca274f2289845bb3cbb1d274e5d351",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-SimpleWithFormula.xls-0.png",
+          "sha256": "18e8b2ea5d40761f7421c382a1b0885cf28ae79815eb5a00b49938e43fea3e44"
+        },
+        {
+          "path": "x2t-SimpleWithFormula.xls-1.png",
+          "sha256": "24df57e3ef2e8641ac793fc709df21fc73744974e0dee659071dadb9bb21ee57"
+        },
+        {
+          "path": "x2t-SimpleWithFormula.xls-2.png",
+          "sha256": "b515d0ab2afe8235500b4f4fc64ed5b8e41ecc01ac99052e57032ad33b9749c7"
+        }
+      ],
+      "views": 3,
+      "displaySha256": "cafe3debc983b946837f55454338cb1f2316c005393fb6d178e67b779bcb406b",
+      "previewContentSha256": "d4c21c799c4f6678323b98b84759ff91efc73920129e9400267af2dbbb626cc5",
+      "sheets": [
+        {
+          "rows": 3,
+          "columns": 1,
+          "cells": 3
+        },
+        {
+          "rows": 0,
+          "columns": 0,
+          "cells": 0
+        },
+        {
+          "rows": 0,
+          "columns": 0,
+          "cells": 0
+        }
+      ]
+    },
+    {
+      "sample": "SOLVSAMP.XLS",
+      "engine": "filens",
+      "outputSha256": "db9654f0acbfc60607e1b14491972fe1dc3cd9fbdf030eaccf54f95f288b3cb1",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-SOLVSAMP.XLS-0.png",
+          "sha256": "868e0022da16863fc0f3b64abeef3612c33534c13dbc649bd188c18ef00ebe66"
+        },
+        {
+          "path": "filens-SOLVSAMP.XLS-1.png",
+          "sha256": "6c5844d52ab5b275575288393d0c9e5b8f1c5d9a2fdae4146f8b3f9cab76f3d9"
+        },
+        {
+          "path": "filens-SOLVSAMP.XLS-2.png",
+          "sha256": "44f861de32a84eae1e654916abc3177164d193ae360be809403b47ebfcc0eba4"
+        },
+        {
+          "path": "filens-SOLVSAMP.XLS-3.png",
+          "sha256": "009485d08e61a1f5b9e56eea76fc70c8b4900fa08e2842d6a4dfa75a48a2595e"
+        },
+        {
+          "path": "filens-SOLVSAMP.XLS-4.png",
+          "sha256": "86d088ba6903f91feb0df51d280dbd24b1eddb4c10326638711af40afc55bb3c"
+        },
+        {
+          "path": "filens-SOLVSAMP.XLS-5.png",
+          "sha256": "9910f61e77c492b0fe411f189c1712dd7abc76e7073754d3d191145dd8b0df7d"
+        }
+      ],
+      "views": 6,
+      "displaySha256": "cd2cc16d3eb0aed672443a51631a18139f7a7ce66f49611ef740530a9d544610",
+      "previewContentSha256": "0a3cfc2fac4e53eedd0241dca082bf09e63b112b58ca47acc73375d549c4b7b2",
+      "sheets": [
+        {
+          "rows": 18,
+          "columns": 8,
+          "cells": 56
+        },
+        {
+          "rows": 20,
+          "columns": 7,
+          "cells": 81
+        },
+        {
+          "rows": 20,
+          "columns": 12,
+          "cells": 104
+        },
+        {
+          "rows": 20,
+          "columns": 8,
+          "cells": 81
+        },
+        {
+          "rows": 29,
+          "columns": 7,
+          "cells": 76
+        },
+        {
+          "rows": 20,
+          "columns": 8,
+          "cells": 60
+        }
+      ]
+    },
+    {
+      "sample": "SOLVSAMP.XLS",
+      "engine": "x2t",
+      "outputSha256": "712ae33cdf35aea240a7f7b493962b2b9a7893c4c3755e049f889e777c6e1f3a",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-SOLVSAMP.XLS-0.png",
+          "sha256": "0d85e960f175e0eccf7ade30abfea5e81c3d632e77c1caec924252ff629f9264"
+        },
+        {
+          "path": "x2t-SOLVSAMP.XLS-1.png",
+          "sha256": "d5b8037ce8a7c01bc68c864d78a89690fcea6d6b8a1c934b82331e42fd991a27"
+        },
+        {
+          "path": "x2t-SOLVSAMP.XLS-2.png",
+          "sha256": "f20a1ad22ed6400ac0f9dc7026dbc6f75f7eebc9a55b1d296e47fd6454b34a22"
+        },
+        {
+          "path": "x2t-SOLVSAMP.XLS-3.png",
+          "sha256": "66e4c1f95a3ec8d0c95c7569cb115786bb29fd7236b9570110c3b16fc637f562"
+        },
+        {
+          "path": "x2t-SOLVSAMP.XLS-4.png",
+          "sha256": "0fd1c6f03863d3226edbeb96af932d63e6a600e37366881cf98ceeb3641370ae"
+        },
+        {
+          "path": "x2t-SOLVSAMP.XLS-5.png",
+          "sha256": "f41fd0f0f5198d01b01e9d269c999778641e2c5b148aecdbe9968a3bbe845e15"
+        }
+      ],
+      "views": 6,
+      "displaySha256": "8c2ab0a7b78c5ae4d89ebe0cc0d41b449c44978fa18add65bf4053aab77756b5",
+      "previewContentSha256": "0a3cfc2fac4e53eedd0241dca082bf09e63b112b58ca47acc73375d549c4b7b2",
+      "sheets": [
+        {
+          "rows": 18,
+          "columns": 8,
+          "cells": 56
+        },
+        {
+          "rows": 20,
+          "columns": 8,
+          "cells": 81
+        },
+        {
+          "rows": 21,
+          "columns": 12,
+          "cells": 104
+        },
+        {
+          "rows": 20,
+          "columns": 8,
+          "cells": 81
+        },
+        {
+          "rows": 29,
+          "columns": 8,
+          "cells": 76
+        },
+        {
+          "rows": 20,
+          "columns": 8,
+          "cells": 60
+        }
+      ]
+    },
+    {
+      "sample": "legacy-sample-show.ppt",
+      "engine": "filens",
+      "outputSha256": "4176f32be453f65c007737e1a5904d87858abffad80a1a6002d2837ccc335346",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-legacy-sample-show.ppt-0.png",
+          "sha256": "2df7d9e20c7ad20bf2d9080939a95695372f5207562a59e260c632567a9ac8b7"
+        },
+        {
+          "path": "filens-legacy-sample-show.ppt-1.png",
+          "sha256": "2b65a8fb565f3da7e7e59f5e2f806ef9b5de955f996d0d7afe03ad6d4ff15f12"
+        }
+      ],
+      "views": 2
+    },
+    {
+      "sample": "legacy-sample-show.ppt",
+      "engine": "x2t",
+      "outputSha256": "9ceeeed8face7914d444ec0981a81590b6bfe8f83fe560a85a0b7662b329b4b0",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-legacy-sample-show.ppt-0.png",
+          "sha256": "d72ef0277bd562a13754fe86d43c3d5d8e34dd3c4cf39e1fae53b65801c259a2"
+        },
+        {
+          "path": "x2t-legacy-sample-show.ppt-1.png",
+          "sha256": "d60db75904d92c7adc0664305f94d3699b21be7b01c2efbdd05777231a3af22c"
+        }
+      ],
+      "views": 2
+    },
+    {
+      "sample": "rich-text.rtf",
+      "engine": "filens",
+      "outputSha256": "de3f1a74a35cf2083fc8764ef35f080e023974ad7c2679e74ede6b04ba3b38c0",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-rich-text.rtf-0.png",
+          "sha256": "e327b45238ebae509dae4a0517ba5966979e46abacc628b618cefdd245dd59f0"
+        },
+        {
+          "path": "filens-rich-text.rtf-1.png",
+          "sha256": "0cf941c151fd2acadb8aafa5772f3a1c71957b762e7ac3c81ae0d92992b321a4"
+        }
+      ],
+      "views": 2,
+      "pages": 1
+    },
+    {
+      "sample": "rich-text.rtf",
+      "engine": "x2t",
+      "outputSha256": "263f652f3983cb80772d334dec0c16710c68ec3f0b19c03d6ac2c72874aabcfc",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-rich-text.rtf-0.png",
+          "sha256": "6f69e77df2ae970e695fa10e6798e824033a6703c1dbe83a7702bc3065da2e96"
+        },
+        {
+          "path": "x2t-rich-text.rtf-1.png",
+          "sha256": "df10784d1c92d9f194cf77fc5e5df49256a8e98257bc3f1654cd0ed75f26c158"
+        }
+      ],
+      "views": 2,
+      "pages": 2
+    },
+    {
+      "sample": "sample.odt",
+      "engine": "filens",
+      "outputSha256": "a93063bb0fed369d509a05491600a8253f95dd78b794285f1b881fcd2ef2aa26",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-sample.odt-0.png",
+          "sha256": "5b11af1d0d97c7ecfe711c9fce9275428f3f210e62d04be3d18bad58ddccf931"
+        },
+        {
+          "path": "filens-sample.odt-1.png",
+          "sha256": "d7eb12786992005236206d9863a49791706eb7ec9ee912462bcd8b64ba501435"
+        }
+      ],
+      "views": 2,
+      "pages": 1
+    },
+    {
+      "sample": "convert-numeric.csv",
+      "engine": "filens",
+      "outputSha256": "cfd4ec892917cfa9204e993cdc0edc97c6de9476adf5fd0b4cae959af517ace7",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-convert-numeric.csv-0.png",
+          "sha256": "205bf15a77980add268d6d597b9534a62001d8f4aff7ec8770edf9e0fbd9dc0b"
+        }
+      ],
+      "views": 1,
+      "displaySha256": "763cfb8d70269d2a5c3d1df901b2c6e569039b76e5540f76dc2299de727a82fb",
+      "previewContentSha256": "ef2b3a387adb658e3813c4fba85f3d52bbc9a3f509b808a88d31bd73d7f3889d",
+      "sheets": [
+        {
+          "rows": 10000,
+          "columns": 8,
+          "cells": 80000
+        }
+      ]
+    },
+    {
+      "sample": "convert-numeric.csv",
+      "engine": "x2t",
+      "outputSha256": "8290914a0490a5711583a9366d6fad1b4bbe7ec2a8664a57656ce971f4c12390",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-convert-numeric.csv-0.png",
+          "sha256": "a9de11a698fd29f317f078014389c6b5b95afb2e06059c1fbd379f4a31195e6e"
+        }
+      ],
+      "views": 1,
+      "displaySha256": "81f45adaeff53ed1243db547fddc9c381beae67f76ba71ce0b43a57219ac23bf",
+      "previewContentSha256": "dc4bb36448e74ece9ba8e5f17c9f3cc663532fdb64515218215ddba2cd5854ef",
+      "sheets": [
+        {
+          "rows": 20000,
+          "columns": 8,
+          "cells": 160000
+        }
+      ]
+    },
+    {
+      "sample": "convert-numeric-8000.csv",
+      "engine": "filens",
+      "outputSha256": "95ee70dd6eb743ec54a9234c867e87668e0d375919ada3b44764fccb421f721a",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-convert-numeric-8000.csv-0.png",
+          "sha256": "205bf15a77980add268d6d597b9534a62001d8f4aff7ec8770edf9e0fbd9dc0b"
+        }
+      ],
+      "views": 1,
+      "displaySha256": "4af4f637b91c21ce142f67ea816fba5d26131a11c99ee7c72087b2006c870e11",
+      "previewContentSha256": "042a6a60378b6f6783e39ff13e0e7d265e9e4d627c6d645d37618ad8307198aa",
+      "sheets": [
+        {
+          "rows": 8000,
+          "columns": 8,
+          "cells": 64000
+        }
+      ]
+    },
+    {
+      "sample": "convert-numeric-8000.csv",
+      "engine": "x2t",
+      "outputSha256": "c2751a895e830d9bac6707a4493d4befac83d3449f22232eb50c96e09f7d34c8",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-convert-numeric-8000.csv-0.png",
+          "sha256": "a9de11a698fd29f317f078014389c6b5b95afb2e06059c1fbd379f4a31195e6e"
+        }
+      ],
+      "views": 1,
+      "displaySha256": "4af4f637b91c21ce142f67ea816fba5d26131a11c99ee7c72087b2006c870e11",
+      "previewContentSha256": "042a6a60378b6f6783e39ff13e0e7d265e9e4d627c6d645d37618ad8307198aa",
+      "sheets": [
+        {
+          "rows": 8000,
+          "columns": 8,
+          "cells": 64000
+        }
+      ]
+    },
+    {
+      "sample": "generated-notes.txt",
+      "engine": "filens",
+      "outputSha256": "c8124738eda970b8b3361a61cabdeffdb9f13c48d7d160ed32d3688ad3d4abbb",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "filens-generated-notes.txt-0.png",
+          "sha256": "26baf43b38dc0971d8711c9fad73378be77bf998de5610781af73d571c3f17e3"
+        },
+        {
+          "path": "filens-generated-notes.txt-1.png",
+          "sha256": "0b74a54d7d6673cfc04bd037b83ef55b550e115b6c88fb64fe10ec4aa85e4813"
+        }
+      ],
+      "views": 2,
+      "pages": 1
+    },
+    {
+      "sample": "generated-notes.txt",
+      "engine": "x2t",
+      "outputSha256": "d46938f682778f924e971f805518bf85dd8b9395355f00e38c574b184e6d9c05",
+      "errors": [],
+      "screenshots": [
+        {
+          "path": "x2t-generated-notes.txt-0.png",
+          "sha256": "9ae74b1cc8363d8f89f41c86c5e504847523aae5cf0f501afd83c042718a2cb1"
+        },
+        {
+          "path": "x2t-generated-notes.txt-1.png",
+          "sha256": "254e4af9889d99cf8beee7fc8095ff29f50ebb79a443aaab3245b3aff99f612f"
+        }
+      ],
+      "views": 2,
+      "pages": 1
+    }
+  ]
+}

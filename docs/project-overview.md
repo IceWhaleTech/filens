@@ -53,8 +53,8 @@ Instead of teaching every application or Agent hundreds of formats, filens aims 
 
 ## What Makes filens Different
 
-- **Tiny legacy Office/WPS normalization**: DOC/WPS and related legacy inputs can be normalized to OpenXML by a preview-focused WASM core. The current `converter-core.wasm` is **837.3 KB raw and 308.9 KB Brotli**.
-- **Native PPTX preview**: presentations are parsed and rendered directly with HTML/SVG rather than converted to images or HTML on a server. To the best of our knowledge, filens is the only open-source implementation centered on native PPTX preview at this scope, with leading compatibility among comparable browser-native renderers.
+- **Tiny legacy Office/WPS normalization**: DOC/WPS and related legacy inputs can be normalized to OpenXML by a preview-focused WASM core. The current `converter-core.wasm` is **871.0 KiB raw and 317.6 KiB Brotli**.
+- **Native PPTX preview**: presentations are parsed directly and rendered with HTML/SVG, including text, images, shapes, tables, and supported 2D column and pie charts. Local decks need no upload or conversion service; the same viewer also opens iWork, CAD, RAW, and panorama originals.
 - **Native iWork parsing and preview**: Keynote, Pages, and Numbers are decoded on the client, including current iWork protocol structures. Earlier protocol research and code are credited to [`dunhamsteve/iwork`](https://github.com/dunhamsteve/iwork), on which part of this work builds.
 - **Browser-native CAD with an open-source lineage**: the CAD conversion work is derived from [`orcastor/cad2x-converter`](https://github.com/orcastor/cad2x-converter), a compact DXF/DWG-to-DXF/PDF/PNG/SVG tool. filens adds a direct pure-browser DXF parsing and SVG rendering path for supported drawings, so common previews need no native process or conversion server.
 - **Long-tail visual formats**: the same preview host covers calibrated panorama formats, a broad camera RAW set, STEP/STP, and many mesh, scene, point-cloud, voxel, molecule, motion, and volume formats.
@@ -110,6 +110,8 @@ References for the architecture descriptions: [LibreOffice command-line paramete
 
 ### Estimated first-preview time for a 10 MB PPTX
 
+The latest [frontend performance comparison](performance-comparison.md) measures the optimized build against current specialist browser projects: 45.3 ms to parse this PPTX and 69.3 ms to its first preview. It includes the full corpus, confidence intervals, failures and reproducible raw data. The capacity-planning figures below retain an earlier build's measurements; they are historical, not the current frontend ranking.
+
 The table below is a capacity-planning model, not a universal benchmark. The workload is represented by the repository's `vue-office-test.pptx`: **11,122,759 bytes, 13 slides, and 8 media files**. “First preview” means the viewer is already open and timing starts when the file is selected; filens stops when slide 1 is visible, while server converters usually must finish producing a normalized document, PDF, HTML, or image result first.
 
 | Route | Estimated time to first visible page/slide | Memory planning signal | Basis and confidence |
@@ -134,10 +136,10 @@ The following sizes compare representative converter artifacts and packages. The
 | --- | ---: | --- | --- |
 | Full native ONLYOFFICE x2t with fonts | About **560+ MB** compressed | Native process with broad Office conversion coverage and higher layout fidelity; also the highest font, resource, and deployment cost | High-fidelity server conversion and batch processing |
 | [`onlyoffice-x2t-wasm`](https://github.com/cryptpad/onlyoffice-x2t-wasm/releases/tag/v9.3.0%2B0) `v9.3.0+0` | Release ZIP **15.79 MiB**; `x2t.wasm` **34.32 MiB**, Brotli **6.49 MiB** | A higher-fidelity browser candidate using Emscripten glue, with higher initialization and memory costs than a lightweight WASI core | In-browser Office conversion without a server |
-| **filens converter-core** | `converter-core.wasm` **837.3 KB**; gzip **381.2 KB**; Brotli **308.9 KB** | Pure WASI for browser or wazero execution; optimized for preview normalization, structured extraction, and safe fallback | Local previews, indexing, Agent file understanding, and edge devices |
-| **filens converter-image** | Optional `converter-image.wasm` **671.1 KB**; gzip **209.5 KB**; Brotli **167.0 KB** | Loaded only for RAW/ICNS image conversion | Camera RAW thumbnails and ICNS previews |
+| **filens converter-core** | `converter-core.wasm` **871.0 KiB**; gzip **395.0 KiB**; Brotli **317.6 KiB** | Pure WASI for browser or wazero execution; optimized for preview normalization, structured extraction, and safe fallback | Local previews, indexing, Agent file understanding, and edge devices |
+| **filens converter-image** | Optional `converter-image.wasm` **909.3 KiB**; gzip **281.9 KiB**; Brotli **204.1 KiB** | Loaded only for RAW/ICNS image conversion | Camera RAW thumbnails and ICNS previews |
 
-Using the current core artifact, raw filens WASM is about **43x smaller** than x2t-wasm, and its Brotli transfer size is about **22x smaller**. These figures describe deployment cost, not equivalent capability: filens deliberately targets a lighter preview and extraction job, while x2t targets broader Office reconstruction fidelity.
+The x2t-wasm artifact is about **40×** the size of the current filens core, or **21×** with Brotli. These figures describe deployment cost, not equivalent capability: filens deliberately targets a lighter preview and extraction job, while x2t targets broader Office reconstruction fidelity.
 
 iWork is a separate gap in the document ecosystem. Traditionally, applications have had to rely on native macOS/iOS document components or iCloud-based online conversion. ONLYOFFICE has more recently added iWork conversion, but compatibility with current iWork files and rendering fidelity remain limited. filens instead follows a direct, client-native parser and renderer path for modern Keynote, Pages, and Numbers files.
 
@@ -155,7 +157,7 @@ The following results were measured over five runs on the same Windows 10 / Xeon
 
 filens does not promise complete reconstruction of Office layout, charts, animations, embedded objects, or formula calculation. Use it as the lightweight local path for preview, indexing, and extraction; load or deploy a heavier engine when production-grade Office conversion fidelity is the primary requirement.
 
-Reproduce the size data with `npm run report:wasm-sizes`. The current WASM smoke suite passes **295/295** jobs, and the conversion policy check covers **1,637** assertions. See the [x2t-wasm evaluation](x2t-wasm-evaluation.md) for the audit procedure and integration boundary.
+Reproduce the size data with `npm run report:wasm-sizes`; current production sizes are in the [bundle report](bundle-sizes.md). This historical snapshot recorded **295/295** WASM smoke jobs and **1,637** conversion policy assertions. See the [x2t-wasm evaluation](x2t-wasm-evaluation.md) for the audit procedure and integration boundary.
 
 ## Roadmap
 

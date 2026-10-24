@@ -15,6 +15,68 @@ import type { IworkArchiveIndex, IworkArchiveRecord } from '../types';
 
 type AnyObject = Record<string, unknown>;
 
+// A semantic build is synchronous and reads an immutable archive. Keep caches
+// within that build so subsequent edits to a public archive remain visible.
+const styleResolutionCaches = new WeakMap<IworkArchiveIndex, Map<number, AnyObject>>();
+const recordValueIndexes = new WeakMap<IworkArchiveIndex, WeakMap<object, IworkArchiveRecord>>();
+const deferredRecordValues = new WeakMap<IworkArchiveRecord, () => unknown>();
+const decodedRecordOwners = new WeakMap<object, IworkArchiveRecord>();
+
+export function deferRecordValue(record: IworkArchiveRecord, decode: () => unknown): void {
+  deferredRecordValues.set(record, decode);
+  Object.defineProperty(record, 'value', {
+    enumerable: true, configurable: true,
+    get: readDeferredRecordValue, set: storeRecordValue
+  });
+}
+
+function readDeferredRecordValue(this: IworkArchiveRecord): unknown {
+  const decode = deferredRecordValues.get(this)!;
+  const value = decode();
+  storeRecordValue.call(this, value);
+  return value;
+}
+
+function storeRecordValue(this: IworkArchiveRecord, value: unknown): void {
+  Object.defineProperty(this, 'value', { value, enumerable: true, configurable: true, writable: true });
+  deferredRecordValues.delete(this);
+  if (value && typeof value === 'object') decodedRecordOwners.set(value, this);
+}
+
+export function withStyleResolutionCache<T>(archive: IworkArchiveIndex, build: () => T): T {
+  if (styleResolutionCaches.has(archive)) return build();
+  styleResolutionCaches.set(archive, new Map());
+  try {
+    return build();
+  } finally {
+    styleResolutionCaches.delete(archive);
+    recordValueIndexes.delete(archive);
+  }
+}
+
+export function findRecordByValue(archive: IworkArchiveIndex, value: object): IworkArchiveRecord | undefined {
+  if (!styleResolutionCaches.has(archive)) {
+    return Object.values(archive.records).find(record => record.value === value);
+  }
+  let index = recordValueIndexes.get(archive);
+  if (!index) {
+    index = new WeakMap();
+    for (const record of Object.values(archive.records)) {
+      if (deferredRecordValues.has(record)) continue;
+      if (record.value && typeof record.value === 'object' && !index.has(record.value)) index.set(record.value, record);
+    }
+    recordValueIndexes.set(archive, index);
+  }
+  const cached = index.get(value);
+  if (cached) return cached;
+  const decoded = decodedRecordOwners.get(value);
+  if (decoded && archive.records[String(decoded.id)] === decoded && decoded.value === value) {
+    index.set(value, decoded);
+    return decoded;
+  }
+  return undefined;
+}
+
 export function getRecord(archive: IworkArchiveIndex, refOrId: unknown): IworkArchiveRecord | undefined {
   const id = getRefId(refOrId);
   if (id == null) {
@@ -93,6 +155,11 @@ export function resolveMergedStyle(archive: IworkArchiveIndex, refOrId: unknown,
   }
 
   const id = record?.id;
+  // Only root results are context independent. A recursive result can depend
+  // on the current ancestry when a document contains cyclic style references.
+  const cache = seen.size === 0 ? styleResolutionCaches.get(archive) : undefined;
+  const cached = id != null ? cache?.get(id) : undefined;
+  if (cached) return cached;
   if (id != null) {
     if (seen.has(id)) {
       return value;
@@ -110,7 +177,9 @@ export function resolveMergedStyle(archive: IworkArchiveIndex, refOrId: unknown,
   // identifier-backed style. Merge both so that we don't lose base properties
   // (e.g. Keynote shape fills) when a parent ref exists but is incomplete.
   const mergedBase = deepMerge(stylesheetValue, parentValue);
-  return deepMerge(mergedBase, value);
+  const merged = deepMerge(mergedBase, value);
+  if (id != null && merged) cache?.set(id, merged);
+  return merged;
 }
 
 function resolveStyleParentRef(value: AnyObject): unknown {

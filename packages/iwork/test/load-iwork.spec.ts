@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import JSZip from 'jszip';
 import {
   createIworkPreviewDriver,
   createIworkPreviewRoutes,
@@ -8,6 +9,30 @@ import {
 import { readFixture } from './helpers';
 
 describe('iWork parsing', () => {
+  it('resolves the same archive records when ZIP entries are stored in a different order', async () => {
+    const bytes = await readFixture('vendor/iwork-converter/testdata/a.numbers');
+    const original = await JSZip.loadAsync(bytes);
+    const reversed = new JSZip();
+    for (const entry of Object.values(original.files).filter(entry => !entry.dir).reverse()) {
+      reversed.file(entry.name, await entry.async('uint8array'));
+    }
+    const before = await loadIwork(bytes, { hint: 'numbers' });
+    const after = await loadIwork(await reversed.generateAsync({ type: 'uint8array' }), { hint: 'numbers' });
+    expect(after.archive).toEqual(before.archive);
+    if (before.kind !== 'numbers' || after.kind !== 'numbers') throw new Error('Expected Numbers documents');
+    expect(after.sheets).toEqual(before.sheets);
+  });
+
+  it('fetches an unnamed download URL once when detecting its archive type', async () => {
+    const bytes = await readFixture('vendor/iwork-converter/testdata/a.pages');
+    const fetchMock = vi.fn(async () => ({ ok: true, arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const document = await loadIwork('https://example.com/download?id=42');
+      expect(document.kind).toBe('pages');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally { vi.unstubAllGlobals(); }
+  });
   it('detects vendored iWork fixtures by archive contents', async () => {
     const keyBytes = await readFixture('vendor/iwork-converter/testdata/a.key');
     const pagesBytes = await readFixture('vendor/iwork-converter/testdata/a.pages');
@@ -91,6 +116,23 @@ describe('iWork parsing', () => {
       expect(cellText(9, 5)).toBe('60000');
       expect(cellText(10, 5)).toBe('');
     }
+  });
+
+  it('retains sparse trailing cells and row-tree positions across the full Numbers workbook', async () => {
+    const document = await loadIwork(await readFixture('../../apps/demo/public/samples/a.numbers'), { hint: 'numbers' });
+    if (document.kind !== 'numbers') throw new Error('Expected Numbers document');
+    expect(document.sheets).toHaveLength(6);
+    const tables = document.sheets.flatMap(sheet => sheet.tables);
+    expect(tables).toHaveLength(14);
+    const text = (table: number, row: number, column: number) => tables[table].item.cells
+      .find(cell => cell.row === row && cell.column === column)?.textFrame.paragraphs
+      .map(p => p.runs.map(r => r.text).join('')).join('\n');
+    expect(tables.flatMap(table => table.item.cells).filter(cell => cell.textFrame.paragraphs
+      .some(p => p.runs.some(r => r.text.trim())))).toHaveLength(5772);
+    expect(text(0, 32, 10)).toBe('$0.000278');
+    expect(text(7, 47, 0)).toBe('aws');
+    expect(text(8, 0, 12)).toBe('billedTime');
+    expect(text(8, 46, 12)).toBe('1.079');
   });
 
   it('loads numbers fixtures into sheet canvases with parsed tables', async () => {

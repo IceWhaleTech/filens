@@ -81,10 +81,11 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
     if (state.document.kind === 'key' || state.document.kind === 'pages') {
       const pages = document.createElement('div');
       pages.className = 'iworkv-pages';
+      const bounds = stage.getBoundingClientRect();
       canvases.forEach((canvas, index) => {
         const shell = document.createElement('div');
         shell.className = 'iworkv-page-shell';
-        applyCanvasScale(shell, canvas.width, canvas.height, resolveScale(canvas.width, canvas.height));
+        applyCanvasScale(shell, canvas.width, canvas.height, resolveScale(canvas.width, canvas.height, bounds));
         shell.dataset.pageIndex = String(index);
         pages.appendChild(shell);
         pageShells.push(shell);
@@ -122,6 +123,10 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
     const renderedTables = (activeSheet?.tables ?? []).map(({ item }, index) => {
       const sheet = numbersTableToSheet(item, index);
       const section = document.createElement('section');
+      section.className = 'iworkv-numbers-table';
+      // Keep offscreen tables searchable and mounted, but defer their layout.
+      // Estimate the initial height from the grid's 26px rows until measured.
+      section.style.containIntrinsicBlockSize = `auto ${(Math.min(Math.max(sheet.rowCount, 1), ROW_BATCH_SIZE) + 1) * 26}px`;
       if ((activeSheet?.tables.length ?? 0) > 1) {
         const title = document.createElement('h3');
         title.className = 'iworkv-numbers-table-title';
@@ -267,12 +272,12 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
     });
   };
 
-  const resolveScale = (width: number, height: number): number => {
+  const resolveScale = (width: number, height: number, measuredBounds?: DOMRect): number => {
     if (state.fit === 'none') {
       return state.scale;
     }
 
-    const bounds = stage.getBoundingClientRect();
+    const bounds = measuredBounds ?? stage.getBoundingClientRect();
     // The stage owns 16px padding on each side. Keep the fit calculation in
     // sync with that padding so paged iWork canvases use the viewport.
     const availableWidth = Math.max(bounds.width - 32, 1);
@@ -306,7 +311,23 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
       if (state.fit === 'none') {
         return;
       }
-      render();
+      if (state.document.kind === 'numbers') {
+        // The workbook grid fills its container through CSS. Rebuilding it on
+        // resize repeats table layout and discards rows loaded by scrolling.
+        // Only floating sheet objects have a canvas scale to update.
+        const canvas = state.document.sheets[state.currentSheet]?.canvas;
+        const shell = stage.querySelector<HTMLElement>('.iworkv-numbers-objects .iworkv-page-shell');
+        if (canvas && shell) {
+          const availableWidth = Math.max(stage.getBoundingClientRect().width - 32, 1);
+          applyCanvasScale(shell, canvas.width, canvas.height, availableWidth / Math.max(canvas.width, 1));
+        }
+        return;
+      }
+      const bounds = stage.getBoundingClientRect();
+      documentCanvases(state.document).forEach((canvas, index) => {
+        const shell = pageShells[index];
+        if (shell) applyCanvasScale(shell, canvas.width, canvas.height, resolveScale(canvas.width, canvas.height, bounds));
+      });
       emit('scalechange', getState());
     });
     resizeObserver.observe(stage);

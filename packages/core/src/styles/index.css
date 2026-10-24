@@ -32,6 +32,7 @@
 
 .pptxv-slide-shell {
   position: relative;
+  contain: layout style;
   margin: 0 auto 18px;
   scroll-snap-align: start;
 }

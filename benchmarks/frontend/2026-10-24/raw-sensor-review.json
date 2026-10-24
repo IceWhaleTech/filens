@@ -1,0 +1,124 @@
+{
+  "resultsSha256": "ce7601f5ba71559e894ac57fc703c7499bb5e82dc3be06ad8a9c9ddcd58afbc1",
+  "kind": "Manual inspection of the actual saved browser previews; scene readability/orientation/crop, not a colorimetric fidelity score.",
+  "colorContract": "Aligned with Photos internal/rawthumbnail/native_impl.inc and native_color_test.go, checkout 5967f350d9b169211379b91a3a097ee1883373e6: fixed sRGB, camera WB, sensor black/white levels, bounded signed BaselineExposure and invalid-calibration errors. Native tests check 18% gray ~118 and -1/+1 EV ~85/162; the 16-bit linear sRGB lookup stays within one 8-bit code value of the exact transfer curve.",
+  "composite": {
+    "path": "../../../docs/assets/performance/raw-sensor-preview.webp",
+    "sha256": "9c6f478985304019ca360e92f372bcd03db13ec035d9422c070f5e8e9eca953d"
+  },
+  "samples": [
+    {
+      "sample": "pentax-k-r.dng",
+      "sensorBenchmarkEligible": true,
+      "previewComparable": true,
+      "notes": "Same horse/trees scene and orientation. DNG BaselineExposure -0.5228729248046875 EV applied. Minor crop and tone differences; no magenta blown sky.",
+      "screenshots": [
+        {
+          "path": "filens-pentax-k-r.dng.png",
+          "sha256": "29918b957cd4533d866207b23b1d974900a344f78fc4e5f6ddcc2ccc65511101"
+        },
+        {
+          "path": "libraw-half-pentax-k-r.dng.png",
+          "sha256": "ac6e39d9f214dcc3faec7bd5d01b58502b0707b63f84c7fc3361b1569df80b67"
+        },
+        {
+          "path": "libraw-fast-pentax-k-r.dng.png",
+          "sha256": "48826b85d92d62ecda811fcbfda1ff3041040a452fbd4a3723ab0ee5e25182c2"
+        }
+      ]
+    },
+    {
+      "sample": "nikon-iss.nef",
+      "sensorBenchmarkEligible": true,
+      "previewComparable": true,
+      "notes": "Same aurora scene, orientation and readable structure. Conventional auto-bright LibRaw is brighter; fixed-exposure outputs differ in shadows.",
+      "screenshots": [
+        {
+          "path": "filens-nikon-iss.nef.png",
+          "sha256": "5f64ee6eb63d7c3d9e537801cd3cfb22f3144e9aa8c0eeb1441a1ef1349eea40"
+        },
+        {
+          "path": "libraw-half-nikon-iss.nef.png",
+          "sha256": "ea5880320a3a51722bb8c9e51b0ffc9266df028aca2a9d953e9b8ece77e07d32"
+        },
+        {
+          "path": "libraw-fast-nikon-iss.nef.png",
+          "sha256": "64bbbc7f560f5b54c8654b62f41d440b06514415f2933b2fc950e2cc11b32b09"
+        }
+      ]
+    },
+    {
+      "sample": "canon-40d-sraw.cr2",
+      "sensorBenchmarkEligible": true,
+      "previewComparable": true,
+      "notes": "Same grapes/leaves, orientation and crop; exposure/tone differ, especially against histogram auto-bright.",
+      "screenshots": [
+        {
+          "path": "filens-canon-40d-sraw.cr2.png",
+          "sha256": "cf1853f8b49a2a435cd01fb889fd6d45a43cd20632a7b71ffa5a2567bfbcb272"
+        },
+        {
+          "path": "libraw-half-canon-40d-sraw.cr2.png",
+          "sha256": "b174739ac95f29d8734df5fc07f49ea9cac71c4ea0a83b057b477ced63cb918b"
+        },
+        {
+          "path": "libraw-fast-canon-40d-sraw.cr2.png",
+          "sha256": "ddcc6306ea14af22f4baf1560c3ca3605172f74c1374c070a6fbf93baae516e0"
+        }
+      ]
+    },
+    {
+      "sample": "pentax-k-r.pef",
+      "sensorBenchmarkEligible": true,
+      "previewComparable": true,
+      "notes": "Same horse/trees scene and orientation; filens has lighter shadows and minor sensor crop differences.",
+      "screenshots": [
+        {
+          "path": "filens-pentax-k-r.pef.png",
+          "sha256": "10f53efc2a3c777fc7f3dcc95a29baa997b4c808d2e88b71310f94090bb040a9"
+        },
+        {
+          "path": "libraw-half-pentax-k-r.pef.png",
+          "sha256": "365f13457ae03ea6b126165d9b6af1c647a475c3c2deca3ef472889d77023095"
+        },
+        {
+          "path": "libraw-fast-pentax-k-r.pef.png",
+          "sha256": "899898d477e48a0306377e5774e50d33b6a6b1e5489af256538d0fb1ee4d38fb"
+        }
+      ]
+    },
+    {
+      "sample": "olympus-stylus.orf",
+      "sensorBenchmarkEligible": true,
+      "previewComparable": true,
+      "notes": "Same tulips and orientation; saturation/brightness differ without changing readable scene content.",
+      "screenshots": [
+        {
+          "path": "filens-olympus-stylus.orf.png",
+          "sha256": "3dcee5bf5546e67d064582321a8be3836ef72ad188bf93fe699c2e0676c45243"
+        },
+        {
+          "path": "libraw-half-olympus-stylus.orf.png",
+          "sha256": "ef32a7d96468f8ca82b7eff7e87203a7c2a35db75661dbd0a9b2ec5642a49f82"
+        },
+        {
+          "path": "libraw-fast-olympus-stylus.orf.png",
+          "sha256": "502876709938a9340b03ba1e4d6b3833f68a039520225ca068932d2b4a656358"
+        }
+      ]
+    },
+    {
+      "sample": "canon-r6.cr3",
+      "sensorBenchmarkEligible": false,
+      "previewComparable": false,
+      "notes": "Exiv2 Canon-R6-pruned.CR3 is a metadata interoperability fixture, not an intact sensor image. Half-size paths fail; explicit-unpack full-size LibRaw returns a black image. Excluded from sensor ranking.",
+      "screenshots": [
+        {
+          "path": "libraw-full-canon-r6.cr3.png",
+          "sha256": "15a477d0678aa7fd7c88d1088564124d15028072509620d8b31abff243141c1f"
+        }
+      ]
+    }
+  ],
+  "screenshotPaths": "Individual PNG basenames refer to the local benchmark output directory. The published composite contains all five eligible inputs and all three measured configurations; original PNG SHA-256 values are retained for audit and reproduction."
+}

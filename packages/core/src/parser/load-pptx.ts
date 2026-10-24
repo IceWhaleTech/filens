@@ -1,4 +1,4 @@
-import JSZip from 'jszip';
+import { loadPptxArchive, type PptxArchive } from './archive';
 import type {
   BorderBox,
   ChartItem,
@@ -222,7 +222,7 @@ interface ParseContext {
   chartSpaces: Record<string, XmlRecord | null>;
   inDiagram?: boolean;
   caches: ParseCaches;
-  zip: JSZip;
+  zip: PptxArchive;
 }
 
 interface FillParseContext {
@@ -312,7 +312,7 @@ function createEmptyThemeFormatScheme(): ThemeFormatScheme {
 
 export async function loadPptx(source: PptxSource, options: LoadSourceOptions = {}): Promise<ParsedPresentation> {
   const bytes = await loadSourceBytes(source, options);
-  const zip = await JSZip.loadAsync(bytes);
+  const zip = await loadPptxArchive(bytes);
   const warnings: string[] = [];
   const caches: ParseCaches = {
     masters: new Map(),
@@ -386,7 +386,7 @@ export async function loadPptx(source: PptxSource, options: LoadSourceOptions = 
   };
 }
 
-async function parseContentTypes(zip: JSZip): Promise<ContentTypes> {
+async function parseContentTypes(zip: PptxArchive): Promise<ContentTypes> {
   const xml = await parseXmlFile(zip, '[Content_Types].xml');
   const root = xml?.Types as XmlRecord | undefined;
   const overrides: Record<string, string> = {};
@@ -403,7 +403,7 @@ async function parseContentTypes(zip: JSZip): Promise<ContentTypes> {
   return { overrides, defaults };
 }
 
-async function parseRelationships(zip: JSZip, relPath: string): Promise<Record<string, RelationshipEntry>> {
+async function parseRelationships(zip: PptxArchive, relPath: string): Promise<Record<string, RelationshipEntry>> {
   const xml = await parseXmlFile(zip, relPath);
   const root = xml?.Relationships as XmlRecord | undefined;
   const entries = asArray(root?.Relationship);
@@ -424,7 +424,7 @@ async function parseRelationships(zip: JSZip, relPath: string): Promise<Record<s
   return relationships;
 }
 
-async function parseTheme(zip: JSZip, themePath: string, caches: ParseCaches): Promise<ThemeBundle> {
+async function parseTheme(zip: PptxArchive, themePath: string, caches: ParseCaches): Promise<ThemeBundle> {
   const existing = caches.themes.get(themePath);
   if (existing) {
     return existing;
@@ -492,7 +492,7 @@ async function parseTheme(zip: JSZip, themePath: string, caches: ParseCaches): P
   return promise;
 }
 
-async function parseTableStyles(zip: JSZip, caches: ParseCaches): Promise<TableStyleRegistry> {
+async function parseTableStyles(zip: PptxArchive, caches: ParseCaches): Promise<TableStyleRegistry> {
   if (caches.tableStyles) {
     return caches.tableStyles;
   }
@@ -559,7 +559,7 @@ function parseThemeScriptFonts(node: XmlRecord | undefined): Record<string, stri
   return scripts;
 }
 
-async function parseMaster(zip: JSZip, masterPath: string, contentTypes: ContentTypes, caches: ParseCaches): Promise<MasterBundle> {
+async function parseMaster(zip: PptxArchive, masterPath: string, contentTypes: ContentTypes, caches: ParseCaches): Promise<MasterBundle> {
   const existing = caches.masters.get(masterPath);
   if (existing) {
     return existing;
@@ -661,7 +661,7 @@ async function parseMaster(zip: JSZip, masterPath: string, contentTypes: Content
   return promise;
 }
 
-async function parseLayout(zip: JSZip, layoutPath: string, contentTypes: ContentTypes, caches: ParseCaches): Promise<LayoutBundle> {
+async function parseLayout(zip: PptxArchive, layoutPath: string, contentTypes: ContentTypes, caches: ParseCaches): Promise<LayoutBundle> {
   const existing = caches.layouts.get(layoutPath);
   if (existing) {
     return existing;
@@ -757,7 +757,7 @@ async function parseLayout(zip: JSZip, layoutPath: string, contentTypes: Content
 }
 
 async function parseSlide(
-  zip: JSZip,
+  zip: PptxArchive,
   slidePath: string,
   size: { width: number; height: number },
   contentTypes: ContentTypes,
@@ -1989,18 +1989,47 @@ function parseChartGraphicFrameDraft(
   const chartNode = chartSpace?.['c:chart'] as XmlRecord | undefined;
   const plotArea = chartNode?.['c:plotArea'] as XmlRecord | undefined;
   const barChart = asArray(plotArea?.['c:barChart'])[0] as XmlRecord | undefined;
-  if (!chartNode || !plotArea || !barChart || String(barChart['c:barDir']?.val ?? 'col') !== 'col') {
+  const pieChart = asArray(plotArea?.['c:pieChart'])[0] as XmlRecord | undefined;
+  const chart = barChart ?? pieChart;
+  if (!chartNode || !plotArea || !chart || (barChart && String(barChart['c:barDir']?.val ?? 'col') !== 'col')) {
     return undefined;
   }
 
-  const categories = readChartStrings(asArray(barChart['c:ser'])[0]?.['c:cat']);
-  const series = asArray(barChart['c:ser']).map((seriesNode, index) => {
+  const chartType = barChart ? 'column' : 'pie';
+  const seriesNodes = asArray(chart['c:ser']).slice(0, chartType === 'pie' ? 1 : undefined);
+  const categories = readChartStrings(seriesNodes[0]?.['c:cat']);
+  const series = seriesNodes.map((seriesNode, index) => {
     const fill = parseFillInfo(seriesNode['c:spPr'] as XmlRecord | undefined, context.theme, context.colorMap).fill;
+    const values = readChartNumbers(seriesNode['c:val']);
+    const color = primaryFillColor(fill) ?? resolveThemeColor(`accent${(index % 6) + 1}`, context.theme.colors, context.colorMap);
+    const alpha = primaryFillAlpha(fill);
+    const pointStyles = chartType === 'pie'
+      ? values.map((_, pointIndex) => ({
+          color: ['0', 'false'].includes(String(chart['c:varyColors']?.val ?? '1'))
+            ? color
+            : resolveThemeColor(`accent${(pointIndex % 6) + 1}`, context.theme.colors, context.colorMap),
+          alpha
+        }))
+      : undefined;
+    for (const point of asArray(seriesNode['c:dPt'])) {
+      const pointIndex = readFiniteNumber(point['c:idx']?.val);
+      if (!pointStyles || pointIndex == null || !Number.isInteger(pointIndex) || !pointStyles[pointIndex]) {
+        continue;
+      }
+      const pointFill = parseFillInfo(point['c:spPr'] as XmlRecord | undefined, context.theme, context.colorMap);
+      if (pointFill.hasFill) {
+        pointStyles[pointIndex] = {
+          color: primaryFillColor(pointFill.fill) ?? pointStyles[pointIndex].color,
+          alpha: pointFill.fill.type === 'none' ? 0 : primaryFillAlpha(pointFill.fill)
+        };
+      }
+    }
     return {
       name: readChartText(seriesNode['c:tx']) ?? `Series ${index + 1}`,
-      values: readChartNumbers(seriesNode['c:val']),
-      color: primaryFillColor(fill) ?? resolveThemeColor(`accent${(index % 6) + 1}`, context.theme.colors, context.colorMap),
-      alpha: primaryFillAlpha(fill)
+      values,
+      color,
+      alpha,
+      pointStyles
     };
   });
   if (!series.length || !series.some((entry) => entry.values.some((value) => value != null))) {
@@ -2024,8 +2053,9 @@ function parseChartGraphicFrameDraft(
     id: createId('chart'),
     name: getName(node, ['p:nvGraphicFramePr', 'p:cNvPr']) ?? 'chart',
     kind: 'chart',
-    chartType: 'column',
-    grouping: normalizeChartGrouping(barChart['c:grouping']?.val),
+    chartType,
+    grouping: normalizeChartGrouping(chart['c:grouping']?.val),
+    firstSliceAngle: chartType === 'pie' ? readFiniteNumber(chart['c:firstSliceAng']?.val) ?? 0 : undefined,
     title: readChartText(chartNode['c:title']?.['c:tx']),
     categories,
     series,
@@ -2301,7 +2331,7 @@ function parseDiagramGraphicFrameDrafts(node: XmlRecord, graphicData: XmlRecord,
 }
 
 async function preloadDiagramParts(
-  zip: JSZip,
+  zip: PptxArchive,
   relationships: Record<string, RelationshipEntry>
 ): Promise<{ dataModels: Record<string, XmlRecord | null>; drawings: Record<string, XmlRecord | null> }> {
   const dataModels: Record<string, XmlRecord | null> = {};
@@ -2339,7 +2369,7 @@ async function preloadDiagramParts(
 }
 
 async function preloadChartParts(
-  zip: JSZip,
+  zip: PptxArchive,
   relationships: Record<string, RelationshipEntry>
 ): Promise<Record<string, XmlRecord | null>> {
   const chartSpaces: Record<string, XmlRecord | null> = {};
@@ -5781,7 +5811,7 @@ function collectPictureFillMediaIds(fill: FillStyle | undefined, target: Set<str
   }
 }
 
-async function loadMediaAsset(zip: JSZip, mediaPath: string, contentTypes: ContentTypes, caches: ParseCaches): Promise<void> {
+async function loadMediaAsset(zip: PptxArchive, mediaPath: string, contentTypes: ContentTypes, caches: ParseCaches): Promise<void> {
   if (caches.media[mediaPath]?.data?.length) {
     return;
   }

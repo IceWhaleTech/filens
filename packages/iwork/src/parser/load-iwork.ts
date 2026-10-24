@@ -1,14 +1,15 @@
 import type { LoadIworkOptions, ParsedIworkDocument } from '../types';
 import { loadSourceBytes } from './load-source';
-import { detectIworkType } from './detect';
+import { detectIworkType, detectIworkTypeByName } from './detect';
 import { loadArchivePackage } from './archive';
 import { buildParsedDocument } from './semantic';
 
 export async function loadIwork(source: unknown, options: LoadIworkOptions = {}): Promise<ParsedIworkDocument> {
-  const type = await detectIworkType(source as never, options);
   const bytes = await loadSourceBytes(source as never, {
     signal: options.signal
   });
+  const type = options.hint && options.hint !== 'auto' ? options.hint
+    : detectIworkTypeByName(source as never) ?? await detectIworkType(bytes, options);
   const archivePackage = await loadArchivePackage(bytes, type, {
     sourceName: options.sourceName ?? resolveSourceName(source)
   });

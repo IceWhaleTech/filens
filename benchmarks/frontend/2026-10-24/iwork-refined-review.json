@@ -1,0 +1,88 @@
+{
+  "method": "Seven fresh-context repeats per configuration, without concurrent tests or builds. Post-timer checks exercise every Numbers sheet and compare public archive values with a direct full parse. Complete styled model and preview pixels match the prior implementation. Numbers full-model and SheetJS data extraction are different workloads; no new SOTA claim.",
+  "sources": {
+    "numbers-refined.json.gz": {
+      "uncompressedSha256": "cd3d6cd65d7ef439bc27a0cabb14b5b2c714377bc50a3227b59e3c5eefd9061e",
+      "compressedSha256": "82b08573ce118e926d456a903f2f635eb18fee7fee8eb91418e7c76f7f6cd163"
+    },
+    "iwork-preview-refined.json.gz": {
+      "uncompressedSha256": "68d315a70411dd3438ae536fef0ca793024bbf8b7cecc0bf75999c0743867200",
+      "compressedSha256": "9e02f8c2e0092b2f26cd76ef92d5edb43226d6092c493f3a67b97f85d9daffc9"
+    }
+  },
+  "artifacts": {
+    "scripts/benchmark-frontends.mjs": "f1633e7518ef1823c735ccbcccef362b0d2e9fcc2f53f61fe6a0fb86743532f7",
+    "packages/core/dist/index.js": "f736a0300b79369cebc493f281f1e3c56f02a3df12f0fd5e4a70fe97a620aecd",
+    "packages/iwork/dist/index.js": "027a3915c33df03b197176a2c901e7fb90690db73259870d3339055585c659f4",
+    "packages/panorama/dist/index.js": "a5b7b32c337f24fccb9e97338d5c1c475a656ab5d49d968d96b5b72d0bc284d6",
+    "packages/converter-client/dist/index.js": "cbd8f90f4151fced4c6fd4d89da5fc0b1b3ea932c17ae038a90b29bfbf6dee5d",
+    "packages/xlsx/dist/index.js": "37ea0dd6c6a0bf5ffbfbb7efc691b1cd9d30dd11d3415370018bb9de876fe07a",
+    "wasm/converter-core/dist/converter-core.wasm": "9fd03adbdccdd6ab5f05bd625e2ac382dc57a1e6320effacd618c35e4e29fbb4",
+    "wasm/converter-image/dist/converter-image.wasm": "adb3351801f0ff7ef209481013e75f9d708ab87230c4d3918576dd5f7630c7aa",
+    "tmp/performance-sota/package-lock.json": "088496502d26bb7550e7eb3eb4c3dbe2f543a8406caff1af4e7d25f3525bc06c",
+    "tmp/performance-sota/xlsx-0.20.3.full.min.js": "cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41"
+  },
+  "implementationSources": {
+    "packages/iwork/src/parser/table.ts": "409d2dd1bacdd33ddfd4c7d44f60aba862e4d7ded3c6e95d4ce717ac522f664b",
+    "packages/iwork/test/table.spec.ts": "8634211d9d47b1c860048dcfaa0277109de87520a6a5b0b5ae2682613189b067",
+    "scripts/benchmark-frontends.mjs": "f1633e7518ef1823c735ccbcccef362b0d2e9fcc2f53f61fe6a0fb86743532f7"
+  },
+  "numbers": {
+    "sheets": 6,
+    "tables": 14,
+    "nonemptyCells": 5772,
+    "completeCellSnapshotsUnchanged": true,
+    "contentUncompressedSha256": "9552ca0ba8f9fdc7b83a1f4cc0ac6e913730cef69444b68fef430414598a9fd9",
+    "fullStyledModelUnchanged": true,
+    "fullStyledModelJsonBytes": 15306113,
+    "fullStyledModelSha256": "508b2940d6c6a3d64ec2ffb0103d1ebed05b857bb3acc859b26a58b2ebdd394f",
+    "fullStyledModelSnapshot": "numbers-styled-model-refined.json.gz",
+    "addressSignatureSha256": "34da9e579ec67ea9854d7e7e160ad0572a3b30178c07f6b20862e7b49d3a3d57",
+    "note": "Complete model includes styles, canvases, every table and all cells. Address/string equivalence to SheetJS is preserved from the previous full content review."
+  },
+  "iwork": [
+    {
+      "sample": "a.numbers",
+      "interactions": {
+        "archiveMatches": true,
+        "sheetsMatch": true,
+        "sheets": 6,
+        "tables": 14
+      },
+      "screenshotSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+      "previousScreenshotSha256": "bb9d3bcb5cd8a2ff002d0ae8d034dd1be5be22dea766cea42700c4aa20d5e201",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "a.pages",
+      "interactions": {
+        "archiveMatches": true,
+        "navigated": true,
+        "zoomed": true
+      },
+      "screenshotSha256": "ccc28b72f1e5922b106e571cfee6dec860686776de9b88c3aa5e37caef5a4a74",
+      "previousScreenshotSha256": "ccc28b72f1e5922b106e571cfee6dec860686776de9b88c3aa5e37caef5a4a74",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    },
+    {
+      "sample": "filens-weekend.key",
+      "interactions": {
+        "archiveMatches": true,
+        "navigated": true,
+        "zoomed": true
+      },
+      "screenshotSha256": "c3754fc7a470290e3a6da9ed1bf0d33a16a4349762945817f714880f709dd8cb",
+      "previousScreenshotSha256": "c3754fc7a470290e3a6da9ed1bf0d33a16a4349762945817f714880f709dd8cb",
+      "pixelMeanAbsoluteError": 0,
+      "pixelDifferenceBounds": null
+    }
+  ],
+  "validation": {
+    "iworkUnitTestsPassed": 293,
+    "coreBuild": "passed",
+    "iworkBuild": "passed",
+    "demoBuild": "passed"
+  }
+}

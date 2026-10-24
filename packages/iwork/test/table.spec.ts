@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildTableItem } from '../src/parser/table';
+import { buildTextFrameFromStorage } from '../src/parser/helpers';
 import type { IworkArchiveIndex } from '../src/types';
 
 function createNumbersArchive(): IworkArchiveIndex {
@@ -268,6 +269,130 @@ function renderSingleFormattedText(text: string, format: Record<string, unknown>
 
   return table?.cells[0]?.textFrame.paragraphs[0]?.runs[0]?.text;
 }
+
+describe('Numbers repeated cell styles', () => {
+  it.each(['array', 'unaligned view'])('reads row buffers from %s and observes replacements on rebuild', representation => {
+    const archive = createNumbersArchive();
+    const record = (id: number, typeName: string, value: unknown) => {
+      archive.records[String(id)] = { id, archiveId: id, messageIndex: 0, typeId: 1, typeName, value, objectReferences: [], dataReferences: [] };
+    };
+    const wrap = (bytes: Uint8Array) => {
+      if (representation === 'array') return Array.from(bytes);
+      const padded = new Uint8Array(bytes.length + 7);
+      padded.set(bytes, 3);
+      return padded.subarray(3, bytes.length + 3);
+    };
+    const integer = createTextCellBuffer(0);
+    integer[1] = 2;
+    new DataView(integer.buffer).setInt32(12, -1, true);
+    const rowInfo = { tileRowIndex: 0, cellCount: 2,
+      cellOffsets: wrap(createCellOffsets([0, 16])),
+      cellStorageBuffer: wrap(new Uint8Array([...createTextCellBuffer(1), ...integer])),
+      cellOffsetsPreBnc: wrap(createCellOffsets([65535, 0])),
+      cellStorageBufferPreBnc: wrap(createPreBncNumberCellBuffer(-123.25, 12)) };
+    record(1, 'TST.TableModelArchive', { numberOfRows: 1, numberOfColumns: 2,
+      baseDataStore: { tiles: { tiles: [{ tile: { identifier: 2 } }] },
+        stringTable: { identifier: 3 }, formatTablePreBnc: { identifier: 4 } } });
+    record(2, 'TST.Tile', { rowInfos: [rowInfo] });
+    record(3, 'TST.TableDataList', { entries: [{ key: 1, string: 'Title' }] });
+    record(4, 'TST.TableDataList', { entries: [{ key: 12, format: { decimalPlaces: 2 } }] });
+    const build = () => buildTableItem(archive, { tableModel: { identifier: 1 } },
+      { x: 0, y: 0, width: 216, height: 22, rotation: 0, flipH: false, flipV: false }, 0)!;
+    const texts = () => build().cells.map(cell => cell.textFrame.paragraphs[0].runs[0].text);
+    expect(texts()).toEqual(['Title', '-123.25']);
+    rowInfo.cellStorageBufferPreBnc = wrap(createPreBncNumberCellBuffer(44.5, 12));
+    expect(texts()).toEqual(['Title', '44.50']);
+  });
+
+  it('preserves multiline paragraph styles and isolates edits to repeated cells', () => {
+    const archive = createNumbersArchive();
+    const record = (id: number, typeName: string, value: unknown) => {
+      archive.records[String(id)] = { id, archiveId: id, messageIndex: 0, typeId: 1, typeName, value, objectReferences: [], dataReferences: [] };
+    };
+    const text = 'First\r\n\r\nLast\r';
+    record(1, 'TST.TableModelArchive', {
+      numberOfRows: 2, numberOfColumns: 1, bodyTextStyle: { identifier: 4 },
+      baseDataStore: { tiles: { tiles: [{ tile: { identifier: 2 } }] }, stringTable: { identifier: 3 } }
+    });
+    record(2, 'TST.Tile', { rowInfos: [0, 1].map(tileRowIndex => ({ tileRowIndex, cellCount: 1,
+      cellOffsets: createCellOffsets([0]), cellStorageBuffer: createTextCellBuffer(1) })) });
+    record(3, 'TST.TableDataList', { entries: [{ key: 1, string: text }] });
+    record(4, 'TSWP.ParagraphStyleArchive', {
+      paraProperties: { alignment: 2, spaceAfter: 9 }, charProperties: { bold: true, fontSize: 17 }
+    });
+    const table = buildTableItem(archive, { tableModel: { identifier: 1 } },
+      { x: 0, y: 0, width: 216, height: 110, rotation: 0, flipH: false, flipV: false }, 0)!;
+    const [first, second] = table.cells.map(cell => cell.textFrame);
+    const expected = buildTextFrameFromStorage(archive, { text: [text] }, { defaultParagraphStyleRef: 4 })!;
+    expect(first.paragraphs).toEqual(expected.paragraphs);
+    expect(second).toEqual(first);
+    first.paragraphs[0].runs[0].text = 'edited';
+    first.paragraphs[0].runs[0].bold = false;
+    first.padding!.left = 99;
+    expect(second.paragraphs).toEqual(expected.paragraphs);
+    expect(second.padding!.left).toBe(4);
+  });
+
+  it.each([false, true])('retains sparse cell positions with an explicit row tree: %j', (withRowTree) => {
+    const archive = createNumbersArchive();
+    const record = (id: number, typeName: string, value: unknown) => {
+      archive.records[String(id)] = { id, archiveId: id, messageIndex: 0, typeId: 1, typeName, value, objectReferences: [], dataReferences: [] };
+    };
+    record(1, 'TST.TableModelArchive', {
+      numberOfRows: 7, numberOfColumns: 3, defaultRowHeight: 22, defaultColumnWidth: 72,
+      baseDataStore: { tiles: { tiles: [{ tileid: 1, tile: { identifier: 3 } }, { tileid: 0, tile: { identifier: 2 } }] },
+        ...(withRowTree ? { rowTileTree: { nodes: [{ key: 5, value: 0 }, { key: 0, value: 1 }] } } : {}),
+        stringTable: { identifier: 4 } }
+    });
+    const row = (index: number, key: number) => ({ tileRowIndex: index, cellCount: 1,
+      cellOffsets: createCellOffsets([65535, 65535, 0]), cellStorageBuffer: createTextCellBuffer(key) });
+    record(2, 'TST.Tile', { numrows: 3, rowInfos: [row(0, 1), row(2, 2)] });
+    record(3, 'TST.Tile', { numrows: 2, rowInfos: [row(1, 3)] });
+    record(4, 'TST.TableDataList', { entries: ['First', 'Third', 'Fifth'].map((string, i) => ({ key: i + 1, string })) });
+    const table = buildTableItem(archive, { tableModel: { identifier: 1 } },
+      { x: 0, y: 0, width: 216, height: 110, rotation: 0, flipH: false, flipV: false }, 0)!;
+    expect(table.cells.map(c => [c.row, c.column, c.textFrame.paragraphs[0].runs[0].text])).toEqual([
+      [0, 2, 'First'], [2, 2, 'Third'], [withRowTree ? 6 : 4, 2, 'Fifth']
+    ]);
+  });
+
+  it.each([['', 'Styled', 'Other'], ['Styled', '', 'Other']])('preserves empty run semantics and independent cell styles: %j', (...texts) => {
+    const archive = createNumbersArchive();
+    const record = (id: number, typeName: string, value: unknown) => {
+      archive.records[String(id)] = { id, archiveId: id, messageIndex: 0, typeId: 1, typeName, value, objectReferences: [], dataReferences: [] };
+    };
+    record(1, 'TST.TableModelArchive', {
+      numberOfRows: 1, numberOfColumns: 3, defaultRowHeight: 22, defaultColumnWidth: 72,
+      bodyTextStyle: { identifier: 4 }, bodyCellStyle: { identifier: 5 },
+      baseDataStore: { tiles: { tiles: [{ tile: { identifier: 2 } }] }, stringTable: { identifier: 3 } }
+    });
+    record(2, 'TST.Tile', { rowInfos: [{ tileRowIndex: 0, cellCount: 3,
+      cellOffsets: createCellOffsets([0, 16, 32]),
+      cellStorageBuffer: new Uint8Array([ ...createTextCellBuffer(1), ...createTextCellBuffer(2), ...createTextCellBuffer(3) ])
+    }] });
+    record(3, 'TST.TableDataList', { entries: texts.map((string, i) => ({ key: i + 1, string })) });
+    record(4, 'TSWP.ParagraphStyleArchive', { charProperties: { fontName: 'Preview Font', fontSize: 19 } });
+    record(5, 'TST.CellStyleArchive', { cellProperties: { padding: { left: 7 }, cellFill: { color: { r: 1, g: 0, b: 0 } } } });
+    const build = () => buildTableItem(archive, { tableModel: { identifier: 1 } },
+      { x: 0, y: 0, width: 216, height: 22, rotation: 0, flipH: false, flipV: false }, 0)!;
+    const table = build();
+    expect(table.cells).toHaveLength(3);
+    table.cells.forEach((cell, i) => {
+      const run = cell.textFrame.paragraphs[0].runs[0];
+      expect(run.text).toBe(texts[i]);
+      expect(run.fontFamily).toBe(texts[i] ? 'Preview Font' : undefined);
+    });
+    const first = table.cells[0], second = table.cells[1];
+    first.textFrame.padding.left = 99;
+    first.fill.color = '#000000';
+    first.borders!.top!.width = 99;
+    expect(second.textFrame.padding.left).toBe(7);
+    expect(second.fill.color).toBe('#ff0000');
+    expect(second.borders!.top!.width).toBe(1);
+    (archive.records['4'].value as { charProperties: { fontSize: number } }).charProperties.fontSize = 25;
+    expect(build().cells.find(cell => cell.textFrame.paragraphs[0].runs[0].text)?.textFrame.paragraphs[0].runs[0].fontSize).toBe(25);
+  });
+});
 
 describe('iWork table parser', () => {
   it('resolves Numbers control cells from popup-menu models', () => {
@@ -4206,7 +4331,7 @@ describe('iWork table parser', () => {
       dataReferences: [],
       value: {
         tableName: 'Rich No Wrap Table',
-        numberOfColumns: 1,
+        numberOfColumns: 2,
         numberOfRows: 1,
         defaultColumnWidth: 72,
         defaultRowHeight: 22,
@@ -4236,9 +4361,9 @@ describe('iWork table parser', () => {
         rowInfos: [
           {
             tileRowIndex: 0,
-            cellCount: 1,
-            cellOffsets: createCellOffsets([0]),
-            cellStorageBuffer: createTextCellBuffer(1)
+            cellCount: 2,
+            cellOffsets: createCellOffsets([0, 16]),
+            cellStorageBuffer: new Uint8Array([...createTextCellBuffer(1), ...createTextCellBuffer(1)])
           }
         ]
       }
@@ -4328,6 +4453,8 @@ describe('iWork table parser', () => {
 
     expect(table?.cells[0]?.textFrame.wrap).toBe('none');
     expect(table?.cells[0]?.textFrame.paragraphs[0]?.runs[0]?.text).toBe('Rich no wrap');
+    table!.cells[0].textFrame.paragraphs[0].runs[0].text = 'Edited';
+    expect(table?.cells[1]?.textFrame.paragraphs[0]?.runs[0]?.text).toBe('Rich no wrap');
   });
 
   it('formats Numbers percent cells from format tables', () => {

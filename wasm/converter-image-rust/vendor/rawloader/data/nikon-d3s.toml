@@ -1,0 +1,20 @@
+# D65 matrix / levels: dnglab/rawler's Nikon D3S profile (LGPL-2.1).
+# See FILENS-CHANGES.md for provenance. Order: top, right, bottom, left.
+[[cameras]]
+make = "NIKON CORPORATION"
+model = "NIKON D3S"
+clean_make = "Nikon"
+clean_model = "D3S"
+color_matrix = [8828, -2406, -694, -4874, 12603, 2541, -660, 1509, 7587]
+color_pattern = "RGGB"
+crops = [6, 17, 6, 15]
+
+[[cameras.modes]]
+mode = "12bit"
+blackpoint = 0
+whitepoint = 3880
+
+[[cameras.modes]]
+mode = "14bit"
+blackpoint = 0
+whitepoint = 15520

@@ -8,7 +8,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../src/parser/detect', () => ({
-  detectIworkType: mocks.detectIworkType
+  detectIworkType: mocks.detectIworkType,
+  detectIworkTypeByName: () => null
 }));
 
 vi.mock('../src/parser/load-source', () => ({

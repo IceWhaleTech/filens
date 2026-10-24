@@ -2,6 +2,8 @@ import './styles/index.css';
 
 export { createViewer, init, PptxViewer } from './viewer';
 export { loadPptx } from './parser/load-pptx';
+export { openZipArchive } from './parser/zip';
+export type { ZipEntry } from './parser/zip';
 export { MediaRegistry, renderSlideToElement } from './render/dom';
 export type { MediaResolver, RenderSlideOptions } from './render/dom';
 export * from './preview';

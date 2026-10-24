@@ -1,0 +1,12 @@
+{
+  "name": "filens-other-formats-benchmark",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@zip.js/zip.js": "2.24.0",
+    "dxf-parser": "1.1.2",
+    "occt-import-js": "0.0.23",
+    "papaparse": "5.7.0",
+    "fflate": "0.8.2"
+  }
+}

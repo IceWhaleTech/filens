@@ -50,6 +50,8 @@ const MAX_WORD_PARAGRAPHS: usize = 3000;
 const MAX_TEXT_LINE_CHARS: usize = 32767;
 const MAX_SHEET_ROWS: usize = 10_000;
 const MAX_SHEET_COLUMNS: usize = 16_384;
+const MAX_DELIMITED_ROWS: usize = 1_048_576;
+const MAX_DELIMITED_CELLS: usize = 1_000_000;
 
 #[derive(Default)]
 struct Request {
@@ -7035,7 +7037,7 @@ fn parse_delimited_rows(
         "psv" => ("PSV", '|'),
         _ => ("CSV", ','),
     };
-    let mut text = text;
+    let mut text = text.trim_start_matches('\u{feff}');
     if source == "csv" {
         if let Some((first, rest)) = text.split_once('\n') {
             if let Some(value) = first.trim().strip_prefix("sep=") {
@@ -7049,47 +7051,94 @@ fn parse_delimited_rows(
             }
         }
     }
-    let records = parse_delimited(text, delimiter)?;
     Ok((
         name.into(),
-        records
-            .into_iter()
-            .take(10_000)
-            .map(|record| record.into_iter().take(1024).map(typed_cell).collect())
-            .collect(),
+        parse_delimited_cells(text, delimiter, typed_cell)?,
     ))
 }
 
+#[cfg(test)]
 fn parse_delimited(text: &str, delimiter: char) -> Result<Vec<Vec<String>>, ConvertError> {
+    parse_delimited_cells(text, delimiter, |value| value)
+}
+
+fn parse_delimited_cells<T>(
+    text: &str,
+    delimiter: char,
+    mut cell: impl FnMut(String) -> T,
+) -> Result<Vec<Vec<T>>, ConvertError> {
     let mut rows = Vec::new();
     let mut row = Vec::new();
     let mut field = String::new();
     let mut quoted = false;
-    let mut chars = text.chars().peekable();
-    while let Some(character) = chars.next() {
+    let bytes = text.as_bytes();
+    let mut index = 0;
+    let mut start = 0;
+    let mut cells = 0usize;
+    let mut pending = false;
+    while index < bytes.len() {
+        let character = bytes[index];
         match character {
-            '"' if quoted && chars.peek() == Some(&'"') => {
+            b'"' if quoted && bytes.get(index + 1) == Some(&b'"') => {
+                field.push_str(&text[start..index]);
                 field.push('"');
-                chars.next();
+                index += 2;
+                start = index;
+                continue;
             }
-            '"' => quoted = !quoted,
-            value if value == delimiter && !quoted => {
-                row.push(std::mem::take(&mut field));
+            b'"' if quoted => {
+                field.push_str(&text[start..index]);
+                quoted = false;
+                start = index + 1;
             }
-            '\n' if !quoted => {
-                row.push(std::mem::take(&mut field));
-                rows.push(std::mem::take(&mut row));
+            b'"' if index == start && field.is_empty() => {
+                quoted = true;
+                start = index + 1;
             }
-            value => field.push(value),
+            value if !quoted && (value == delimiter as u8 || value == b'\r' || value == b'\n') => {
+                field.push_str(&text[start..index]);
+                cells += 1;
+                if cells > MAX_DELIMITED_CELLS || row.len() >= MAX_SHEET_COLUMNS {
+                    return Err(parse_error("Delimited spreadsheet exceeds the 1,000,000-cell or 16,384-column limit; no truncated workbook was produced.".into()));
+                }
+                row.push(cell(std::mem::take(&mut field)));
+                if value != delimiter as u8 {
+                    if rows.len() >= MAX_DELIMITED_ROWS {
+                        return Err(parse_error(
+                            "Delimited spreadsheet exceeds the XLSX row limit.".into(),
+                        ));
+                    }
+                    rows.push(std::mem::take(&mut row));
+                    if value == b'\r' && bytes.get(index + 1) == Some(&b'\n') {
+                        index += 1;
+                    }
+                    pending = false;
+                } else {
+                    pending = true;
+                }
+                index += 1;
+                start = index;
+                continue;
+            }
+            _ => {}
         }
+        pending = true;
+        index += 1;
     }
     if quoted {
         return Err(parse_error(
             "parse delimited text: unterminated quoted field".into(),
         ));
     }
-    if !field.is_empty() || !row.is_empty() {
-        row.push(field);
+    if pending {
+        field.push_str(&text[start..]);
+        if cells >= MAX_DELIMITED_CELLS
+            || row.len() >= MAX_SHEET_COLUMNS
+            || rows.len() >= MAX_DELIMITED_ROWS
+        {
+            return Err(parse_error("Delimited spreadsheet exceeds the cell, column or row limit; no truncated workbook was produced.".into()));
+        }
+        row.push(cell(field));
         rows.push(row);
     }
     Ok(rows)
@@ -10550,7 +10599,7 @@ fn docx_paragraph_xml(paragraph: &DocxParagraph, image_id: &mut usize, indent: &
             if !run.field_instruction.is_empty() {
                 body.push_str(indent);
                 body.push_str(&format!(
-                    "  <w:fldSimple w:instr=\"{}\" w:dirty=\"true\"><w:r>{}{}</w:r></w:fldSimple>\n",
+                    "  <w:r><w:fldChar w:fldCharType=\"begin\" w:dirty=\"true\"/></w:r><w:r><w:instrText xml:space=\"preserve\">{}</w:instrText></w:r><w:r><w:fldChar w:fldCharType=\"separate\"/></w:r><w:r>{}{}</w:r><w:r><w:fldChar w:fldCharType=\"end\"/></w:r>\n",
                     escape(&run.field_instruction),
                     docx_run_properties(run),
                     word_text_xml(&run.text),
@@ -12147,7 +12196,12 @@ mod tests {
             "PAGE \\* MERGEFORMAT"
         );
         let xml = docx_document(&paragraphs, DocxSection::default());
-        assert!(xml.contains("<w:fldSimple w:instr=\"PAGE \\* MERGEFORMAT\" w:dirty=\"true\">"));
+        assert!(
+            xml.contains("<w:instrText xml:space=\"preserve\">PAGE \\* MERGEFORMAT</w:instrText>")
+        );
+        for kind in ["begin", "separate", "end"] {
+            assert!(xml.contains(&format!("w:fldCharType=\"{kind}\"")));
+        }
         assert!(xml.contains("<w:t>1</w:t>"));
     }
 
@@ -12174,7 +12228,7 @@ mod tests {
             "IF 1 = 1 \"yes\" \"no\""
         );
         let xml = docx_document(&paragraphs, DocxSection::default());
-        assert_eq!(xml.matches("<w:fldSimple").count(), 1);
+        assert_eq!(xml.matches("<w:instrText").count(), 1);
         assert!(!xml.contains("PAGE 1"));
 
         let no_cache = b"\x13 NUMPAGES \x15\r";
@@ -12194,8 +12248,7 @@ mod tests {
         );
         assert_eq!(paragraphs[0].runs[0].field_instruction, "NUMPAGES");
         assert!(
-            docx_document(&paragraphs, DocxSection::default())
-                .contains("<w:fldSimple w:instr=\"NUMPAGES\"")
+            docx_document(&paragraphs, DocxSection::default()).contains(">NUMPAGES</w:instrText>")
         );
     }
 
@@ -12700,6 +12753,45 @@ mod tests {
     fn parses_quoted_delimited_rows() {
         let rows = parse_delimited("Name;Note\nFixture;\"one;two\"\n", ';').unwrap();
         assert_eq!(rows[1], ["Fixture", "one;two"]);
+    }
+
+    #[test]
+    fn preserves_delimited_line_endings_quotes_unicode_and_empty_fields() {
+        let rows = parse_delimited(
+            "\"中文\",\"one\r\ntwo\",\"a\"\"b\"\r\nlast,\"\",\rnext,done,\"\"",
+            ',',
+        )
+        .unwrap();
+        assert_eq!(
+            rows,
+            vec![
+                vec!["中文", "one\r\ntwo", "a\"b"],
+                vec!["last", "", ""],
+                vec!["next", "done", ""]
+            ]
+        );
+        assert!(parse_delimited("a,\"unterminated", ',').is_err());
+        assert_eq!(
+            parse_delimited_rows("\u{feff}sep=;\r\nA;B\r\n", "csv")
+                .unwrap()
+                .1
+                .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn preserves_delimited_rows_and_columns_beyond_old_preview_caps() {
+        let text = (0..20_000)
+            .map(|row| format!("{row},end\n"))
+            .collect::<String>();
+        let (_, rows) = parse_delimited_rows(&text, "csv").unwrap();
+        assert_eq!(rows.len(), 20_000);
+        assert!(matches!(&rows[19_999][0], SheetCell::Number(value) if value == "19999"));
+        let (_, rows) = parse_delimited_rows(&vec!["value"; 1025].join(","), "csv").unwrap();
+        assert_eq!(rows[0].len(), 1025);
+        assert!(parse_delimited_rows(&vec![""; MAX_SHEET_COLUMNS + 1].join(","), "csv").is_err());
+        assert!(parse_delimited_rows(&"0\n".repeat(MAX_DELIMITED_CELLS + 1), "csv").is_err());
     }
 
     #[test]

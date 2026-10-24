@@ -1,0 +1,173 @@
+{
+  "method": "Validation runs after timing. Numbers checks all nonempty cell addresses and every string value; numeric cells retain document display formatting. PPTX checks initial pixels, visible pages at low zoom, scrolling and page navigation. No global SOTA claim.",
+  "sources": {
+    "pptx-optimized-final": "020f643dac11808d4a389410ed63ec65cda4b549fc025c5c55ed864e787e2b6c",
+    "pptx-model-optimized-final": "01e2b541a08c81ac3577daed46a61f9cbe08cee43ed93d35817375e08e5763c7",
+    "numbers-optimized-final": "357a17f882062fec20e108bdf919adba1dc5d70e3f43a9a7b39542fdb6008b77",
+    "iwork-optimized-final": "fee8bd097c25fadefeebe96ef92081ea88311a46f9fe30693f667f6bf73918f7"
+  },
+  "numbers": {
+    "sheets": 6,
+    "tables": 14,
+    "nonemptyCells": 5772,
+    "missingAddresses": [],
+    "extraAddresses": [],
+    "stringValueDifferences": [],
+    "addressSignatureSha256": "34da9e579ec67ea9854d7e7e160ad0572a3b30178c07f6b20862e7b49d3a3d57",
+    "note": "Matches SheetJS address sets and every nonempty string, including sparse final-column cells. filens builds styled canvases; SheetJS extracts cached data. These remain distinct workloads and Numbers is not labelled SOTA.",
+    "contentSha256": "a44ad16b5ce0546f8b4a40f20c6af7f0977689ce692438d64942e7acc8d8a1c0"
+  },
+  "pptx": {
+    "samples": [
+      {
+        "sample": "vue-office-test.pptx",
+        "interactions": {
+          "initialVisible": true,
+          "jumped": true,
+          "zoomedVisible": true,
+          "scrolledVisible": true
+        },
+        "screenshotSha256": "9f5ad038d0e58126c5c6764ff617ad8aaab1ece3f3537e8167d531e2188e1cab",
+        "beforeVisibleMountOptimizationSha256": "9f5ad038d0e58126c5c6764ff617ad8aaab1ece3f3537e8167d531e2188e1cab",
+        "pixelMeanAbsoluteError": 0.0,
+        "pixelDifferenceBounds": null,
+        "note": "Any changed pixels are confined to a single slide-edge column; all slide content pixels match."
+      },
+      {
+        "sample": "filens-field-notes.pptx",
+        "interactions": {
+          "initialVisible": true,
+          "jumped": true,
+          "zoomedVisible": true,
+          "scrolledVisible": true
+        },
+        "screenshotSha256": "5ea91780dbb0e907f953459404e7b7b091b289f70ba135f604472dab66cddfda",
+        "beforeVisibleMountOptimizationSha256": "5ea91780dbb0e907f953459404e7b7b091b289f70ba135f604472dab66cddfda",
+        "pixelMeanAbsoluteError": 0.0,
+        "pixelDifferenceBounds": null,
+        "note": "Any changed pixels are confined to a single slide-edge column; all slide content pixels match."
+      },
+      {
+        "sample": "rich-pptx-shapes.pptx",
+        "interactions": {
+          "initialVisible": true,
+          "jumped": true,
+          "zoomedVisible": true,
+          "scrolledVisible": true
+        },
+        "screenshotSha256": "82301193dd0a9fae23f4bdc2f6aef4ec5c2b099e99ca1ab56f13fb4fa5e68ffd",
+        "beforeVisibleMountOptimizationSha256": "006479e0ea2f194f56ad8b455690d72939012cd6a216d191eb522cac4314e327",
+        "pixelMeanAbsoluteError": 0.010861979166666667,
+        "pixelDifferenceBounds": [
+          1157,
+          12,
+          1158,
+          788
+        ],
+        "note": "Any changed pixels are confined to a single slide-edge column; all slide content pixels match."
+      },
+      {
+        "sample": "rich-pptx-pictures.pptx",
+        "interactions": {
+          "initialVisible": true,
+          "jumped": true,
+          "zoomedVisible": true,
+          "scrolledVisible": true
+        },
+        "screenshotSha256": "108aa71544c875f82c13b3b0d792cf831aeb04963a480b7a4c10834f7da56064",
+        "beforeVisibleMountOptimizationSha256": "ad012f597823a68173561235575ba269d10831e5d92672f84f31e8d02e8ab980",
+        "pixelMeanAbsoluteError": 0.010861979166666667,
+        "pixelDifferenceBounds": [
+          1157,
+          12,
+          1158,
+          788
+        ],
+        "note": "Any changed pixels are confined to a single slide-edge column; all slide content pixels match."
+      },
+      {
+        "sample": "sample-deck.pptx",
+        "interactions": {
+          "initialVisible": true,
+          "jumped": true,
+          "zoomedVisible": true,
+          "scrolledVisible": true
+        },
+        "screenshotSha256": "9f36023b8d31c52eb84c9575d2eaae558404e98bbd4fd4e2073fb4ed7975b0aa",
+        "beforeVisibleMountOptimizationSha256": "9f36023b8d31c52eb84c9575d2eaae558404e98bbd4fd4e2073fb4ed7975b0aa",
+        "pixelMeanAbsoluteError": 0.0,
+        "pixelDifferenceBounds": null,
+        "note": "Any changed pixels are confined to a single slide-edge column; all slide content pixels match."
+      },
+      {
+        "sample": "poi-SampleShow.pptx",
+        "interactions": {
+          "initialVisible": true,
+          "jumped": true,
+          "zoomedVisible": true,
+          "scrolledVisible": true
+        },
+        "screenshotSha256": "ca0edbc6c7b76f11c22b8fbc12051876a4e7215e93b064cde356d0ee1a289541",
+        "beforeVisibleMountOptimizationSha256": "3976278128b03fde2a550378fbfc0d950798c8cc115e9f9d3c1defa47d0aa6c9",
+        "pixelMeanAbsoluteError": 0.010861979166666667,
+        "pixelDifferenceBounds": [
+          1157,
+          12,
+          1158,
+          788
+        ],
+        "note": "Any changed pixels are confined to a single slide-edge column; all slide content pixels match."
+      },
+      {
+        "sample": "poi-pie-chart.pptx",
+        "interactions": {
+          "initialVisible": true,
+          "jumped": true,
+          "zoomedVisible": true,
+          "scrolledVisible": true
+        },
+        "screenshotSha256": "76a49b193df279c1cfb68cf2fef197d022a3d5d31ca22eb4727fa37705963c6a",
+        "beforeVisibleMountOptimizationSha256": "93535fad8ed5f1b828c1943cb3867df9b5a52591c9215964a62909cb4c8868dd",
+        "pixelMeanAbsoluteError": 0.010861979166666667,
+        "pixelDifferenceBounds": [
+          1157,
+          12,
+          1158,
+          788
+        ],
+        "note": "Any changed pixels are confined to a single slide-edge column; all slide content pixels match."
+      },
+      {
+        "sample": "poi-2411-Performance_Up.pptx",
+        "interactions": {
+          "initialVisible": true,
+          "jumped": true,
+          "zoomedVisible": true,
+          "scrolledVisible": true
+        },
+        "screenshotSha256": "1a75707d689194b5be3030aec6b5b6d97f1abb59d4ca3a6edf6409160914fab5",
+        "beforeVisibleMountOptimizationSha256": "c0df253d8149d3b4d83dfa480d81d4f09000a185c7e50a7a34f48cbc494d5506",
+        "pixelMeanAbsoluteError": 0.010137044270833333,
+        "pixelDifferenceBounds": [
+          1157,
+          12,
+          1158,
+          788
+        ],
+        "note": "Any changed pixels are confined to a single slide-edge column; all slide content pixels match."
+      }
+    ],
+    "qualifiedFirstPreviewSamples": [
+      "vue-office-test.pptx"
+    ],
+    "note": "The large deck first page is readable and comparable in all three engines; font substitutions differ. Do not promote pie-chart timing to SOTA: peers omit the pie. Performance_Up peer preview shows a different page. Retain their timings and failures as diagnostics.",
+    "publishedPreview": {
+      "path": "docs/assets/performance/pptx-first-preview.webp",
+      "sha256": "dbdb1cf3fc1b1ac94a67465b11857e7977dbde9c21a7e0b183255e50e7fa2884"
+    }
+  },
+  "recheckRecords": {
+    "sample-deck-preview-recheck.json.gz": "d85aae1391eb1a18bd0f771c29b684e330259d486ac1dddf84e8b8cde16d1600",
+    "sample-deck-model-recheck.json.gz": "ace7a6f371aad4759917b110b1d764e0f5b8525925524e3d7049e7fe45469739"
+  }
+}

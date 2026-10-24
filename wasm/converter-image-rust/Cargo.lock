@@ -13,6 +13,7 @@ name = "converter-image-rust"
 version = "0.1.0"
 dependencies = [
  "jpeg-encoder",
+ "memchr",
  "rawloader",
  "serde",
  "serde_json",
@@ -61,12 +62,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
-
-[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -111,15 +106,11 @@ dependencies = [
 [[package]]
 name = "rawloader"
 version = "0.37.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eda9584c9e94f8c6df6a4b15b802154f2f305872936958e97730b51838db078a"
 dependencies = [
  "byteorder",
  "enumn",
- "glob",
  "lazy_static",
  "rayon",
- "rustc_version",
  "toml",
 ]
 
@@ -142,21 +133,6 @@ dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
 ]
-
-[[package]]
-name = "rustc_version"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfcb3a22ef46e85b45de6ee7e79d063319ebb6594faafcf1c225ea92ab6e9b92"
-dependencies = [
- "semver",
-]
-
-[[package]]
-name = "semver"
-version = "1.0.28"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a7852d02fc848982e0c167ef163aaff9cd91dc640ba85e263cb1ce46fae51cd"
 
 [[package]]
 name = "serde"

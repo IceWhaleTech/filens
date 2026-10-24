@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">filens</title>
+  <desc id="desc">A vivid cyan, violet, pink and orange document with a folded corner, seen through a dimensional glass lens on a pearl app tile.</desc>
+  <defs>
+    <linearGradient id="tile" x1="210" y1="55" x2="800" y2="1030" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff"/><stop offset=".48" stop-color="#fafbff"/><stop offset="1" stop-color="#e2e6ef"/></linearGradient>
+    <linearGradient id="tileEdge" x1="250" y1="25" x2="820" y2="1024" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff"/><stop offset=".43" stop-color="#e4e9f2"/><stop offset="1" stop-color="#bdc5d4"/></linearGradient>
+    <radialGradient id="ambient" cx=".32" cy=".25" r=".87"><stop stop-color="#ffffff"/><stop offset=".62" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="#aab6cc" stop-opacity=".13"/></radialGradient>
+    <linearGradient id="paper" x1="265" y1="183" x2="594" y2="792" gradientUnits="userSpaceOnUse"><stop stop-color="#05dbff"/><stop offset=".3" stop-color="#287bff"/><stop offset=".56" stop-color="#8250ff"/><stop offset=".79" stop-color="#ed4de9"/><stop offset="1" stop-color="#ff8b57"/></linearGradient>
+    <radialGradient id="cyan" cx=".81" cy=".04" r=".8"><stop stop-color="#00efff"/><stop offset=".55" stop-color="#00cfff" stop-opacity=".63"/><stop offset="1" stop-color="#00baff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="violet" cx=".05" cy=".51" r=".66"><stop stop-color="#5c39ff"/><stop offset=".6" stop-color="#7850ff" stop-opacity=".48"/><stop offset="1" stop-color="#8b49ff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="pink" cx=".77" cy=".72" r=".65"><stop stop-color="#ff4fd8"/><stop offset=".47" stop-color="#ff5cdf" stop-opacity=".9"/><stop offset="1" stop-color="#ff54db" stop-opacity="0"/></radialGradient>
+    <radialGradient id="orange" cx=".2" cy="1.05" r=".5"><stop stop-color="#ffd75b"/><stop offset=".41" stop-color="#ffad63"/><stop offset="1" stop-color="#ff9b7c" stop-opacity="0"/></radialGradient>
+    <linearGradient id="paperLight" x1="220" y1="200" x2="655" y2="755" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff" stop-opacity=".12"/><stop offset=".4" stop-color="#ffffff" stop-opacity=".025"/><stop offset=".7" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="#ffffff" stop-opacity=".25"/></linearGradient>
+    <linearGradient id="fold" x1="574" y1="172" x2="654" y2="252" gradientUnits="userSpaceOnUse"><stop stop-color="#f2fdff" stop-opacity=".96"/><stop offset=".45" stop-color="#b0f6ff" stop-opacity=".86"/><stop offset="1" stop-color="#4bd5ff" stop-opacity=".72"/></linearGradient>
+    <linearGradient id="glass" x1="510" y1="439" x2="799" y2="832" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff" stop-opacity=".65"/><stop offset=".28" stop-color="#e3f6ff" stop-opacity=".08"/><stop offset=".65" stop-color="#b9cbf8" stop-opacity=".16"/><stop offset=".85" stop-color="#ffffff" stop-opacity=".65"/><stop offset="1" stop-color="#b5c5e5" stop-opacity=".4"/></linearGradient>
+    <linearGradient id="rim" x1="506" y1="457" x2="793" y2="825" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff"/><stop offset=".21" stop-color="#a5e9ff" stop-opacity=".85"/><stop offset=".47" stop-color="#ffffff" stop-opacity=".15"/><stop offset=".7" stop-color="#ffffff" stop-opacity=".96"/><stop offset="1" stop-color="#e5eafd" stop-opacity=".75"/></linearGradient>
+    <linearGradient id="handle" x1="779" y1="825" x2="822" y2="778" gradientUnits="userSpaceOnUse"><stop stop-color="#b9c8df"/><stop offset=".25" stop-color="#eff7ff"/><stop offset=".52" stop-color="#ffffff"/><stop offset=".8" stop-color="#d8e2f1"/><stop offset="1" stop-color="#a1b6d1"/></linearGradient>
+    <linearGradient id="metal" x1="544" y1="476" x2="768" y2="791" gradientUnits="userSpaceOnUse"><stop stop-color="#fcfeff"/><stop offset=".15" stop-color="#aac0d7"/><stop offset=".43" stop-color="#f7fbff"/><stop offset=".68" stop-color="#8a9caf"/><stop offset=".88" stop-color="#e8f3ff"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+    <linearGradient id="body" x1="568" y1="483" x2="735" y2="787" gradientUnits="userSpaceOnUse"><stop stop-color="#4c5365"/><stop offset=".25" stop-color="#252b3a"/><stop offset=".59" stop-color="#121724"/><stop offset="1" stop-color="#070b13"/></linearGradient>
+    <radialGradient id="bodyEdge"><stop offset=".65" stop-color="#000000" stop-opacity="0"/><stop offset=".87" stop-color="#b7d2ff" stop-opacity=".23"/><stop offset=".95" stop-color="#080c19" stop-opacity=".45"/><stop offset="1" stop-color="#000000" stop-opacity=".7"/></radialGradient>
+    <linearGradient id="optics" x1="586" y1="539" x2="729" y2="736" gradientUnits="userSpaceOnUse"><stop stop-color="#00e6ff"/><stop offset=".32" stop-color="#4376ff"/><stop offset=".57" stop-color="#9d47ff"/><stop offset=".82" stop-color="#ff5bd9"/><stop offset="1" stop-color="#ffad6a"/></linearGradient>
+    <radialGradient id="opticGlow" cx=".72" cy=".8" r=".8"><stop stop-color="#ffb5ff" stop-opacity=".8"/><stop offset=".36" stop-color="#ff6de4" stop-opacity=".38"/><stop offset="1" stop-color="#3a68ff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="opticShine" x1="615" y1="537" x2="683" y2="717" gradientUnits="userSpaceOnUse"><stop stop-color="#f2feff" stop-opacity=".8"/><stop offset=".35" stop-color="#ffffff" stop-opacity=".13"/><stop offset=".62" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="#ffd5ff" stop-opacity=".3"/></linearGradient>
+    <filter id="paperShadow" x="-45%" y="-30%" width="190%" height="180%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#3f3c7f" flood-opacity=".18"/><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#4e5b9f" flood-opacity=".1"/></filter>
+    <filter id="lensShadow" x="-50%" y="-50%" width="200%" height="220%" color-interpolation-filters="sRGB"><feDropShadow dx="3" dy="20" stdDeviation="18" flood-color="#222b55" flood-opacity=".24"/><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#52658e" flood-opacity=".18"/></filter>
+    <filter id="foldShadow" x="-70%" y="-50%" width="240%" height="240%" color-interpolation-filters="sRGB"><feDropShadow dx="-3" dy="5" stdDeviation="4" flood-color="#1544a2" flood-opacity=".2"/></filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+    <path id="document" d="M266 172H574L654 252V732Q654 784 602 784H266Q218 784 218 736V220Q218 172 266 172Z"/>
+    <clipPath id="documentClip"><use href="#document"/></clipPath>
+    <clipPath id="opticsClip"><circle cx="650" cy="638" r="101"/></clipPath>
+  </defs>
+  <rect x="12" y="12" width="1000" height="1000" rx="224" fill="url(#tile)"/>
+  <rect x="12" y="12" width="1000" height="1000" rx="224" fill="url(#ambient)"/>
+  <rect x="13.5" y="13.5" width="997" height="997" rx="222.5" fill="none" stroke="url(#tileEdge)" stroke-width="3"/>
+  <rect x="25" y="25" width="974" height="974" rx="213" fill="none" stroke="#ffffff" stroke-opacity=".7" stroke-width="2"/>
+  <g transform="rotate(-3 434 477)" filter="url(#paperShadow)">
+    <use href="#document" fill="url(#paper)"/>
+    <g clip-path="url(#documentClip)">
+      <rect x="214" y="170" width="440" height="614" fill="url(#cyan)"/>
+      <rect x="214" y="170" width="440" height="614" fill="url(#violet)"/>
+      <rect x="214" y="170" width="440" height="614" fill="url(#pink)"/>
+      <rect x="214" y="170" width="440" height="614" fill="url(#orange)"/>
+      <rect x="214" y="170" width="440" height="614" fill="url(#paperLight)"/>
+      <path d="M228 636C315 550 314 427 439 396S588 338 663 275" fill="none" stroke="#ffffff" stroke-opacity=".16" stroke-width="86" filter="url(#soft)"/>
+    </g>
+    <use href="#document" fill="none" stroke="#ffffff" stroke-opacity=".58" stroke-width="3"/>
+    <path d="M574 172V226Q574 252 600 252H654Z" fill="url(#fold)" stroke="#ffffff" stroke-opacity=".65" stroke-width="2" filter="url(#foldShadow)"/>
+    <path d="M287 339H449M287 399H398" fill="none" stroke="#ffffff" stroke-opacity=".94" stroke-width="23" stroke-linecap="round"/>
+  </g>
+  <g filter="url(#lensShadow)">
+    <path d="M774 767L847 840" fill="none" stroke="url(#handle)" stroke-width="59" stroke-linecap="round"/>
+    <path d="M780 762L853 835" fill="none" stroke="#ffffff" stroke-opacity=".7" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="650" cy="638" r="201" fill="url(#glass)" stroke="url(#rim)" stroke-width="5"/>
+    <circle cx="650" cy="638" r="190" fill="none" stroke="#ffffff" stroke-opacity=".38" stroke-width="2"/>
+    <circle cx="650" cy="638" r="167" fill="url(#metal)"/>
+    <circle cx="650" cy="638" r="161" fill="url(#body)"/>
+    <circle cx="650" cy="638" r="157" fill="url(#bodyEdge)"/>
+    <path d="M518 587A143 143 0 0 1 737 518" fill="none" stroke="#ffffff" stroke-opacity=".4" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="650" cy="638" r="106" fill="#080c1c" stroke="#b5c5e7" stroke-opacity=".4" stroke-width="2"/>
+    <circle cx="650" cy="638" r="101" fill="url(#optics)"/>
+    <circle cx="650" cy="638" r="101" fill="url(#opticGlow)"/>
+    <g clip-path="url(#opticsClip)">
+      <path d="M543 661C592 623 581 565 639 553S706 520 752 510V539C711 580 695 588 659 607S600 686 576 709Z" fill="#ffffff" opacity=".11"/>
+      <circle cx="650" cy="638" r="101" fill="url(#opticShine)"/>
+      <ellipse cx="618" cy="561" rx="68" ry="21" transform="rotate(-22 618 561)" fill="#ffffff" opacity=".21" filter="url(#soft)"/>
+    </g>
+    <circle cx="650" cy="638" r="101" fill="none" stroke="#eafaff" stroke-opacity=".72" stroke-width="2.2"/>
+    <path d="M489 537A201 201 0 0 1 638 437" fill="none" stroke="#ffffff" stroke-opacity=".9" stroke-width="5" stroke-linecap="round"/>
+    <path d="M649 839A201 201 0 0 0 818 749" fill="none" stroke="#ffffff" stroke-opacity=".85" stroke-width="5" stroke-linecap="round"/>
+  </g>
+</svg>

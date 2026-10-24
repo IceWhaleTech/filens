@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "fast-xml-parser": "^4.5.3",
+    "fflate": "0.8.2",
     "jszip": "^3.10.1",
     "utif": "^3.1.0"
   }

@@ -118,9 +118,14 @@ export function createWasmCoreRunner(options: WasmCoreRunnerOptions) {
 
 export function createWasmConverterClient(options: WasmConverterClientOptions): ConverterClient {
   const runCore = createWasmCoreRunner(options);
-  const runImage = options.imageWasm
-    ? createWasmCoreRunner({ wasm: options.imageWasm, fetch: options.fetch })
+  let imageModulePromise: Promise<WebAssembly.Module> | undefined;
+  const imageModule = options.imageWasm
+    ? () => imageModulePromise ??= loadWasmModule(options.imageWasm!, options.fetch)
     : undefined;
+  const runImage = options.imageWasm
+    ? createWasmCoreRunner({ wasm: imageModule!, fetch: options.fetch })
+    : undefined;
+  const previewImage = imageModule ? createImagePreviewRunner(imageModule) : undefined;
 
   return {
     async convert(request, context) {
@@ -132,13 +137,19 @@ export function createWasmConverterClient(options: WasmConverterClientOptions): 
       const outputPath = `/work/output.${targetFormat}`;
       const optionsPath = '/work/options.json';
       const resultPath = '/work/result.json';
-      const input = await sourceToBytes(request.source, request.name, options.fetch);
+      const input = await sourceToBytes(request.source, request.name, options.fetch, context.signal);
+      throwIfAborted(context.signal);
       const requestOptions = JSON.stringify({
         ...(request.password ? { password: request.password } : {}),
         ...(request.locale ? { locale: request.locale } : {})
       });
 
       const useImageConverter = Boolean(runImage && imageConversionPairs.has(conversionPair));
+      if (useImageConverter && targetFormat === 'jpg' && previewImage) {
+        const preview = await previewImage(input, context.signal);
+        throwIfAborted(context.signal);
+        if (preview) return preview;
+      }
       const runConverter = useImageConverter ? runImage! : runCore;
       const invocation = await runConverter({
         args: [
@@ -184,6 +195,52 @@ export function createWasmConverterClient(options: WasmConverterClientOptions): 
         contentType: coreResult.contentType,
         warnings: coreResult.warnings
       } satisfies ConversionResult;
+    }
+  };
+}
+
+interface ImagePreviewExports {
+  memory: WebAssembly.Memory;
+  filens_image_alloc(length: number): number;
+  filens_image_free(pointer: number, length: number): void;
+  filens_image_preview(pointer: number, length: number): bigint;
+}
+
+function createImagePreviewRunner(loadModule: () => Promise<WebAssembly.Module>) {
+  let runtimePromise: Promise<ImagePreviewExports | null> | undefined;
+  const runtime = () => runtimePromise ??= (async () => {
+    const module = await loadModule();
+    const names = new Set(WebAssembly.Module.exports(module).map(entry => entry.name));
+    if (!['filens_image_alloc', 'filens_image_free', 'filens_image_preview', 'memory'].every(name => names.has(name))) return null;
+    const wasi = new InMemoryWasiHost({ args: ['converter-image'], files: {} });
+    const instance = await WebAssembly.instantiate(module, { wasi_snapshot_preview1: wasi.imports });
+    wasi.setInstance(instance);
+    return instance.exports as unknown as ImagePreviewExports;
+  })();
+
+  return async (input: Uint8Array, signal?: AbortSignal): Promise<ConversionResult | null> => {
+    const instance = await runtime();
+    throwIfAborted(signal);
+    // Older image modules remain compatible through the existing WASI path.
+    if (!instance || input.length === 0) return null;
+    let inputPointer = 0, outputPointer = 0, outputLength = 0;
+    try {
+      inputPointer = instance.filens_image_alloc(input.length) >>> 0;
+      if (!inputPointer) throw new Error('Image core could not allocate its input buffer.');
+      new Uint8Array(instance.memory.buffer).set(input, inputPointer);
+      const output = instance.filens_image_preview(inputPointer, input.length);
+      outputPointer = Number(output & 0xffffffffn);
+      outputLength = Number(output >> 32n);
+      if (!outputPointer || outputLength < 4 || outputPointer + outputLength > instance.memory.buffer.byteLength) throw new Error('Image core returned an invalid preview buffer.');
+      const bytes = new Uint8Array(instance.memory.buffer, outputPointer, outputLength);
+      const metadataLength = new DataView(bytes.buffer, bytes.byteOffset, 4).getUint32(0, true);
+      if (metadataLength > bytes.length - 4) throw new Error('Image core returned invalid preview metadata.');
+      const metadata = parseCoreResult(bytes.subarray(4, 4 + metadataLength));
+      if (!metadata.ok) throw new WasmConversionError(metadata);
+      return { source: bytes.slice(4 + metadataLength), format: 'jpg', contentType: metadata.contentType, warnings: metadata.warnings };
+    } finally {
+      if (outputPointer && outputLength) instance.filens_image_free(outputPointer, outputLength);
+      if (inputPointer) instance.filens_image_free(inputPointer, input.length);
     }
   };
 }
@@ -235,7 +292,7 @@ async function compileWasmResponse(response: Response): Promise<WebAssembly.Modu
   return WebAssembly.compile(await response.arrayBuffer());
 }
 
-async function sourceToBytes(source: PreviewSource, name: string | undefined, fetchImpl = globalThis.fetch): Promise<Uint8Array> {
+async function sourceToBytes(source: PreviewSource, name: string | undefined, fetchImpl = globalThis.fetch, signal?: AbortSignal): Promise<Uint8Array> {
   if (isBlobLikeSource(source)) {
     return new Uint8Array(await source.arrayBuffer());
   }
@@ -250,7 +307,7 @@ async function sourceToBytes(source: PreviewSource, name: string | undefined, fe
       return dataUrlToBytes(source);
     }
     if (fetchImpl && isFetchableSource(source, name)) {
-      const response = await fetchImpl(source);
+      const response = await fetchImpl(source, { signal });
       if (!response.ok) {
         throw new Error(`Failed to fetch conversion source: ${response.status} ${response.statusText}`.trim());
       }

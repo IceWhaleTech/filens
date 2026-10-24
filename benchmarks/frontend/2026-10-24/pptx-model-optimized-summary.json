@@ -1,0 +1,728 @@
+{
+  "sourceSha256": "01e2b541a08c81ac3577daed46a61f9cbe08cee43ed93d35817375e08e5763c7",
+  "date": "2026-10-23T17:18:01.513Z",
+  "cpu": "Apple M4 Pro",
+  "platform": "darwin 25.6.0 arm64",
+  "browser": "147.0.7727.15",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+    "vendor": "Google Inc. (Google)",
+    "devicePixelRatio": 1
+  },
+  "versions": {
+    "pptxtojson": "2.2.0",
+    "pptx-preview": "1.0.7",
+    "@vue-office/pptx": "1.0.1",
+    "libraw-wasm": "1.6.0",
+    "@photo-sphere-viewer/core": "5.15.1",
+    "sheetjs": "0.20.3"
+  },
+  "iterations": 7,
+  "totalRuns": 168,
+  "filensSuccessfulRuns": 56,
+  "method": "Ratios are peer / filens (higher means filens is faster). Paired bootstrap of per-iteration measurements, 10000 resamples, percentile 95% interval, LCG seed 12345. Small single-machine sample; not an independent benchmark or a global SOTA proof.",
+  "comparisons": [
+    {
+      "family": "pptx-model",
+      "sample": "vue-office-test.pptx",
+      "peer": "pptxtojson",
+      "metric": "readyMs",
+      "filensMs": 39.02499997615814,
+      "peerMs": 64.74000000953674,
+      "peerOverFilensRatio": 1.658936580373834,
+      "ratio95PercentBootstrapInterval": [
+        1.5453891320714872,
+        1.7005599389891164
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "vue-office-test.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 39.02499997615814,
+      "peerMs": 54.800000071525574,
+      "peerOverFilensRatio": 1.4042280616272897,
+      "ratio95PercentBootstrapInterval": [
+        1.3321741217512564,
+        1.428385248479172
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "filens-field-notes.pptx",
+      "peer": "pptxtojson",
+      "metric": "readyMs",
+      "filensMs": 12.350000023841858,
+      "peerMs": 20.9099999666214,
+      "peerOverFilensRatio": 1.6931174029355736,
+      "ratio95PercentBootstrapInterval": [
+        1.6801292471354647,
+        1.751755473730133
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-shapes.pptx",
+      "peer": "pptxtojson",
+      "metric": "readyMs",
+      "filensMs": 12.295000076293945,
+      "peerMs": 21.4650000333786,
+      "peerOverFilensRatio": 1.7458316307590254,
+      "ratio95PercentBootstrapInterval": [
+        1.7303781898447144,
+        1.7536644964816077
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-shapes.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 12.295000076293945,
+      "peerMs": 11.684999942779541,
+      "peerOverFilensRatio": 0.950386325357529,
+      "ratio95PercentBootstrapInterval": [
+        0.9365143481419133,
+        0.955266362902589
+      ],
+      "stableLeadInThisComparison": false
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-pictures.pptx",
+      "peer": "pptxtojson",
+      "metric": "readyMs",
+      "filensMs": 6.605000019073486,
+      "peerMs": 10.379999995231628,
+      "peerOverFilensRatio": 1.5715367093500294,
+      "ratio95PercentBootstrapInterval": [
+        1.5287958288838637,
+        1.604704096224725
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-pictures.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 6.605000019073486,
+      "peerMs": 8.90499997138977,
+      "peerOverFilensRatio": 1.3482210364382279,
+      "ratio95PercentBootstrapInterval": [
+        1.3176382868309888,
+        1.3664643322641823
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-SampleShow.pptx",
+      "peer": "pptxtojson",
+      "metric": "readyMs",
+      "filensMs": 10.370000004768372,
+      "peerMs": 12.71999990940094,
+      "peerOverFilensRatio": 1.226615226957761,
+      "ratio95PercentBootstrapInterval": [
+        1.2095693825098002,
+        1.245007305328762
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-SampleShow.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 10.370000004768372,
+      "peerMs": 11.865000009536743,
+      "peerOverFilensRatio": 1.1441658634600709,
+      "ratio95PercentBootstrapInterval": [
+        1.0999039351765303,
+        1.1573850005294277
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-pie-chart.pptx",
+      "peer": "pptxtojson",
+      "metric": "readyMs",
+      "filensMs": 9.240000009536743,
+      "peerMs": 10.5,
+      "peerOverFilensRatio": 1.1363636351907784,
+      "ratio95PercentBootstrapInterval": [
+        1.117141311805404,
+        1.1682140870197346
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-pie-chart.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 9.240000009536743,
+      "peerMs": 11.965000033378601,
+      "peerOverFilensRatio": 1.294913422189323,
+      "ratio95PercentBootstrapInterval": [
+        1.2718968246360773,
+        1.309071145696583
+      ],
+      "stableLeadInThisComparison": true
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "peer": "pptx-preview",
+      "metric": "readyMs",
+      "filensMs": 30.134999990463257,
+      "peerMs": 30.514999985694885,
+      "peerOverFilensRatio": 1.0126099218633444,
+      "ratio95PercentBootstrapInterval": [
+        1.0049776000068231,
+        1.0186684307777139
+      ],
+      "stableLeadInThisComparison": true
+    }
+  ],
+  "timingLeads": [
+    {
+      "family": "pptx-model",
+      "sample": "vue-office-test.pptx",
+      "allMeasuredPeersHaveStableTimingLead": true,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-model",
+      "sample": "filens-field-notes.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-shapes.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-pictures.pptx",
+      "allMeasuredPeersHaveStableTimingLead": true,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-model",
+      "sample": "sample-deck.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-SampleShow.pptx",
+      "allMeasuredPeersHaveStableTimingLead": true,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-pie-chart.pptx",
+      "allMeasuredPeersHaveStableTimingLead": true,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "allMeasuredPeersHaveStableTimingLead": false,
+      "note": "Timing only; output/visual review is required before any SOTA claim."
+    }
+  ],
+  "aggregates": [
+    {
+      "family": "pptx-model",
+      "peer": "pptxtojson",
+      "commonSuccessfulSamples": 6,
+      "geometricMeanPeerOverFilensRatio": 1.4854050772337715
+    },
+    {
+      "family": "pptx-model",
+      "peer": "pptx-preview",
+      "commonSuccessfulSamples": 6,
+      "geometricMeanPeerOverFilensRatio": 1.1799903902871045
+    }
+  ],
+  "summary": [
+    {
+      "family": "pptx-model",
+      "sample": "vue-office-test.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 39.02499997615814,
+      "minMs": 37.06000006198883,
+      "medianProcessingMs": null,
+      "maxMs": 42.954999923706055,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.0854454040527344,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 13,
+        "objects": 186,
+        "unsupported": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "vue-office-test.pptx",
+      "engine": "pptxtojson",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 64.74000000953674,
+      "minMs": 64.01499998569489,
+      "medianProcessingMs": null,
+      "maxMs": 70.24500000476837,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 3.361480712890625,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 13,
+        "objects": 157,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "vue-office-test.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 54.800000071525574,
+      "minMs": 52.30999994277954,
+      "medianProcessingMs": null,
+      "maxMs": 56.06500005722046,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 4.671794891357422,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 13,
+        "objects": 0,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "filens-field-notes.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 12.350000023841858,
+      "minMs": 12.080000042915344,
+      "medianProcessingMs": null,
+      "maxMs": 13.090000033378601,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.5416603088378906,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 3,
+        "objects": 27,
+        "unsupported": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "filens-field-notes.pptx",
+      "engine": "pptxtojson",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 20.9099999666214,
+      "minMs": 20.77999997138977,
+      "medianProcessingMs": null,
+      "maxMs": 22.0349999666214,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 2.0173263549804688,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 3,
+        "objects": 27,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "filens-field-notes.pptx",
+      "engine": "pptx-preview",
+      "successes": 0,
+      "attempted": 7,
+      "medianMs": null,
+      "minMs": null,
+      "medianProcessingMs": null,
+      "maxMs": null,
+      "medianMainThreadRetainedJsHeapDeltaMiB": null,
+      "medianLongestMainThreadTaskMs": null,
+      "medianIdleGlDrawCalls": null,
+      "output": null,
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-shapes.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 12.295000076293945,
+      "minMs": 12.269999980926514,
+      "medianProcessingMs": null,
+      "maxMs": 12.620000004768372,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.6614570617675781,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "objects": 16,
+        "unsupported": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-shapes.pptx",
+      "engine": "pptxtojson",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 21.4650000333786,
+      "minMs": 21.21499991416931,
+      "medianProcessingMs": null,
+      "maxMs": 21.855000019073486,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 2.1928863525390625,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "objects": 10,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-shapes.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 11.684999942779541,
+      "minMs": 11.449999928474426,
+      "medianProcessingMs": null,
+      "maxMs": 12.169999957084656,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.916656494140625,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "objects": 0,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-pictures.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 6.605000019073486,
+      "minMs": 6.585000038146973,
+      "medianProcessingMs": null,
+      "maxMs": 6.799999952316284,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.3556480407714844,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "objects": 4,
+        "unsupported": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-pictures.pptx",
+      "engine": "pptxtojson",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 10.379999995231628,
+      "minMs": 10.164999961853027,
+      "medianProcessingMs": null,
+      "maxMs": 10.679999947547913,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.6233711242675781,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "objects": 4,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "rich-pptx-pictures.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 8.90499997138977,
+      "minMs": 8.709999918937683,
+      "medianProcessingMs": null,
+      "maxMs": 9.080000042915344,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.6857566833496094,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "objects": 0,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "sample-deck.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 11.570000052452087,
+      "minMs": 11.360000014305115,
+      "medianProcessingMs": null,
+      "maxMs": 12.400000095367432,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.6805572509765625,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 3,
+        "objects": 55,
+        "unsupported": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "sample-deck.pptx",
+      "engine": "pptxtojson",
+      "successes": 0,
+      "attempted": 7,
+      "medianMs": null,
+      "minMs": null,
+      "medianProcessingMs": null,
+      "maxMs": null,
+      "medianMainThreadRetainedJsHeapDeltaMiB": null,
+      "medianLongestMainThreadTaskMs": null,
+      "medianIdleGlDrawCalls": null,
+      "output": null,
+      "failures": [
+        "Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'attrs')\n    at http://127.0.0.1:54967/deps/pptxtojson/dist/index.js:1:417957\n    at d (http://127.0.0.1:54967/deps/pptxtojson/dist/index.js:1:3059)\n    at Generator.<anonymous> (http://127.0.0.1:54967/deps/pptxtojson/dist/index.js:1:4396)\n    at Generator.next (http://127.0.0.1:54967/deps/pptxtojson/dist/index.js:1:3422)\n    at n (http://127.0.0.1:54967/deps/pptxtojson/dist/index.js:1:1143)\n    at i (http://127.0.0.1:54967/deps/pptxtojson/dist/index.js:1:1346)\n    at http://127.0.0.1:54967/deps/pptxtojson/dist/index.js:1:1405\n    at new Promise (<anonymous>)\n    at http://127.0.0.1:54967/deps/pptxtojson/dist/index.js:1:1286\n    at kh (http://127.0.0.1:54967/deps/pptxtojson/dist/index.js:1:417324)"
+      ]
+    },
+    {
+      "family": "pptx-model",
+      "sample": "sample-deck.pptx",
+      "engine": "pptx-preview",
+      "successes": 0,
+      "attempted": 7,
+      "medianMs": null,
+      "minMs": null,
+      "medianProcessingMs": null,
+      "maxMs": null,
+      "medianMainThreadRetainedJsHeapDeltaMiB": null,
+      "medianLongestMainThreadTaskMs": null,
+      "medianIdleGlDrawCalls": null,
+      "output": null,
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-SampleShow.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 10.370000004768372,
+      "minMs": 10.230000019073486,
+      "medianProcessingMs": null,
+      "maxMs": 10.490000009536743,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.5200767517089844,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "objects": 4,
+        "unsupported": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-SampleShow.pptx",
+      "engine": "pptxtojson",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 12.71999990940094,
+      "minMs": 12.59500002861023,
+      "medianProcessingMs": null,
+      "maxMs": 12.805000066757202,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.8662071228027344,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "objects": 4,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-SampleShow.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 11.865000009536743,
+      "minMs": 11.445000052452087,
+      "medianProcessingMs": null,
+      "maxMs": 12.144999980926514,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 1.043853759765625,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 2,
+        "objects": 0,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-pie-chart.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 9.240000009536743,
+      "minMs": 9.02999997138977,
+      "medianProcessingMs": null,
+      "maxMs": 9.324999928474426,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.48027801513671875,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 1,
+        "objects": 2,
+        "unsupported": 0
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-pie-chart.pptx",
+      "engine": "pptxtojson",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 10.5,
+      "minMs": 10.340000033378601,
+      "medianProcessingMs": null,
+      "maxMs": 10.725000023841858,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.6438369750976562,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 1,
+        "objects": 2,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-pie-chart.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 11.965000033378601,
+      "minMs": 11.740000009536743,
+      "medianProcessingMs": null,
+      "maxMs": 12.15499997138977,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.9778518676757812,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 1,
+        "objects": 0,
+        "unsupported": null
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "engine": "filens",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 30.134999990463257,
+      "minMs": 29.764999985694885,
+      "medianProcessingMs": null,
+      "maxMs": 30.399999976158142,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 0.9703102111816406,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 48,
+        "objects": 145,
+        "unsupported": 1
+      },
+      "failures": []
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "engine": "pptxtojson",
+      "successes": 0,
+      "attempted": 7,
+      "medianMs": null,
+      "minMs": null,
+      "medianProcessingMs": null,
+      "maxMs": null,
+      "medianMainThreadRetainedJsHeapDeltaMiB": null,
+      "medianLongestMainThreadTaskMs": null,
+      "medianIdleGlDrawCalls": null,
+      "output": null,
+      "failures": [
+        "Error: page.evaluate: TypeError: Cannot read properties of undefined (reading 'a:blip')\n    at http://127.0.0.1:52582/deps/pptxtojson/dist/index.js:1:424461\n    at d (http://127.0.0.1:52582/deps/pptxtojson/dist/index.js:1:3059)\n    at Generator.<anonymous> (http://127.0.0.1:52582/deps/pptxtojson/dist/index.js:1:4396)\n    at Generator.next (http://127.0.0.1:52582/deps/pptxtojson/dist/index.js:1:3422)\n    at n (http://127.0.0.1:52582/deps/pptxtojson/dist/index.js:1:1143)\n    at i (http://127.0.0.1:52582/deps/pptxtojson/dist/index.js:1:1346)\n    at http://127.0.0.1:52582/deps/pptxtojson/dist/index.js:1:1405\n    at new Promise (<anonymous>)\n    at http://127.0.0.1:52582/deps/pptxtojson/dist/index.js:1:1286\n    at Eh (http://127.0.0.1:52582/deps/pptxtojson/dist/index.js:1:424071)"
+      ]
+    },
+    {
+      "family": "pptx-model",
+      "sample": "poi-2411-Performance_Up.pptx",
+      "engine": "pptx-preview",
+      "successes": 7,
+      "attempted": 7,
+      "medianMs": 30.514999985694885,
+      "minMs": 29.740000009536743,
+      "medianProcessingMs": null,
+      "maxMs": 30.84500002861023,
+      "medianMainThreadRetainedJsHeapDeltaMiB": 2.552154541015625,
+      "medianLongestMainThreadTaskMs": 0,
+      "medianIdleGlDrawCalls": null,
+      "output": {
+        "slides": 36,
+        "objects": 0,
+        "unsupported": null
+      },
+      "failures": []
+    }
+  ]
+}

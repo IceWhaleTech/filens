@@ -1,0 +1,101 @@
+--- a/packages/iwork/src/parser/archive.ts
++++ b/packages/iwork/src/parser/archive.ts
+@@ -58,7 +58,9 @@
+ 
+   const iwaEntries = [...zip.keys()]
+     .filter((name) => name.endsWith('.iwa'))
+-    .sort(new Intl.Collator().compare);
++    // These are package paths, so use a deterministic code-unit order rather
++    // than initializing locale-aware collation for each document.
++    .sort();
+ 
+   for (const entryName of iwaEntries) {
+     const file = zip.get(entryName);
+@@ -131,8 +133,8 @@
+         typeId,
+         typeName: typeName ?? `unknown:${typeId}`,
+         value: null,
+-        objectReferences: (messageInfo?.objectReferences ?? []).map(Number),
+-        dataReferences: (messageInfo?.dataReferences ?? []).map(Number)
++        objectReferences: messageInfo?.objectReferences ?? [],
++        dataReferences: messageInfo?.dataReferences ?? []
+       };
+       if (typeName) {
+         deferRecordValue(nextRecord, () => {
+--- a/packages/iwork/src/parser/protobuf.ts
++++ b/packages/iwork/src/parser/protobuf.ts
+@@ -46,7 +46,7 @@
+ class LegacyLayoutError extends Error {}
+ 
+ interface MessageLayout {
+-  fields: Map<number, FieldLayout>;
++  fields: Record<number, FieldLayout>;
+   repeated: string[];
+   required: string[];
+   fallback: boolean;
+@@ -70,7 +70,7 @@
+   const cached = layouts.get(type);
+   if (cached) return cached;
+   const layout: MessageLayout = {
+-    fields: new Map(), repeated: [], required: [],
++    fields: {}, repeated: [], required: [],
+     fallback: Boolean((type as Type & { group?: boolean }).group)
+   };
+   for (const field of type.fieldsArray) {
+@@ -79,10 +79,10 @@
+     if (field.repeated) layout.repeated.push(field.name);
+     if (field.required) layout.required.push(field.name);
+     const message = field.resolvedType instanceof Type ? field.resolvedType : undefined;
+-    layout.fields.set(field.id, {
++    layout.fields[field.id] = {
+       name: field.name, repeated: field.repeated, message,
+       scalar: message ? undefined : field.resolvedType ? 'int32' : field.type as ScalarType
+-    });
++    };
+   }
+   layouts.set(type, layout);
+   return layout;
+@@ -98,7 +98,7 @@
+   for (const name of layout.repeated) result[name] = [];
+   while (reader.pos < end) {
+     const tag = reader.uint32();
+-    const field = layout.fields.get(tag >>> 3);
++    const field = layout.fields[tag >>> 3];
+     if (!field) { reader.skipType(tag & 7); continue; }
+     if (field.repeated) {
+       const values = result[field.name] as unknown[];
+@@ -129,9 +129,34 @@
+ }
+ 
+ function readScalar(reader: Reader, type: ScalarType): unknown {
++  if (type === 'uint64' || type === 'int64' || type === 'sint64') {
++    const value = readSmallVarint(reader);
++    if (value !== undefined) return type === 'sint64' ? (value >>> 1) ^ -(value & 1) : value;
++  }
+   const value = reader[type]();
+   if (type === 'bytes') return new Uint8Array(value as Uint8Array);
+   return isLongLike(value) ? value.toNumber() : value;
++}
++
++// Archive IDs and references usually fit in four bytes. Decode those directly
++// as numbers, avoiding a LongBits and Long allocation for each reference. Leave
++// larger, signed-negative and malformed encodings to the established reader.
++function readSmallVarint(reader: Reader): number | undefined {
++  const bytes = reader.buf;
++  const start = reader.pos;
++  let byte = bytes[start];
++  if (byte < 128) { reader.pos = start + 1; return byte; }
++  let value = byte & 127;
++  byte = bytes[start + 1];
++  value |= (byte & 127) << 7;
++  if (byte < 128) { reader.pos = start + 2; return value; }
++  byte = bytes[start + 2];
++  value |= (byte & 127) << 14;
++  if (byte < 128) { reader.pos = start + 3; return value; }
++  byte = bytes[start + 3];
++  value |= (byte & 127) << 21;
++  if (byte < 128) { reader.pos = start + 4; return value; }
++  return undefined;
+ }
+ 
+ function lookupType(typeName: string): Type {

@@ -13,6 +13,7 @@ const converters = [
   },
   {
     name: 'converter-image',
+    optimization: '-O3',
     crateDir: path.join(rootDir, 'wasm', 'converter-image-rust'),
     outputDir: path.join(rootDir, 'wasm', 'converter-image', 'dist')
   }
@@ -36,7 +37,7 @@ for (const converter of converters) {
   await run(process.execPath, [
     wasmOpt,
     inputPath,
-    '-Oz',
+    converter.optimization ?? '-Oz',
     '--enable-bulk-memory',
     '--enable-nontrapping-float-to-int',
     '-o',

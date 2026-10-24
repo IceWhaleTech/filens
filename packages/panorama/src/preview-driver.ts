@@ -245,6 +245,9 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       texture.colorSpace = SRGBColorSpace;
       texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
       texture.minFilter = LinearFilter;
+      // LinearFilter never samples mip levels; generating the full chain only
+      // increases upload work for large camera panoramas.
+      texture.generateMipmaps = false;
       const geometry = new SphereGeometry(500, 64, 40);
       geometry.scale(-1, 1, 1);
       const material = new MeshBasicMaterial({
@@ -358,6 +361,7 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       this.camera.fov = this.scaleToFov(this.state.scale);
       this.camera.updateProjectionMatrix();
     }
+    this.scheduleFrame();
     this.emit('statechange', this.state);
   }
 
@@ -398,6 +402,7 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
       const direction = this.calibratedRenderer?.canvas ? this.calibratedRenderer.dragDirectionSign ?? -1 : 1;
       this.lon = this.pointerStartLon - (event.clientX - this.pointerStartX) * 0.1 * direction;
       this.lat = Math.max(-85, Math.min(85, this.pointerStartLat + (event.clientY - this.pointerStartY) * 0.1 * direction));
+      this.scheduleFrame();
     });
     canvas.addEventListener('pointerup', (event) => {
       this.pointerDown = false;
@@ -433,14 +438,22 @@ export class PanoramaPreviewSession implements PreviewSession<PanoramaPreviewSta
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(width, height, false);
+    this.scheduleFrame();
   };
 
   private startAnimation(): void {
-    const animate = () => {
-      this.animationFrame = requestAnimationFrame(animate);
+    this.scheduleFrame();
+  }
+
+  private scheduleFrame(): void {
+    if (this.animationFrame || (!this.renderer && !this.calibratedRenderer)) return;
+    this.animationFrame = requestAnimationFrame(() => {
+      this.animationFrame = 0;
       this.renderFrame();
-    };
-    animate();
+      // Still photos only need a frame when the view or viewport changes.
+      // Video and calibrated renderers retain their update/state polling.
+      if (this.state.family === 'panorama-video' || this.calibratedRenderer) this.scheduleFrame();
+    });
   }
 
   private renderFrame(): void {
