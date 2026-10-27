@@ -1021,13 +1021,18 @@ fn jpeg_bounds(bytes: &[u8], start: usize) -> Option<(usize, u16, u16)> {
     let mut cursor = start + 2;
     let mut dimensions = None;
     while cursor + 1 < bytes.len() {
+        // RAW pixels can contain accidental SOI bytes. Every header segment
+        // must start with a marker, and another SOI cannot extend this image.
+        if bytes.get(cursor) != Some(&0xff) {
+            return None;
+        }
         while bytes.get(cursor) == Some(&0xff) {
             cursor += 1;
         }
         let marker = *bytes.get(cursor)?;
         cursor += 1;
         match marker {
-            0x00 | 0xd8 | 0xd0..=0xd7 => continue,
+            0x00 | 0xd8 | 0xd0..=0xd7 => return None,
             0xd9 => return dimensions.map(|(width, height)| (cursor, width, height)),
             _ => {}
         }
@@ -11495,6 +11500,21 @@ mod tests {
         assert_eq!(best_embedded_jpeg(&bytes), Some(large.as_slice()));
         assert!(best_embedded_jpeg(b"RAW without preview").is_none());
         assert!(is_raw_source("nrw") && is_raw_source("3fr") && is_raw_source("iiq"));
+    }
+
+    #[test]
+    fn raw_jpeg_search_rejects_false_starts_before_a_real_preview() {
+        let jpeg = test_jpeg(3008, 2000, 8, 8);
+        for prefix in [
+            vec![0xff, 0xd8, 0x42, 0, 2],
+            vec![0xff, 0xd8, 0xff, 0xe1, 0, 2],
+            vec![0xff, 0xd8, 0xff, 0x00],
+            vec![0xff, 0xd8, 0xff, 0xd0],
+        ] {
+            let bytes = [prefix, jpeg.clone()].concat();
+            assert!(jpeg_bounds(&bytes, 0).is_none());
+            assert_eq!(best_embedded_jpeg(&bytes), Some(jpeg.as_slice()));
+        }
     }
 
     #[test]

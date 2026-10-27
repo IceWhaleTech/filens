@@ -37,7 +37,7 @@
     "test:workspaces": "npm run test --workspaces --if-present",
     "test:categories": "node ./scripts/check-category-packages.mjs",
     "test:go": "node ./scripts/run-go-tests.mjs wasm/converter-core examples/go-wazero-converter",
-    "test:wasm": "cargo test --manifest-path wasm/converter-core-rust/Cargo.toml && cargo test --manifest-path wasm/converter-image-rust/Cargo.toml",
+    "test:wasm": "cargo test --manifest-path wasm/converter-core-rust/Cargo.toml && cargo test --manifest-path wasm/converter-image-rust/Cargo.toml && cargo test --manifest-path wasm/converter-image-rust/vendor/rawloader/Cargo.toml --lib",
     "test:occt-wasm": "node ./scripts/test-occt-wasm.mjs",
     "test:go-wazero": "node ./scripts/run-go-tests.mjs examples/go-wazero-converter",
     "test:wasm-smoke": "npm run fixtures:converter:check && node ./scripts/run-converter-fixture-smoke.mjs",

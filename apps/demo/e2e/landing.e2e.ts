@@ -1,19 +1,28 @@
 import { expect, test } from '@playwright/test';
 
-test('keeps the homepage and bundled preview public while protecting ZimaOS sample files', async ({
+test('opens public samples without NAS authentication even inside a host', async ({
   page
 }) => {
   await page.addInitScript(() => {
     (window as Window & { loginPaths?: string[] }).loginPaths = [];
-    window.$wujie = {
-      props: {
-        jump: ({ path }) => {
-          (window as Window & { loginPaths: string[] }).loginPaths.push(path);
+    Object.assign(window, {
+      $wujie: {
+        props: {
+          jump: ({ path }: { path: string }) => {
+            (window as Window & { loginPaths: string[] }).loginPaths.push(path);
+          }
         }
       }
-    };
+    });
   });
-  await page.goto('./?zimaAuth=1');
+  let hostRequests = 0;
+  page.on('request', request => {
+    if (new URL(request.url()).pathname === '/v3/file') hostRequests++;
+  });
+  await page.route('**/external-samples/mdn-audio/t-rex-roar.mp3', route => route.fulfill({
+    path: 'apps/demo/public/samples/sample-video.mp4', contentType: 'video/mp4'
+  }));
+  await page.goto('./');
   await expect(page.locator('.landing')).toBeVisible();
   await page.getByRole('button', { name: '开始体验', exact: true }).click();
   await expect(page.locator('.wb-preview-stage')).toBeVisible();
@@ -29,10 +38,14 @@ test('keeps the homepage and bundled preview public while protecting ZimaOS samp
     .toBeGreaterThan(0);
   expect(await page.evaluate(() => (window as Window & { loginPaths: string[] }).loginPaths.length)).toBe(0);
   await page.getByRole('button', { name: 'Media', exact: true }).click();
+  const sampleResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/external-samples/mdn-audio/t-rex-roar.mp3');
   await page.getByRole('button', { name: 'MP3', exact: true }).click();
-  await expect
-    .poll(() => page.evaluate(() => (window as Window & { loginPaths: string[] }).loginPaths[0]))
-    .toMatch(/^\/login\?redirect=/);
+  const response = await sampleResponse;
+  expect(new URL(response.url()).search).toBe('');
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('t-rex-roar.mp3');
+  await expect.poll(() => page.locator('audio.pptxv-native-media').evaluate((audio: HTMLAudioElement) => audio.readyState)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => (window as Window & { loginPaths: string[] }).loginPaths)).toEqual([]);
+  expect(hostRequests).toBe(0);
 });
 
 test('switches between complete Chinese and English homepages and remembers the choice', async ({ page }) => {

@@ -9,6 +9,14 @@ small sensor preview through `rawloader`. It is intentionally separate from
 `converter-core.wasm` so document conversions do not download camera data and
 RAW decoding code.
 
+X3F files with no JPEG or an embedded JPEG below 2048 pixels on its longest
+side are developed from the original Foveon sensor, rather than enlarging a
+small preview. Legacy mapped-Huffman and TRUE/Merrill sensors are supported;
+Quattro sensor compression is not. Camera identity comes from X3F properties,
+so an EXIF-bearing JPEG is not required. Ordinary X3F output fits within
+2048 pixels without upscaling. X3F uses daylight white balance and the shared
+lightweight color pipeline, without vendor rendering or CAMF adjustments.
+
 The image options JSON accepts `preserveSensorGeometry: true` for calibrated RAW
 panorama previews. This bypasses embedded JPEGs, retains the complete sensor
 raster without EXIF rotation, and downsamples to a longest side of at most 4096
@@ -46,4 +54,4 @@ gzip level 6 and Brotli quality 11):
 
 | Artifact | Raw | Gzip | Brotli |
 | --- | ---: | ---: | ---: |
-| `converter-image.wasm` | 1,097,979 | 300,052 | 215,789 |
+| `converter-image.wasm` | 1,126,174 | 307,362 | 221,235 |

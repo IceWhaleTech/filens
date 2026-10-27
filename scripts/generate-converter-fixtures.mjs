@@ -269,7 +269,7 @@ async function buildFixtureEntries() {
     ...TEXT_FIXTURES,
     ...TABULAR_TEXT_FIXTURES,
     ...TABULAR_BACKEND_FIXTURES,
-    ...RAW_SOURCE_FORMATS.map((sourceFormat) => [`raw/sample.${sourceFormat}`, rawFixtureBytes()]),
+    ...RAW_SOURCE_FORMATS.map((sourceFormat) => [`raw/sample.${sourceFormat}`, sourceFormat === 'x3f' ? x3fFixtureBytes() : rawFixtureBytes()]),
     ...ICNS_FIXTURES,
     ['image/sample.ppm', utf8Bytes('P3\n# RGB test image\n2 1\n255\n255 0 0 0 255 0\n')],
     ...PPT_FIXTURES.map(([relativePath, title, bullet]) => [relativePath, buildPPTBinaryCompoundFile(title, bullet)])
@@ -392,6 +392,50 @@ function normalizeFormat(format) {
 function rawFixtureBytes() {
   // ponytail: controlled fixtures wrap one JPEG; real camera files live in the demo samples.
   return concatBytes([utf8Bytes('CONTROLLED RAW FIXTURE\n'), jpegFixtureBytes(), utf8Bytes('\nEND RAW FIXTURE')]);
+}
+
+function x3fFixtureBytes() {
+  const uint32LE = (value) => { const bytes = Buffer.alloc(4); bytes.writeUInt32LE(value); return bytes; };
+  // A real X3F container with a synthetic 80x48 RGB sensor and a tiny JPEG.
+  // The image core must develop the sensor instead of enlarging that JPEG.
+  const width = 80, height = 48;
+  const header = Buffer.alloc(40);
+  header.write('FOVb');
+  header.writeUInt32LE(0x20000, 4);
+  header.writeUInt32LE(40, 28);
+  header.writeUInt32LE(24, 32);
+  const property = Buffer.concat([
+    Buffer.from('SECp'), uint32LE(0x20000), uint32LE(1), Buffer.alloc(12),
+    uint32LE(0), uint32LE(9), Buffer.from('CAMMODEL\0SIGMA SD9\0', 'utf16le')
+  ]);
+  const mapping = Buffer.alloc(2048);
+  for (let i = 0; i < 1024; i++) mapping.writeUInt16LE(i, i * 2);
+  const raster = Buffer.alloc(width * height * 4);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const delta = x === 0 ? 300 + y * 2 : 2;
+      raster.writeUInt32LE(delta | (delta << 10) | (delta << 20), (y * width + x) * 4);
+    }
+  }
+  const image = (type, format, w, h, stride, data) => Buffer.concat([
+    Buffer.from('SECi'), uint32LE(0x20000), uint32LE(type), uint32LE(format),
+    uint32LE(w), uint32LE(h), uint32LE(stride), data
+  ]);
+  const sections = [
+    ['PROP', property],
+    ['IMA2', image(3, 6, width, height, width * 4, Buffer.concat([mapping, raster]))],
+    ['IMA2', image(2, 18, 2, 2, 0, jpegFixtureBytes())]
+  ];
+  let offset = header.length;
+  const entries = sections.map(([id, data]) => {
+    const entry = Buffer.concat([uint32LE(offset), uint32LE(data.length), Buffer.from(id)]);
+    offset += data.length;
+    return entry;
+  });
+  return Buffer.concat([
+    header, ...sections.map(([, data]) => data), Buffer.from('SECd'),
+    uint32LE(0x20000), uint32LE(entries.length), ...entries, uint32LE(offset)
+  ]);
 }
 
 function jpegFixtureBytes() {

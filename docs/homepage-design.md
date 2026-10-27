@@ -4,7 +4,7 @@ The product homepage introduces filens before visitors enter the existing file p
 
 The workbench preview toolbar starts hidden. Use the toolbar button in the preview header to show or hide it; keyboard navigation and zoom shortcuts also work while it is hidden.
 
-The homepage, bundled examples, and local-file preview do not require ZimaOS authentication. Authentication is requested when selecting a sample that reads protected host storage. This also lets the production build run at its configured base path on a standalone static host without redirecting into a nonexistent ZimaOS login route.
+The homepage, examples, and local-file preview do not require NAS authentication. Bundled examples use the configured frontend base path; external media and panorama examples use the public `/external-samples/` proxy routes. No example reads NAS storage or redirects to a host login page. Vite development/preview, `scripts/serve-static.py`, and the Vercel deployment provide these proxies; other static hosts need equivalent routes for external examples.
 
 For a root-domain deployment, see [Deploy to Vercel / 部署到 Vercel](deploy-vercel.md). `npm run build:vercel` builds the WASM modules and sets the frontend base path to `/`; other builds keep the NAS base path.
 

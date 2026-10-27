@@ -6,6 +6,7 @@ import { createWasmConverterClient, createWasmCoreRunner } from '../src';
 const root = new URL('../../../', import.meta.url);
 const imageBytes = () => readFile(new URL('wasm/converter-image/dist/converter-image.wasm', root));
 const source = () => readFile(new URL('apps/demo/public/samples/raw/pentax-k-r.dng', root));
+const x3fSource = () => readFile(new URL('examples/go-wazero-converter/fixtures/raw/sample.x3f', root));
 const context = { descriptor: { source: new Uint8Array() } };
 
 describe('direct image core preview', () => {
@@ -31,18 +32,37 @@ describe('direct image core preview', () => {
       .rejects.toMatchObject({ name: 'AbortError' });
     expect(fetchSource).toHaveBeenCalledOnce();
   });
-  it('returns identical JPEG bytes and warnings to the WASI entrypoint', async () => {
+  it.each(['dng', 'x3f'])('returns identical %s JPEG bytes and warnings to the WASI entrypoint', async (format) => {
     const wasm = await WebAssembly.compile(await imageBytes());
-    const input = new Uint8Array(await source());
+    const input = new Uint8Array(await (format === 'x3f' ? x3fSource() : source()));
     const client = createWasmConverterClient({ wasm, imageWasm: wasm });
-    const result = await client.convert({ source: input, sourceFormat: 'dng', targetFormat: 'jpg' }, context);
+    const result = await client.convert({ source: input, sourceFormat: format, targetFormat: 'jpg' }, context);
     const wasi = await createWasmCoreRunner({ wasm })({
-      args: ['converter-image', '--input', '/work/in.dng', '--output', '/work/out.jpg', '--source', 'dng', '--target', 'jpg', '--result', '/work/result.json'],
+      args: ['converter-image', '--input', '/work/in.dng', '--output', '/work/out.jpg', '--source', format, '--target', 'jpg', '--result', '/work/result.json'],
       files: { '/work/in.dng': input }, readFiles: ['/work/out.jpg', '/work/result.json']
     });
     expect(wasi.exitCode).toBe(0);
     expect(Buffer.from(result.source as Uint8Array).equals(wasi.files['/work/out.jpg'])).toBe(true);
     expect(result.warnings).toEqual(JSON.parse(new TextDecoder().decode(wasi.files['/work/result.json'])).warnings);
+    if (format === 'x3f') {
+      const jpeg = result.source as Uint8Array;
+      const sof = jpeg.findIndex((byte, index) => byte === 0xff && jpeg[index + 1] === 0xc0);
+      const view = new DataView(jpeg.buffer, jpeg.byteOffset, jpeg.byteLength);
+      // The fixture's embedded JPEG is only 2x2; these are developed sensor pixels.
+      expect([view.getUint16(sof + 7), view.getUint16(sof + 5)]).toEqual([40, 24]);
+    }
+  });
+
+  it.each(['image', 'document'])('rejects false JPEG starts in RAW bytes with the %s core', async (core) => {
+    const fixture = await readFile(new URL('examples/go-wazero-converter/fixtures/raw/sample.nef', root));
+    const jpeg = fixture.subarray(fixture.indexOf(Buffer.from([0xff, 0xd8])), fixture.lastIndexOf(Buffer.from([0xff, 0xd9])) + 2);
+    const image = core === 'image' ? await WebAssembly.compile(await imageBytes()) : undefined;
+    const wasm = image ?? await WebAssembly.compile(await readFile(new URL('wasm/converter-core/dist/converter-core.wasm', root)));
+    const client = createWasmConverterClient({ wasm, imageWasm: image });
+    for (const prefix of [[0xff, 0xd8, 0x42, 0, 2], [0xff, 0xd8, 0xff, 0xe1, 0, 2]]) {
+      const result = await client.convert({ source: Buffer.concat([Buffer.from(prefix), jpeg]), sourceFormat: 'nef', targetFormat: 'jpg' }, context);
+      expect(Buffer.from(result.source as Uint8Array)).toEqual(jpeg);
+    }
   });
 
   it('reuses a Response once across concurrent previews, errors and WASI fallback', async () => {

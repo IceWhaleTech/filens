@@ -4,9 +4,11 @@ use toml::Value;
 fn main() {
     println!("cargo:rerun-if-changed=data/cameras.toml");
     println!("cargo:rerun-if-changed=data/nikon-d3s.toml");
+    println!("cargo:rerun-if-changed=data/sigma.toml");
     println!("cargo:rustc-check-cfg=cfg(needs_chunks_exact)");
     let input = fs::read_to_string("data/cameras.toml").unwrap()
-        + &fs::read_to_string("data/nikon-d3s.toml").unwrap();
+        + &fs::read_to_string("data/nikon-d3s.toml").unwrap()
+        + &fs::read_to_string("data/sigma.toml").unwrap();
     let parsed: Value = input.parse().unwrap();
     let mut profiles = BTreeMap::new();
     let mut naked = BTreeMap::new();

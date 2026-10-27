@@ -1,5 +1,6 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
+import { zipSync } from 'fflate';
 import { dngFixture } from '../../../packages/panorama/test/fixtures/dng';
 
 test.use({ launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] } });
@@ -50,6 +51,37 @@ test('previews an ordinary camera DNG as a flat image', async ({ page }) => {
   await expect(page.locator('canvas.panoramav-canvas')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+for (const archived of [false, true]) {
+  test(`previews ${archived ? 'archived' : 'standalone'} RAW with a false JPEG start`, async ({ page }) => {
+    const fixture = readFileSync('examples/go-wazero-converter/fixtures/raw/sample.nef');
+    const jpeg = fixture.subarray(fixture.indexOf(Buffer.from([0xff, 0xd8])), fixture.lastIndexOf(Buffer.from([0xff, 0xd9])) + 2);
+    // Older scanning incorrectly returned this prefix together with the JPEG.
+    const raw = Buffer.concat([Buffer.from([0xff, 0xd8, 0x42, 0, 2]), jpeg]);
+    await page.goto('./?view=preview');
+    await page.locator('.wb-upload input[type=file]').setInputFiles({
+      name: archived ? 'photos_raw_tests.zip' : 'nikon-d70.nef',
+      mimeType: archived ? 'application/zip' : 'image/x-nikon-nef',
+      // Two RAW files keep the ZIP in archive browsing mode.
+      buffer: archived ? Buffer.from(zipSync({
+        'photos_raw_tests/nikon-d70.nef': raw,
+        'photos_raw_tests/another.nef': raw
+      })) : raw
+    });
+    if (archived) {
+      await page.locator('tr.archivev-row').filter({ hasText: 'photos_raw_tests/' }).click();
+      await page.locator('tr.archivev-row').filter({ hasText: 'nikon-d70.nef' }).click();
+    }
+    const image = page.locator('img.pptxv-native-image');
+    await expect(image).toBeVisible();
+    const size = await image.evaluate(async (element) => {
+      const image = element as HTMLImageElement;
+      await image.decode();
+      return [image.naturalWidth, image.naturalHeight];
+    });
+    expect(size).toEqual([2, 2]);
+  });
+}
 
 test('stitches a camera-original panorama DNG through WASM', async ({ page }, testInfo) => {
   test.setTimeout(120_000);

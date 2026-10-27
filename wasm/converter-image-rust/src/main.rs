@@ -10,7 +10,7 @@ use std::time::Instant;
 
 const FIDELITY: &str = "lightweight";
 const RAW_PREVIEW_BACKEND: &str = "raw-preview";
-const RAW_PREVIEW_WARNING: &str = "Image converter uses the largest embedded JPEG when available and otherwise generates a lightweight sensor preview; full-resolution sensor data, custom picture profiles, and edits are not preserved.";
+const RAW_PREVIEW_WARNING: &str = "Image converter uses an embedded JPEG when suitable and otherwise generates a lightweight sensor preview; small X3F previews are developed from the sensor. Full-resolution sensor data, custom picture profiles, and edits are not preserved.";
 const ICNS_PREVIEW_BACKEND: &str = "icns-preview";
 const ICNS_PREVIEW_WARNING: &str = "Image converter extracted the largest embedded PNG icon; legacy raw icon planes and JPEG 2000 icon chunks are not decoded.";
 const MAX_INPUT_BYTES: u64 = 256 << 20;
@@ -302,8 +302,13 @@ fn raw_preview_bytes<'a>(
     bytes: &'a [u8],
     options: &PreviewOptions,
 ) -> Result<std::borrow::Cow<'a, [u8]>, String> {
-    if let Some(preview) = best_embedded_jpeg(&bytes).filter(|_| !options.preserve_sensor_geometry)
-    {
+    if let Some(preview) = best_embedded_jpeg(&bytes).filter(|preview| {
+        !options.preserve_sensor_geometry
+            && (!bytes.starts_with(b"FOVb")
+                || jpeg_bounds(preview, 0).is_some_and(|(_, width, height)| {
+                    usize::from(width.max(height)) >= RAW_FALLBACK_MAX_DIMENSION
+                }))
+    }) {
         return Ok(std::borrow::Cow::Borrowed(preview));
     }
     develop_raw_sensor_preview_with_options(bytes, options)
@@ -394,16 +399,25 @@ fn encode_raw_sensor_preview(raw: &RawImage, options: &PreviewOptions) -> Result
     let left = crops[3].min(raw.width.saturating_sub(right + 1));
     let width = raw.width.saturating_sub(left + right).max(1);
     let height = raw.height.saturating_sub(top + bottom).max(1);
-    let scale = width
-        .max(height)
-        .div_ceil(if options.preserve_sensor_geometry {
-            4096
-        } else {
-            RAW_FALLBACK_MAX_DIMENSION
-        })
-        .max(1);
-    let sampled_width = width.div_ceil(scale).min(usize::from(u16::MAX));
-    let sampled_height = height.div_ceil(scale).min(usize::from(u16::MAX));
+    let max_dimension = if options.preserve_sensor_geometry {
+        4096
+    } else {
+        RAW_FALLBACK_MAX_DIMENSION
+    };
+    let scale = width.max(height).div_ceil(max_dimension).max(1);
+    // Foveon sensors have no CFA sampling period. Fill the preview bound instead
+    // of halving a 2304-pixel Foveon image to 1152 pixels with a Bayer stride.
+    let foveon = raw.make == "SIGMA" && raw.cpp == 3;
+    let (sampled_width, sampled_height) = if foveon {
+        let longest = width.max(height);
+        let target = longest.min(max_dimension);
+        (
+            (width * target / longest).max(1),
+            (height * target / longest).max(1),
+        )
+    } else {
+        (width.div_ceil(scale), height.div_ceil(scale))
+    };
     let (transpose, flip_x, flip_y) = if options.preserve_sensor_geometry {
         (false, false, false)
     } else {
@@ -432,8 +446,17 @@ fn encode_raw_sensor_preview(raw: &RawImage, options: &PreviewOptions) -> Result
             };
             let x = if flip_x { sampled_width - 1 - x } else { x };
             let y = if flip_y { sampled_height - 1 - y } else { y };
-            let source_x = left + (x * scale + scale / 2).min(width - 1);
-            let source_y = top + (y * scale + scale / 2).min(height - 1);
+            let (source_x, source_y) = if foveon {
+                (
+                    left + (2 * x + 1) * width / (2 * sampled_width),
+                    top + (2 * y + 1) * height / (2 * sampled_height),
+                )
+            } else {
+                (
+                    left + (x * scale + scale / 2).min(width - 1),
+                    top + (y * scale + scale / 2).min(height - 1),
+                )
+            };
             let rgb = rgb_sampler
                 .as_ref()
                 .map(|sampler| sampler.sample(source_x, source_y))
@@ -941,13 +964,18 @@ fn jpeg_bounds(bytes: &[u8], start: usize) -> Option<(usize, u16, u16)> {
     let mut cursor = start + 2;
     let mut dimensions = None;
     while cursor + 1 < bytes.len() {
+        // RAW pixels can contain accidental SOI bytes. Every header segment
+        // must start with a marker, and another SOI cannot extend this image.
+        if bytes.get(cursor) != Some(&0xff) {
+            return None;
+        }
         while bytes.get(cursor) == Some(&0xff) {
             cursor += 1;
         }
         let marker = *bytes.get(cursor)?;
         cursor += 1;
         match marker {
-            0x00 | 0xd8 | 0xd0..=0xd7 => continue,
+            0x00 | 0xd8 | 0xd0..=0xd7 => return None,
             0xd9 => return dimensions.map(|(width, height)| (cursor, width, height)),
             _ => {}
         }
@@ -1126,6 +1154,116 @@ mod tests {
                 .as_ref(),
             large.as_slice()
         );
+    }
+
+    #[test]
+    fn raw_jpeg_search_rejects_false_starts_before_a_real_preview() {
+        let jpeg = test_jpeg(3008, 2000, 8, 8);
+        for prefix in [
+            vec![0xff, 0xd8, 0x42, 0, 2],
+            vec![0xff, 0xd8, 0xff, 0xe1, 0, 2],
+            vec![0xff, 0xd8, 0xff, 0x00],
+            vec![0xff, 0xd8, 0xff, 0xd0],
+        ] {
+            let bytes = [prefix, jpeg.clone()].concat();
+            assert!(jpeg_bounds(&bytes, 0).is_none());
+            assert_eq!(best_embedded_jpeg(&bytes), Some(jpeg.as_slice()));
+            assert_eq!(
+                raw_preview_bytes(&bytes, &PreviewOptions::default())
+                    .unwrap()
+                    .as_ref(),
+                jpeg
+            );
+        }
+    }
+
+    #[test]
+    fn x3f_develops_the_sensor_instead_of_enlarging_a_small_embedded_preview() {
+        let bytes = include_bytes!("../../../examples/go-wazero-converter/fixtures/raw/sample.x3f");
+        assert_eq!(
+            jpeg_bounds(best_embedded_jpeg(bytes).unwrap(), 0).map(|(_, w, h)| (w, h)),
+            Some((2, 2))
+        );
+        let raw = rawloader::decode(&mut Cursor::new(bytes)).unwrap();
+        assert_eq!((raw.width, raw.height, raw.cpp), (80, 48, 3));
+        if let RawImageData::Integer(values) = &raw.data {
+            for y in 0..48 {
+                for x in 0..80 {
+                    assert_eq!(
+                        &values[(y * 80 + x) * 3..(y * 80 + x + 1) * 3],
+                        &[300 + y as u16 * 2 + x as u16 * 2; 3]
+                    );
+                }
+            }
+        } else {
+            panic!("expected integer X3F sensor data");
+        }
+        let preview = raw_preview_bytes(bytes, &PreviewOptions::default()).unwrap();
+        assert_eq!(
+            jpeg_bounds(&preview, 0).map(|(_, w, h)| (w, h)),
+            Some((40, 24))
+        );
+        let sensor = raw_preview_bytes(
+            bytes,
+            &PreviewOptions {
+                preserve_sensor_geometry: true,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            jpeg_bounds(&sensor, 0).map(|(_, w, h)| (w, h)),
+            Some((80, 48))
+        );
+        let mut rotated = bytes.to_vec();
+        rotated[36..40].copy_from_slice(&90u32.to_le_bytes());
+        let preview = raw_preview_bytes(&rotated, &PreviewOptions::default()).unwrap();
+        assert_eq!(
+            jpeg_bounds(&preview, 0).map(|(_, w, h)| (w, h)),
+            Some((24, 40))
+        );
+    }
+
+    #[test]
+    fn foveon_sensor_preview_fills_its_resolution_bound_without_upscaling() {
+        let mut raw = synthetic_raw();
+        raw.cpp = 3;
+        raw.make = "SIGMA".into();
+        raw.width = 2304;
+        raw.height = 1536;
+        raw.crops = [0; 4];
+        raw.orientation = rawloader::Orientation::Normal;
+        raw.data = RawImageData::Integer(vec![30000; raw.width * raw.height * 3]);
+        let preview = encode_raw_sensor_preview(&raw, &PreviewOptions::default()).unwrap();
+        assert_eq!(
+            jpeg_bounds(&preview, 0).map(|(_, w, h)| (w, h)),
+            Some((2048, 1365))
+        );
+    }
+
+    #[test]
+    fn corrupt_x3f_offsets_lengths_and_dimensions_return_errors() {
+        let bytes = include_bytes!("../../../examples/go-wazero-converter/fixtures/raw/sample.x3f");
+        let directory = u32::from_le_bytes(bytes[bytes.len() - 4..].try_into().unwrap()) as usize;
+        let image =
+            u32::from_le_bytes(bytes[directory + 24..directory + 28].try_into().unwrap()) as usize;
+        for (offset, value) in [
+            (bytes.len() - 4, u32::MAX),
+            (directory + 8, u32::MAX),
+            (directory + 12, u32::MAX),
+            (directory + 16, u32::MAX),
+            (image + 16, 0),
+            (image + 20, u32::MAX),
+            (image + 24, 1),
+        ] {
+            let mut invalid = bytes.to_vec();
+            invalid[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+            let error = raw_preview_bytes(&invalid, &PreviewOptions::default()).unwrap_err();
+            assert!(error.contains("X3F:"), "{error}");
+            assert!(!error.contains("panic"), "{error}");
+        }
+        for end in [4, 39, bytes.len() / 2, bytes.len() - 1] {
+            assert!(raw_preview_bytes(&bytes[..end], &PreviewOptions::default()).is_err());
+        }
     }
 
     #[test]

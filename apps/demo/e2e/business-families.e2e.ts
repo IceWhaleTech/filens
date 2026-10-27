@@ -180,8 +180,7 @@ test('offers playable samples for more audio and video formats', async ({ page }
 test('offers samples for browser-native images and panorama aliases', async ({ page }) => {
   let inspRequests = 0;
   // Exercise the sample alias using a bundled stitched image; native calibration has separate tests.
-  await page.route(url => url.pathname === '/v3/file' &&
-    url.searchParams.get('files')?.endsWith('/insta360/IMG_20220701_170732_00_018.insp') === true,
+  await page.route(url => url.pathname === '/external-samples/insta360/insp',
   route => {
     inspRequests++;
     return route.fulfill({ path: 'apps/demo/public/samples/panorama/insta360-oners-tallinn.jpg', contentType: 'image/jpeg' });
@@ -255,6 +254,14 @@ test('offers samples for browser-native images and panorama aliases', async ({ p
   await expect(page.locator('.wb-preview-title strong')).toHaveText('IMG_20220701_170732_00_018.insp');
   await expect(page.locator('canvas.panoramav-canvas')).toBeVisible({ timeout: 15_000 });
   expect(inspRequests).toBeGreaterThan(0);
+  // A canvas is mounted before the image finishes loading. Wait for a rendered pixel.
+  await expect.poll(() => page.locator('canvas.panoramav-canvas').evaluate(element => {
+    const canvas = element as HTMLCanvasElement;
+    const gl = canvas.getContext('webgl2')!;
+    const pixel = new Uint8Array(4);
+    gl.readPixels(canvas.width / 2, canvas.height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    return pixel[0] + pixel[1] + pixel[2];
+  })).toBeGreaterThan(100);
   await expect(page.locator('.wb-note.is-error')).toHaveCount(0);
 
   await panoramaCategory.getByRole('button', { name: '360V', exact: true }).click();

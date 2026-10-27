@@ -189,6 +189,7 @@ Listed pairs normalize files for preview; they do not promise to preserve every 
 | Decode path | Coverage | Limits |
 | --- | --- | --- |
 | Embedded preview | Core copies the largest standard 8-bit embedded JPEG. | Requires a suitable embedded JPEG. |
+| X3F sensor preview | The image module develops legacy mapped-Huffman and TRUE/Merrill sensors when no JPEG is available or its longest side is below 2048 px. Camera identity comes from X3F properties. | Output up to 2048 px without upscaling; daylight WB. Quattro sensor compression and CAMF adjustments are unavailable. |
 | Sensor fallback | Optional `converter-image.wasm` performs lightweight sensor decoding and downsampling with camera WB, sRGB color and DNG exposure metadata. No-JPEG DNG, Nikon D3S NEF, Canon 40D sRAW CR2, PEF and ORF samples are [verified](performance-comparison.md). | Up to 2048 px; camera/file variants affect decoding. Invalid color calibration raises an error. |
 | Calibrated panorama DNG | One RS and X5 metadata can select static spherical stitching before ordinary conversion. Uses full-sensor development, exposure matching and content-aware seams. | Requires both panorama WASM modules; preview up to 4096 px, experimental calibration and camera-dependent decoding. Unsupported calibration stays flat. |
 | Full RAW development | Unavailable. | Full-resolution development, custom picture profiles, and camera edits are not preserved. |

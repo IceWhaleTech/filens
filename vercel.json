@@ -4,15 +4,65 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build:vercel",
   "outputDirectory": "apps/demo/dist",
-  "headers": [
+  "routes": [
     {
-      "source": "/assets/:path*",
-      "headers": [
+      "src": "/external-samples/(.*)",
+      "transforms": [
         {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
+          "type": "request.headers",
+          "op": "delete",
+          "target": { "key": { "inc": ["cookie", "authorization", "origin", "referer", "sec-fetch-dest", "sec-fetch-mode", "sec-fetch-site", "sec-fetch-user"] } }
+        },
+        {
+          "type": "request.headers",
+          "op": "set",
+          "target": { "key": "user-agent" },
+          "args": "filens-demo/0.1"
         }
-      ]
-    }
+      ],
+      "continue": true
+    },
+    {
+      "src": "/external-samples/insta360/insp",
+      "dest": "https://drive.usercontent.google.com/download?id=1H_7MHubgvRnRbBwT5gn2dCBwghqEqaDZ&export=download&confirm=t"
+    },
+    {
+      "src": "/external-samples/insta360/lrv",
+      "dest": "https://drive.usercontent.google.com/download?id=1hEJgzjwJE0UA47V2mT7VXyPcwz9Bit33&export=download&confirm=t"
+    },
+    {
+      "src": "/external-samples/insta360/insv-00",
+      "dest": "https://drive.usercontent.google.com/download?id=10YnAzLoNuzJX0fNIatlo0tlJ4XagJqgs&export=download&confirm=t"
+    },
+    {
+      "src": "/external-samples/insta360/insv-10",
+      "dest": "https://drive.usercontent.google.com/download?id=1B9h_a1nKSl5Zm1k5sRRN2phqU-ma8ZBf&export=download&confirm=t"
+    },
+    {
+      "src": "/external-samples/osmo/(.*)",
+      "dest": "https://huggingface.co/datasets/SamuelLDX/osmo360-lidar-preview/resolve/main/$1"
+    },
+    {
+      "src": "/external-samples/filesamples/(.*)",
+      "dest": "https://filesamples.com/samples/$1"
+    },
+    {
+      "src": "/external-samples/mdn-audio/(.*)",
+      "dest": "https://interactive-examples.mdn.mozilla.net/media/cc0-audio/$1"
+    },
+    {
+      "src": "/external-samples/mdn-video/(.*)",
+      "dest": "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/$1"
+    },
+    {
+      "src": "/external-samples/wikimedia/(.*)",
+      "dest": "https://upload.wikimedia.org/wikipedia/commons/$1"
+    },
+    {
+      "src": "/assets/(.*)",
+      "headers": { "Cache-Control": "public, max-age=31536000, immutable" },
+      "continue": true
+    },
+    { "handle": "filesystem" }
   ]
 }

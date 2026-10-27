@@ -14,6 +14,7 @@ import urllib.request
 
 DRIVE_DOWNLOADS = {
     "/external-samples/insta360/insp": "https://drive.usercontent.google.com/download?id=1H_7MHubgvRnRbBwT5gn2dCBwghqEqaDZ&export=download&confirm=t",
+    "/external-samples/insta360/lrv": "https://drive.usercontent.google.com/download?id=1hEJgzjwJE0UA47V2mT7VXyPcwz9Bit33&export=download&confirm=t",
     "/external-samples/insta360/insv-00": "https://drive.usercontent.google.com/download?id=10YnAzLoNuzJX0fNIatlo0tlJ4XagJqgs&export=download&confirm=t",
     "/external-samples/insta360/insv-10": "https://drive.usercontent.google.com/download?id=1B9h_a1nKSl5Zm1k5sRRN2phqU-ma8ZBf&export=download&confirm=t",
 }

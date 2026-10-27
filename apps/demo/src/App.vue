@@ -3,7 +3,6 @@ import JSZip from 'jszip';
 import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import AppleLivePhotoPreview from './components/AppleLivePhotoPreview.vue';
 import LandingPage from './components/LandingPage.vue';
-import { zimaAuth } from './zimaAuth';
 import { createWasmConverterClient } from '@filens/converter-client';
 import { createWasmPanoramaProcessor } from '@filens/panorama';
 import type { ZipArchiveResource } from '@filens/archive';
@@ -50,13 +49,6 @@ type DemoKind =
   | 'video';
 type SourceMode = 'sample' | 'url' | 'upload' | 'generated';
 
-const zimaFilePrefix = 'zima-file:';
-const zimaSampleRoot = import.meta.env.VITE_ZIMA_SAMPLE_ROOT || '/media/filens-samples';
-
-function zimaFileSource(relativePath: string): string {
-  return `${zimaFilePrefix}${zimaSampleRoot}/${relativePath.replace(/^\/+/, '')}`;
-}
-
 function resolvePublicSamplePath(source: string): string {
   if (source.startsWith('/samples/')) {
     return `${import.meta.env.BASE_URL}${source.slice('/'.length)}`;
@@ -64,15 +56,8 @@ function resolvePublicSamplePath(source: string): string {
   return source;
 }
 
-function resolveZimaFileSource(source: PreviewSource): PreviewSource {
-  if (typeof source !== 'string') return source;
-  const publicSamplePath = resolvePublicSamplePath(source);
-  if (publicSamplePath !== source) return publicSamplePath;
-  if (!source.startsWith(zimaFilePrefix)) return source;
-  const filePath = source.slice(zimaFilePrefix.length);
-  const token = zimaAuth.getAccessToken();
-  const params = new URLSearchParams({ token, files: filePath, action: 'preview' });
-  return `/v3/file?${params.toString()}`;
+function resolveSampleSource(source: PreviewSource): PreviewSource {
+  return typeof source === 'string' ? resolvePublicSamplePath(source) : source;
 }
 
 interface DemoSource {
@@ -1212,7 +1197,7 @@ const staticSamples: DemoSource[] = [
     kind: 'audio',
     label: 'MP3 URL',
     name: 't-rex-roar.mp3',
-    source: zimaFileSource('audio/t-rex-roar.mp3'),
+    source: '/external-samples/mdn-audio/t-rex-roar.mp3',
     contentType: 'audio/mpeg',
     mode: 'url'
   },
@@ -1220,7 +1205,7 @@ const staticSamples: DemoSource[] = [
     kind: 'audio',
     label: 'Ogg URL',
     name: 'example.ogg',
-    source: zimaFileSource('audio/Example.ogg'),
+    source: '/external-samples/wikimedia/c/c8/Example.ogg',
     contentType: 'audio/ogg',
     mode: 'url'
   },
@@ -1236,7 +1221,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'WebM URL',
     name: 'flower.webm',
-    source: zimaFileSource('video/flower.webm'),
+    source: '/external-samples/mdn-video/flower.webm',
     contentType: 'video/webm',
     mode: 'url'
   },
@@ -1244,7 +1229,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'MOV URL',
     name: 'sample.mov',
-    source: zimaFileSource('video/sample_640x360.mov'),
+    source: '/external-samples/filesamples/video/mov/sample_640x360.mov',
     contentType: 'video/quicktime',
     mode: 'url'
   },
@@ -1252,7 +1237,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'M4V URL',
     name: 'sample.m4v',
-    source: zimaFileSource('video/sample_640x360.m4v'),
+    source: '/external-samples/filesamples/video/m4v/sample_640x360.m4v',
     contentType: 'video/x-m4v',
     mode: 'url'
   },
@@ -1260,9 +1245,9 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'Ogg Video URL',
     name: 'sample.ogv',
-    source: zimaFileSource('video/sample_640x360.ogv'),
+    source: '/external-samples/filesamples/video/ogv/sample_640x360.ogv',
     contentType: 'video/ogg',
-    previewSource: zimaFileSource('video/flower.mp4'),
+    previewSource: '/samples/sample-video.mp4',
     previewContentType: 'video/mp4',
     mode: 'url'
   },
@@ -1270,7 +1255,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'Matroska URL',
     name: 'sample.mkv',
-    source: zimaFileSource('video/sample_640x360.mkv'),
+    source: '/external-samples/filesamples/video/mkv/sample_640x360.mkv',
     contentType: 'video/x-matroska',
     mode: 'url'
   },
@@ -1278,9 +1263,9 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'AVI URL',
     name: 'sample.avi',
-    source: zimaFileSource('video/sample_640x360.avi'),
+    source: '/external-samples/filesamples/video/avi/sample_640x360.avi',
     contentType: 'video/x-msvideo',
-    previewSource: zimaFileSource('video/flower.mp4'),
+    previewSource: '/samples/sample-video.mp4',
     previewContentType: 'video/mp4',
     mode: 'url'
   },
@@ -1288,9 +1273,9 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'MPEG URL',
     name: 'sample.mpeg',
-    source: zimaFileSource('video/sample_640x360.mpeg'),
+    source: '/external-samples/filesamples/video/mpeg/sample_640x360.mpeg',
     contentType: 'video/mpeg',
-    previewSource: zimaFileSource('video/flower.mp4'),
+    previewSource: '/samples/sample-video.mp4',
     previewContentType: 'video/mp4',
     mode: 'url'
   },
@@ -1298,9 +1283,9 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: 'MPG URL',
     name: 'sample.mpg',
-    source: zimaFileSource('video/sample_640x360.mpeg'),
+    source: '/external-samples/filesamples/video/mpeg/sample_640x360.mpeg',
     contentType: 'video/mpeg',
-    previewSource: zimaFileSource('video/flower.mp4'),
+    previewSource: '/samples/sample-video.mp4',
     previewContentType: 'video/mp4',
     mode: 'url'
   },
@@ -1308,7 +1293,7 @@ const staticSamples: DemoSource[] = [
     kind: 'video',
     label: '3GP URL',
     name: 'sample.3gp',
-    source: zimaFileSource('video/sample_640x360.3gp'),
+    source: '/external-samples/filesamples/video/3gp/sample_640x360.3gp',
     contentType: 'video/3gpp',
     mode: 'url'
   }
@@ -1405,7 +1390,7 @@ const externalPanoramaSamples = [
     format: 'INSP',
     label: 'Insta360 One RS 1-inch',
     name: 'IMG_20220701_170732_00_018.insp',
-    source: zimaFileSource('insta360/IMG_20220701_170732_00_018.insp'),
+    source: '/external-samples/insta360/insp',
     contentType: 'image/jpeg',
     mode: 'url',
     size: '5.7 MB',
@@ -1417,11 +1402,11 @@ const externalPanoramaSamples = [
     format: 'INSV',
     label: 'Insta360 One RS calibrated raw pair',
     name: 'VID_20220625_140410_00_008.insv',
-    source: zimaFileSource('insta360/VID_20220625_140410_00_008_00.insv'),
+    source: '/external-samples/insta360/insv-00',
     contentType: 'video/mp4',
     mode: 'url',
     resourceResolver: async ({ relation }) => relation === 'companion'
-      ? { source: zimaFileSource('insta360/VID_20220625_140410_00_008_10.insv') }
+      ? { source: '/external-samples/insta360/insv-10' }
       : undefined,
     size: '356 MB + 360 MB',
     sourcePage: 'https://drive.google.com/drive/folders/1Vwgjf1sy5DLiyZOhjMV8f1kx2iF67AhO',
@@ -1432,7 +1417,7 @@ const externalPanoramaSamples = [
     format: 'LRV',
     label: 'Insta360 One RS low-resolution proxy',
     name: 'LRV_20220625_140410_11_008.insv',
-    source: zimaFileSource('insta360/LRV_20220625_140410_11_008.insv'),
+    source: '/external-samples/insta360/lrv',
     contentType: 'video/mp4',
     mode: 'url',
     size: '41 MB',
@@ -1444,11 +1429,11 @@ const externalPanoramaSamples = [
     format: 'OSV + LRF',
     label: 'DJI Osmo 360 experimental LRF proxy',
     name: 'CAM_20260728172420_0008_D.OSV',
-    source: zimaFileSource('osmo/CAM_20260728172420_0008_D.OSV'),
+    source: '/external-samples/osmo/CAM_20260728172420_0008_D.OSV',
     contentType: 'video/mp4',
     mode: 'url',
     resourceResolver: async () => ({
-      source: zimaFileSource('osmo/CAM_20260728172420_0008_D.LRF')
+      source: '/external-samples/osmo/CAM_20260728172420_0008_D.LRF'
     }),
     size: '4.75 GB + 344 MB',
     sourcePage: 'https://huggingface.co/datasets/SamuelLDX/osmo360-lidar-preview',
@@ -1552,7 +1537,7 @@ const formatCatalog = computed(() => [
 const initialSample = presentationSample ?? staticSamples[0]!;
 const current = shallowRef<DemoSource>({
   ...initialSample,
-  source: resolveZimaFileSource(initialSample.source)
+  source: resolveSampleSource(initialSample.source)
 });
 const selectedFormatFamilyId = ref<BusinessFormatFamilyId>(
   'office'
@@ -1773,22 +1758,13 @@ const fontResolver: PreviewFontResolver = ({ family, fontFile }) => {
 };
 
 async function useSample(sample: DemoSource): Promise<void> {
-  const needsHostFile = [sample.source, sample.previewSource]
-    .some((source) => typeof source === 'string' && source.startsWith(zimaFilePrefix));
-  // The homepage, bundled samples, and local files also work outside ZimaOS.
-  // Ask the host to authenticate only when opening one of its protected files.
-  if (needsHostFile && zimaAuth.isZimaRuntime() && !zimaAuth.isAuthenticated()) {
-    zimaAuth.goToLogin();
-    return;
-  }
   renderedState.value = null;
   lastError.value = null;
   downloadTimeMs.value = null;
   pendingDownloadTimeMs = null;
   const materialized = await materializeSample(sample);
   current.value = materialized;
-  // Use the materialized resolver so companion/sidecar paths get the same
-  // source translation as the primary sample (for example, ZimaOS files).
+  // Resolve bundled companion/sidecar paths against the same base as the primary sample.
   uploadResourceResolver.value = materialized.resourceResolver;
   sourceMode.value = current.value.mode ?? 'sample';
 }
@@ -1964,8 +1940,8 @@ async function materializeSample(sample: DemoSource): Promise<DemoSource> {
   const originalResourceResolver = sample.resourceResolver;
   const resolvedSample: DemoSource = {
     ...sample,
-    source: resolveZimaFileSource(sample.source),
-    previewSource: sample.previewSource ? resolveZimaFileSource(sample.previewSource) : undefined,
+    source: resolveSampleSource(sample.source),
+    previewSource: sample.previewSource ? resolveSampleSource(sample.previewSource) : undefined,
     livePhoto: sample.livePhoto
       ? {
           ...sample.livePhoto,
@@ -1983,7 +1959,7 @@ async function materializeSample(sample: DemoSource): Promise<DemoSource> {
       ? async (context) => {
           const resource = await originalResourceResolver(context);
           return resource
-            ? { ...resource, source: resolveZimaFileSource(resource.source) }
+            ? { ...resource, source: resolveSampleSource(resource.source) }
             : undefined;
         }
       : undefined

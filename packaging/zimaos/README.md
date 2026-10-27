@@ -16,15 +16,14 @@ refresh `systemd-sysext`. The existing ZimaOS gateway serves the page at
 `/modules/filens/`, so no application server or additional systemd unit is
 needed.
 
-The RAW test assets are intentionally kept outside the extension image. The
-demo reads the existing ZimaOS `access_token` from `localStorage` and requests
-them through `/v3/file?token=...&files=...`. The sample root defaults to
-`/media/filens-samples`. Set `VITE_ZIMA_SAMPLE_ROOT` when building for a host
-whose test assets live elsewhere; keep machine-specific paths out of public
-screenshots and samples.
+The homepage, bundled samples (including camera RAW), and locally imported files
+work without NAS authentication. The demo does not read host tokens, request
+`/v3/file`, or redirect to a host login page.
 
-The product homepage, bundled samples, and locally imported files are available
-without a ZimaOS token. Selecting a sample stored on the host requires a valid
-token; if it is missing, the app requests the host login route through its
-navigation bridge, falling back to the host's root hash login URL. Protected
-files continue to be served through the authenticated `/v3/file` endpoint.
+External audio, video, and proprietary panorama samples load on demand through
+public `/external-samples/` proxy routes. To use these examples on a ZimaOS
+gateway, configure equivalent proxies to those in `apps/demo/vite.config.ts`
+or `vercel.json`. Vite development/preview and `scripts/serve-static.py` already
+provide them. External originals are not included in the extension image;
+their source links and usage terms are listed in
+`apps/demo/public/samples/SOURCES.md`.

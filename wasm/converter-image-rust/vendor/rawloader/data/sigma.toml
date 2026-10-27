@@ -1,0 +1,383 @@
+# LibRaw 0.22.0 src/tables/colordata.cpp and src/utils/open.cpp (LGPL-2.1).
+# Copyright 2019-2025 LibRaw LLC (info@libraw.org).
+# Matrices, black/white levels and active sensor rectangles. See FILENS-CHANGES.md.
+
+[[cameras]]
+make = "SIGMA"
+model = "SD9"
+clean_make = "Sigma"
+clean_model = "SD9"
+blackpoint = 15
+whitepoint = 4095
+color_matrix = [13564,-2537,-751,-5465,15154,194,-67,116,10425]
+color_pattern = ""
+crops = [8, 0, 0, 20]
+
+[[cameras.modes]]
+mode = "2304x1531"
+whitepoint = 12000
+crops = [8, 18, 13, 20]
+
+[[cameras.modes]]
+mode = "1152x763"
+whitepoint = 12000
+crops = [2, 10, 6, 10]
+
+[[cameras]]
+make = "SIGMA"
+model = "SD10"
+clean_make = "Sigma"
+clean_model = "SD10"
+blackpoint = 15
+whitepoint = 16383
+color_matrix = [6787,-1682,575,-3091,8357,160,217,-369,12314]
+color_pattern = ""
+crops = [8, 0, 0, 20]
+
+[[cameras.modes]]
+mode = "2304x1531"
+whitepoint = 12000
+crops = [8, 18, 13, 20]
+
+[[cameras.modes]]
+mode = "1152x763"
+whitepoint = 12000
+crops = [2, 10, 6, 10]
+
+[[cameras]]
+make = "SIGMA"
+model = "SD14"
+clean_make = "Sigma"
+clean_model = "SD14"
+blackpoint = 15
+whitepoint = 16383
+color_matrix = [13589,-2509,-739,-5440,15104,193,-61,105,10554]
+color_pattern = ""
+crops = [12, 0, 0, 18]
+
+[[cameras.modes]]
+mode = "2688x1792"
+whitepoint = 14000
+crops = [12, 19, 13, 18]
+
+[[cameras.modes]]
+mode = "2688x896"
+whitepoint = 14000
+crops = [6, 19, 7, 18]
+
+[[cameras.modes]]
+mode = "1344x896"
+whitepoint = 14000
+crops = [6, 9, 7, 9]
+
+[[cameras]]
+make = "SIGMA"
+model = "SD15"
+clean_make = "Sigma"
+clean_model = "SD15"
+blackpoint = 15
+whitepoint = 4095
+color_matrix = [13556,-2537,-730,-5462,15144,195,-61,106,10577]
+color_pattern = ""
+crops = [12, 0, 0, 18]
+
+[[cameras.modes]]
+mode = "2688x1792"
+whitepoint = 2900
+crops = [12, 19, 13, 18]
+
+[[cameras.modes]]
+mode = "2688x896"
+whitepoint = 2900
+crops = [6, 19, 7, 18]
+
+[[cameras.modes]]
+mode = "1344x896"
+whitepoint = 2900
+crops = [6, 9, 7, 9]
+
+[[cameras]]
+make = "SIGMA"
+model = "DP1"
+clean_make = "Sigma"
+clean_model = "DP1"
+blackpoint = 0
+whitepoint = 4095
+color_matrix = [12774,-2591,-394,-5333,14676,207,15,-21,12127]
+color_pattern = ""
+crops = [12, 0, 0, 18]
+
+[[cameras.modes]]
+mode = "2688x1792"
+whitepoint = 2100
+crops = [12, 19, 13, 18]
+
+[[cameras.modes]]
+mode = "2688x896"
+whitepoint = 2100
+crops = [6, 19, 7, 18]
+
+[[cameras.modes]]
+mode = "1344x896"
+whitepoint = 2100
+crops = [6, 9, 7, 9]
+
+[[cameras]]
+make = "SIGMA"
+model = "DP1S"
+clean_make = "Sigma"
+clean_model = "DP1S"
+blackpoint = 0
+whitepoint = 4095
+color_matrix = [12774,-2591,-394,-5333,14676,207,15,-21,12127]
+color_pattern = ""
+crops = [12, 0, 0, 18]
+
+[[cameras.modes]]
+mode = "2688x1792"
+whitepoint = 2200
+crops = [12, 19, 13, 18]
+
+[[cameras.modes]]
+mode = "2688x896"
+whitepoint = 2200
+crops = [6, 19, 7, 18]
+
+[[cameras.modes]]
+mode = "1344x896"
+whitepoint = 2200
+crops = [6, 9, 7, 9]
+
+[[cameras]]
+make = "SIGMA"
+model = "DP1X"
+clean_make = "Sigma"
+clean_model = "DP1X"
+blackpoint = 0
+whitepoint = 4095
+color_matrix = [13704,-2452,-857,-5413,15073,186,-89,151,9820]
+color_pattern = ""
+crops = [12, 0, 0, 18]
+
+[[cameras.modes]]
+mode = "2688x1792"
+whitepoint = 3560
+crops = [12, 19, 13, 18]
+
+[[cameras.modes]]
+mode = "2688x896"
+whitepoint = 3560
+crops = [6, 19, 7, 18]
+
+[[cameras.modes]]
+mode = "1344x896"
+whitepoint = 3560
+crops = [6, 9, 7, 9]
+
+[[cameras]]
+make = "SIGMA"
+model = "DP2"
+clean_make = "Sigma"
+clean_model = "DP2"
+blackpoint = 0
+whitepoint = 4095
+color_matrix = [13100,-3638,-847,6855,2369,580,2723,3218,3251]
+color_pattern = ""
+crops = [16, 0, 0, 13]
+
+[[cameras.modes]]
+mode = "2688x1792"
+whitepoint = 2326
+crops = [16, 24, 9, 13]
+
+[[cameras.modes]]
+mode = "2688x896"
+whitepoint = 2326
+crops = [8, 24, 5, 13]
+
+[[cameras.modes]]
+mode = "1344x896"
+whitepoint = 2326
+crops = [8, 12, 5, 7]
+
+[[cameras]]
+make = "SIGMA"
+model = "DP2S"
+clean_make = "Sigma"
+clean_model = "DP2S"
+blackpoint = 0
+whitepoint = 4095
+color_matrix = [13100,-3638,-847,6855,2369,580,2723,3218,3251]
+color_pattern = ""
+crops = [12, 0, 0, 18]
+
+[[cameras.modes]]
+mode = "2688x1792"
+whitepoint = 2300
+crops = [12, 19, 13, 18]
+
+[[cameras.modes]]
+mode = "2688x896"
+whitepoint = 2300
+crops = [6, 19, 7, 18]
+
+[[cameras.modes]]
+mode = "1344x896"
+whitepoint = 2300
+crops = [6, 9, 7, 9]
+
+[[cameras]]
+make = "SIGMA"
+model = "DP2X"
+clean_make = "Sigma"
+clean_model = "DP2X"
+blackpoint = 0
+whitepoint = 4095
+color_matrix = [13100,-3638,-847,6855,2369,580,2723,3218,3251]
+color_pattern = ""
+crops = [12, 0, 0, 18]
+
+[[cameras.modes]]
+mode = "2688x1792"
+whitepoint = 2300
+crops = [12, 19, 13, 18]
+
+[[cameras.modes]]
+mode = "2688x896"
+whitepoint = 2300
+crops = [6, 19, 7, 18]
+
+[[cameras.modes]]
+mode = "1344x896"
+whitepoint = 2300
+crops = [6, 10, 7, 9]
+
+[[cameras]]
+make = "SIGMA"
+model = "SD1"
+clean_make = "Sigma"
+clean_model = "SD1"
+blackpoint = 31
+whitepoint = 4095
+color_matrix = [5133,-1895,-353,4978,744,144,3837,3069,2777]
+color_pattern = ""
+crops = [52, 0, 0, 12]
+
+[[cameras.modes]]
+mode = "4928x3264"
+whitepoint = 3900
+crops = [52, 109, 7, 12]
+
+[[cameras.modes]]
+mode = "4928x1632"
+whitepoint = 3900
+crops = [26, 109, 3, 12]
+
+[[cameras.modes]]
+mode = "2464x1632"
+whitepoint = 3900
+crops = [26, 55, 3, 6]
+
+[[cameras]]
+make = "SIGMA"
+model = "SD1 MERRILL"
+clean_make = "Sigma"
+clean_model = "SD1 MERRILL"
+blackpoint = 31
+whitepoint = 4095
+color_matrix = [5133,-1895,-353,4978,744,144,3837,3069,2777]
+color_pattern = ""
+crops = [52, 0, 0, 12]
+
+[[cameras.modes]]
+mode = "4928x3264"
+whitepoint = 3900
+crops = [52, 109, 7, 12]
+
+[[cameras.modes]]
+mode = "4928x1632"
+whitepoint = 3900
+crops = [26, 109, 3, 12]
+
+[[cameras.modes]]
+mode = "2464x1632"
+whitepoint = 3900
+crops = [26, 55, 3, 6]
+
+[[cameras]]
+make = "SIGMA"
+model = "DP1 MERRILL"
+clean_make = "Sigma"
+clean_model = "DP1 MERRILL"
+blackpoint = 31
+whitepoint = 4095
+color_matrix = [5133,-1895,-353,4978,744,144,3837,3069,2777]
+color_pattern = ""
+crops = [0, 0, 0, 12]
+
+[[cameras.modes]]
+mode = "4928x3264"
+whitepoint = 3900
+crops = [0, 109, 59, 12]
+
+[[cameras.modes]]
+mode = "2464x1632"
+whitepoint = 3900
+crops = [0, 49, 29, 12]
+
+[[cameras.modes]]
+mode = "4928x1632"
+whitepoint = 3900
+crops = [0, 109, 29, 12]
+
+[[cameras]]
+make = "SIGMA"
+model = "DP2 MERRILL"
+clean_make = "Sigma"
+clean_model = "DP2 MERRILL"
+blackpoint = 31
+whitepoint = 4095
+color_matrix = [5133,-1895,-353,4978,744,144,3837,3069,2777]
+color_pattern = ""
+crops = [0, 0, 0, 12]
+
+[[cameras.modes]]
+mode = "4928x3264"
+whitepoint = 3900
+crops = [0, 109, 59, 12]
+
+[[cameras.modes]]
+mode = "2464x1632"
+whitepoint = 3900
+crops = [0, 49, 29, 12]
+
+[[cameras.modes]]
+mode = "4928x1632"
+whitepoint = 3900
+crops = [0, 109, 29, 12]
+
+[[cameras]]
+make = "SIGMA"
+model = "DP3 MERRILL"
+clean_make = "Sigma"
+clean_model = "DP3 MERRILL"
+blackpoint = 31
+whitepoint = 4095
+color_matrix = [5133,-1895,-353,4978,744,144,3837,3069,2777]
+color_pattern = ""
+crops = [0, 0, 0, 12]
+
+[[cameras.modes]]
+mode = "4928x3264"
+whitepoint = 3900
+crops = [0, 109, 59, 12]
+
+[[cameras.modes]]
+mode = "2464x1632"
+whitepoint = 3900
+crops = [0, 49, 29, 12]
+
+[[cameras.modes]]
+mode = "4928x1632"
+whitepoint = 3900
+crops = [0, 109, 29, 12]
