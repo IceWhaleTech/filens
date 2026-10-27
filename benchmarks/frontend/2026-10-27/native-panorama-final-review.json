@@ -1,0 +1,131 @@
+{
+  "date": "2026-10-27",
+  "sourceSha256": "c83bc37eda1b7d0ac3b1732a5616c8b30474f169dce78471fba46934584f90dc",
+  "peer": "photo-sphere-viewer",
+  "equivalentReadablePreview": true,
+  "vendorCalibrationEquivalent": false,
+  "seamless": false,
+  "scope": "Same original X5 INSP, exact same 16 settled-view PNG hashes as the published eight-view-per-engine visual review. This verifies comparable readable output, not equivalent vendor-calibration algorithms, general stitching quality or an application-wide ranking.",
+  "views": {
+    "filens": [
+      {
+        "yaw": 0,
+        "pitch": 0,
+        "path": "filens-yaw0-pitch0.png",
+        "sha256": "99be96dde59fabeedbb103759d88ff2ea2f98f87c6f68e05871bb1ba9d11af13"
+      },
+      {
+        "yaw": 90,
+        "pitch": 0,
+        "path": "filens-yaw90-pitch0.png",
+        "sha256": "5a5ce999bc869a9acccb9ab709b2b26516b46eaafb25e037eb0f0a9afacc3dc0"
+      },
+      {
+        "yaw": 180,
+        "pitch": 0,
+        "path": "filens-yaw180-pitch0.png",
+        "sha256": "c08608e5c2eb4937857614b4be0a2efd340a9636fb26ced0caff86738f4711c3"
+      },
+      {
+        "yaw": -90,
+        "pitch": 0,
+        "path": "filens-yaw-90-pitch0.png",
+        "sha256": "4fb467d52efe0a8e3b36ec342332dcb2013fcc137dbd6e56b445ce9cd397e596"
+      },
+      {
+        "yaw": 90,
+        "pitch": 50,
+        "path": "filens-yaw90-pitch50.png",
+        "sha256": "35da9a95035ffdfc8e26aa1b2a1bc454e9bc664ed84af977c0830ec115cbdfd2"
+      },
+      {
+        "yaw": 90,
+        "pitch": -50,
+        "path": "filens-yaw90-pitch-50.png",
+        "sha256": "e67688775789ebc3241cf0a7c71d0b12a5989b6e4b3950625cbdd226dd99b15f"
+      },
+      {
+        "yaw": -90,
+        "pitch": 50,
+        "path": "filens-yaw-90-pitch50.png",
+        "sha256": "4596a7067d8179c43ee4225df050466d7e34e575d8a6ab4c5d38a1ee31a03ad7"
+      },
+      {
+        "yaw": -90,
+        "pitch": -50,
+        "path": "filens-yaw-90-pitch-50.png",
+        "sha256": "2eb0d7a5347c01058680cd5d9515766e0a1a01fa33dc176bf5e7cd78e5d60225"
+      }
+    ],
+    "photo-sphere-viewer": [
+      {
+        "yaw": 0,
+        "pitch": 0,
+        "path": "photo-sphere-viewer-yaw0-pitch0.png",
+        "sha256": "185ff70c8964ced9134b8280d79309d943ec15108443bff34d1faa4c765c495a"
+      },
+      {
+        "yaw": 90,
+        "pitch": 0,
+        "path": "photo-sphere-viewer-yaw90-pitch0.png",
+        "sha256": "a0ce70803c5d6d84cf28ec7aa2fd6ae45622a3a572b8e5457dc20bb2b8452198"
+      },
+      {
+        "yaw": 180,
+        "pitch": 0,
+        "path": "photo-sphere-viewer-yaw180-pitch0.png",
+        "sha256": "c50308b51f7b7046fc0855f8d34847fcfa00ca8a54cfe317b46f3eca34ffaca2"
+      },
+      {
+        "yaw": -90,
+        "pitch": 0,
+        "path": "photo-sphere-viewer-yaw-90-pitch0.png",
+        "sha256": "87f11c82741a5e3670908f1cd4884339cbb73e9294b9b08075adbf69746cf9d1"
+      },
+      {
+        "yaw": 90,
+        "pitch": 50,
+        "path": "photo-sphere-viewer-yaw90-pitch50.png",
+        "sha256": "507bc0b8decaa235f202741765462863387f41ce6d3c165c3485bd74f3c2e3f7"
+      },
+      {
+        "yaw": 90,
+        "pitch": -50,
+        "path": "photo-sphere-viewer-yaw90-pitch-50.png",
+        "sha256": "d2eb0c8f1eaf0739c6c878985c37d27fcb0f1e0c936ec964ea9068db292e5f30"
+      },
+      {
+        "yaw": -90,
+        "pitch": 50,
+        "path": "photo-sphere-viewer-yaw-90-pitch50.png",
+        "sha256": "6a15e76639acffb708a180409ec7879f75433bd6e5a9160bc8637b20ad13435e"
+      },
+      {
+        "yaw": -90,
+        "pitch": -50,
+        "path": "photo-sphere-viewer-yaw-90-pitch-50.png",
+        "sha256": "82b882edc4068ba9fbf6092cb81880a9134807a2fc0760d7bed33b87ef3d5864"
+      }
+    ]
+  },
+  "visualReviewProvenance": {
+    "path": "benchmarks/frontend/2026-10-24/native-panorama-range-cache-review.json",
+    "sha256": "5de96e6d3d66d7f0f0b1e62c610f41863ec429d89a558211a28eae1a1c74ef50",
+    "all16SettledPngHashesMatch": true,
+    "findings": [
+      "Both render the same readable scene at four headings and both seam directions with pitch +50/-50 degrees. Drag, zoom and resize work.",
+      "Native X5 calibration is retained by filens; PSV uses the documented fixed generic dual-fisheye mapping. On this sample PSV visibly repeats scene elements, including people/clothing and the foreground hand-region content, across hard seam discontinuities. filens mainly retains localized blending/ghosting with better scene continuity and visibly lighter artifacts at these reviewed seams. Neither output is seamless; this qualitative sample observation is not a quantitative or general stitching-quality SOTA claim.",
+      "PSV loading fade can still affect first-frame PNGs; the settled eight-direction captures are used for scene review."
+    ]
+  },
+  "checks": {
+    "nativeX5EmbeddedRadtanPro2x13": true,
+    "completeCalibrationManifestUnchanged": true,
+    "sameVerticalFov75": true,
+    "bothUploaded8192x4096": true,
+    "bothIdleWithoutGlDraws": true,
+    "bothResizeTo768x900": true,
+    "allFilensFirstPreviewHashesIdentical": true
+  },
+  "privacy": "Camera original and screenshots remain local; only anonymous metadata, timing and hashes are published."
+}

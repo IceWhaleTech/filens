@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fs;
 
@@ -292,19 +293,20 @@ impl SparseFile {
         })
     }
 
-    fn read(&self, offset: u64, length: usize) -> Option<Vec<u8>> {
+    // Most reads fit in one cached segment; only joined ranges need a copy.
+    fn read(&self, offset: u64, length: usize) -> Option<Cow<'_, [u8]>> {
         let end = offset.checked_add(length as u64)?;
         if end > self.size {
             return None;
         }
         if length == 0 {
-            return Some(Vec::new());
+            return Some(Cow::Borrowed(&[]));
         }
         for segment in &self.segments {
             let segment_end = segment.offset + segment.bytes.len() as u64;
             if offset >= segment.offset && end <= segment_end {
                 let start = (offset - segment.offset) as usize;
-                return Some(segment.bytes[start..start + length].to_vec());
+                return Some(Cow::Borrowed(&segment.bytes[start..start + length]));
             }
         }
         // Adjacent sparse ranges can satisfy a larger read without fetching
@@ -338,7 +340,7 @@ impl SparseFile {
                 break;
             }
         }
-        Some(bytes)
+        Some(Cow::Owned(bytes))
     }
 
     fn need(&self, offset: u64, length: u64) -> RequiredRange {
@@ -885,8 +887,8 @@ fn insta_embedded_offset_supported(model: Option<&str>) -> bool {
     matches!(model, Some("Insta360 OneRS"))
 }
 
-enum InstaFrameOutcome {
-    Complete(Vec<u8>),
+enum InstaFrameOutcome<'a> {
+    Complete(Cow<'a, [u8]>),
     NeedRange(RequiredRange),
     Unavailable,
 }
@@ -909,7 +911,7 @@ fn insta_info_range(
     file.need(start, end - start)
 }
 
-fn find_insta_info_frame(file: &SparseFile, metadata_offset: u64) -> InstaFrameOutcome {
+fn find_insta_info_frame(file: &SparseFile, metadata_offset: u64) -> InstaFrameOutcome<'_> {
     let metadata_end = file.size - 72;
     let mut cursor = metadata_end;
     for _ in 0..64 {
@@ -1574,14 +1576,15 @@ fn decode_dji_perframe(bytes: &[u8]) -> Option<Value> {
 }
 
 #[derive(Default)]
-struct ProtoValue {
-    bytes: Option<Vec<u8>>,
+struct ProtoValue<'a> {
+    // Nested messages borrow the original sample instead of copying each level.
+    bytes: Option<&'a [u8]>,
     fixed32: Option<u32>,
     varint: Option<u64>,
 }
-type ProtoFields = BTreeMap<u32, Vec<ProtoValue>>;
+type ProtoFields<'a> = BTreeMap<u32, Vec<ProtoValue<'a>>>;
 
-fn protobuf_fields(bytes: &[u8]) -> Option<ProtoFields> {
+fn protobuf_fields(bytes: &[u8]) -> Option<ProtoFields<'_>> {
     let mut fields = BTreeMap::new();
     let mut offset = 0usize;
     while offset < bytes.len() {
@@ -1603,18 +1606,15 @@ fn protobuf_fields(bytes: &[u8]) -> Option<ProtoFields> {
                 if offset + 8 > bytes.len() {
                     return None;
                 }
-                value.bytes = Some(bytes[offset..offset + 8].to_vec());
+                value.bytes = Some(bytes.get(offset..offset + 8)?);
                 offset += 8;
             }
             2 => {
                 let (len, used) = varint(&bytes[offset..])?;
                 offset += used;
-                let len = len as usize;
-                if offset + len > bytes.len() {
-                    return None;
-                }
-                value.bytes = Some(bytes[offset..offset + len].to_vec());
-                offset += len;
+                let end = offset.checked_add(usize::try_from(len).ok()?)?;
+                value.bytes = Some(bytes.get(offset..end)?);
+                offset = end;
             }
             5 => {
                 value.fixed32 = Some(u32::from_le_bytes(
@@ -1629,8 +1629,8 @@ fn protobuf_fields(bytes: &[u8]) -> Option<ProtoFields> {
     Some(fields)
 }
 
-fn field_bytes(fields: &ProtoFields, number: u32) -> Option<&[u8]> {
-    fields.get(&number)?.first()?.bytes.as_deref()
+fn field_bytes<'a>(fields: &ProtoFields<'a>, number: u32) -> Option<&'a [u8]> {
+    fields.get(&number)?.first()?.bytes
 }
 fn field_string(fields: &ProtoFields, number: u32) -> Option<String> {
     String::from_utf8(field_bytes(fields, number)?.to_vec()).ok()
@@ -1835,12 +1835,12 @@ mod tests {
                 },
             ],
         };
-        assert_eq!(file.read(1, 7), Some(vec![1, 2, 3, 4, 5, 6, 7]));
-        assert_eq!(file.read(3, 4), Some(vec![3, 4, 5, 6]));
+        assert_eq!(file.read(1, 7).as_deref(), Some(&[1, 2, 3, 4, 5, 6, 7][..]));
+        assert_eq!(file.read(3, 4).as_deref(), Some(&[3, 4, 5, 6][..]));
         assert_eq!(file.read(7, 4), None);
         assert_eq!(file.read(10, 3), None);
         assert_eq!(file.read(u64::MAX, 2), None);
-        assert_eq!(file.read(9, 0), Some(vec![]));
+        assert_eq!(file.read(9, 0).as_deref(), Some(&[][..]));
     }
 
     #[test]
@@ -1994,6 +1994,27 @@ mod tests {
             protobuf_fields(&[0x0d, 0x00, 0x00, 0x80, 0x3f, 0x12, 0x03, b'a', b'b', b'c']).unwrap();
         assert_eq!(field_f32(&fields, 1), Some(1.0));
         assert_eq!(field_string(&fields, 2).as_deref(), Some("abc"));
+    }
+
+    #[test]
+    fn retains_repeated_protobuf_values_and_rejects_truncated_payloads() {
+        let input = [
+            0x12, 3, b'a', b'b', b'c', 0x08, 7, 0x12, 2, b'd', b'e', 0x08, 9,
+        ];
+        let fields = protobuf_fields(&input).unwrap();
+        assert_eq!(fields.keys().copied().collect::<Vec<_>>(), [1, 2]);
+        assert_eq!(field_bytes(&fields, 2), Some(&b"abc"[..]));
+        assert_eq!(fields[&2][1].bytes, Some(&b"de"[..]));
+        assert_eq!(field_varint(&fields, 1), Some(7));
+        assert_eq!(fields[&1][1].varint, Some(9));
+        for bytes in [
+            &[0x12, 3, b'a'][..],
+            &[0x09, 0],
+            &[0x0d, 0],
+            &[0x12, 0xff, 0xff, 0xff, 0xff, 0x1f],
+        ] {
+            assert!(protobuf_fields(bytes).is_none());
+        }
     }
 
     fn insta_info_fixture(indexed: bool, unknown_frames: usize) -> (Vec<u8>, u64) {
@@ -2247,7 +2268,7 @@ mod tests {
         fields.insert(
             111,
             vec![ProtoValue {
-                bytes: Some(text.as_bytes().to_vec()),
+                bytes: Some(text.as_bytes()),
                 ..Default::default()
             }],
         );
@@ -2435,19 +2456,16 @@ mod tests {
         fields.insert(
             19,
             vec![ProtoValue {
-                bytes: Some([0x08, 0x80, 0x0f, 0x10, 0x80, 0x0f].to_vec()),
+                bytes: Some(&[0x08, 0x80, 0x0f, 0x10, 0x80, 0x0f]),
                 ..Default::default()
             }],
         );
         fields.insert(
             27,
             vec![ProtoValue {
-                bytes: Some(
-                    [
-                        0x08, 0x80, 0x2a, 0x10, 0x80, 0x2a, 0x18, 0x80, 0x0c, 0x20, 0x80, 0x0c,
-                    ]
-                    .to_vec(),
-                ),
+                bytes: Some(&[
+                    0x08, 0x80, 0x2a, 0x10, 0x80, 0x2a, 0x18, 0x80, 0x0c, 0x20, 0x80, 0x0c,
+                ]),
                 ..Default::default()
             }],
         );

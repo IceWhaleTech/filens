@@ -4,6 +4,8 @@ import crypto from 'node:crypto';
 
 const args = process.argv.slice(2);
 const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
+const metric = option('--metric', 'readyMs');
+if (!['readyMs', 'localEndToEndMs'].includes(metric)) throw new Error('Unknown timing metric.');
 const input = option('--input', 'tmp/performance-native-panorama/results/results.json');
 const output = option('--output', 'tmp/performance-native-panorama/results/summary.json');
 const bytes = fs.readFileSync(input);
@@ -21,19 +23,19 @@ let seed = 12345;
 const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32);
 const runs = engine => source.runs.filter(run => run.engine === engine && !run.failure && !run.errors.length).toSorted((a, b) => a.iteration - b.iteration);
 const ours = runs('filens'), peers = runs('photo-sphere-viewer');
-const complete = rows => rows.length === source.iterations && rows.every((row, i) => row.iteration === i && Number.isFinite(row.readyMs) && row.width === 1280 && row.height === 800);
+const complete = rows => rows.length === source.iterations && rows.every((row, i) => row.iteration === i && Number.isFinite(row[metric]) && row.width === 1280 && row.height === 800);
 const completePair = complete(ours) && complete(peers);
 let timing;
 if (completePair) {
   const distribution = [];
   for (let iteration = 0; iteration < 10000; iteration++) {
     const indices = ours.map(() => Math.floor(random() * ours.length));
-    distribution.push(median(indices.map(i => peers[i].readyMs)) / median(indices.map(i => ours[i].readyMs)));
+    distribution.push(median(indices.map(i => peers[i][metric])) / median(indices.map(i => ours[i][metric])));
   }
   distribution.sort((a, b) => a - b);
   const ratio95PercentBootstrapInterval = [distribution[250], distribution[9750]];
-  timing = { metric: 'readyMs', filensMs: median(ours.map(run => run.readyMs)), peerMs: median(peers.map(run => run.readyMs)),
-    peerOverFilensRatio: median(peers.map(run => run.readyMs)) / median(ours.map(run => run.readyMs)),
+  timing = { metric, filensMs: median(ours.map(run => run[metric])), peerMs: median(peers.map(run => run[metric])),
+    peerOverFilensRatio: median(peers.map(run => run[metric])) / median(ours.map(run => run[metric])),
     ratio95PercentBootstrapInterval,
     stableLead: source.iterations >= 7 && ratio95PercentBootstrapInterval[0] > 1 };
 }
@@ -54,7 +56,9 @@ const summary = {
   sourceSha256, date: source.date, cpu: source.cpu, platform: source.platform, browser: source.browser, gpu: source.gpu,
   versions: source.versions, sample: { ...source.sample, ...ours[0]?.source },
   iterations: source.iterations, totalRuns: source.runs.length, filensSuccessfulRuns: ours.length,
-  method: 'Same-original readable preview, not equivalent calibration algorithms or seamless stitching. Paired median-ratio bootstrap, 10,000 resamples, seed 12345, percentile 95% interval. Scope is this input, machine and measured peer. JS imports, input and WASM compilation precede timing; renderer construction, native inspection, decode, upload, optional seam completion and two animation frames are included.',
+  method: `Same-original readable preview, not equivalent calibration algorithms or seamless stitching. Paired median-ratio bootstrap, 10,000 resamples, seed 12345, percentile 95% interval. Scope is this input, machine and measured peer. ${metric === 'readyMs'
+    ? 'JS imports, input and WASM compilation precede timing; renderer construction, native inspection, decode, upload, optional seam completion and two animation frames are included.'
+    : 'Local input HTTP transfer, File creation, JS imports, filens WASM fetch/compilation, intervening Playwright dispatch, renderer construction, native inspection, decode, upload, optional seam completion and two animation frames are included. HTML/CSS shell navigation and browser startup precede timing. Remote NAS/backend/database and cold browser-process costs are not measured.'}`,
   timing,
   scope: {
     equivalentReadablePreview: peerReviewed,

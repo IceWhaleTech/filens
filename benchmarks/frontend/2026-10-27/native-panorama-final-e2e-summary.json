@@ -1,0 +1,88 @@
+{
+  "sourceSha256": "c83bc37eda1b7d0ac3b1732a5616c8b30474f169dce78471fba46934584f90dc",
+  "date": "2026-10-27T03:49:24.824Z",
+  "cpu": "Apple M4 Pro",
+  "platform": "darwin 25.6.0 arm64",
+  "browser": "147.0.7727.15",
+  "gpu": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+    "maxTextureSize": 8192,
+    "devicePixelRatio": 1
+  },
+  "versions": {
+    "@photo-sphere-viewer/core": "5.15.1",
+    "@photo-sphere-viewer/dual-fisheye-adapter": "5.15.1"
+  },
+  "sample": {
+    "name": "camera-original.insp",
+    "bytes": 18362602,
+    "sha256": "6676287954780dd95bb1f23db0ca9c19fe21faef22102a12454d3451a23b30c2",
+    "cameraModel": "Insta360 X5",
+    "width": 11904,
+    "height": 5952,
+    "projection": "mei-extended",
+    "calibrationSource": "embedded",
+    "lenses": 2,
+    "distortionModels": [
+      "radtan_pro",
+      "radtan_pro"
+    ],
+    "distortionCoefficientCounts": [
+      13,
+      13
+    ]
+  },
+  "iterations": 21,
+  "totalRuns": 42,
+  "filensSuccessfulRuns": 21,
+  "method": "Same-original readable preview, not equivalent calibration algorithms or seamless stitching. Paired median-ratio bootstrap, 10,000 resamples, seed 12345, percentile 95% interval. Scope is this input, machine and measured peer. Local input HTTP transfer, File creation, JS imports, filens WASM fetch/compilation, intervening Playwright dispatch, renderer construction, native inspection, decode, upload, optional seam completion and two animation frames are included. HTML/CSS shell navigation and browser startup precede timing. Remote NAS/backend/database and cold browser-process costs are not measured.",
+  "timing": {
+    "metric": "localEndToEndMs",
+    "filensMs": 426.8100000023842,
+    "peerMs": 424.1149999946356,
+    "peerOverFilensRatio": 0.9936857149370129,
+    "ratio95PercentBootstrapInterval": [
+      0.9382690796308613,
+      1.0189601592487008
+    ],
+    "stableLead": false
+  },
+  "scope": {
+    "equivalentReadablePreview": true,
+    "nativeX5CalibrationVerified": true,
+    "scopedPreviewSota": false,
+    "vendorCalibrationSota": false,
+    "seamlessStitchingClaim": false,
+    "note": "The peer uses a fixed generic dual-fisheye mapping. On this reviewed sample, PSV visibly repeats scene elements across hard seams; filens retains more localized blending/ghosting and better scene continuity at those seams. Both provide readable previews. This qualitative observation does not establish a quantitative or general stitching-quality SOTA, nor a vendor-calibration parser speed ranking."
+  },
+  "summary": [
+    {
+      "engine": "filens",
+      "attempted": 21,
+      "successes": 21,
+      "medianReadyMs": 354.4899999946356,
+      "medianLocalEndToEndMs": 426.8100000023842,
+      "medianOperationMs": 199.4050000011921,
+      "medianInspectionMs": 19.189999997615814,
+      "nativeX5Calibration": true,
+      "outputEquivalence": "Requires explicit visual review; no automatic SOTA label.",
+      "failures": []
+    },
+    {
+      "engine": "photo-sphere-viewer",
+      "attempted": 21,
+      "successes": 21,
+      "medianReadyMs": 383.0249999910593,
+      "medianLocalEndToEndMs": 424.1149999946356,
+      "medianOperationMs": 229.96499998867512,
+      "medianInspectionMs": 0,
+      "nativeX5Calibration": false,
+      "outputEquivalence": "Requires explicit visual review; no automatic SOTA label.",
+      "failures": []
+    }
+  ],
+  "review": {
+    "path": "benchmarks/frontend/2026-10-27/native-panorama-final-review.json",
+    "sha256": "45a5817418984a96ad745383def9d95b9b62c42041517fab24a3933a0b31dbe9"
+  }
+}

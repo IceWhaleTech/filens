@@ -1,6 +1,6 @@
 # 浏览器前端性能对比
 
-2026-10-23 / 24 · Apple M4 Pro · Chromium 147 · **2,604 次比较测量，每项至少 7 次，X5 原片每项 21 次；其中 filens 1,064 / 1,064 次成功。** 另保留 28 次裁剪 CR3 诊断和 28 次全景探索测量，均不计入上述总数或当前排名。
+2026-10-23 / 24 历史比较，2026-10-27 最终构建复核 · Apple M4 Pro · Chromium 147 · **累计 2,709 次比较测量，每项至少 7 次，X5 原片每项 21 次；其中 filens 1,106 / 1,106 次成功。** 另保留 28 次裁剪 CR3 诊断和 28 次全景探索测量，均不计入上述总数或当前排名。
 
 PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有稳定领先项。对比表忽略 10 ms 以内的任务。以用户实际阅读预览为目标；不要求转换结果保留相同的可编辑内部结构。
 
@@ -9,7 +9,7 @@ PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有
 | 11.1 MB / 13 页 PPTX 解析 | **28.5 ms** | pptx-preview 1.0.7: 56.6 ms | 1.99× (1.94–2.12) | **SOTA\*** |
 | 11.1 MB / 13 页 PPTX 首屏 | **48.8 ms** | pptx-preview 1.0.7: 71.8 ms | 1.47× (1.41–1.51) | **SOTA\*** |
 | 3840×1920 全景 JPEG 首屏 | **154.9 ms** | Photo Sphere Viewer 5.15.1: 205.2 ms | 1.32× (1.29–1.37) | **SOTA\*** |
-| 11904×5952 X5 INSP 原片全景首屏 | **369.4 ms** | Photo Sphere Viewer 5.15.1 双鱼眼: 414.5 ms | 1.12× (1.08–1.14) | **SOTA\*** |
+| X5 INSP 首屏（输入、模块与 WASM 已就绪，10-27） | **354.5 ms** | Photo Sphere Viewer 5.15.1 双鱼眼: 383.0 ms | 1.08× (1.05–1.10) | **限定首屏 SOTA\*** |
 | 无内嵌 JPEG 的 NEF → 预览画布 | **152.7 ms** | LibRaw 半尺寸：326.7 ms | 2.14× (2.10–2.17) | **SOTA\*** |
 | 无内嵌 JPEG 的 DNG → 预览画布 | **167.7 ms** | LibRaw 快速半尺寸：314.4 ms | 1.87× (1.78–1.91) | **SOTA\*** |
 | STEP 几何导入：cube | **46.5 ms** | occt-import-js: 67.6 ms | 1.45× (1.43–1.63) | **SOTA\*** |
@@ -18,6 +18,8 @@ PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有
 | 20,000×8 数值 CSV → XLSX | **137.6 ms** | x2t: 198.8 ms | 1.44× (1.41–1.46) | **SOTA\*** |
 
 <sub>\* SOTA 仅指本机、所测样例、表列对手及对应任务的稳定领先：配对 bootstrap 95% 区间下界大于 1。XLSX 数据读取不代表完整样式解析；XLS 转换按相同预览器中的显示结果比较。**全景使用 SwiftShader 软件渲染。** 不含下载与库冷加载；完整数据保留落后项和失败项。</sub>
+
+**最终端到端结论（2026-10-27）：不能标为 SOTA。** 同一份 X5 原片加入本地 HTTP 取文件、JS 加载及 WASM 获取/编译后，filens 为 **426.8 ms**，PSV 为 **424.1 ms**；对手 / filens 为 **0.994×，95% 区间 0.938–1.019**，没有稳定领先。两个口径来自同一组 42 次运行，不重复计数；其余未复测条目保留 10-23 / 24 的限定结论。该本地口径仍不含页面壳导航、浏览器启动、远程 NAS 或 Photos 后端/数据库，不能代表全应用端到端。[最终判定与全部证据](../benchmarks/frontend/2026-10-27/end-to-end-sota-verdict.json)。
 
 ## X5 原片：解析厂商标定，接缝更自然
 
@@ -28,15 +30,17 @@ PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有
 | 双鱼眼原片预览 | ✅ | ✅ 通用投影 |
 | 内嵌 X5 畸变 / 标定解析 | ✅ 双镜头，各 13 个 RadtanPro 系数 | — |
 | 本样例接缝观感 | **局部融合重影，画面连续性更好，瑕疵更轻** | **明显画面重复与硬接缝** |
-| 首屏中位数，含两帧显示等待 | **369.4 ms** | 414.5 ms |
-| 对手 / filens，95% 区间 | **1.12×（1.08–1.14），预览速度 SOTA\*** | — |
+| 输入、模块已就绪到首屏，含两帧等待 | **354.5 ms** | 383.0 ms |
+| 对手 / filens，95% 区间 | **1.08×（1.05–1.10），限定首屏 SOTA\*** | — |
+| 含本地取文件、模块及 WASM 初始化到首屏 | 426.8 ms | **424.1 ms** |
+| 上述本地端到端的对手 / filens，95% 区间 | **0.994×（0.938–1.019），不满足 SOTA** | — |
 | 静止画面 GL 绘制 | **0** | **0** |
 
-<sub>各 21 次，共 42 次；全部成功。双方同为 1280×800、DPR 1、75° 垂直视场和 SwiftShader，受最大纹理限制均上传 8192×4096。计时含构造、filens 原生标定解析、JPEG 解码、纹理上传、一次接缝分析及两个动画帧；输入、JS 与 WASM 编译已准备好。filens 标定检查中位数 20.4 ms；对手没有同等解析步骤，不计算解析速度倍数。</sub>
+<sub>各 21 次，共 42 次；全部成功。双方同为 1280×800、DPR 1、75° 垂直视场和 SwiftShader，受最大纹理限制均上传 8192×4096。计时含构造、filens 原生标定解析、JPEG 解码、纹理上传、一次接缝分析及两个动画帧；输入、JS 与 WASM 编译已准备好。filens 标定检查中位数 19.2 ms；对手没有同等解析步骤，不计算解析速度倍数。</sub>
 
 <sub>四个水平方向及两侧接缝 ±50° 俯仰共八个视角检查中，PSV 在人物 / 衣物及前景手部附近重复场景内容，并有硬切；filens 在这些位置主要为局部融合重影，观感明显更好。拖动、缩放与窗口调整均正常。结论限于这份样例；速度 SOTA 不外推为通用拼接质量或厂商标定算法 SOTA。PSV 官方仅注明在 Ricoh Theta Z1 上测试；[该版本实现](https://github.com/mistic100/Photo-Sphere-Viewer/blob/5.15.1/packages/dual-fisheye-adapter/src/DualFisheyeAdapter.ts)使用固定 C = 0.946。</sub>
 
-<sub>[42 次完整记录](../benchmarks/frontend/2026-10-24/native-panorama-range-cache.json.gz) · [统计摘要](../benchmarks/frontend/2026-10-24/native-panorama-range-cache-summary.json) · [八视角检查与哈希](../benchmarks/frontend/2026-10-24/native-panorama-range-cache-review.json) · [完整标定一致性检查](../benchmarks/frontend/2026-10-24/native-panorama-range-metadata-review.json)。原片及截图留在本地；公开记录提供样例哈希、尺寸与测量值。</sub>
+<sub>[10-27 最终构建 42 次记录](../benchmarks/frontend/2026-10-27/native-panorama-final.json.gz) · [已就绪首屏摘要](../benchmarks/frontend/2026-10-27/native-panorama-final-ready-summary.json) · [含初始化端到端摘要](../benchmarks/frontend/2026-10-27/native-panorama-final-e2e-summary.json) · [八视角检查与哈希](../benchmarks/frontend/2026-10-27/native-panorama-final-review.json) · [完整标定一致性](../benchmarks/frontend/2026-10-27/native-panorama-final-metadata-review.json)。双方 16 张稳定视角 PNG 均与此前已评审画面字节一致。原片及截图留在本地。</sub>
 
 <sub>复用相邻稀疏范围后，检查原片的读取量由 15.80 MB 降到 **8.46 MB，减少 46.5%**；完整标定、首屏与八视角画面均与前版一致。HTTP 范围错位、总大小变化和截断内容均明确报错。</sub>
 
@@ -139,7 +143,7 @@ PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有
 | --- | ---: | --- |
 | DXF：20,000 条线 | 23.4 | dxf-parser: 21.7 |
 | CSV：20,000×8 数值字段 | 11.1 | papaparse: 8.9 |
-| ZIP：1,000 个小文件，解包全部 | 10.4 | fflate: 4.3 |
+| ZIP：1,000 个小文件，解包全部（10-27） | 11.8 | fflate: 5.0 |
 
 <sub>CSV 同时测 PapaParse 5.7.0 和 SheetJS CE 0.20.3；ZIP 同时测 fflate 0.8.2 和 zip.js 2.24.0，按更快的对手呈现。DXF 对照 dxf-parser 1.1.2。不能仅因胜过其中一个较慢实现就标 SOTA。PDF、DOCX 和多数 3D 加载器复用现有引擎，不额外宣称独立算法领先。</sub>
 
@@ -150,6 +154,10 @@ PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有
 <sub>ZIP 新旧实现同场复测：1,000 文件完整读取由 11.8 ms 降至 **10.2 ms，耗时减少约 13%**，完整元数据、内容与资源解析结果一致。另补齐 TAR/TGZ 的 PAX / GNU 长路径读取；fflate 仍更快，不新增 SOTA 标注。[实测与回归检查](../benchmarks/frontend/2026-10-24/archive-index-review.json)。</sub>
 
 <sub>压缩包预览同场复测：1 万文件的 ZIP 索引与首屏列表构建由 64.6 降至 **40.3 ms，耗时减少约 38%**，完整内容、元数据、列表与首屏截图一致；不含绘制耗时。10 万文件无稳定提速，10 ms 内对照不计提速；这是项目内优化，不新增 SOTA。[实测与检查](../benchmarks/frontend/2026-10-24/archive-lifecycle-review.json)。</sub>
+
+<sub>2026-10-27 目录导航优化：10 万文件 / 1,000 个目录的生成 ZIP，依次首次打开 50 个不同目录由 312.1 降至 **24.5 ms（12.74×）**，包含延迟创建子项索引及完整 DOM 构建，不含布局与绘制；完整列表、元数据和文件内容一致。初始加载与已缓存导航无稳定收益。另有 WASM 元数据局部解析优化，均为项目内工程对照，尚不足以新增 SOTA。[测量边界、原始数据与 SOTA 评估](../benchmarks/frontend/2026-10-27/bbtree-followup-review.json)。</sub>
+
+<sub>ZIP 浏览补测（42 次项目内对照）：10 万文件中，50 个新目录经真实 DOM 点击处理的同步耗时为 **350.5 → 90.7 ms**；加入生产 CSS、布局和每次两帧显示等待后为 **1,653.6 → 1,652.8 ms**，无稳定改善。本地输入/模块加载到首屏为 **309.4 → 309.4 ms**，已缓存目录两版均为 33.3 ms；目录 CPU 优化有效，尚不能标为浏览端到端 SOTA。与此前直接连续调用路由的 12.74× 计时边界不同。[浏览指标、原始数据与完整检查](../benchmarks/frontend/2026-10-27/archive-browser.md)。</sub>
 
 <sub>PDF 改为按可见区域渲染：百页同尺寸样例结束加载由约 1.75 秒降至 **104 ms**，初始画布由 100 张降至 **2 张，画布像素减少 98%**。203 页逐页像素与前版一致；首次可见时间无稳定变化，不标 SOTA。页码跳转、缩放与取消加载已补齐。[测量与检查](../benchmarks/frontend/2026-10-24/pdf-preview-review.json)。</sub>
 
@@ -256,7 +264,9 @@ PPTX、全景、无内嵌 JPEG 的 RAW、STEP、XLSX 和文档预览转换均有
 
 ## 数据与复现
 
-此前 X5 原片的 42 次比较仍保留并计入累计总数：[原始记录](../benchmarks/frontend/2026-10-24/native-panorama.json.gz) · [摘要](../benchmarks/frontend/2026-10-24/native-panorama-summary.json)。当前排名使用范围复用优化后的新一组 42 次结果。
+2026-10-27 最终构建追加 **105 次同行测量 / 42 次 filens 成功运行**：X5 原片 42 次，三份 ZIP 各 7 轮 × 三个实现共 63 次。[端到端最终判定](../benchmarks/frontend/2026-10-27/end-to-end-sota-verdict.json) · [ZIP 完整提取摘要](../benchmarks/frontend/2026-10-27/zip-final-summary.json) · [ZIP 原始记录](../benchmarks/frontend/2026-10-27/zip-final.json.gz)。1,000 小文件的 fflate 仍更快；16 MiB 单文件生成 ZIP 的 filens 为 8.6 ms，低于本文 10 ms 标注门槛，不新增 SOTA，也不代表目录导航或预览首屏。
+
+此前 X5 原片的 42 次比较仍保留并计入累计总数：[原始记录](../benchmarks/frontend/2026-10-24/native-panorama.json.gz) · [摘要](../benchmarks/frontend/2026-10-24/native-panorama-summary.json)。当前 X5 首屏限定排名使用 10-27 最终构建的 42 次结果；包含初始化的端到端口径不满足 SOTA。
 
 [首次 525 次实测摘要](../benchmarks/frontend/2026-10-23/summary.json) · [原始记录](../benchmarks/frontend/2026-10-23/final.json.gz) · [新增 497 次实测摘要](../benchmarks/frontend/2026-10-23/other-formats-optimized-summary.json) · [原始记录](../benchmarks/frontend/2026-10-23/other-formats-optimized.json.gz) · [预览检查](../benchmarks/frontend/2026-10-23/preview-review-optimized.json) · [依赖锁与复现](../benchmarks/frontend/README.md)。
 

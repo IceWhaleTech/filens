@@ -62,6 +62,7 @@ type ArchiveFrame = {
   entries: ArchiveEntryRecord[];
   resources?: Map<string, ArchiveEntryRecord>;
   listings?: Map<string, ArchivePreviewState['entries']>;
+  directories?: Map<string, ArchiveEntryRecord[]>;
 };
 
 export const ARCHIVE_FORMAT_ROUTES: FormatDefinition[] = [
@@ -517,7 +518,9 @@ export class ArchivePreviewSession implements PreviewSession<ArchivePreviewState
     current.listings ??= new Map();
     let entries = current.listings.get(normalized);
     if (!entries) {
-      entries = listEntriesForRoute(current.entries, normalized);
+      const candidates = normalized === '/' ? current.entries
+        : (current.directories ??= indexArchiveDirectories(current.entries)).get(normalized.slice(1)) ?? [];
+      entries = listEntriesForRoute(candidates, normalized);
       current.listings.set(normalized, entries);
     }
     this.state = {
@@ -945,6 +948,28 @@ function joinArchiveRoute(baseRoute: string, entryName: string): string {
   const cleanEntry = String(entryName).replace(/\\/g, '/').replace(/\/+$/g, '').replace(/^\/+/, '');
   const joined = [base, cleanEntry].filter(Boolean).join('/');
   return joined ? `/${joined}/` : '/';
+}
+
+// Build this only when a non-root directory is opened. Keep archive order and
+// explicit directory records so duplicate metadata and locale sorting stay the
+// same. Store direct children and one representative per implicit directory,
+// rather than keeping every descendant under every ancestor.
+function indexArchiveDirectories(entries: ArchiveEntryRecord[]): Map<string, ArchiveEntryRecord[]> {
+  const directories = new Map<string, ArchiveEntryRecord[]>();
+  for (const entry of entries) {
+    let parent = '';
+    for (let slash = entry.name.indexOf('/'); slash >= 0; slash = entry.name.indexOf('/', slash + 1)) {
+      const prefix = entry.name.slice(0, slash + 1);
+      const known = directories.has(prefix);
+      if (!known) directories.set(prefix, []);
+      if (parent && (!known || slash === entry.name.length - 1)) {
+        directories.get(parent)!.push(entry);
+      }
+      parent = prefix;
+    }
+    if (parent && !entry.name.endsWith('/')) directories.get(parent)!.push(entry);
+  }
+  return directories;
 }
 
 function listEntriesForRoute(

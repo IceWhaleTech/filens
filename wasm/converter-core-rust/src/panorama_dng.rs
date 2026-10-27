@@ -1,7 +1,7 @@
 //! Bounded, sparse TIFF metadata inspection. RAW pixels are decoded by converter-image.
 use super::{InspectError, InspectOutcome, RequiredRange, SparseFile, invalid};
 use serde_json::{Value, json};
-use std::collections::{BTreeMap, BTreeSet};
+use std::borrow::Cow;
 
 enum ReadError {
     Range(RequiredRange),
@@ -15,7 +15,7 @@ struct Tiff<'a> {
 }
 
 impl Tiff<'_> {
-    fn read(&self, offset: u64, length: usize) -> ReadResult<Vec<u8>> {
+    fn read(&self, offset: u64, length: usize) -> ReadResult<Cow<'_, [u8]>> {
         if length > 1 << 20
             || offset
                 .checked_add(length as u64)
@@ -45,31 +45,38 @@ impl Tiff<'_> {
             u32::from_be_bytes(b)
         }
     }
-    fn values(&self, entry: &[u8]) -> ReadResult<Vec<u8>> {
+    fn values<'a>(&'a self, entry: &'a [u8]) -> ReadResult<Cow<'a, [u8]>> {
         let unit = match self.u16(&entry[2..]) {
             1 | 2 | 7 => 1,
             3 => 2,
             4 | 13 => 4,
-            _ => return Ok(Vec::new()),
+            _ => return Ok(Cow::Borrowed(&[])),
         };
         let length = (self.u32(&entry[4..]) as usize)
             .checked_mul(unit)
             .ok_or_else(|| ReadError::Invalid(invalid("DNG tag length overflow")))?;
         if length <= 4 {
-            Ok(entry[8..8 + length].to_vec())
+            Ok(Cow::Borrowed(&entry[8..8 + length]))
         } else {
             self.read(self.u32(&entry[8..]) as u64, length)
         }
     }
-    fn integers(&self, entry: &[u8], bytes: &[u8]) -> Vec<u32> {
-        match self.u16(&entry[2..]) {
-            3 => bytes
-                .chunks_exact(2)
-                .map(|b| u32::from(self.u16(b)))
-                .collect(),
-            4 | 13 => bytes.chunks_exact(4).map(|b| self.u32(b)).collect(),
-            _ => Vec::new(),
-        }
+    fn integers<'a>(&'a self, entry: &[u8], bytes: &'a [u8]) -> impl Iterator<Item = u32> + 'a {
+        let kind = self.u16(&entry[2..]);
+        let bytes = if matches!(kind, 3 | 4 | 13) {
+            bytes
+        } else {
+            &[]
+        };
+        bytes
+            .chunks_exact(if kind == 3 { 2 } else { 4 })
+            .map(move |b| {
+                if kind == 3 {
+                    u32::from(self.u16(b))
+                } else {
+                    self.u32(b)
+                }
+            })
     }
 }
 
@@ -114,17 +121,20 @@ fn read_metadata(file: &SparseFile) -> ReadResult<Metadata> {
         )));
     }
     let mut pending = vec![tiff.u32(&header[4..])];
-    let mut visited = BTreeSet::new();
+    let mut visited = [0; 32];
+    let mut visited_count = 0;
     let mut metadata = Metadata::default();
     while let Some(offset) = pending.pop() {
-        if offset == 0 || !visited.insert(offset) {
+        if offset == 0 || visited[..visited_count].contains(&offset) {
             continue;
         }
-        if visited.len() > 32 {
+        if visited_count == visited.len() {
             return Err(ReadError::Invalid(invalid(
                 "DNG contains too many TIFF directories",
             )));
         }
+        visited[visited_count] = offset;
+        visited_count += 1;
         let count_bytes = tiff.read(u64::from(offset), 2)?;
         let count = usize::from(tiff.u16(&count_bytes));
         if count > 1024 {
@@ -133,7 +143,7 @@ fn read_metadata(file: &SparseFile) -> ReadResult<Metadata> {
             )));
         }
         let table = tiff.read(u64::from(offset) + 2, count * 12 + 4)?;
-        let mut numbers = BTreeMap::new();
+        let (mut width, mut height, mut photometric) = (0, 0, 0);
         for entry in table[..count * 12].chunks_exact(12) {
             let tag = tiff.u16(entry);
             if !matches!(tag, 256 | 257 | 262 | 272 | 330 | 34665 | 37510) {
@@ -148,17 +158,20 @@ fn read_metadata(file: &SparseFile) -> ReadResult<Metadata> {
                     metadata.comment = text;
                 }
             } else {
-                let values = tiff.integers(entry, &bytes);
+                let mut values = tiff.integers(entry, &bytes);
                 if matches!(tag, 330 | 34665) {
                     pending.extend(values);
-                } else if let Some(value) = values.first() {
-                    numbers.insert(tag, *value);
+                } else if let Some(value) = values.next() {
+                    match tag {
+                        256 => width = value,
+                        257 => height = value,
+                        262 => photometric = value,
+                        _ => unreachable!(),
+                    }
                 }
             }
         }
-        let width = numbers.get(&256).copied().unwrap_or(0);
-        let height = numbers.get(&257).copied().unwrap_or(0);
-        let raw = matches!(numbers.get(&262), Some(32803 | 34892));
+        let raw = matches!(photometric, 32803 | 34892);
         if width > 0
             && height > 0
             && ((raw && !metadata.raw)
@@ -422,6 +435,61 @@ mod tests {
             segments: vec![super::super::Segment { offset: 0, bytes }],
         };
         assert!(inspect(&file).is_err());
+    }
+
+    #[test]
+    fn bounds_tiff_directories_and_stops_on_cycles() {
+        for (count, cycle, accepted) in [(32, false, true), (32, true, true), (33, false, false)] {
+            let mut bytes = vec![0; 8 + count * 6];
+            bytes[..8].copy_from_slice(&[73, 73, 42, 0, 8, 0, 0, 0]);
+            for index in 0..count {
+                let next = if index + 1 < count {
+                    8 + (index + 1) * 6
+                } else if cycle {
+                    8
+                } else {
+                    0
+                };
+                let offset = 8 + index * 6;
+                bytes[offset + 2..offset + 6].copy_from_slice(&(next as u32).to_le_bytes());
+            }
+            let file = SparseFile {
+                size: bytes.len() as u64,
+                segments: vec![super::super::Segment { offset: 0, bytes }],
+            };
+            assert_eq!(inspect(&file).is_ok(), accepted);
+        }
+    }
+
+    #[test]
+    fn retains_the_last_numeric_tag_and_ignores_later_empty_tags() {
+        let mut bytes = tiff_fixture(true);
+        // The root has room for four extra entries before any referenced data.
+        bytes[8..10].copy_from_slice(&10u16.to_le_bytes());
+        for (index, (tag, count, value)) in [
+            (256u16, 1u32, 12345u32),
+            (256, 0, 0),
+            (257, 1, 7000),
+            (262, 1, 32803),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let offset = 10 + (6 + index) * 12;
+            bytes[offset..offset + 2].copy_from_slice(&tag.to_le_bytes());
+            bytes[offset + 2..offset + 4].copy_from_slice(&4u16.to_le_bytes());
+            bytes[offset + 4..offset + 8].copy_from_slice(&count.to_le_bytes());
+            bytes[offset + 8..offset + 12].copy_from_slice(&value.to_le_bytes());
+        }
+        let file = SparseFile {
+            size: bytes.len() as u64,
+            segments: vec![super::super::Segment { offset: 0, bytes }],
+        };
+        let InspectOutcome::Complete(value) = inspect(&file).unwrap() else {
+            panic!("metadata should be complete");
+        };
+        assert_eq!(value["width"], 12345);
+        assert_eq!(value["height"], 7000);
     }
 
     #[test]

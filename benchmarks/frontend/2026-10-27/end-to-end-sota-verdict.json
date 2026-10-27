@@ -1,0 +1,316 @@
+{
+  "date": "2026-10-27",
+  "globalSota": false,
+  "endToEndSota": false,
+  "decision": "Do not label the final application or the initialization-inclusive preview pipeline as end-to-end SOTA.",
+  "nativeX5": {
+    "preloadedPreview": {
+      "scopedSota": true,
+      "timing": {
+        "metric": "readyMs",
+        "filensMs": 354.4899999946356,
+        "peerMs": 383.0249999910593,
+        "peerOverFilensRatio": 1.0804959237125322,
+        "ratio95PercentBootstrapInterval": [
+          1.0478627656355723,
+          1.1036075608212343
+        ],
+        "stableLead": true
+      }
+    },
+    "localEndToEnd": {
+      "scopedSota": false,
+      "timing": {
+        "metric": "localEndToEndMs",
+        "filensMs": 426.8100000023842,
+        "peerMs": 424.1149999946356,
+        "peerOverFilensRatio": 0.9936857149370129,
+        "ratio95PercentBootstrapInterval": [
+          0.9382690796308613,
+          1.0189601592487008
+        ],
+        "stableLead": false
+      }
+    },
+    "boundary": "localEndToEndMs includes same-origin local HTTP input, File creation, JS import, filens WASM fetch/compilation, one intervening Playwright dispatch, renderer creation, native inspection, JPEG decode, texture upload, optional seam completion and two animation frames. Excludes HTML/CSS shell navigation, browser startup, remote NAS/backend/database. New context for every run, shared browser process; not a cold-process or cold-disk benchmark.",
+    "runs": 42,
+    "repeatsPerEngineChosenBeforeRun": 21,
+    "readableOutputVerified": true,
+    "outputReview": "native-panorama-final-review.json"
+  },
+  "zip": {
+    "endToEndSota": false,
+    "runs": 63,
+    "repeatsPerInputEngine": 7,
+    "scope": "Complete archive extraction, not UI preview or directory navigation; input and imports preloaded. Three inputs, three engines; all complete extracted-byte signatures match.",
+    "comparisons": [
+      {
+        "family": "zip",
+        "sample": "sample-nested-archives.zip",
+        "peer": "zip.js",
+        "metric": "operationMs",
+        "filensMs": 6.745000004768372,
+        "peerMs": 3.7950000017881393,
+        "ratio": 0.5626389917131605,
+        "ratio95PercentBootstrapInterval": [
+          0.5596738329565206,
+          0.5796324671721144
+        ],
+        "matchingOutput": true,
+        "matchingPreview": false,
+        "matchingExactPreview": false,
+        "matchingPreviewContent": false,
+        "stableTimingLead": false,
+        "scopedLead": false,
+        "pairwiseScopedLead": false,
+        "bestAmongMeasuredPeers": false
+      },
+      {
+        "family": "zip",
+        "sample": "sample-nested-archives.zip",
+        "peer": "fflate",
+        "metric": "operationMs",
+        "filensMs": 6.745000004768372,
+        "peerMs": 0.23499999940395355,
+        "ratio": 0.034840622570470055,
+        "ratio95PercentBootstrapInterval": [
+          0.03306392493708978,
+          0.03558191391654194
+        ],
+        "matchingOutput": true,
+        "matchingPreview": false,
+        "matchingExactPreview": false,
+        "matchingPreviewContent": false,
+        "stableTimingLead": false,
+        "scopedLead": false,
+        "pairwiseScopedLead": false,
+        "bestAmongMeasuredPeers": false
+      },
+      {
+        "family": "zip",
+        "sample": "generated-1000-files.zip",
+        "peer": "zip.js",
+        "metric": "operationMs",
+        "filensMs": 11.774999991059303,
+        "peerMs": 239.34000000357628,
+        "ratio": 20.32611466541876,
+        "ratio95PercentBootstrapInterval": [
+          19.123840265134923,
+          21.0996533956331
+        ],
+        "matchingOutput": true,
+        "matchingPreview": false,
+        "matchingExactPreview": false,
+        "matchingPreviewContent": false,
+        "stableTimingLead": true,
+        "scopedLead": false,
+        "pairwiseScopedLead": true,
+        "bestAmongMeasuredPeers": false
+      },
+      {
+        "family": "zip",
+        "sample": "generated-1000-files.zip",
+        "peer": "fflate",
+        "metric": "operationMs",
+        "filensMs": 11.774999991059303,
+        "peerMs": 4.949999988079071,
+        "ratio": 0.42038216491189645,
+        "ratio95PercentBootstrapInterval": [
+          0.39375000074505806,
+          0.42980935849480917
+        ],
+        "matchingOutput": true,
+        "matchingPreview": false,
+        "matchingExactPreview": false,
+        "matchingPreviewContent": false,
+        "stableTimingLead": false,
+        "scopedLead": false,
+        "pairwiseScopedLead": false,
+        "bestAmongMeasuredPeers": false
+      },
+      {
+        "family": "zip",
+        "sample": "generated-16mib.zip",
+        "peer": "zip.js",
+        "metric": "operationMs",
+        "filensMs": 8.629999995231628,
+        "peerMs": 13.38000001013279,
+        "ratio": 1.5504055640238354,
+        "ratio95PercentBootstrapInterval": [
+          1.5030951061909912,
+          1.5953927926197353
+        ],
+        "matchingOutput": true,
+        "matchingPreview": false,
+        "matchingExactPreview": false,
+        "matchingPreviewContent": false,
+        "stableTimingLead": true,
+        "scopedLead": true,
+        "pairwiseScopedLead": true,
+        "bestAmongMeasuredPeers": true
+      },
+      {
+        "family": "zip",
+        "sample": "generated-16mib.zip",
+        "peer": "fflate",
+        "metric": "operationMs",
+        "filensMs": 8.629999995231628,
+        "peerMs": 50.53000000119209,
+        "ratio": 5.85515643442777,
+        "ratio95PercentBootstrapInterval": [
+          5.55768149107865,
+          5.997637327156344
+        ],
+        "matchingOutput": true,
+        "matchingPreview": false,
+        "matchingExactPreview": false,
+        "matchingPreviewContent": false,
+        "stableTimingLead": true,
+        "scopedLead": true,
+        "pairwiseScopedLead": true,
+        "bestAmongMeasuredPeers": true
+      }
+    ],
+    "decision": "fflate remains faster for the 1,000-file ZIP. The 16 MiB generated entry has a local kernel lead, but filens median is below 10 ms and no end-to-end or broad archive SOTA is inferred."
+  },
+  "photos": {
+    "endToEndSota": false,
+    "status": "Not established. Previous 168 Go measurements cover metadata stages only, without a matched full application peer comparison. No Photos end-to-end timing was run in this review."
+  },
+  "externalTotals": {
+    "historicalMeasurements": 2604,
+    "historicalSuccessfulFilensRuns": 1064,
+    "addedMeasurements": 105,
+    "addedSuccessfulFilensRuns": 42,
+    "totalMeasurements": 2709,
+    "totalSuccessfulFilensRuns": 1106
+  },
+  "interpretation": "The paired bootstrap 95% interval for local end-to-end peer/filens is 0.938–1.019 and includes 1. No stable lead. Preloaded first-preview ratio is 1.080 with interval 1.048–1.104. Same-project microbenchmark speedups must not be substituted for either endpoint.",
+  "verification": {
+    "all105RunsSuccessful": true,
+    "sourceRuntimeAndInputBindingsVerified": true,
+    "previousEngineeringProductionHashesMatch": true,
+    "historicalReadyMetricTimingAndScopeUnchanged": true,
+    "invalidMetricRejected": true,
+    "benchmarkScriptsSyntaxChecked": true,
+    "gitDiffCheckPassed": true,
+    "productionBuildsPassed": [
+      "wasm",
+      "core",
+      "converter-client",
+      "panorama",
+      "archive"
+    ],
+    "productImplementationChangedInThisReview": false,
+    "sourceBindings": [
+      {
+        "path": "scripts/benchmark-native-panorama.mjs",
+        "sha256": "2e46ad3b670bf64bce403e03c5cee59f006ad6075cf0b75046d6a35cba13fe46"
+      },
+      {
+        "path": "scripts/summarize-native-panorama-benchmark.mjs",
+        "sha256": "485c31bb87737fcf8a183f187c1e23d90649b494a7f51e2d847dbc797bc5a307"
+      },
+      {
+        "path": "scripts/benchmark-other-formats.mjs",
+        "sha256": "b3a9d24deb821a24862de2d2ee1e133f2ed946cba43e27e13f688778db2c5dbc"
+      },
+      {
+        "path": "scripts/summarize-other-format-benchmark.mjs",
+        "sha256": "31e8b7dbd43d3ba5ee356715b05fef6968146ef6373e6a135e4a02533eaaf496"
+      },
+      {
+        "path": "scripts/review-native-panorama-metadata.mjs",
+        "sha256": "35b55bfeecd15b3cfb580c2f40daa6c3a93ed230dfdfc4d7b909ddeeffc2e919"
+      },
+      {
+        "path": "wasm/converter-core-rust/src/panorama.rs",
+        "sha256": "ae5bd2b2312959cca0e2ce35860136f3250340d7fa41a1fbae9da81100ac531f"
+      },
+      {
+        "path": "wasm/converter-core-rust/src/panorama_dng.rs",
+        "sha256": "4b3f3f3b1e861c3b1e9fe2e73cfd99a9feb40f5c41be1f5ea325d3295a29989a"
+      },
+      {
+        "path": "packages/panorama/src/preview-driver.ts",
+        "sha256": "f188ecfa2b35866bd00bf9cc9b3e3270e1b198b625da021813da7069180e979e"
+      },
+      {
+        "path": "packages/panorama/src/wasm-processor.ts",
+        "sha256": "804e8da2ce8b53dcad11f176a57791059a457dec7abd952c748cd3969ddc9422"
+      },
+      {
+        "path": "packages/panorama/src/calibrated-renderer.ts",
+        "sha256": "9f9e80bbeaa28e37e23c03e9096b1ee67a1921cd7754da8a2c1631c0edec92d8"
+      },
+      {
+        "path": "packages/archive/src/preview-driver.ts",
+        "sha256": "156951e321653f3f2b4f934210e959769d456599cc8f02ab565cd3677299ad0a"
+      }
+    ],
+    "artifactBindings": [
+      {
+        "path": "benchmarks/frontend/2026-10-27/archive-browser-diagnostic.json.gz",
+        "sha256": "017ff56630a58c0292e15241cf26c6992c3059d56eea73ef8775fbb0b20ee3d0"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/archive-browser-review.json",
+        "sha256": "d681f18bbe5310afa2cc990a4355d08a1b1d7db1121e4a0583b06c29913d945d"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/archive-browser-summary.json",
+        "sha256": "0dd5c03dcf10d13199ea4016a90e856696f6f4aa1d7f82c35e7f80d5c13fe72f"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/archive-browser.json.gz",
+        "sha256": "7d1e7b6628370e9bb75567a94a8e3607e4facc684617f3d1b4921fe115aa2015"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/archive-browser.md",
+        "sha256": "0db95cf418967c04a04ae62160fdcfab4e4a42a97d1cc695a958cdf8163f6d52"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/bbtree-followup-review.json",
+        "sha256": "35f9e9cea04941ed60104b43fa9ad65f391c4379a34321bdd52affa1a42414fd"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/native-panorama-final-e2e-summary.json",
+        "sha256": "eae09ab20cf50ec40e21e6bdf0ac3d394feea7f142ccc00bbc957bf90407fa71"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/native-panorama-final-metadata-review.json",
+        "sha256": "a803560edad8b5b1df65ce85448436bf58975d9fe46354c9b5bdf20e97b2bc91"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/native-panorama-final-ready-summary.json",
+        "sha256": "d9f05bed6ed7bcf876a9c12123420c9dc6c54800f0defc5b23d52d97e7bd1f50"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/native-panorama-final-review.json",
+        "sha256": "45a5817418984a96ad745383def9d95b9b62c42041517fab24a3933a0b31dbe9"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/native-panorama-final.json.gz",
+        "sha256": "984800b60c0532877156d64e1b4805ba14d263bef6a1045e3cbb6f45a6c69d56"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/zip-final-summary.json",
+        "sha256": "b6ca463e7d3845b5bd02514558ca99442aa4ac8f9d7e0aa413aeff3f3a04611d"
+      },
+      {
+        "path": "benchmarks/frontend/2026-10-27/zip-final.json.gz",
+        "sha256": "d64ecb7fa3f45880b4d23d06314f6da9fa549b1afa4f6cf28bd9e622fed312a4"
+      }
+    ]
+  },
+  "zipBrowser": {
+    "scopedSota": false,
+    "engineering": true,
+    "runs": 42,
+    "externalPeerComparison": false,
+    "review": "archive-browser-review.json",
+    "summary": "archive-browser-summary.json",
+    "result": "At 100,000 files/1,000 directories, first visits to 50 directories reduce synchronous click/DOM processing from 350.5 to 90.7 ms. With layout observation and two frames per click, the total is 1653.6 vs 1652.8 ms (no stable reduction). Local setup/load/display is 309.4 vs 309.4 ms. This is distinct from complete extraction and from the earlier direct-route CPU benchmark.",
+    "counts": "These 42 same-project runs are excluded from the 2,709 external-comparison total."
+  }
+}

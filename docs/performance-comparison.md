@@ -1,6 +1,6 @@
 # Browser frontend performance comparison
 
-October 23–24, 2026 · Apple M4 Pro · Chromium 147 · **2,604 comparison measurements, at least 7 per configuration and 21 for the X5 original; all 1,064 filens runs succeeded.** Another 28 pruned-CR3 diagnostics and 28 exploratory panorama measurements are retained outside these totals and current rankings.
+October 23–24 historical comparisons, October 27 final-build recheck, 2026 · Apple M4 Pro · Chromium 147 · **2,709 cumulative comparison measurements, at least 7 per configuration and 21 for the X5 original; all 1,106 filens runs succeeded.** Another 28 pruned-CR3 diagnostics and 28 exploratory panorama measurements are retained outside these totals and current rankings.
 
 PPTX, panorama, RAW without embedded JPEGs, STEP, XLSX and document preview conversion have stable leading cases. Tasks under 10 ms are omitted from the comparison tables. The target is readable previews; converted files need not preserve identical editable internal structures.
 
@@ -9,7 +9,7 @@ PPTX, panorama, RAW without embedded JPEGs, STEP, XLSX and document preview conv
 | 11.1 MB / 13-slide PPTX parse | **28.5 ms** | pptx-preview 1.0.7: 56.6 ms | 1.99× (1.94–2.12) | **SOTA\*** |
 | 11.1 MB / 13-slide PPTX first preview | **48.8 ms** | pptx-preview 1.0.7: 71.8 ms | 1.47× (1.41–1.51) | **SOTA\*** |
 | 3840×1920 panorama JPEG preview | **154.9 ms** | Photo Sphere Viewer 5.15.1: 205.2 ms | 1.32× (1.29–1.37) | **SOTA\*** |
-| 11904×5952 original X5 INSP panorama preview | **369.4 ms** | Photo Sphere Viewer 5.15.1 dual fisheye: 414.5 ms | 1.12× (1.08–1.14) | **SOTA\*** |
+| X5 INSP preview, input/modules/WASM ready (Oct 27) | **354.5 ms** | Photo Sphere Viewer 5.15.1 dual fisheye: 383.0 ms | 1.08× (1.05–1.10) | **Scoped preview SOTA\*** |
 | NEF without embedded JPEG → preview canvas | **152.7 ms** | LibRaw half-size: 326.7 ms | 2.14× (2.10–2.17) | **SOTA\*** |
 | DNG without embedded JPEG → preview canvas | **167.7 ms** | LibRaw fast half-size: 314.4 ms | 1.87× (1.78–1.91) | **SOTA\*** |
 | STEP geometry import: cube | **46.5 ms** | occt-import-js: 67.6 ms | 1.45× (1.43–1.63) | **SOTA\*** |
@@ -18,6 +18,8 @@ PPTX, panorama, RAW without embedded JPEGs, STEP, XLSX and document preview conv
 | 20,000×8 numeric CSV → XLSX | **137.6 ms** | x2t: 198.8 ms | 1.44× (1.41–1.46) | **SOTA\*** |
 
 <sub>\* SOTA is limited to this machine, measured inputs, listed peers and task: the paired bootstrap 95% ratio interval stays above 1. XLSX data reading does not cover complete style parsing; XLS conversion compares displayed results in the same viewer. **Panoramas use SwiftShader software rendering.** Downloads and library cold loading are excluded. Full records retain slower cases and failures.</sub>
+
+**Final end-to-end verdict, October 27: no SOTA label.** Including local HTTP input transfer, JS loading and WASM fetch/compilation, the same X5 original takes **426.8 ms** with filens versus **424.1 ms** with PSV: **0.994× peer / filens, 95% interval 0.938–1.019**, with no stable lead. Both metrics come from the same 42 runs and are counted once. Other rows retain their October 23–24 scoped results. This local metric still excludes HTML/CSS shell navigation, browser startup, remote NAS and the Photos backend/database; it does not establish application-wide end-to-end performance. [Final verdict and evidence](../benchmarks/frontend/2026-10-27/end-to-end-sota-verdict.json).
 
 ## X5 originals: native calibration and more natural seams
 
@@ -28,15 +30,17 @@ The same **11904×5952, 18.36 MB Insta360 X5 INSP dual-fisheye original** is pre
 | Dual-fisheye original preview | ✅ | ✅ Generic projection |
 | Embedded X5 distortion / calibration | ✅ Two lenses, 13 RadtanPro coefficients each | — |
 | Seams on this sample | **Localized blending/ghosting, better scene continuity and lighter artifacts** | **Visible scene repetition and hard seams** |
-| Median first preview, including two animation frames | **369.4 ms** | 414.5 ms |
-| Peer / filens, 95% interval | **1.12× (1.08–1.14), preview-speed SOTA\*** | — |
+| Input/modules ready to first preview, including two frames | **354.5 ms** | 383.0 ms |
+| Peer / filens, 95% interval | **1.08× (1.05–1.10), scoped preview SOTA\*** | — |
+| Local input, module/WASM initialization and first preview | 426.8 ms | **424.1 ms** |
+| Local end-to-end peer / filens, 95% interval | **0.994× (0.938–1.019), no SOTA** | — |
 | GL draws with an unchanged view | **0** | **0** |
 
-<sub>21 repeats each, 42 successful runs. Both use 1280×800, DPR 1, a 75° vertical field of view and SwiftShader; the GPU texture limit makes both upload 8192×4096. Timing includes construction, filens native-calibration inspection, JPEG decode, texture upload, one-time seam analysis and two animation frames. Input, JS and WASM compilation are ready beforehand. filens calibration inspection takes a median 20.4 ms; the peer has no equivalent parsing step, so no parser speed ratio is calculated.</sub>
+<sub>21 repeats each, 42 successful runs. Both use 1280×800, DPR 1, a 75° vertical field of view and SwiftShader; the GPU texture limit makes both upload 8192×4096. Timing includes construction, filens native-calibration inspection, JPEG decode, texture upload, one-time seam analysis and two animation frames. Input, JS and WASM compilation are ready beforehand. filens calibration inspection takes a median 19.2 ms; the peer has no equivalent parsing step, so no parser speed ratio is calculated.</sub>
 
 <sub>Eight views cover four headings plus both seam directions at ±50° pitch. PSV visibly repeats people/clothing and foreground hand-region content across hard discontinuities; filens mainly retains localized blending/ghosting and looks clearly better at these reviewed seams. Drag, zoom and resize work in both. This is a sample-specific observation; preview-speed SOTA does not establish general stitching-quality or vendor-calibration algorithm SOTA. PSV documentation only confirms testing on Ricoh Theta Z1; [this version's implementation](https://github.com/mistic100/Photo-Sphere-Viewer/blob/5.15.1/packages/dual-fisheye-adapter/src/DualFisheyeAdapter.ts) uses fixed C = 0.946.</sub>
 
-<sub>[All 42 runs](../benchmarks/frontend/2026-10-24/native-panorama-range-cache.json.gz) · [Summary](../benchmarks/frontend/2026-10-24/native-panorama-range-cache-summary.json) · [Eight-view review and hashes](../benchmarks/frontend/2026-10-24/native-panorama-range-cache-review.json) · [Complete-calibration equivalence](../benchmarks/frontend/2026-10-24/native-panorama-range-metadata-review.json). The original and screenshots stay local; published records contain sample hashes, dimensions and measurements.</sub>
+<sub>[October 27 final-build 42 runs](../benchmarks/frontend/2026-10-27/native-panorama-final.json.gz) · [Preloaded-preview summary](../benchmarks/frontend/2026-10-27/native-panorama-final-ready-summary.json) · [Initialization-inclusive summary](../benchmarks/frontend/2026-10-27/native-panorama-final-e2e-summary.json) · [Eight-view review and hashes](../benchmarks/frontend/2026-10-27/native-panorama-final-review.json) · [Complete-calibration equivalence](../benchmarks/frontend/2026-10-27/native-panorama-final-metadata-review.json). All 16 settled-view PNGs exactly match the previously reviewed images. The original and screenshots stay local.</sub>
 
 <sub>Reusing adjacent sparse ranges reduces inspection reads from 15.80 MB to **8.46 MB, 46.5% less**, with unchanged complete calibration, first-preview pixels and all eight views. Mispositioned HTTP ranges, changed total sizes and truncated bodies now fail explicitly.</sub>
 
@@ -139,7 +143,7 @@ All six geometry imports lead [occt-import-js 0.0.23](https://github.com/kovacsv
 | --- | ---: | --- |
 | DXF: 20,000 lines | 23.4 | dxf-parser: 21.7 |
 | CSV: 20,000×8 numeric fields | 11.1 | papaparse: 8.9 |
-| ZIP: extract all 1,000 small files | 10.4 | fflate: 4.3 |
+| ZIP: extract all 1,000 small files (Oct 27) | 11.8 | fflate: 5.0 |
 
 <sub>CSV measures PapaParse 5.7.0 and SheetJS CE 0.20.3; ZIP measures fflate 0.8.2 and zip.js 2.24.0, showing the faster peer. DXF uses dxf-parser 1.1.2. Beating one slower implementation cannot qualify when another measured peer wins. PDF, DOCX and most 3D loaders reuse existing engines; their wrappers receive no independent algorithmic SOTA claim.</sub>
 
@@ -150,6 +154,10 @@ All six geometry imports lead [occt-import-js 0.0.23](https://github.com/kovacsv
 <sub>A rotating ZIP engineering comparison reduces complete reading of 1,000 files from 11.8 ms to **10.2 ms, about 13% less time**, with identical full metadata, decoded content and resource resolution. TAR/TGZ now read PAX / GNU long paths. fflate remains faster, so no SOTA label is added. [Measurements and regressions](../benchmarks/frontend/2026-10-24/archive-index-review.json).</sub>
 
 <sub>Matched archive-preview checks reduce ZIP indexing and initial list construction for 10,000 files from 64.6 to **40.3 ms, about 38% less time**. Complete content, metadata, listing and viewport screenshots match; paint is outside timing. The 100,000-file fixture has no stable gain, and controls below 10 ms receive no speed claim. This is a same-project optimization, with no new SOTA label. [Measurements and checks](../benchmarks/frontend/2026-10-24/archive-lifecycle-review.json).</sub>
+
+<sub>2026-10-27 directory-navigation optimization: first visits to 50 different directories in a generated ZIP with 100,000 files / 1,000 directories fall from 312.1 to **24.5 ms (12.74×)**, including lazy child-index creation and complete DOM construction, excluding layout and paint. Complete listings, metadata and file contents match. Initial load and cached navigation have no stable gain. Separate local WASM metadata parsing also improves; these are same-project engineering comparisons and do not establish a new SOTA claim. [Boundaries, raw measurements and SOTA assessment](../benchmarks/frontend/2026-10-27/bbtree-followup-review.json).</sub>
+
+<sub>ZIP browsing recheck, 42 same-project runs: on 100,000 files, synchronous processing of 50 new-directory DOM clicks falls from **350.5 to 90.7 ms**. With production CSS, layout observation and two frames per click, the total is **1,653.6 vs 1,652.8 ms**, with no stable gain. Local input/module loading through first display is **309.4 vs 309.4 ms**, and cached-directory display is 33.3 ms in both builds. CPU work improves; end-to-end browsing SOTA is unestablished. These boundaries differ from the earlier 12.74× consecutive direct-route benchmark. [Browsing metrics, raw data and complete checks](../benchmarks/frontend/2026-10-27/archive-browser.md).</sub>
 
 <sub>On-demand PDF rendering reduces load settlement for the 100-page uniform-size fixture from about 1.75 s to **104 ms**, and initial canvases from 100 to **2, with 98% fewer canvas pixels**. All 203 reviewed pages remain pixel-identical. First visible content has no stable change; no SOTA claim. Page navigation, zoom and cancellation now work. [Measurements and checks](../benchmarks/frontend/2026-10-24/pdf-preview-review.json).</sub>
 
@@ -256,7 +264,9 @@ All six geometry imports lead [occt-import-js 0.0.23](https://github.com/kovacsv
 
 ## Data and reproduction
 
-The previous 42-run X5 comparison remains in cumulative totals: [raw data](../benchmarks/frontend/2026-10-24/native-panorama.json.gz) · [summary](../benchmarks/frontend/2026-10-24/native-panorama-summary.json). Current ranking uses the new 42-run group after range caching.
+The October 27 final-build recheck adds **105 peer measurements / 42 successful filens runs**: 42 X5 runs and 63 ZIP runs across three inputs, three engines and seven repeats. [End-to-end verdict](../benchmarks/frontend/2026-10-27/end-to-end-sota-verdict.json) · [complete ZIP extraction summary](../benchmarks/frontend/2026-10-27/zip-final-summary.json) · [ZIP raw data](../benchmarks/frontend/2026-10-27/zip-final.json.gz). fflate remains faster for 1,000 small files. filens takes 8.6 ms for the generated 16 MiB single-entry ZIP, below this report's 10 ms labeling threshold; no new SOTA is added or inferred for directory navigation or first preview.
+
+The previous 42-run X5 comparison remains in cumulative totals: [raw data](../benchmarks/frontend/2026-10-24/native-panorama.json.gz) · [summary](../benchmarks/frontend/2026-10-24/native-panorama-summary.json). Current X5 scoped preview ranking uses the October 27 final-build 42-run group; the initialization-inclusive end-to-end metric does not qualify as SOTA.
 
 The X5 original adds 42 comparisons: [raw measurements](../benchmarks/frontend/2026-10-24/native-panorama-range-cache.json.gz) · [summary](../benchmarks/frontend/2026-10-24/native-panorama-range-cache-summary.json) · [visual and interaction review](../benchmarks/frontend/2026-10-24/native-panorama-range-cache-review.json). Two earlier exploratory groups of 14 runs remain outside current rankings and cumulative totals: [initial](../benchmarks/frontend/2026-10-24/native-panorama-initial.json.gz) · [before sparse parsing](../benchmarks/frontend/2026-10-24/native-panorama-before-sparse.json.gz).
 

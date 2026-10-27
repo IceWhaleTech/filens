@@ -1,0 +1,578 @@
+{
+  "date": "2026-10-27",
+  "engineering": true,
+  "scopedSota": false,
+  "sourceSha256": "e89d6fc36ed54dbc61e92f02715cb1a0e5490dc74b1695d885542a43191a3c8d",
+  "verdict": "ZIP browsing CPU/DOM processing is faster for many first-time directory visits, but overall displayed browsing latency does not improve stably in these cases. No matched external ZIP browser peer was measured; no ZIP-browsing SOTA claim.",
+  "iterations": 7,
+  "totalRuns": 42,
+  "samples": [
+    {
+      "name": "generated-200-20.zip",
+      "files": 200,
+      "directories": 20,
+      "bytes": 26912,
+      "sha256": "2c1f0a065a30df9fc4398809aeb7bfcc0de404df6fc52fd4551d8aa1c7d68699",
+      "directoriesVisited": 20,
+      "completeListingsAndMetadataMatch": true,
+      "rootAndDirectoryViewportPngsMatch": true,
+      "metrics": {
+        "localLoadToFramesMs": {
+          "baselineMs": 46.20000000298023,
+          "currentMs": 46.19999998807907,
+          "below10MsControl": false,
+          "speedup": 1.000000000322536,
+          "ratio95": [
+            0.8225806450923753,
+            1.0393873084661354
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "inputReadyLoadToFramesMs": {
+          "baselineMs": 22.299999997019768,
+          "currentMs": 22.399999991059303,
+          "below10MsControl": false,
+          "speedup": 0.9955357145500245,
+          "ratio95": [
+            0.6739130435084415,
+            1.1556603771960312
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "inputReadyLoadDomMs": {
+          "baselineMs": 5.4000000059604645,
+          "currentMs": 5.200000002980232,
+          "below10MsControl": true,
+          "speedup": null,
+          "ratio95": null,
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "firstDirectoryDomMs": {
+          "baselineMs": 2.4000000059604645,
+          "currentMs": 2.5,
+          "below10MsControl": true,
+          "speedup": null,
+          "ratio95": null,
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "firstDirectoryToFramesMs": {
+          "baselineMs": 31.900000005960464,
+          "currentMs": 31.799999997019768,
+          "below10MsControl": false,
+          "speedup": 1.003144654369499,
+          "ratio95": [
+            0.9968652034820686,
+            1.0094339626399071
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "newDirectoriesTotalDomMs": {
+          "baselineMs": 6.299999997019768,
+          "currentMs": 6.200000017881393,
+          "below10MsControl": true,
+          "speedup": null,
+          "ratio95": null,
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "newDirectoriesTotalToFramesMs": {
+          "baselineMs": 664.8000000119209,
+          "currentMs": 664.0000000298023,
+          "below10MsControl": false,
+          "speedup": 1.0012048192501246,
+          "ratio95": [
+            0.9977457169067456,
+            1.0025625565314515
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "newDirectoryMedianToFramesMs": {
+          "baselineMs": 33.29999999701977,
+          "currentMs": 33.29999999701977,
+          "below10MsControl": false,
+          "speedup": 1,
+          "ratio95": [
+            1,
+            1
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "returnToRootTotalDomMs": {
+          "baselineMs": 3.000000014901161,
+          "currentMs": 2.800000011920929,
+          "below10MsControl": true,
+          "speedup": null,
+          "ratio95": null,
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "returnToRootTotalToFramesMs": {
+          "baselineMs": 664.9000000059605,
+          "currentMs": 664.0000000298023,
+          "below10MsControl": false,
+          "speedup": 1.0013554216507798,
+          "ratio95": [
+            0.9987984380409197,
+            1.0030170463792734
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "completeBrowsingToFramesMs": {
+          "baselineMs": 1376.0000000298023,
+          "currentMs": 1375.6000000089407,
+          "below10MsControl": false,
+          "speedup": 1.0002907822192928,
+          "ratio95": [
+            0.9932861680646118,
+            1.001527494958212
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "cachedDirectoryDomMs": {
+          "baselineMs": 0.19999998807907104,
+          "currentMs": 0.10000000894069672,
+          "below10MsControl": true,
+          "speedup": null,
+          "ratio95": null,
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "cachedDirectoryToFramesMs": {
+          "baselineMs": 33.3999999910593,
+          "currentMs": 33.30000001192093,
+          "below10MsControl": false,
+          "speedup": 1.0030030023754528,
+          "ratio95": [
+            0.9969969967295826,
+            1.0030030032717612
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        }
+      }
+    },
+    {
+      "name": "generated-10000-100.zip",
+      "files": 10000,
+      "directories": 100,
+      "bytes": 1358912,
+      "sha256": "741b22697a0cd23ef535c36fca93e435ba44492ef42606c67a3d52411050ff51",
+      "directoriesVisited": 50,
+      "completeListingsAndMetadataMatch": true,
+      "rootAndDirectoryViewportPngsMatch": true,
+      "metrics": {
+        "localLoadToFramesMs": {
+          "baselineMs": 49.79999999701977,
+          "currentMs": 50.79999999701977,
+          "below10MsControl": false,
+          "speedup": 0.9803149606287664,
+          "ratio95": [
+            0.9084112151203868,
+            1.0617529879254084
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "inputReadyLoadToFramesMs": {
+          "baselineMs": 23.5,
+          "currentMs": 24.799999997019768,
+          "below10MsControl": false,
+          "speedup": 0.9475806452751617,
+          "ratio95": [
+            0.7950530036172948,
+            1.093877550898766
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "inputReadyLoadDomMs": {
+          "baselineMs": 16.899999991059303,
+          "currentMs": 16.400000005960464,
+          "below10MsControl": false,
+          "speedup": 1.0304878039583607,
+          "ratio95": [
+            0.9768786123682445,
+            1.0490797553415458
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "firstDirectoryDomMs": {
+          "baselineMs": 3.5,
+          "currentMs": 3.7999999970197678,
+          "below10MsControl": true,
+          "speedup": null,
+          "ratio95": null,
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "firstDirectoryToFramesMs": {
+          "baselineMs": 29.700000002980232,
+          "currentMs": 31.700000002980232,
+          "below10MsControl": false,
+          "speedup": 0.9369085173560892,
+          "ratio95": [
+            0.9247648905413179,
+            1.0034246573297716
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "newDirectoriesTotalDomMs": {
+          "baselineMs": 48.8999999910593,
+          "currentMs": 28.19999997317791,
+          "below10MsControl": false,
+          "speedup": 1.734042554523757,
+          "ratio95": [
+            1.7183098613940944,
+            1.7607142817324066
+          ],
+          "stableEngineeringLead": true,
+          "scopedSota": false
+        },
+        "newDirectoriesTotalToFramesMs": {
+          "baselineMs": 1663.399999961257,
+          "currentMs": 1662.399999961257,
+          "below10MsControl": false,
+          "speedup": 1.000601539942266,
+          "ratio95": [
+            0.9984976864013302,
+            1.0035582896122277
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "newDirectoryMedianToFramesMs": {
+          "baselineMs": 33.29999999701977,
+          "currentMs": 33.29999999701977,
+          "below10MsControl": false,
+          "speedup": 1,
+          "ratio95": [
+            1,
+            1
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "returnToRootTotalDomMs": {
+          "baselineMs": 18.80000002682209,
+          "currentMs": 18.5,
+          "below10MsControl": false,
+          "speedup": 1.016216217666059,
+          "ratio95": [
+            0.9842931961721438,
+            1.0327868824026272
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "returnToRootTotalToFramesMs": {
+          "baselineMs": 1654.1000000238419,
+          "currentMs": 1655.1000000238419,
+          "below10MsControl": false,
+          "speedup": 0.9993958068998939,
+          "ratio95": [
+            0.9985515992812084,
+            1.0003023157565811
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "completeBrowsingToFramesMs": {
+          "baselineMs": 3367.6000000089407,
+          "currentMs": 3367.2999998927116,
+          "below10MsControl": false,
+          "speedup": 1.0000890921855012,
+          "ratio95": [
+            0.9992872627947804,
+            1.0007420379241247
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "cachedDirectoryDomMs": {
+          "baselineMs": 0.4000000059604645,
+          "currentMs": 0.4000000059604645,
+          "below10MsControl": true,
+          "speedup": null,
+          "ratio95": null,
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "cachedDirectoryToFramesMs": {
+          "baselineMs": 33.3999999910593,
+          "currentMs": 33.3999999910593,
+          "below10MsControl": false,
+          "speedup": 1,
+          "ratio95": [
+            0.9970059877568008,
+            1.00906344356609
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        }
+      }
+    },
+    {
+      "name": "generated-100000-1000.zip",
+      "files": 100000,
+      "directories": 1000,
+      "bytes": 13688912,
+      "sha256": "a3b39506c69d54cec0deb534ad9a3f3b838f02306ce3147e5d20fb306f53f2da",
+      "directoriesVisited": 50,
+      "completeListingsAndMetadataMatch": true,
+      "rootAndDirectoryViewportPngsMatch": true,
+      "metrics": {
+        "localLoadToFramesMs": {
+          "baselineMs": 309.40000000596046,
+          "currentMs": 309.3999999910593,
+          "below10MsControl": false,
+          "speedup": 1.0000000000481615,
+          "ratio95": [
+            0.9503792667872227,
+            1.0632357887561663
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "inputReadyLoadToFramesMs": {
+          "baselineMs": 278.70000000298023,
+          "currentMs": 278.8999999910593,
+          "below10MsControl": false,
+          "speedup": 0.9992828971384529,
+          "ratio95": [
+            0.951304347826087,
+            1.0683760683997325
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "inputReadyLoadDomMs": {
+          "baselineMs": 252.90000000596046,
+          "currentMs": 253.6000000089407,
+          "below10MsControl": false,
+          "speedup": 0.997239747622415,
+          "ratio95": [
+            0.9219152854402202,
+            1.0680816980368326
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "firstDirectoryDomMs": {
+          "baselineMs": 9.100000008940697,
+          "currentMs": 9.799999997019768,
+          "below10MsControl": true,
+          "speedup": null,
+          "ratio95": null,
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "firstDirectoryToFramesMs": {
+          "baselineMs": 31.299999997019768,
+          "currentMs": 28,
+          "below10MsControl": false,
+          "speedup": 1.117857142750706,
+          "ratio95": [
+            1.0096774192587021,
+            1.5441176477355631
+          ],
+          "stableEngineeringLead": true,
+          "scopedSota": false
+        },
+        "newDirectoriesTotalDomMs": {
+          "baselineMs": 350.49999991059303,
+          "currentMs": 90.70000004768372,
+          "below10MsControl": false,
+          "speedup": 3.864388089595641,
+          "ratio95": [
+            3.8235942647706347,
+            3.9058050393612604
+          ],
+          "stableEngineeringLead": true,
+          "scopedSota": false
+        },
+        "newDirectoriesTotalToFramesMs": {
+          "baselineMs": 1653.5999999791384,
+          "currentMs": 1652.8000000566244,
+          "below10MsControl": false,
+          "speedup": 1.0004840270586197,
+          "ratio95": [
+            0.9983080548511925,
+            1.0057778859020003
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "newDirectoryMedianToFramesMs": {
+          "baselineMs": 33.1000000089407,
+          "currentMs": 33.20000000298023,
+          "below10MsControl": false,
+          "speedup": 0.9969879519870314,
+          "ratio95": [
+            0.9969879519870314,
+            0.999999999775585
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "returnToRootTotalDomMs": {
+          "baselineMs": 98.3999999910593,
+          "currentMs": 106.8999999910593,
+          "below10MsControl": false,
+          "speedup": 0.9204864359147716,
+          "ratio95": [
+            0.8973660303889425,
+            1.04176334010348
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "returnToRootTotalToFramesMs": {
+          "baselineMs": 1656.0000000447035,
+          "currentMs": 1664.2000000476837,
+          "below10MsControl": false,
+          "speedup": 0.9950727076056092,
+          "ratio95": [
+            0.9893374864706562,
+            0.9996379435767206
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "completeBrowsingToFramesMs": {
+          "baselineMs": 3618.299999937415,
+          "currentMs": 3620.400000035763,
+          "below10MsControl": false,
+          "speedup": 0.9994199535691286,
+          "ratio95": [
+            0.9947375671515283,
+            1.0017422084682015
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "cachedDirectoryDomMs": {
+          "baselineMs": 1.5,
+          "currentMs": 1.5,
+          "below10MsControl": true,
+          "speedup": null,
+          "ratio95": null,
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        },
+        "cachedDirectoryToFramesMs": {
+          "baselineMs": 33.29999999701977,
+          "currentMs": 33.29999999701977,
+          "below10MsControl": false,
+          "speedup": 1,
+          "ratio95": [
+            0.9999999995525177,
+            1.003003002824279
+          ],
+          "stableEngineeringLead": false,
+          "scopedSota": false
+        }
+      }
+    }
+  ],
+  "checks": {
+    "allRunsSuccessful": true,
+    "independentCompleteListingChecks": true,
+    "completeMetadataAndListingAndHtmlHashesMatch": true,
+    "initialAndDirectoryViewportHashesMatch": true,
+    "viewportHashComparisons": 6,
+    "sameVerifiedProductionImplementation": true,
+    "noProductChangesInThisReview": true,
+    "benchmarkAndSummarizerSyntaxPassed": true,
+    "summarizerRejectsMissingRun": true,
+    "summarizerRejectsFailedRun": true,
+    "summarizerRejectsWrongListingHash": true,
+    "summarizerRejectsWrongViewportHash": true,
+    "gitDiffCheckPassed": true
+  },
+  "scope": "Same-project previous/current directory-index implementations, fresh Chromium context per invocation, alternating order, shared browser, 1024x768/DPR1/en-US/UTC, production CSS. localLoadToFramesMs starts before local HTTP input transfer and dynamic module import (parallel) and includes File creation, session creation, complete ZIP indexing, initial DOM construction, layout observation, fonts and two animation frames. inputReadyLoadToFramesMs excludes input/module setup. Directory timings use real DOM click handlers (synthetic click, not OS input), synchronous DOM/layout observation, fonts and two animation frames. Time includes direct-child index construction on first directory visit and full route-cache behavior. Each of up to 50 new directories is entered from the root; returning to the root is separately timed. Signatures, independent listing validation, screenshots, fixture creation, browser/HTML/CSS shell startup, remote NAS/backend, per-file extraction and peak memory are excluded. Two frames provide a display opportunity, not a physical input-to-photon measurement. No external ZIP browser peer; no SOTA claim.",
+  "previous312To24msResult": "The previous 12.74x engineering ratio timed consecutive direct setRoute calls through DOM construction without production CSS, layout, frame waiting or intervening root visits. This run uses production CSS, DOM click handlers, a root return between new directories and per-action display waiting. Results must not be mixed or presented as a physical input-to-photon or external-peer speedup.",
+  "statisticalMethod": "Same-project A/B, paired median-ratio bootstrap of independent browser runs, 10,000 resamples, seed 12345. Ratio is baseline/current. Per-run totals sum per-click measurements with layout observation and two frames; output verification and page-driver gaps between actions are excluded. Complete browsing combines the measured local load, directory entry and root-return intervals, not continuous wall-clock session time. No external browser peer or SOTA claim.",
+  "sourceBindings": [
+    {
+      "path": "tmp/bbtree-followup-2026-10-27/baseline-archive-dist/index.js",
+      "sha256": "5440e90179d86171d920af900b9e0d3893322c60b4bf54e36ec5b95d686e563d"
+    },
+    {
+      "path": "packages/archive/dist/index.js",
+      "sha256": "73674232e6066f52420aeb0514e42b7485f0b89ce9b93bd3ceeab7341b8f21ff"
+    },
+    {
+      "path": "packages/core/dist/index.js",
+      "sha256": "42c42ba5fe8762aa1cd7bc9b2204d0c94798d0ef98eec9735d9411b29ac0888d"
+    },
+    {
+      "path": "packages/archive/dist/index.css",
+      "sha256": "b82226d68484442f2c796e5a1c992d5578b3432186aa9063f9f6630b5fa52579"
+    },
+    {
+      "path": "packages/archive/src/preview-driver.ts",
+      "sha256": "156951e321653f3f2b4f934210e959769d456599cc8f02ab565cd3677299ad0a"
+    },
+    {
+      "path": "packages/archive/test/fixtures/lifecycle.mjs",
+      "sha256": "749f0090d82df7d927dcc729a5309addfb004d2acbcf6c9cc85bcf3549295ea3"
+    },
+    {
+      "path": "scripts/benchmark-archive-browser.mjs",
+      "sha256": "ccc71d12ffa7a122730cba2c810336b7f89b192b989402a027bd75e07341640c"
+    },
+    {
+      "path": "scripts/summarize-archive-browser-benchmark.mjs",
+      "sha256": "d2f45b9a849c16d56140aa011400351e07744962e06a2ca6729875a23f749350"
+    }
+  ],
+  "additionalRuntimeBindings": [
+    {
+      "path": "packages/core/dist/index.js",
+      "sha256": "42c42ba5fe8762aa1cd7bc9b2204d0c94798d0ef98eec9735d9411b29ac0888d"
+    },
+    {
+      "path": "packages/core/dist/zip-DUJ4pXRK.js",
+      "sha256": "c03af75568c1a61dfe6c33d558b77328d68b2ba9af7ac1e8a80d30a66378a628"
+    },
+    {
+      "path": "packages/core/dist/zip.js",
+      "sha256": "a51a2cc982fd7eedc8915654b2125a4009c8f4f933b74fb52ba7f3378d92d1a1"
+    },
+    {
+      "path": "packages/archive/dist/index.js",
+      "sha256": "73674232e6066f52420aeb0514e42b7485f0b89ce9b93bd3ceeab7341b8f21ff"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "archive-browser.json.gz",
+      "sha256": "7d1e7b6628370e9bb75567a94a8e3607e4facc684617f3d1b4921fe115aa2015"
+    },
+    {
+      "path": "archive-browser-summary.json",
+      "sha256": "0dd5c03dcf10d13199ea4016a90e856696f6f4aa1d7f82c35e7f80d5c13fe72f"
+    },
+    {
+      "path": "archive-browser-diagnostic.json.gz",
+      "sha256": "017ff56630a58c0292e15241cf26c6992c3059d56eea73ef8775fbb0b20ee3d0"
+    }
+  ],
+  "pilots": "One smoke repeat per engine on 200 files before the preselected final seven-repeat run. Retained locally under tmp/zip-browser-e2e-2026-10-27/pilot; excluded from final data.",
+  "externalTotalsUnchanged": {
+    "measurements": 2709,
+    "successfulFilensRuns": 1106,
+    "engineeringBrowserRunsExcluded": 42
+  }
+}

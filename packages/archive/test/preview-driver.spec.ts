@@ -206,6 +206,46 @@ describe('Archive preview driver', () => {
     host.remove();
   });
 
+  it('browses deep TAR directories while preserving duplicate files and directory metadata', async () => {
+    const host = document.createElement('div');
+    const session = createArchivePreviewDriver().createSession(host);
+    const tar = createTarRecords([
+      { name: 'docs/deep/child/z.txt', content: 'z' },
+      { name: 'docs/deep/child/a.txt', content: 'a' },
+      { name: 'docs/deep/report.txt', content: 'first' },
+      { name: 'docs/deep/report.txt', content: 'second with a different size' },
+      { name: 'docs/deep/child/', type: '5', content: '' },
+      { name: 'docs/other/文档.txt', content: 'other' },
+      { name: 'docs/deepish/unrelated.txt', content: 'unrelated' },
+      { name: 'empty/', type: '5', content: '' }
+    ]);
+    try {
+      await session.load(tar, createLoadContext('deep.tar'));
+      const visit = (name: string) => {
+        const row = [...host.querySelectorAll('tr.archivev-row')].find(row => row.querySelector('td')?.textContent === name);
+        expect(row, name).toBeDefined();
+        row!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      };
+      visit('docs/');
+      expect(session.getState().entries.map(entry => entry.name)).toEqual(['deep/', 'deepish/', 'other/']);
+      visit('deep/');
+      expect(session.getState().entries).toEqual([
+        { name: 'child/', type: 'directory', modified: 1_700_000_000_000 },
+        { name: 'report.txt', type: 'file', size: 5, modified: 1_700_000_000_000 }
+      ]);
+      visit('child/');
+      expect(session.getState().entries.map(entry => entry.name)).toEqual(['a.txt', 'z.txt']);
+      const docs = [...host.querySelectorAll('button.archivev-breadcrumb')].find(button => button.textContent === 'docs');
+      docs!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      visit('other/');
+      expect(session.getState().entries.map(entry => entry.name)).toEqual(['文档.txt']);
+      const root = host.querySelector('button.archivev-breadcrumb')!;
+      root.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      visit('empty/');
+      expect(session.getState().entries).toEqual([]);
+    } finally { session.destroy(); }
+  });
+
   it('creates a ZIP-backed resource resolver for compound preview sidecars', async () => {
     const zip = new JSZip();
     zip.file('scene/scene.gltf', '{}');

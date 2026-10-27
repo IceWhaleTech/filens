@@ -64,7 +64,7 @@ const result = {
   browser: browser.version(), gitHead: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repo, encoding: 'utf8' }).trim(),
   iterations, profiling, viewport: { width: 1280, height: 800 },
   versions: Object.fromEntries(['@photo-sphere-viewer/core', '@photo-sphere-viewer/dual-fisheye-adapter'].map(name => [name, JSON.parse(fs.readFileSync(path.join(deps, name, 'package.json'))).version])),
-  method: 'Same original INSP bytes. Fresh context for every run, rotated order, shared browser, DPR 1, SwiftShader. Input/File, JS imports and WASM compilation ready before timing. Timer includes renderer construction, file inspection for filens, JPEG decode, texture upload and first preview plus two animation frames. Optional seam work is awaited. Default native paths without manually fitted calibration. Generic dual-fisheye output must pass visual review before any speed ranking. Private originals and screenshots are not published.',
+  method: 'Same original INSP bytes. Fresh context for every run, rotated order, shared browser, DPR 1, SwiftShader. readyMs starts with Input/File, JS imports and WASM compilation ready; it includes renderer construction, file inspection for filens, JPEG decode, texture upload and first preview plus two animation frames. localEndToEndMs additionally includes same-origin local HTTP input transfer, File creation, dynamic JS imports, filens WASM fetch/compilation and the intervening Playwright dispatch. HTML/CSS shell navigation and browser startup precede both timers; remote NAS/backend/database and cold browser-process costs are not measured. Optional seam work is awaited. Default native paths without manually fitted calibration. Generic dual-fisheye output must pass visual review before any speed ranking. Private originals and screenshots are not published.',
   sample: { name: 'camera-original.insp', bytes: fs.statSync(input).size, sha256: sha256(fs.readFileSync(input)) },
   artifacts: ['scripts/benchmark-native-panorama.mjs', panoramaModule, 'packages/converter-client/dist/index.js', 'packages/core/dist/index.js', 'wasm/converter-core/dist/converter-core.wasm', 'benchmarks/frontend/package-lock.json'].map(file => hashFile(path.join(repo, file))),
   peerArtifacts: ['@photo-sphere-viewer/core/index.module.js', '@photo-sphere-viewer/dual-fisheye-adapter/index.module.js', 'three/build/three.module.js'].map(file => hashFile(path.join(deps, file))),
@@ -98,8 +98,10 @@ try {
       try {
         await page.goto(base);
         run.setupMs = await page.evaluate(async engine => {
+          window.localEndToEndStart = performance.now();
           window.host = document.getElementById('host');
           window.file = new File([await (await fetch('/input')).arrayBuffer()], 'camera-original.insp', { type: 'image/jpeg' });
+          window.inputReadyMs = performance.now() - window.localEndToEndStart;
           const start = performance.now();
           window.metrics = { inspectionMs: 0, seamCalls: 0, pendingSeams: 0, draws: 0, mipmaps: 0, uploads: [] };
           for (const proto of [WebGLRenderingContext.prototype, WebGL2RenderingContext.prototype]) {
@@ -159,10 +161,11 @@ try {
           await document.fonts.ready;
           await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
           const readyMs = performance.now() - start;
+          const localEndToEndMs = performance.now() - window.localEndToEndStart;
           const canvas = window.host.querySelector('canvas');
           if (!canvas || !window.metrics.draws) throw new Error('No rendered panorama.');
           const manifest = window.processor?.getManifest();
-          return { operationMs, readyMs, width: canvas.width, height: canvas.height, metrics: structuredClone(window.metrics),
+          return { operationMs, readyMs, localEndToEndMs, inputReadyMs: window.inputReadyMs, width: canvas.width, height: canvas.height, metrics: structuredClone(window.metrics),
             cameraFov: engine === 'filens' ? window.viewer.camera?.fov : window.viewer.renderer?.camera?.fov,
             state: engine === 'filens' ? window.viewer.getState() : null,
             source: manifest ? { cameraModel: manifest.cameraModel, width: manifest.width, height: manifest.height, projection: manifest.projection.kind,
@@ -217,6 +220,7 @@ result.summary = engines.map(engine => {
   const runs = result.runs.filter(run => run.engine === engine);
   const ok = runs.filter(run => !run.failure && !run.errors.length);
   return { engine, attempted: runs.length, successes: ok.length, medianReadyMs: median(ok.map(run => run.readyMs)),
+    medianLocalEndToEndMs: median(ok.map(run => run.localEndToEndMs)),
     medianOperationMs: median(ok.map(run => run.operationMs)), medianInspectionMs: median(ok.map(run => run.metrics.inspectionMs)),
     nativeX5Calibration: engine === 'filens', outputEquivalence: 'Requires explicit visual review; no automatic SOTA label.',
     failures: runs.filter(run => run.failure).map(run => run.failure) };
