@@ -462,6 +462,78 @@
       "kind": "image",
       "textExtraction": true,
       "ocr": true
+    },
+    {
+      "format": "pbm",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "pgm",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "pnm",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "pfm",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "hdr",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "exr",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "mat",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "fits",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "fit",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "fts",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "v",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "vips",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
     }
   ]
 }

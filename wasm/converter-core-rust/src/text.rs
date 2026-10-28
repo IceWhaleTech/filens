@@ -7,6 +7,9 @@ use sha2::{Digest, Sha256};
 use std::cell::RefCell;
 use std::path::{Component, PathBuf};
 
+mod odf_sheet;
+mod raster;
+
 const MAX_INPUT: u64 = 256 << 20;
 thread_local! { static STATE: RefCell<Option<State>> = const { RefCell::new(None) }; }
 
@@ -298,11 +301,9 @@ fn extract(request: &Request) -> Result<(), ConvertError> {
             let bytes = fs::read(input).map_err(|e| io_error(e.to_string()))?;
             image(&bytes, source)
         }
-        "ppm" => {
-            let path = STATE.with(|s| s.borrow().as_ref().unwrap().work.join("ppm.png"));
-            ppm::convert(input, path.to_str().unwrap())?;
-            let bytes = fs::read(&path).map_err(|e| io_error(e.to_string()))?;
-            let _ = fs::remove_file(path);
+        "pbm" | "pgm" | "ppm" | "pnm" | "pfm" | "hdr" | "exr" | "mat" | "fits" | "fit" | "fts"
+        | "v" | "vips" => {
+            let bytes = raster::png(input, source)?;
             image(&bytes, "png")
         }
         _ if is_word_binary_source(source) => convert_word_binary(input, ""),
@@ -360,6 +361,96 @@ fn entry(z: &mut ZipArchive<File>, path: &str) -> Result<Vec<u8>, ConvertError> 
     }
     Ok(out)
 }
+// OPC parts may use UTF-16 (notably Microsoft XPS writer output). Normalize
+// before quick-xml scans names: a byte reader otherwise silently sees no tags.
+fn xml_bytes(bytes: Vec<u8>) -> Result<Vec<u8>, ConvertError> {
+    let (little, offset) = if bytes.starts_with(&[0xff, 0xfe]) {
+        (true, 2)
+    } else if bytes.starts_with(&[0xfe, 0xff]) {
+        (false, 2)
+    } else if bytes.starts_with(&[b'<', 0, b'?', 0]) {
+        (true, 0)
+    } else if bytes.starts_with(&[0, b'<', 0, b'?']) {
+        (false, 0)
+    } else {
+        return Ok(bytes);
+    };
+    if (bytes.len() - offset) % 2 != 0 {
+        return Err(parse_error("truncated UTF-16 XML part".into()));
+    }
+    let units: Vec<_> = bytes[offset..]
+        .chunks_exact(2)
+        .map(|p| {
+            if little {
+                u16::from_le_bytes([p[0], p[1]])
+            } else {
+                u16::from_be_bytes([p[0], p[1]])
+            }
+        })
+        .collect();
+    String::from_utf16(&units)
+        .map(String::into_bytes)
+        .map_err(|e| parse_error(format!("invalid UTF-16 XML part: {e}")))
+}
+fn xml_entry(z: &mut ZipArchive<File>, path: &str) -> Result<Vec<u8>, ConvertError> {
+    let bytes = xml_bytes(entry(z, path)?)?;
+    validate_xml(&bytes)?;
+    Ok(bytes)
+}
+fn validate_xml(bytes: &[u8]) -> Result<(), ConvertError> {
+    let mut reader = Reader::from_reader(bytes);
+    let mut depth = 0usize;
+    let mut root = false;
+    loop {
+        let event = reader
+            .read_event()
+            .map_err(|e| parse_error(e.to_string()))?;
+        let empty = matches!(&event, Event::Empty(_));
+        match event {
+            Event::Start(v) | Event::Empty(v) => {
+                if depth == 0 {
+                    if root {
+                        return Err(parse_error("multiple XML roots".into()));
+                    }
+                    root = true;
+                }
+                for attr in v.attributes() {
+                    attr.map_err(|e| parse_error(e.to_string()))?
+                        .unescape_value()
+                        .map_err(|e| parse_error(e.to_string()))?;
+                }
+                if !empty {
+                    depth += 1;
+                }
+            }
+            Event::End(_) => {
+                depth = depth
+                    .checked_sub(1)
+                    .ok_or_else(|| parse_error("unexpected XML end tag".into()))?
+            }
+            Event::Text(v) if depth == 0 => {
+                if !v
+                    .decode()
+                    .map_err(|e| parse_error(e.to_string()))?
+                    .trim()
+                    .is_empty()
+                {
+                    return Err(parse_error("text outside XML root".into()));
+                }
+            }
+            Event::CData(_) | Event::GeneralRef(_) if depth == 0 => {
+                return Err(parse_error("text outside XML root".into()));
+            }
+            Event::Eof => {
+                if !root || depth != 0 {
+                    return Err(parse_error("missing or unclosed XML root".into()));
+                }
+                return Ok(());
+            }
+            _ => {}
+        }
+    }
+}
 fn names(z: &ZipArchive<File>) -> Vec<String> {
     z.file_names().map(str::to_owned).collect()
 }
@@ -405,7 +496,7 @@ fn relationships(
     if !z.file_names().any(|n| n == rel) {
         return Ok(HashMap::new());
     }
-    let bytes = entry(z, &rel)?;
+    let bytes = xml_entry(z, &rel)?;
     let mut reader = Reader::from_reader(bytes.as_slice());
     let mut result = HashMap::new();
     loop {
@@ -438,7 +529,7 @@ fn part_image(z: &mut ZipArchive<File>, path: &str) -> Result<(), ConvertError> 
 }
 fn xml_part(z: &mut ZipArchive<File>, part: &str) -> Result<(), ConvertError> {
     let rels = relationships(z, part)?;
-    let bytes = entry(z, part)?;
+    let bytes = xml_entry(z, part)?;
     let mut reader = Reader::from_reader(bytes.as_slice());
     let mut text_depth: usize = 0;
     let mut skip_depth: usize = 0;
@@ -563,7 +654,7 @@ fn openxml(input: &str, family: &str) -> Result<(), ConvertError> {
     } else {
         let part = "ppt/presentation.xml";
         let rels = relationships(&mut z, part)?;
-        let bytes = entry(&mut z, part)?;
+        let bytes = xml_entry(&mut z, part)?;
         let mut reader = Reader::from_reader(bytes.as_slice());
         loop {
             match reader.read_event() {
@@ -608,7 +699,7 @@ fn spreadsheet(input: &str) -> Result<(), ConvertError> {
     let mut sheet_parts = HashMap::new();
     if z.file_names().any(|p| p == "xl/workbook.xml") {
         let rels = relationships(&mut z, "xl/workbook.xml")?;
-        let bytes = entry(&mut z, "xl/workbook.xml")?;
+        let bytes = xml_entry(&mut z, "xl/workbook.xml")?;
         let mut r = Reader::from_reader(bytes.as_slice());
         loop {
             match r.read_event() {
@@ -648,7 +739,7 @@ fn spreadsheet(input: &str) -> Result<(), ConvertError> {
         }
         if let Some(part) = sheet_parts.get(&name) {
             let rels = relationships(&mut z, part)?;
-            let bytes = entry(&mut z, part)?;
+            let bytes = xml_entry(&mut z, part)?;
             let mut r = Reader::from_reader(bytes.as_slice());
             loop {
                 match r.read_event() {
@@ -788,7 +879,8 @@ fn normalize_xlsb(z: &mut ZipArchive<File>) -> Result<PathBuf, ConvertError> {
 }
 fn odf(input: &str, source: &str) -> Result<(), ConvertError> {
     if source.starts_with('f') {
-        let bytes = fs::read(input).map_err(|e| io_error(e.to_string()))?;
+        let bytes = xml_bytes(fs::read(input).map_err(|e| io_error(e.to_string()))?)?;
+        validate_xml(&bytes)?;
         let mut reader = Reader::from_reader(bytes.as_slice());
         let mut writer = quick_xml::Writer::new(Vec::new());
         let mut image_depth: usize = 0;
@@ -837,20 +929,19 @@ fn odf(input: &str, source: &str) -> Result<(), ConvertError> {
                 .work
                 .join(format!("flat-clean.{source}"))
         });
-        fs::write(&clean, writer.into_inner()).map_err(|e| io_error(e.to_string()))?;
-        convert_odf(
-            clean.to_str().unwrap(),
-            "",
-            source,
-            if source == "fods" {
-                "xlsx"
-            } else if source == "fodp" {
-                "pptx"
-            } else {
-                "docx"
-            },
-        )?;
-        let _ = fs::remove_file(clean);
+        let bytes = writer.into_inner();
+        if source == "fods" {
+            odf_sheet::extract(&bytes)?;
+        } else {
+            fs::write(&clean, bytes).map_err(|e| io_error(e.to_string()))?;
+            convert_odf(
+                clean.to_str().unwrap(),
+                "",
+                source,
+                if source == "fodp" { "pptx" } else { "docx" },
+            )?;
+            let _ = fs::remove_file(clean);
+        }
         for picture in pictures {
             image(&picture, "bin")?;
         }
@@ -858,9 +949,8 @@ fn odf(input: &str, source: &str) -> Result<(), ConvertError> {
     }
     let mut z = archive(input)?;
     if source.ends_with('s') || matches!(source, "sxc" | "stc") {
-        convert_odf(input, "", source, "xlsx")?;
-        let content = entry(&mut z, "content.xml")?;
-        // Only emit images here; sheet values have already been emitted.
+        let content = xml_entry(&mut z, "content.xml")?;
+        odf_sheet::extract(&content)?;
         odf_images(&mut z, &content)
     } else {
         xml_part(&mut z, "content.xml")
@@ -906,7 +996,7 @@ fn xps_references(
     part: &str,
     tag: &[u8],
 ) -> Result<Vec<String>, ConvertError> {
-    let bytes = entry(z, part)?;
+    let bytes = xml_entry(z, part)?;
     let mut r = Reader::from_reader(bytes.as_slice());
     let mut refs = Vec::new();
     loop {
@@ -1220,6 +1310,43 @@ mod tests {
                 images: HashMap::new(),
             })
         });
+    }
+    #[test]
+    fn utf16_xml_parts_and_invalid_units() {
+        let text = "<Glyphs UnicodeString=\"发布 &amp; text\"/>";
+        for little in [true, false] {
+            let mut bytes = if little {
+                vec![0xff, 0xfe]
+            } else {
+                vec![0xfe, 0xff]
+            };
+            for unit in text.encode_utf16() {
+                bytes.extend(if little {
+                    unit.to_le_bytes()
+                } else {
+                    unit.to_be_bytes()
+                });
+            }
+            assert_eq!(xml_bytes(bytes).unwrap(), text.as_bytes());
+        }
+        assert!(xml_bytes(vec![0xff, 0xfe, 0]).is_err());
+        assert!(xml_bytes(vec![0xfe, 0xff, 0xd8, 0]).is_err());
+    }
+    #[test]
+    fn odf_sheet_values_after_repeated_empty_grid_and_old_row_limit() {
+        start(1 << 20);
+        let xml = r#"<document><table name="First"><table-row number-rows-repeated="1048576"><table-cell number-columns-repeated="16384"/></table-row><table-row><table-cell number-columns-repeated="2"/><table-cell value="42"/><table-cell><p>A &amp; B</p><p>中文</p></table-cell><table-cell number-columns-repeated="16384"/></table-row><table-row number-rows-repeated="12000"><table-cell value="7"/></table-row><table-row><table-cell><p>LAST</p></table-cell></table-row></table><table name="Second"><table-row><table-cell boolean-value="true"/><table-cell date-value="2026-10-28"/></table-row></table></document>"#;
+        odf_sheet::extract(xml.as_bytes()).unwrap();
+        STATE.with(|s| {
+            let out = s.borrow_mut().take().unwrap().result;
+            assert!(out.complete && !out.truncated);
+            assert!(out.text.starts_with("First\n\t\t42\tA & B\n中文\n"));
+            assert!(out.text.ends_with("LAST\nSecond\ntrue\t2026-10-28\n"));
+            assert_eq!(out.text.matches("7\n").count(), 12000);
+        });
+        start(10);
+        odf_sheet::extract(b"<table><table-row number-rows-repeated=\"999999999\"><table-cell value=\"123\"/></table-row></table>").unwrap();
+        STATE.with(|s| assert!(s.borrow_mut().take().unwrap().result.truncated));
     }
     #[test]
     fn utf8_budget() {

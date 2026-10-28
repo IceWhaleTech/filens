@@ -48,6 +48,20 @@ uses acadrust (MPL-2.0); the corresponding source is available through Cargo and
 its upstream repository, https://github.com/hakanaktt/acadrust. No acadrust source
 files are modified or copied here.
 
+PDFium `v1.17.3` and wazero `v1.11.0` are tested as a pair on Linux amd64/arm64.
+The older wazero compiler can fault on real ZIP inputs on amd64; upgrading it
+alone is incompatible with older PDFium Emscripten stack exports.
+
+Scientific raster inputs are decoded in WASM before the injected OCR call.
+Supported profiles include Netpbm/PFM, HDR/EXR, MAT v5 numeric images, FITS image
+HDUs and uncoded numeric VIPS. Decoders limit dimensions, pixel counts and
+allocation sizes, and reject unsupported array or colour encodings explicitly.
+See `testdata/scientific/README.md` for real encoder output provenance and profiles.
+
 The fixture suite includes controlled format containers and public Office,
 iWork and CAD samples. It is a regression baseline, not a guarantee that every
 feature of every application is lossless. See testdata/SOURCES.md for provenance.
+The additional application corpus covers all 54 document extensions with 55
+application-written files; five proprietary WPS templates are supplied from an
+external cache. See `testdata/application/README.md` for reproducible preparation
+and the populated/empty-template coverage boundaries.

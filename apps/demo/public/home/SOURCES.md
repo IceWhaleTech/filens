@@ -2,6 +2,8 @@
 
 All preview screenshots and the walkthrough were captured from this project's running previewers. The file badges are locally drawn identifiers. The photographs below are embedded in real sample documents; document screenshots are not flattened substitutes for those files.
 
+The official ZimaOS logo used in the recommendation section is documented in [brand/SOURCES.md](../brand/SOURCES.md).
+
 - `presentation.webp`: the project-created, editable `samples/filens-field-notes.pptx` presentation, “Beyond the Visible”. The cover uses a cropped, pale-blue color grade of **Carsten**'s “Aurora Borealis Norway 2013”, [Wikimedia source](https://commons.wikimedia.org/wiki/File:Aurora_Borealis_Norway_2013.jpg), [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/). The original image is green; the artistic blue grade is not a scientific color record.
 - `landscape.webp`: resized derivative of that pale-blue aurora photograph.
 - `document.webp`: the project-authored `filens-aurora-guide.docx`. Its fictional polar itinerary includes the same credited aurora and a NASA Webb image.

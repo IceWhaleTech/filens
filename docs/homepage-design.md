@@ -18,7 +18,7 @@ The following project pages were reviewed for their presentation patterns:
 | [vue-office](https://github.com/501351981/vue-office) | An immediate demo | A local-file CTA and an actual recorded demo |
 | [JitViewer](https://github.com/jitOffice/jit-viewer-sdk), [product page](https://jitword.com/jit-viewer.html) | Clear SDK entry points | A compact integration link and a separate interactive workbench |
 
-The page has two main sections: a visual introduction with switchable preview captures, followed by a compact video walkthrough. Format support and developer documentation remain one click away. Repeated format cards, separate privacy and use-case sections, the code block, FAQ, and the closing promotion have been removed to keep attention on the file preview itself.
+The page opens with a visual introduction and switchable preview captures. A prominent ZimaOS recommendation follows the hero, before the filens principles and format samples, with a compact video walkthrough further down. The recommendation uses the official ZimaOS logo, states its deep integration with FiLens, and highlights unified file management, RAW / Live Photos / panorama viewing, data ownership and encrypted remote access, storage and backup, and the 800+ app ecosystem. Its product link follows the selected Chinese or English locale. Format support and developer documentation remain one click away.
 
 ## Chinese and English
 
@@ -29,7 +29,7 @@ The page has two main sections: a visual introduction with switchable preview ca
 
 ## Visuals and maintenance
 
-The homepage uses the existing filens logo, locally drawn format badges in the preview tabs, actual preview captures, and a three-slide sample presentation. The recording loads after the visitor asks to play it. Photo credits are available in a footer disclosure; detailed sources and regeneration instructions are in [home/SOURCES.md](../apps/demo/public/home/SOURCES.md).
+The homepage uses the existing filens logo, the official ZimaOS logo, locally drawn format badges in the preview tabs, actual preview captures, and a three-slide sample presentation. Brand provenance is in [brand/SOURCES.md](../apps/demo/public/brand/SOURCES.md). The recording loads after the visitor asks to play it. Photo credits are available in a footer disclosure; detailed sources and regeneration instructions are in [home/SOURCES.md](../apps/demo/public/home/SOURCES.md).
 
 To regenerate captures and the recording:
 

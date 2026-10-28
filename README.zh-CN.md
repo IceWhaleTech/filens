@@ -15,6 +15,24 @@
 
 <p align="center"><strong>纯前端预览 · WASM 转换，灵活部署 · 高性能、极致小巧</strong></p>
 
+---
+
+<div align="center">
+  <a href="https://www.zimaspace.com/zh/zimaos"><img src="apps/demo/public/brand/zimaos-logo.png" alt="ZimaOS 标志" width="64" height="64" /></a>
+  <h3>ZimaOS，让个人云更简单。</h3>
+  <p><strong>ZimaOS 深度使用了 FiLens 项目</strong>，将多格式文件预览融入个人云的文件体验，让文档、照片和创作素材在自己的设备上随时可看。</p>
+</div>
+
+ZimaOS 是面向家庭与个人的 NAS 操作系统，将文件管理、照片浏览、备份和应用服务整合在一个直观的界面中。
+
+- **文件统一管理**：集中访问硬盘、USB、网盘与网络共享，方便预览和分享。
+- **照片体验丰富**：浏览 RAW、Live Photos 与 360° 全景，轻松查看拍摄原片。
+- **数据自己掌握**：文件存放在自己的设备上，通过加密远程访问随时取用。
+- **存储与备份省心**：可视化磁盘管理、多种 RAID 配置，以及跨设备备份与同步。
+- **应用扩展简单**：800+ 应用、一键安装，支持 Docker，搭建自己的影音与应用服务。
+
+**[了解 ZimaOS ↗](https://www.zimaspace.com/zh/zimaos)**
+
 ## 换个角度，看见文件
 
 - **纯前端预览。** 文件在浏览器中解析与渲染，本地预览无需上传，也无需部署转换服务。

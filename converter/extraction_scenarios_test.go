@@ -269,3 +269,14 @@ func TestPasswordPDFIsTerminalAndOCRMissingIsFailure(t *testing.T) {
 		t.Fatalf("missing provider %+v %v", r, err)
 	}
 }
+
+func TestMalformedPackageXMLCannotSucceedEmpty(t *testing.T) {
+	e := testExtractor(t)
+	for _, content := range []string{"not XML", "", "<document><p>", "<document/><another/>", "<document broken='&undefined;'/>", "<document broken=>"} {
+		input := zipFixture(t, "docx", map[string]string{"word/document.xml": content})
+		r, err := e.ExtractText(context.Background(), input, Options{})
+		if err == nil || r.Complete || r.ErrorCode != "parse_error" {
+			t.Errorf("corrupt XML %q accepted: %+v %v", content, r, err)
+		}
+	}
+}

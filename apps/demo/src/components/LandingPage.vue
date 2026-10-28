@@ -23,6 +23,34 @@ const repo = 'https://github.com/IceWhaleTech/filens';
 const supportMatrixUrl = computed(
   () => `${repo}/blob/main/docs/support-matrix${isEnglish.value ? '' : '.zh-CN'}.md`
 );
+const zimaosUrl = computed(() => `https://www.zimaspace.com/${isEnglish.value ? 'en' : 'zh'}/zimaos`);
+const zimaosHighlights = [
+  {
+    zh: '文件统一管理', en: 'Files in one place',
+    descriptionZh: '集中访问硬盘、USB、网盘与网络共享，方便预览和分享。',
+    descriptionEn: 'Manage drives, USB storage, cloud drives, and network shares, with previews and sharing.'
+  },
+  {
+    zh: '照片体验丰富', en: 'More ways to view photos',
+    descriptionZh: '浏览 RAW、Live Photos 与 360° 全景，轻松查看拍摄原片。',
+    descriptionEn: 'Explore camera originals, from RAW and Live Photos to 360° panoramas.'
+  },
+  {
+    zh: '数据自己掌握', en: 'Your data, on your device',
+    descriptionZh: '文件存放在自己的设备上，通过加密远程访问随时取用。',
+    descriptionEn: 'Keep files on your own device and reach them through encrypted remote access.'
+  },
+  {
+    zh: '存储与备份省心', en: 'Storage and backup made easy',
+    descriptionZh: '可视化磁盘管理、多种 RAID 配置，以及跨设备备份与同步。',
+    descriptionEn: 'Visual disk management, flexible RAID options, and backup and sync across devices.'
+  },
+  {
+    zh: '应用扩展简单', en: 'Apps in a click',
+    descriptionZh: '800+ 应用、一键安装，支持 Docker，搭建自己的影音与应用服务。',
+    descriptionEn: 'Install 800+ apps in a click, with Docker support for your own media and services.'
+  }
+];
 const activePreview = ref(0);
 const video = ref<HTMLVideoElement>();
 const videoStarted = ref(false);
@@ -383,6 +411,29 @@ async function playDemo(): Promise<void> {
           href="#more-formats"
         >
           {{ t('探索更多格式', 'Explore more formats') }} <span aria-hidden="true">↓</span>
+        </a>
+      </section>
+
+      <section id="zimaos" class="zimaos-section section-width" aria-labelledby="zimaos-title">
+        <div class="zimaos-intro">
+          <img :src="asset('brand/zimaos-logo.png')" alt="ZimaOS" width="104" height="104" />
+          <div class="zimaos-copy">
+            <p class="zimaos-eyebrow">ZimaOS × FiLens</p>
+            <h2 id="zimaos-title">{{ t('ZimaOS，让个人云更简单。', 'ZimaOS. Your personal cloud, made simple.') }}</h2>
+            <p class="zimaos-integration">
+              <strong>{{ t('ZimaOS 深度使用了 FiLens 项目', 'ZimaOS is built with deep FiLens integration') }}</strong>{{ t('，将多格式文件预览融入个人云的文件体验，让文档、照片和创作素材在自己的设备上随时可看。', ', bringing multi-format previews to your personal cloud so documents, photos, and creative files are ready to view on your own device.') }}
+            </p>
+            <p class="zimaos-description">{{ t('面向家庭与个人的 NAS 操作系统，将文件管理、照片浏览、备份和应用服务整合在一个直观的界面中。', 'A NAS operating system for your home and personal use, bringing files, photos, backups, and apps together in one intuitive interface.') }}</p>
+          </div>
+        </div>
+        <ul class="zimaos-highlights">
+          <li v-for="highlight in zimaosHighlights" :key="highlight.en">
+            <h3>{{ t(highlight.zh, highlight.en) }}</h3>
+            <p>{{ t(highlight.descriptionZh, highlight.descriptionEn) }}</p>
+          </li>
+        </ul>
+        <a class="button zimaos-link" :href="zimaosUrl" target="_blank" rel="noopener noreferrer">
+          {{ t('了解 ZimaOS', 'Explore ZimaOS') }} <span aria-hidden="true">↗</span>
         </a>
       </section>
 

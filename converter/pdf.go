@@ -110,7 +110,10 @@ func (p *pdfBridge) call(ctx context.Context, operation, path string, index, dpi
 		if err != nil {
 			return nil, err
 		}
-		encodeErr := png.Encode(file, render.Result.Image)
+		// This PNG is a short-lived, lossless OCR handoff. Favor CPU time over
+		// compression ratio; every page is removed immediately after recognition.
+		encoder := png.Encoder{CompressionLevel: png.BestSpeed}
+		encodeErr := encoder.Encode(file, render.Result.Image)
 		return map[string]bool{"ok": encodeErr == nil}, errors.Join(encodeErr, file.Close())
 	}
 	return nil, errors.New("unknown PDF operation")

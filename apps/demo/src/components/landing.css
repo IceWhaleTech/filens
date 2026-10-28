@@ -320,6 +320,81 @@
 .landing .support-link:hover {
   color: #477149;
 }
+.landing .zimaos-section {
+  margin-bottom: 64px;
+  padding: 36px;
+  border: 1px solid #d9e1e9;
+  border-radius: 16px;
+  background: linear-gradient(125deg, #eef3f8, #f5f7fa 60%, #edf2f4);
+  color: #243448;
+}
+.landing .zimaos-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
+.landing .zimaos-intro > img {
+  flex-shrink: 0;
+  border-radius: 24px;
+  box-shadow: 0 8px 20px -10px #24344855;
+}
+.landing .zimaos-copy {
+  min-width: 0;
+}
+.landing .zimaos-eyebrow {
+  margin-bottom: 8px;
+  color: #526782;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.landing .zimaos-copy h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.035em;
+}
+.landing .zimaos-integration {
+  margin-top: 16px;
+  font-size: 13px;
+  line-height: 1.9;
+}
+.landing .zimaos-description {
+  margin-top: 9px;
+  color: #58697a;
+  font-size: 12px;
+  line-height: 1.9;
+}
+.landing .zimaos-highlights {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 22px;
+  margin: 28px 0 24px;
+  padding: 24px 0 0;
+  border-top: 1px solid #d5dfe8;
+  list-style: none;
+}
+.landing .zimaos-highlights li {
+  min-width: 0;
+}
+.landing .zimaos-highlights h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.landing .zimaos-highlights p {
+  color: #58697a;
+  font-size: 11px;
+  line-height: 1.9;
+}
+.landing .zimaos-link {
+  background: #243448;
+  color: #fff;
+}
+.landing .zimaos-link:hover {
+  background: #364f6c;
+}
 .landing .principles-section {
   padding-bottom: 64px;
 }
@@ -712,6 +787,25 @@
     padding-inline: 10px;
     font-size: 11px;
   }
+  .landing .zimaos-section {
+    padding: 28px;
+    margin-bottom: 48px;
+  }
+  .landing .zimaos-intro {
+    gap: 20px;
+  }
+  .landing .zimaos-intro > img {
+    width: 88px;
+    height: 88px;
+    border-radius: 20px;
+  }
+  .landing .zimaos-highlights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px 24px;
+  }
+  .landing .zimaos-highlights li:last-child {
+    grid-column: 1 / -1;
+  }
   .landing .principle {
     padding: 24px 20px;
   }
@@ -857,6 +951,27 @@
   .landing .support-link {
     margin-top: 17px;
     font-size: 10px;
+  }
+  .landing .zimaos-section {
+    margin-bottom: 38px;
+    padding: 24px;
+  }
+  .landing .zimaos-intro {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .landing .zimaos-intro > img {
+    width: 80px;
+    height: 80px;
+    border-radius: 18px;
+  }
+  .landing .zimaos-highlights {
+    margin-top: 24px;
+    padding-top: 22px;
+    gap: 20px;
+  }
+  .landing .zimaos-link {
+    width: 100%;
   }
   .landing .principles-section {
     padding-bottom: 38px;

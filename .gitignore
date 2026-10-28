@@ -10,6 +10,7 @@ test-results/
 .gocache/
 tmp/
 tmp-screens/
+converter/testdata/*
 examples/go-wazero-converter/tmp/
 examples/go-wazero-converter/batch-report.json
 *.log

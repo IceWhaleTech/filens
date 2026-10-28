@@ -15,6 +15,24 @@
 
 <p align="center"><strong>Pure frontend · WASM conversion, flexible deployment · Fast and tiny</strong></p>
 
+---
+
+<div align="center">
+  <a href="https://www.zimaspace.com/en/zimaos"><img src="apps/demo/public/brand/zimaos-logo.png" alt="ZimaOS logo" width="64" height="64" /></a>
+  <h3>ZimaOS. Your personal cloud, made simple.</h3>
+  <p><strong>ZimaOS is built with deep FiLens integration</strong>, bringing multi-format previews to your personal cloud so documents, photos, and creative files are ready to view on your own device.</p>
+</div>
+
+ZimaOS is a NAS operating system for your home and personal use, bringing files, photos, backups, and apps together in one intuitive interface.
+
+- **Files in one place**: manage drives, USB storage, cloud drives, and network shares, with previews and sharing.
+- **More ways to view photos**: explore camera originals, from RAW and Live Photos to 360° panoramas.
+- **Your data, on your device**: keep files on your own device and reach them through encrypted remote access.
+- **Storage and backup made easy**: visual disk management, flexible RAID options, and backup and sync across devices.
+- **Apps in a click**: install 800+ apps in a click, with Docker support for your own media and services.
+
+**[Explore ZimaOS ↗](https://www.zimaspace.com/en/zimaos)**
+
 ## A closer look at your files
 
 - **Pure frontend preview.** Parse and render files in the browser. Local previews require neither uploads nor a conversion server.
