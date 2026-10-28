@@ -1,0 +1,467 @@
+{
+  "version": "filens-text-v1",
+  "capabilities": [
+    {
+      "format": "doc",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "docm",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "docx",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "docxf",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "dot",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "dotm",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "dotx",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "fodt",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "odt",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "ott",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "stw",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "sxw",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "wps",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "wpt",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "rtf",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": false
+    },
+    {
+      "format": "epub",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": false
+    },
+    {
+      "format": "fb2",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": false
+    },
+    {
+      "format": "ppt",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "pptm",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "pptx",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "pps",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "ppsm",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "ppsx",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "pot",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "potm",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "potx",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "dps",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "dpt",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "fodp",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "odp",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "otp",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "sxi",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "xls",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "xlsm",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "xlsx",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "xlsb",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "xlt",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "xltm",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "xltx",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "et",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "ett",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "fods",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "ods",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "ots",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "sxc",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "pages",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "numbers",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "key",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "djvu",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "xps",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "oxps",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "dwg",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": false
+    },
+    {
+      "format": "dxf",
+      "kind": "document",
+      "textExtraction": true,
+      "ocr": false
+    },
+    {
+      "format": "pdf",
+      "kind": "pdf",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "png",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "jpg",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "jpeg",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "jpe",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "jfif",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "gif",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "bmp",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "tif",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "tiff",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "webp",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "ppm",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "raw",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "arw",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "cr2",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "cr3",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "dng",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "nef",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "nrw",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "orf",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "raf",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "rw2",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "pef",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    },
+    {
+      "format": "srw",
+      "kind": "image",
+      "textExtraction": true,
+      "ocr": true
+    }
+  ]
+}

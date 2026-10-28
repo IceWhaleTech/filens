@@ -1,0 +1,432 @@
+[
+  {
+    "format": "doc",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.doc",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "docm",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.docm",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "dot",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.dot",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "dotm",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.dotm",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "dotx",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.dotx",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "fodt",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.fodt",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "odt",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.odt",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "ott",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.ott",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "stw",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.stw",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "sxw",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.sxw",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "wps",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.wps",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "wpt",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.wpt",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "rtf",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.rtf",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "epub",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.epub",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "fb2",
+    "input": "../examples/go-wazero-converter/fixtures/doc/sample.fb2",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "ppt",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.ppt",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "pptm",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.pptm",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "pps",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.pps",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "ppsm",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.ppsm",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "ppsx",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.ppsx",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "pot",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.pot",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "potm",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.potm",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "potx",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.potx",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "dps",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.dps",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "dpt",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.dpt",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "fodp",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.fodp",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "odp",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.odp",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "otp",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.otp",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "sxi",
+    "input": "../examples/go-wazero-converter/fixtures/ppt/sample.sxi",
+    "keywords": [
+      "Fixture"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "xls",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.xls",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "xlsm",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.xlsm",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "xlt",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.xlt",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "xltm",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.xltm",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "xltx",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.xltx",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "et",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.et",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "ett",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.ett",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "fods",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.fods",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "ods",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.ods",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "ots",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.ots",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "sxc",
+    "input": "../examples/go-wazero-converter/fixtures/xls/sample.sxc",
+    "keywords": [
+      "Name"
+    ],
+    "source": "controlled conversion corpus"
+  },
+  {
+    "format": "docx",
+    "input": "../apps/demo/public/samples/filens-aurora-guide.docx",
+    "keywords": [
+      "Chasing the light",
+      "Trip overview"
+    ],
+    "source": "FiLens public demo corpus"
+  },
+  {
+    "format": "pptx",
+    "input": "../apps/demo/public/samples/filens-field-notes.pptx",
+    "keywords": [
+      "FIELD NOTES",
+      "Follow the light"
+    ],
+    "source": "FiLens public demo corpus"
+  },
+  {
+    "format": "xlsx",
+    "input": "../apps/demo/public/samples/filens-observatory.xlsx",
+    "keywords": [
+      "OBSERVATORY",
+      "Lyra Fjord"
+    ],
+    "source": "FiLens public demo corpus"
+  },
+  {
+    "format": "dxf",
+    "input": "../apps/demo/public/samples/filens-cafe.dxf",
+    "keywords": [
+      "FIELD NOTES / CAFE"
+    ],
+    "source": "FiLens public demo corpus"
+  },
+  {
+    "format": "pdf",
+    "input": "../apps/demo/public/samples/filens-cosmic-atlas.pdf",
+    "keywords": [
+      "COSMIC"
+    ],
+    "source": "FiLens public demo corpus"
+  },
+  {
+    "format": "pages",
+    "input": "../packages/iwork/vendor/iwork-converter/testdata/a.pages",
+    "keywords": [
+      "中华人民共和国民法典",
+      "货物清单及价格"
+    ],
+    "source": "existing iWork real corpus"
+  },
+  {
+    "format": "numbers",
+    "input": "../packages/iwork/vendor/iwork-converter/testdata/a.numbers",
+    "keywords": [
+      "数盟指标统计",
+      "系统参数格式异常"
+    ],
+    "source": "existing iWork real corpus"
+  },
+  {
+    "format": "key",
+    "input": "../packages/iwork/vendor/iwork-converter/testdata/a.key",
+    "keywords": [
+      "账户passport",
+      "聚合支付pay"
+    ],
+    "source": "existing iWork real corpus"
+  },
+  {
+    "format": "xlsb",
+    "input": "testdata/Simple.xlsb",
+    "keywords": [
+      "Microsoft Excel 2007 Beta 2"
+    ],
+    "source": "see testdata/SOURCES.md"
+  },
+  {
+    "format": "djvu",
+    "input": "testdata/text-layer.djvu",
+    "keywords": [
+      "DJVU_TEXT_LAYER 中文"
+    ],
+    "source": "see testdata/SOURCES.md"
+  },
+  {
+    "format": "dwg",
+    "input": "testdata/sample_AC1015.dwg",
+    "keywords": [
+      "Hello this is a single line text",
+      "Table sample"
+    ],
+    "source": "see testdata/SOURCES.md"
+  },
+  {
+    "format": "xps",
+    "generatedBy": "TestXPSAttributeEntitiesAndPageOrder",
+    "source": "controlled container scenario test"
+  },
+  {
+    "format": "oxps",
+    "generatedBy": "TestXPSAttributeEntitiesAndPageOrder",
+    "source": "controlled container scenario test"
+  },
+  {
+    "format": "docxf",
+    "generatedBy": "TestUTF8TruncationAndCorruptPDF",
+    "source": "controlled container scenario test"
+  }
+]

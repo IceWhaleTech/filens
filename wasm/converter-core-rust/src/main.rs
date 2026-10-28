@@ -14,6 +14,8 @@ use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 mod panorama;
 mod ppm;
+#[cfg(feature = "text-extraction")]
+mod text;
 
 const OPENXML_BACKEND: &str = "openxml-package";
 const TEXT_BACKEND: &str = "text";
@@ -374,6 +376,11 @@ fn main() {
             .map_or(0, |metadata| metadata.len())
     };
 
+    #[cfg(feature = "text-extraction")]
+    if request.operation == "extract-text" && parse_error.is_none() {
+        text::execute(&request, started);
+        return;
+    }
     let result = if let Some(message) = parse_error {
         failure(&request, "io_error", message, input_size, None)
     } else if request.operation == "inspect-panorama" {
@@ -7249,6 +7256,10 @@ fn write_xlsx_sheets(
     output: &str,
     sheets: &[(&str, &[Vec<SheetCell>])],
 ) -> Result<(), ConvertError> {
+    #[cfg(feature = "text-extraction")]
+    if text::active() {
+        return text::sheets(sheets);
+    }
     if let Some(parent) = Path::new(output).parent() {
         fs::create_dir_all(parent)
             .map_err(|error| io_error(format!("create output directory: {error}")))?;
@@ -7292,6 +7303,10 @@ fn write_xlsx_sheets(
 }
 
 fn write_pptx(output: &str, slides: &[OdfSlide]) -> Result<(), ConvertError> {
+    #[cfg(feature = "text-extraction")]
+    if text::active() {
+        return text::slides(slides);
+    }
     if let Some(parent) = Path::new(output).parent() {
         fs::create_dir_all(parent)
             .map_err(|error| io_error(format!("create output directory: {error}")))?;
@@ -9568,6 +9583,14 @@ fn write_docx_with_sections_and_headers(
     sections: &[WordBinarySection],
     headers: &[WordBinaryHeaderFooter],
 ) -> Result<(), ConvertError> {
+    #[cfg(feature = "text-extraction")]
+    if text::active() {
+        text::paragraphs(paragraphs)?;
+        for header in headers {
+            text::paragraphs(&header.paragraphs)?;
+        }
+        return Ok(());
+    }
     if let Some(parent) = Path::new(output).parent() {
         fs::create_dir_all(parent)
             .map_err(|error| io_error(format!("create output directory: {error}")))?;

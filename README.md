@@ -161,9 +161,14 @@ To publish the demo, [import the repository into Vercel](docs/deploy-vercel.md).
 | Format coverage and limits | [Support matrix](docs/support-matrix.md) |
 | Architecture, comparisons, and performance notes | [Project overview](docs/project-overview.md) |
 | Frontend timings, scoped leads, and raw data | [Frontend performance comparison](docs/performance-comparison.md) |
+| Full-text extraction / injectable OCR | [Optional Go host and text WASM](converter/README.md) |
 | CLI / backend integration | [Go + wazero example](examples/go-wazero-converter/README.md) |
 | Deployment | [Vercel guide](docs/deploy-vercel.md) |
 
 Try your everyday files and [report a reproducible issue](https://github.com/IceWhaleTech/filens/issues/new/choose). Upcoming work is tracked in the [roadmap](docs/roadmap.md).
 
 <sub>Preview images come from filens itself. Photos: Carsten / CC BY 2.0 (cropped and pale-blue graded) and Greg Zaal / Poly Haven / CC0. The overview, walkthrough, and animated preview are CC BY-SA 4.0. <a href="docs/assets/readme/SOURCES.md">Visual sources and credits</a>. iWork research: <a href="https://github.com/dunhamsteve/iwork">dunhamsteve/iwork</a>; CAD lineage: <a href="https://github.com/orcastor/cad2x-converter">orcastor/cad2x-converter</a>.</sub>
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=IceWhaleTech/filens&type=Date)](https://star-history.com/#IceWhaleTech/filens&Date)
