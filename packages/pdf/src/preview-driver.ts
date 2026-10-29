@@ -2,6 +2,7 @@
 
 import {
   createDefaultPreviewRoutes,
+  classifyPreviewFont,
   type FormatDefinition,
   type PagedPreviewState,
   type PreviewDriver,
@@ -9,6 +10,7 @@ import {
   type PreviewEventName,
   type PreviewLoadContext,
   type PreviewOptions,
+  type PreviewFontDiagnostic,
   type PreviewSession,
   type PreviewSource
 } from '@filens/core';
@@ -59,6 +61,8 @@ export class PdfPreviewSession implements PreviewSession<PagedPreviewState> {
   private dimensions = '';
   private readonly virtual: boolean;
   private state: PagedPreviewState;
+  private readonly inspectedFontPages = new Set<number>();
+  private readonly fonts = new Map<string, PreviewFontDiagnostic>();
 
   constructor(private readonly host: HTMLElement, options: PreviewOptions = {}) {
     this.root = document.createElement('div');
@@ -102,6 +106,7 @@ export class PdfPreviewSession implements PreviewSession<PagedPreviewState> {
       loading: true,
       error: null,
       title: context.descriptor.name,
+      warnings: [],
       pageIndex: 0,
       pageCount: 0
     };
@@ -189,7 +194,7 @@ export class PdfPreviewSession implements PreviewSession<PagedPreviewState> {
   }
 
   getState(): PagedPreviewState {
-    return { ...this.state, warnings: this.state.warnings.slice(), capabilities: { ...this.state.capabilities } };
+    return { ...this.state, fonts: this.state.fonts?.map(font => ({ ...font, classification: font.classification ? { ...font.classification } : undefined })), warnings: this.state.warnings.slice(), capabilities: { ...this.state.capabilities } };
   }
 
   goToPage(index: number): void {
@@ -361,7 +366,10 @@ export class PdfPreviewSession implements PreviewSession<PagedPreviewState> {
     slot.task = task;
     try {
       await task.promise;
-      if (slot.canvas === canvas) canvas.dataset.rendered = 'true';
+      if (slot.canvas === canvas) {
+        canvas.dataset.rendered = 'true';
+        void this.inspectPageFonts(page, index, generation);
+      }
     } catch (error) {
       if (slot.canvas === canvas) this.clearCanvas(slot);
       if (generation === this.loadGeneration && epoch === this.renderGeneration && (error as Error)?.name !== 'RenderingCancelledException') throw error;
@@ -378,12 +386,46 @@ export class PdfPreviewSession implements PreviewSession<PagedPreviewState> {
     }
   }
 
+  private async inspectPageFonts(page: PDFPageProxy, index: number, generation: number): Promise<void> {
+    if (generation !== this.loadGeneration || this.inspectedFontPages.has(index)) return;
+    this.inspectedFontPages.add(index);
+    try {
+      const text = await page.getTextContent?.();
+      if (!text || generation !== this.loadGeneration) return;
+      let changed = false;
+      for (const [fontId, style] of Object.entries(text.styles)) {
+        if (this.fonts.has(fontId)) continue;
+        // Public PDF.js text styles identify renderer CSS families, not original
+        // BaseFont names, embedded provenance, or the actual font used per glyph.
+        this.fonts.set(fontId, {
+          fontId, fontFamily: style.fontFamily, status: 'unknown', source: 'unknown',
+          classification: classifyPreviewFont(style.fontFamily)
+        });
+        changed = true;
+      }
+      if (changed) {
+        this.state.fonts = [...this.fonts.values()];
+        this.emit('statechange', this.getState());
+      }
+    } catch {
+      // Optional diagnostics must not fail a page whose canvas already rendered.
+      if (generation !== this.loadGeneration) return;
+      const warning = `Font metadata is unavailable for PDF page ${index + 1}.`;
+      this.state.warnings = [...new Set([...this.state.warnings, warning])];
+      this.emit('warnings', this.state.warnings);
+      this.emit('statechange', this.getState());
+    }
+  }
+
   private releaseDocument(): Promise<void> {
     if (this.animationFrame !== null) cancelAnimationFrame(this.animationFrame);
     this.animationFrame = null;
     this.renderGeneration++;
     for (const slot of this.pages) this.clearCanvas(slot);
     this.pages = [];
+    this.inspectedFontPages.clear();
+    this.fonts.clear();
+    this.state.fonts = [];
     this.rendering = null;
     this.renderAgain = false;
     this.root.replaceChildren();

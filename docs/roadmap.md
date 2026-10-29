@@ -151,11 +151,17 @@ This roadmap reflects the current repository state and the next logical delivery
 
 ## F0: Font Discovery and Diagnostics
 
+Current delivery: shared `PreviewItemState.fonts` diagnostics and layout-drift warnings are available for PPTX, Keynote, Pages, Numbers, DXF, DOCX, and XLSX. Scene discovery includes text runs, bullets, and table cells; Numbers updates diagnostics when lazy sheets arrive. DOCX reuses parsed font tables, body/header/footer/notes and style references; XLSX includes font tables, theme Latin fonts, and default/cell/row/column font style inheritance. DXF preserves original SHX/style references alongside application font mappings. PDF.js progressively exposes renderer font identifiers and CSS families for rendered pages, with original-name, availability, and embedded provenance left `unknown`. Browser availability uses local best-effort measurements and reports `unknown` when measurement is unavailable. See [font diagnostics](fonts.md) for the contract and limits.
+
 - detect fonts referenced by Office, iWork, PDF, CAD, and other structured formats, and report whether each font was found, substituted, or cannot be rendered by the browser
 - normalize font metadata across preview drivers so hosts can expose missing-font warnings and likely layout drift consistently
 - distinguish document-embedded fonts, operating-system fonts, application-provided fonts, and fallback families without silently claiming exact fidelity
 
+Next F0 steps: expand font properties omitted from the current scene models (including XLSX rich-text runs and chart typography), and obtain original PDF font names and embedded provenance through a supported rendering-engine API. DOCX embedded declarations are reported separately from actual availability; embedded extraction remains F2 work. Host font-file loading and font-ready refresh are available through the opt-in loader.
+
 ## F1: Optional Font Packs
+
+Current delivery: opt-in `fontLoading` provides lazy Latin and regional SC/TC/JP/KR Noto packs through pinned Fontsource WOFF2 manifests, including regular/bold and supported italic faces. Custom mirror bases and host pack manifests support self-hosting. Shared request/face leases deduplicate active work; adaptive source routing uses priority, cold same-origin preference, measured latency, delayed alternate requests and cancellation. Bounded retries honor jittered exponential backoff, Retry-After and failed-route cooldowns; fallback remains readable on network, decode or size failures. Only manifests ship in core; browser HTTP caching handles versioned assets. See [font loading](fonts.md#automatic-font-loading) for defaults, licensing, CORS, privacy and lifetime.
 
 - provide optional, independently loaded packs for common Latin, CJK, Emoji, and mathematical-symbol coverage instead of placing complete font collections in the core WASM or JavaScript artifacts
 - subset webfonts to the glyphs needed by a document where licensing allows, prefer WOFF2 delivery, and cache packs by version and character coverage
@@ -164,12 +170,23 @@ This roadmap reflects the current repository state and the next logical delivery
 
 ## F2: Embedded and Host-provided Fonts
 
-- extend the existing `fontResolver` contract for application-managed font files, URLs, aliases, authorization, and explicit fallback decisions
+Current delivery: `fontResolver` can supply browser font assets as URLs/mirrors or local bytes, CSS face descriptors, aliases and explicit request authorization. Successful managed loads refresh PPTX, iWork, DOCX, XLSX and CAD layouts while retaining navigation, supported zoom, scroll and loaded table rows. First preview does not await downloads; replacement/abort/destruction discard stale loads and release owned fonts. PDF replacement remains controlled by PDF.js.
+
+- extend embedded extraction and host-managed coverage beyond the current browser URL/byte/alias loading contract
 - parse supported embedded-font metadata from Office, iWork, and PDF inputs, while keeping actual font extraction and use subject to format rules and licensing
-- remeasure text, line wrapping, pagination, and autofit after a required font becomes available, without blocking the first preview indefinitely
+- refine post-load text measurement, line wrapping, pagination and autofit fidelity, including external font readiness and closer Office layout comparison
 
 ## F3: CAD Fonts
 
 - add explicit SHX font discovery and mapping through the application font resolver
 - evaluate a front-end SHX parser that can convert supported glyphs to paths when direct browser font loading is impossible
 - preserve visible missing-glyph and fallback warnings whenever an exact CAD font cannot be resolved
+
+## F4: Similarity-based Font Substitution
+
+Current delivery: shared classification and fallback helpers distinguish serif/sans-serif, monospace, handwriting, decorative, symbol, and common CJK regional families. DOCX and XLSX read Office family classes, PANOSE and pitch; XLSX also preserves bold states. Metadata takes priority over a known-family catalog and labelled name heuristics. Similarity ranking accepts host candidates with Unicode coverage, weight, stretch and average advance widths, rejects known missing sampled glyphs and incompatible traits, and exposes the target, score, coverage evidence and reason after local availability detection or a successful managed FontFace load. The opt-in loader applies this ranking to host assets and optional packs, tries a second compatible family on failure, and refreshes participating layouts. A shared local SFNT TTF/OTF metadata reader supplies names, OS/2/post traits and Unicode cmap ranges without loading fonts. DOCX/XLSX rendered CSS prioritizes the selected target after explicit family names; PPTX/iWork scene mappings preserve regular/bold/italic variants and original inventories. Explicit family-stack order, embedded declarations, application mapping targets and legacy symbol/SHX encoding boundaries are preserved. See [font diagnostics](fonts.md) for supported containers, coverage limits and APIs.
+
+- extend the initial PANOSE/SFNT/coverage ranking with measured text metrics and supported webfont containers
+- expand the delivered optional-pack/host-asset ranking and loading with glyph-specific subsets and additional font styles
+- retain conservative unknown results, visible replacement reasons, and source-font layout-drift warnings
+- remeasure and compare line wrapping and pagination when better candidates become available through F1/F2

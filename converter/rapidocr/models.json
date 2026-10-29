@@ -1,0 +1,65 @@
+{
+  "version": "rapidocr-ncnn-ppocrv6-small-det-2026.10.28.2",
+  "huggingFaceRepo": "orca-zhang/ncnn",
+  "huggingFaceRevision": "8ffa14f2024c6fe4fbb2b4a0ea88e8f2ab069f96",
+  "modelScopeRepo": "orcazhang/ncnn",
+  "modelScopeRevision": "31cac59f06413ab474246ad24f9a06ab14090a0f",
+  "artifacts": [
+    {
+      "name": "det/PP-OCRv6_small_det.param",
+      "bytes": 19210,
+      "sha256": "c5e12987f2e2496e7d8f1f0e5e859f98aa6138107152c9367347f8ac36932a75",
+      "huggingFacePath": "rapidocr-ncnn/det/PP-OCRv6_small_det.param",
+      "modelScopePath": "rapidocr-ncnn/det/PP-OCRv6_small_det.param"
+    },
+    {
+      "name": "det/PP-OCRv6_small_det.bin",
+      "bytes": 4929604,
+      "sha256": "5b4317b0fcebd70a4ab957a36115498447a8f6fe57b45594c523234a8edb4c4c",
+      "huggingFacePath": "rapidocr-ncnn/det/PP-OCRv6_small_det.bin",
+      "modelScopePath": "rapidocr-ncnn/det/PP-OCRv6_small_det.bin"
+    },
+    {
+      "name": "cls/ch_ppocr_mobile_v2.0_cls_infer.param",
+      "bytes": 17072,
+      "sha256": "207a50228e6ecba8d6bd4df4259770547f43099a04978315fb4baa8d547c63b5",
+      "huggingFacePath": "rapidocr-ncnn/cls/ch_ppocr_mobile_v2.0_cls_infer.param",
+      "modelScopePath": "rapidocr-ncnn/cls/ch_ppocr_mobile_v2.0_cls_infer.param"
+    },
+    {
+      "name": "cls/ch_ppocr_mobile_v2.0_cls_infer.bin",
+      "bytes": 509096,
+      "sha256": "123644e3a61111be5317330fdd1803a8253ceaa63a9f0695076d7f84a1b35daf",
+      "huggingFacePath": "rapidocr-ncnn/cls/ch_ppocr_mobile_v2.0_cls_infer.bin",
+      "modelScopePath": "rapidocr-ncnn/cls/ch_ppocr_mobile_v2.0_cls_infer.bin"
+    },
+    {
+      "name": "rec/ch_PP-OCRv3_rec_infer.param",
+      "bytes": 13793,
+      "sha256": "4158faa4fa1a5c60d1c8ff510765a52c77abf77aeda6c1608f2ba08d3542704e",
+      "huggingFacePath": "rapidocr-ncnn/rec/ch_PP-OCRv3_rec_infer.param",
+      "modelScopePath": "rapidocr-ncnn/rec/ch_PP-OCRv3_rec_infer.param"
+    },
+    {
+      "name": "rec/ch_PP-OCRv3_rec_infer.bin",
+      "bytes": 10533656,
+      "sha256": "4c5ac2ac7ffb208109fd78ded6f89d43850b721eb414a058af1dda2fe6994085",
+      "huggingFacePath": "rapidocr-ncnn/rec/ch_PP-OCRv3_rec_infer.bin",
+      "modelScopePath": "rapidocr-ncnn/rec/ch_PP-OCRv3_rec_infer.bin"
+    },
+    {
+      "name": "keys/ppocr_keys_v1.txt",
+      "bytes": 26249,
+      "sha256": "28b2362ad4ab2dc38769aa72feb535e3a9ddb3fd2a7585a05920e6393b1dc7f7",
+      "huggingFacePath": "rapidocr-ncnn/keys/ppocr_keys_v1.txt",
+      "modelScopePath": "rapidocr-ncnn/keys/ppocr_keys_v1.txt"
+    },
+    {
+      "name": "metadata.json",
+      "bytes": 3173,
+      "sha256": "09dfa7d4fb8598f355df8208b8d352f9efd8c16e6e0437d05f85d219f8e1dec7",
+      "huggingFacePath": "rapidocr-ncnn/metadata.json",
+      "modelScopePath": "rapidocr-ncnn/metadata.json"
+    }
+  ]
+}

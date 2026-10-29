@@ -1,6 +1,9 @@
+import type { PreviewFontReference } from '@filens/core';
+
 export interface ParsedWorkbook {
   sheets: ParsedSheet[];
   warnings: string[];
+  fonts?: PreviewFontReference[];
 }
 
 export interface ParsedSheet {
@@ -23,4 +26,5 @@ export interface ParsedCell {
   value: string;
   formula?: string;
   needsCalculation?: boolean;
+  font?: PreviewFontReference;
 }

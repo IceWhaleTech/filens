@@ -1,0 +1,62 @@
+name: Agent CLI packages
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'converter/**'
+      - 'cli/**'
+      - 'skills/filens/**'
+      - 'wasm/converter-core-rust/**'
+      - 'wasm/converter-core/manifest/**'
+      - 'wasm/converter-image-rust/**'
+      - 'wasm/converter-image/manifest/**'
+      - 'scripts/*agent*'
+      - 'scripts/agent-rust*'
+      - 'scripts/model-download*'
+      - 'scripts/*privacy*'
+      - 'scripts/*pdf-unicode*'
+      - 'docs/pdf-unicode*'
+      - 'packaging/**'
+      - '.github/workflows/agent-cli-packages.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  native-install:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15-arm64, ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.6'
+          cache-dependency-path: converter/go.sum
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: '0.16.0'
+      - name: Install the pinned Rust/WASI toolchain
+        working-directory: wasm/converter-core-rust
+        run: rustup show active-toolchain
+      - name: Install the Linux glibc 2.17 linker
+        if: runner.os == 'Linux'
+        run: cargo install cargo-zigbuild --locked --version 0.24.0
+      - run: npm ci
+      - run: npm run test:agent:privacy
+      - run: npm run test:agent
+      - run: npm run test:agent:layout
+      - run: node scripts/package-agent-npm.mjs
+      - run: npm run test:agent:npm
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agent-npm-${{ runner.os }}-${{ runner.arch }}
+          path: |
+            dist/npm/*.tgz
+            dist/npm/release.json

@@ -32,6 +32,49 @@ afterAll(() => {
 });
 
 describe('PDF preview driver', () => {
+  it('discovers renderer font identifiers after rendering without inventing original names or embedded provenance', async () => {
+    const getTextContent = vi.fn(async () => ({ styles: { g_d0_f1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } } }));
+    const page = { getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale, scale }), render, getTextContent };
+    vi.mocked(getDocument).mockReturnValueOnce({ promise: Promise.resolve({ numPages: 1, destroy, getPage: vi.fn(async () => page) }), destroy } as never);
+    const session = createPdfPreviewDriver().createSession(document.createElement('div'));
+    try {
+      await session.load(new Uint8Array(), { descriptor: { source: new Uint8Array() } });
+      await vi.waitFor(() => expect(session.getState().fonts).toMatchObject([{ fontId: 'g_d0_f1', fontFamily: 'serif', status: 'unknown', source: 'unknown' }]));
+      expect(getTextContent).toHaveBeenCalledTimes(1);
+      expect(session.getState().warnings).toEqual([]);
+      session.destroy(); expect(session.getState().fonts).toEqual([]);
+    } finally { session.destroy(); }
+  });
+
+  it('does not block the preview on slow font metadata or publish results from a replaced document', async () => {
+    let resolve!: (value: unknown) => void;
+    const getTextContent = vi.fn(() => new Promise(yes => { resolve = yes; }));
+    const page = { getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale, scale }), render, getTextContent };
+    vi.mocked(getDocument).mockReturnValueOnce({ promise: Promise.resolve({ numPages: 1, destroy, getPage: vi.fn(async () => page) }), destroy } as never);
+    const session = createPdfPreviewDriver().createSession(document.createElement('div'));
+    try {
+      await session.load(new Uint8Array(), { descriptor: { source: new Uint8Array(), name: 'old.pdf' } });
+      expect(session.getState().loading).toBe(false);
+      await session.load(new Uint8Array(), { descriptor: { source: new Uint8Array(), name: 'current.pdf' } });
+      resolve({ styles: { obsolete: { fontFamily: 'Old Serif' } } });
+      await Promise.resolve(); await Promise.resolve();
+      expect(session.getState().fonts).toEqual([]);
+      expect(session.getState().title).toBe('current.pdf');
+    } finally { session.destroy(); }
+  });
+
+  it('keeps a rendered PDF usable when optional font metadata extraction fails', async () => {
+    const page = { getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale, scale }), render,
+      getTextContent: vi.fn(async () => { throw new Error('Metadata failed'); }) };
+    vi.mocked(getDocument).mockReturnValueOnce({ promise: Promise.resolve({ numPages: 1, destroy, getPage: vi.fn(async () => page) }), destroy } as never);
+    const session = createPdfPreviewDriver().createSession(document.createElement('div'));
+    try {
+      await session.load(new Uint8Array(), { descriptor: { source: new Uint8Array() } });
+      await vi.waitFor(() => expect(session.getState().warnings).toContain('Font metadata is unavailable for PDF page 1.'));
+      expect(session.getState()).toMatchObject({ loading: false, error: null });
+    } finally { session.destroy(); }
+  });
+
   it('exposes direct PDF routes and driver support', () => {
     const routes = createPdfPreviewRoutes();
     const pdfRoute = routes.find((route) => route.extensions.includes('pdf'));

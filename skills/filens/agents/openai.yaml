@@ -1,0 +1,4 @@
+interface:
+  display_name: "FiLens"
+  short_description: "Read, OCR and convert local files with WASM"
+  default_prompt: "Use $filens to read or convert this local file and report the result."

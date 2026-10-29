@@ -117,6 +117,58 @@ describe('iWork load ownership', () => {
 });
 
 describe('Numbers render and lazy-sheet ownership', () => {
+  it('reflows Numbers with loaded webfonts while preserving rows, sheet, zoom and scroll', async () => {
+    const context = { font: '', measureText: () => ({ width: 100 }) };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D);
+    const pending = deferred<Response>(); vi.stubGlobal('fetch', vi.fn(() => pending.promise));
+    vi.stubGlobal('FontFace', class { async load() { return this; } });
+    Object.defineProperty(document, 'fonts', { configurable: true, value: { add: vi.fn(), delete: vi.fn() } });
+    const doc = numbers(); doc.sheets[0].tables[0].item.kind = 'table';
+    doc.sheets[0].tables[0].item.cells[0].textFrame.paragraphs[0].runs[0].fontFamily = 'Missing Serif';
+    mocks.parse.mockResolvedValue(doc);
+    const container = host(), session = new IworkPreviewSession(container, {
+      fontLoading: { packs: [{ id: 'test', version: '1', fonts: [{ id: 'web', fontFamily: 'Web Numbers', traits: { serif: true }, sources: [{ url: 'https://fonts.example/numbers.woff2' }] }] }] }
+    });
+    try {
+      await session.load(bytes, { descriptor: { source: bytes } }); session.setScale(1.3);
+      const scale = session.getState().scale;
+      const grid = container.querySelector<HTMLElement>('.xlsxv-grid')!;
+      grid.dispatchEvent(new Event('scroll')); grid.scrollTop = 111; container.scrollTop = 88;
+      expect(container.querySelector('tbody')?.rows.length).toBe(200);
+      const before = container.querySelector('table');
+      pending.resolve(new Response(new Uint8Array([1, 2, 3])));
+      await vi.waitFor(() => expect(session.getState().fonts?.[0].resolvedFontFamily).toBe('Web Numbers'));
+      expect(container.querySelector('table')).not.toBe(before);
+      expect(container.querySelector('tbody')?.rows.length).toBe(200);
+      expect(container.querySelector<HTMLElement>('.xlsxv-grid')?.scrollTop).toBe(111);
+      expect(container.scrollTop).toBe(88);
+      expect(session.getState()).toMatchObject({ activeSheetIndex: 0, scale });
+      expect(session.getState().fonts?.[0].fontFamily).toBe('Missing Serif');
+    } finally { session.destroy(); delete (document as unknown as { fonts?: unknown }).fonts; }
+  });
+  it('updates font diagnostics and warning events after a lazy Numbers sheet arrives', async () => {
+    const context = { font: '', measureText: () => ({ width: 100 }) };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D);
+    const doc = numbers(), sheet = numbers().sheets[1];
+    doc.sheets[0].tables[0].item.kind = sheet.tables[0].item.kind = 'table';
+    doc.sheets[0].tables[0].item.cells[0].textFrame.paragraphs[0].runs[0].fontFamily = 'Initial Font';
+    sheet.tables[0].item.cells[0].textFrame.paragraphs[0].runs[0].fontFamily = 'Lazy Font';
+    sheet.loaded = true;
+    const pending = deferred<ParsedNumbersSheet>();
+    mocks.parse.mockResolvedValue(doc); mocks.parseSheet.mockReturnValue(pending.promise);
+    const container = host(), session = new IworkPreviewSession(container), warnings = vi.fn(), changes = vi.fn();
+    session.on('warnings', warnings); session.on('statechange', changes);
+    try {
+      await session.load(bytes, { descriptor: { source: bytes } });
+      expect(session.getState().fonts).toMatchObject([{ fontFamily: 'Initial Font', status: 'missing', source: 'fallback' }]);
+      session.goToPage(1); pending.resolve(sheet); await flush();
+      expect(session.getState().fonts?.map((font) => font.fontFamily)).toEqual(['Initial Font', 'Lazy Font']);
+      expect(warnings).toHaveBeenLastCalledWith(session.getState().warnings);
+      expect(changes.mock.lastCall?.[0].fonts).toEqual(session.getState().fonts);
+      session.destroy(); expect(session.getState().fonts).toEqual([]);
+    } finally { session.destroy(); container.remove(); }
+  });
+
   it('detaches old tab and row-scroll listeners on rerender and replacement', async () => {
     mocks.parse.mockResolvedValue(numbers()); const container = host(), viewer = createIworkViewer(container); await viewer.preview(bytes);
     const tabs = [...container.querySelectorAll<HTMLButtonElement>('.xlsxv-sheet-tab')], grid = container.querySelector('.xlsxv-grid')!, table = container.querySelector<HTMLTableElement>('table')!;

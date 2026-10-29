@@ -17,6 +17,8 @@ import type {
 import UTIF from 'utif';
 import { createPresetShapeNode, resolvePresetShapeTextBounds } from './preset-geometry';
 import { hexToRgb } from '../utils/colors';
+import { normalizeFontFamilyName, normalizeLocalizedFontAlias } from '../utils/fonts';
+import { getFontFallbackCandidates } from '../preview/font-matching';
 
 export interface RenderSlideOptions {
   className?: string;
@@ -2056,7 +2058,8 @@ function buildFontFamilyStack(fontFamily: string, options: FontStackOptions = {}
     if (lookupFontFamily !== fontFamily) {
       add(lookupFontFamily);
     }
-    addMany(resolveKnownFontFallbacks(lookupFontFamily, fallbackSampleText));
+    const knownFallbacks = resolveKnownFontFallbacks(lookupFontFamily, fallbackSampleText);
+    addMany(knownFallbacks.length ? knownFallbacks : getFontFallbackCandidates(lookupFontFamily));
   }
   if (options.emoji) {
     addMany(EMOJI_FONT_STACK);
@@ -2195,7 +2198,7 @@ function resolveKnownFontFallbacks(fontFamily: string, sampleText?: string): rea
     ];
   }
 
-  return KNOWN_FONT_FALLBACKS[normalized] ?? [];
+  return Object.prototype.hasOwnProperty.call(KNOWN_FONT_FALLBACKS, normalized) ? KNOWN_FONT_FALLBACKS[normalized] : [];
 }
 
 function shouldPreferProportionalFallbackForRobotoMono(fontFamily: string, sampleText?: string): boolean {
@@ -2286,40 +2289,6 @@ function containsLatinText(text: string | undefined): boolean {
 
 function containsAny(value: string, needles: readonly string[]): boolean {
   return needles.some((needle) => value.includes(needle));
-}
-
-function normalizeFontFamilyName(fontFamily: string): string {
-  return fontFamily.trim().replace(/^['"]+|['"]+$/g, '');
-}
-
-function normalizeLocalizedFontAlias(fontFamily: string): string {
-  const normalized = normalizeFontFamilyName(fontFamily);
-  switch (normalized) {
-    case '等线':
-      return 'DengXian';
-    case '等线 Light':
-    case '等线 light':
-      return 'DengXian Light';
-    case '宋体':
-      return 'SimSun';
-    case '黑体':
-      return 'SimHei';
-    case '微软雅黑':
-      return 'Microsoft YaHei';
-    case '楷体':
-      return 'KaiTi';
-    case '仿宋':
-      return 'FangSong';
-    case '游ゴシック':
-      return 'Yu Gothic';
-    case '游ゴシック Light':
-    case '游ゴシック light':
-      return 'Yu Gothic Light';
-    case '맑은 고딕':
-      return 'Malgun Gothic';
-    default:
-      return normalized;
-  }
 }
 
 function quoteFontFamily(fontFamily: string): string {

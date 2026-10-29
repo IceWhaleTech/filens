@@ -9,6 +9,14 @@
     "apps/*"
   ],
   "scripts": {
+    "build:agent": "node ./scripts/build-agent-cli.mjs",
+    "build:agent:lite": "node ./scripts/build-agent-cli.mjs --lite",
+    "setup:agent:ocr": "node ./scripts/setup-agent-ocr.mjs",
+    "download:agent:models": "node ./scripts/download-agent-models.mjs",
+    "filens": "node ./scripts/run-agent-cli.mjs",
+    "filens:lite": "node ./scripts/run-agent-cli.mjs --lite",
+    "test:agent": "node --test scripts/model-download.test.mjs && npm run build:agent && npm run build:agent:lite && cargo test --locked --manifest-path cli/Cargo.toml && node ./scripts/test-agent-cli.mjs && node ./scripts/test-agent-rust.mjs && node ./scripts/test-agent-convert.mjs",
+    "test:agent:convert": "node ./scripts/test-agent-convert.mjs",
     "build": "npm run build:wasm && npm run build:core && npm run build:converter-client && npm run build:xlsx && npm run build:archive && npm run build:ebook && npm run build:pdf && npm run build:docx && npm run build:cad && npm run build:model3d && npm run build:mindmap && npm run build:diagram && npm run build:panorama && npm run build:iwork && npm run build:design && npm run build:media && npm run build:office && npm run build:text && npm run build:vue && npm run build:demo",
     "build:archive": "npm run build --workspace @filens/archive",
     "build:wasm": "npm run build:wasm:rust",
@@ -36,6 +44,7 @@
     "test": "npm run build && npm run test:policy && npm run test:workspaces && npm run test:go && npm run test:wasm-smoke",
     "test:workspaces": "npm run test --workspaces --if-present",
     "test:categories": "node ./scripts/check-category-packages.mjs",
+    "test:fonts:browser": "npm run build:core && npm run build:xlsx && node packages/core/test/font-loading.browser.mjs",
     "test:go": "node ./scripts/run-go-tests.mjs wasm/converter-core examples/go-wazero-converter",
     "test:wasm": "cargo test --manifest-path wasm/converter-core-rust/Cargo.toml && cargo test --manifest-path wasm/converter-image-rust/Cargo.toml && cargo test --manifest-path wasm/converter-image-rust/vendor/rawloader/Cargo.toml --lib",
     "test:occt-wasm": "node ./scripts/test-occt-wasm.mjs",
@@ -68,7 +77,15 @@
     "run:real-samples-e2e": "node ./scripts/run-real-samples-e2e.mjs",
     "proto:iwork": "node ./scripts/generate-iwork-proto.mjs",
     "test:demo": "npm run build:demo",
-    "package:zimaos:filens": "npm run build --workspace @filens/demo && ./scripts/package-zimaos-filens.sh"
+    "package:zimaos:filens": "npm run build --workspace @filens/demo && ./scripts/package-zimaos-filens.sh",
+    "package:agent:npm": "npm run build:agent && node ./scripts/package-agent-npm.mjs --all",
+    "publish:agent:npm": "node ./scripts/publish-agent-npm.mjs",
+    "test:agent:npm": "node ./scripts/test-agent-npm.mjs",
+    "evaluate:agent": "node ./scripts/evaluate-agent-cli.mjs",
+    "evaluate:pdf-unicode": "python3 -B scripts/evaluate-pdf-unicode.py",
+    "test:agent:privacy": "node --test scripts/agent-release-privacy.test.mjs && python3 -B scripts/test_pdf_unicode_privacy.py",
+    "test:agent:layout": "node ./scripts/test-agent-layout.mjs",
+    "demo:agent": "node ./scripts/capture-agent-cli-demo.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.0",

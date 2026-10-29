@@ -1,5 +1,12 @@
 import {
   createDefaultPreviewRoutes,
+  analyzePreviewFonts,
+  collectSlideFontReferences,
+  collectSlideFontLoadingReferences,
+  applySlideFontMappings,
+  analyzeLoadedPreviewFonts,
+  bindPreviewFontLoading,
+  type PreviewFontRefresh,
   type FormatDefinition,
   type PagedPreviewState,
   type PreviewDriver,
@@ -11,6 +18,8 @@ import {
   type PreviewOptions,
   type PreviewSession,
   type PreviewSource,
+  type SlideModel,
+  type TableItem,
   type WorkbookPreviewState
 } from '@filens/core';
 import { createIworkViewer } from './viewer/create-iwork-viewer';
@@ -55,6 +64,11 @@ export class IworkPreviewSession implements PreviewSession<IworkPreviewState> {
   private readonly unsubscribes: Array<() => void>;
   private lastState: IworkPreviewState;
   private destroyed = false;
+  private fontDocument: IworkViewerState['document'] = null;
+  private fontScenes: Array<SlideModel | TableItem> = [];
+  private fontAnalysis = analyzePreviewFonts([]);
+  private fontUpdate: PreviewFontRefresh | null = null;
+  private readonly fontLoading: ReturnType<typeof bindPreviewFontLoading>;
 
   constructor(private readonly host: HTMLElement, options: PreviewOptions = {}) {
     this.viewer = createIworkViewer(host, {
@@ -81,15 +95,18 @@ export class IworkPreviewSession implements PreviewSession<IworkPreviewState> {
         this.emit('error', error);
         this.emit('statechange', this.lastState);
       }),
-      this.viewer.on('warnings', (warnings) => {
-        this.emit('warnings', warnings);
+      this.viewer.on('warnings', () => {
+        this.updateState(this.viewer.getState());
+        this.emit('warnings', this.lastState.warnings);
       }),
       this.viewer.on('pagechange', (state) => {
         this.updateState(state);
         this.emit('statechange', this.lastState);
       }),
       this.viewer.on('sheetchange', (state) => {
+        const warnings = this.lastState.warnings;
         this.updateState(state);
+        if (warnings.join('\n') !== this.lastState.warnings.join('\n')) this.emit('warnings', this.lastState.warnings);
         this.emit('statechange', this.lastState);
       }),
       this.viewer.on('scalechange', (state) => {
@@ -97,15 +114,19 @@ export class IworkPreviewSession implements PreviewSession<IworkPreviewState> {
         this.emit('statechange', this.lastState);
       })
     ];
+    this.fontLoading = bindPreviewFontLoading(this, host.ownerDocument, options);
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
+    this.fontLoading.reset(context.signal, context.route?.targetFormat ?? context.descriptor.extension ?? 'key');
+    this.fontUpdate = null;
     await this.viewer.preview(source, { signal: context.signal });
   }
 
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
+    this.fontLoading.destroy();
     for (const unsubscribe of this.unsubscribes) {
       unsubscribe();
     }
@@ -115,7 +136,31 @@ export class IworkPreviewSession implements PreviewSession<IworkPreviewState> {
   }
 
   getState(): IworkPreviewState {
-    return this.lastState;
+    return {
+      ...this.lastState,
+      fonts: this.lastState.fonts?.map((font) => ({ ...font, classification: font.classification ? { ...font.classification } : undefined })),
+      warnings: [...this.lastState.warnings]
+    };
+  }
+
+  private fontSlides() {
+    const slides = this.fontScenes.filter((scene): scene is SlideModel => 'items' in scene);
+    const tables = this.fontScenes.filter((scene): scene is TableItem => !('items' in scene));
+    return [...slides, { items: tables }];
+  }
+
+  getFontReferences() { return collectSlideFontLoadingReferences(this.fontSlides()); }
+
+  refreshFonts(update: PreviewFontRefresh): void {
+    if (this.destroyed || !this.fontDocument) return;
+    const replacements = new Map(update.references.map(ref => [JSON.stringify([ref.fontFamily, ref.traits?.weight, ref.fontStyle]), ref]));
+    update = { ...update, references: this.getFontReferences().map(ref => replacements.get(JSON.stringify([ref.fontFamily, ref.traits?.weight, ref.fontStyle])) ?? ref) };
+    this.fontUpdate = update;
+    applySlideFontMappings(this.fontSlides(), update.references);
+    this.fontAnalysis = analyzeLoadedPreviewFonts(update, this.host.ownerDocument);
+    this.updateState(this.viewer.getState());
+    if (update.loaded.length || update.relayout) this.viewer.refreshFonts?.();
+    this.emit('warnings', this.lastState.warnings); this.emit('statechange', this.lastState);
   }
 
   on<T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void): () => void {
@@ -163,7 +208,30 @@ export class IworkPreviewSession implements PreviewSession<IworkPreviewState> {
   }
 
   private updateState(state: IworkViewerState): void {
-    this.lastState = toIworkPreviewState(state);
+    const document = state.document;
+    const slides: SlideModel[] = !document ? [] : document.kind === 'key'
+      ? document.presentation.slides
+      : document.kind === 'pages' ? document.pages.map((page) => page.canvas.slide)
+        : document.sheets.map((sheet) => sheet.canvas.slide);
+    const tables = document?.kind === 'numbers' ? document.sheets.flatMap((sheet) => sheet.tables.map((table) => table.item)) : [];
+    // Lazy Numbers sheets can replace scenes inside the same document object.
+    const scenes = [...slides, ...tables];
+    if (document !== this.fontDocument || scenes.length !== this.fontScenes.length || scenes.some((scene, i) => scene !== this.fontScenes[i])) {
+      this.fontDocument = document;
+      this.fontScenes = scenes;
+      const tableSlides = tables.length ? [{ items: tables }] : [];
+      const references = collectSlideFontReferences([...slides, ...tableSlides]);
+      if (this.fontUpdate) {
+        const previous = new Map(this.fontUpdate.references.map(ref => [ref.fontFamily, ref]));
+        this.fontAnalysis = analyzeLoadedPreviewFonts({ ...this.fontUpdate, references: references.map(ref => previous.get(ref.fontFamily) ?? ref) }, this.host.ownerDocument);
+        applySlideFontMappings([...slides, ...tableSlides], this.fontUpdate.references);
+      } else this.fontAnalysis = analyzePreviewFonts(references, this.host.ownerDocument);
+    }
+    this.lastState = {
+      ...toIworkPreviewState(state),
+      fonts: this.fontAnalysis.fonts.map((font) => ({ ...font, classification: font.classification ? { ...font.classification } : undefined })),
+      warnings: [...new Set([...state.warnings, ...this.fontAnalysis.warnings])]
+    };
   }
 
   private emit<T extends PreviewEventName>(event: T, payload: PreviewEventMap[T]): void {

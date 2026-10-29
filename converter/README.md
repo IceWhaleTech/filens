@@ -1,5 +1,12 @@
 # FiLens text extraction host
 
+For the runnable Agent CLI, natural-language requests, Lite/Full bundles and
+default native RapidOCR NCNN (no Python, max side 960, OpenMP=2), see the [Agent CLI guide](../docs/agent-cli.md). The library
+below keeps OCR injectable; its new `IncludeStructure` option returns WASM
+evidence spans, and `extractor.Capabilities(ctx)` discovers the running text
+core's full input set. The distributed CLI is now the [Rust host](../cli/);
+`converter/agent` and `converter/cmd/filens` remain as legacy Go integrations.
+
 This optional Go module hosts `converter-text.wasm`; parsing, document order and
 OCR decisions live in the Rust WASM core. It does not require an Office suite,
 Photos service, x2t, or Tesseract. `TextCapabilities()` is a separate contract
@@ -21,8 +28,12 @@ result, err := extractor.ExtractText(ctx, input, converter.Options{
 and failure. An incomplete result retains extracted text and has a non-nil
 error. A missing OCR provider is an error when an OCR unit is encountered.
 `MaxBytes` counts UTF-8 bytes; truncation never splits a code point. PDFs use the
-optional PDFium WASM document engine; only pages without meaningful text are
-rendered (200 DPI, 32 million pixels maximum). Each page is released immediately.
+optional PDFium WASM document engine. The text WASM core first attempts bounded,
+font-specific ToUnicode recovery; pages without usable mappings, including
+nonempty glyph-ID garbage, can also require OCR (200 DPI, 32 million pixels
+maximum). There is no global Chinese substitution table. See
+[PDF recovery, limits and public regressions](../docs/pdf-unicode.md).
+Each page is released immediately.
 Repeated embedded image bytes share an OCR result within a file.
 
 Use one extractor per serialized worker, reuse it, and close it at idle/shutdown.

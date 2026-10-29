@@ -60,6 +60,16 @@ Custom drivers must release their own DOM and resources on destruction; work tha
 ignores cancellation may still finish. Rejected loads release their sessions and
 expose the error through `getState()` and the `error` event.
 
+PPTX and participating optional drivers also expose `PreviewItemState.fonts`
+through the generic runtime. This includes discovered font references,
+best-effort availability, application mappings, and layout-drift warnings.
+Set `fontLoading: true` on `createPreviewer()` to load optional Latin/CJK webfonts
+in the background and refresh layouts after loading. Custom packs and
+`fontResolver` URL/byte assets support self-hosting and authorization; adaptive
+mirrors and bounded backoff retain local fallback when loading fails.
+See [font diagnostics and loading](../../docs/fonts.md) for supported formats,
+configuration, helper APIs, provenance semantics, and detection limits.
+
 ## Viewer Options
 
 ```ts

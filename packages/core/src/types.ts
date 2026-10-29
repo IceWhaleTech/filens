@@ -37,6 +37,7 @@ export interface ViewerState {
 }
 
 export interface ViewerInstance {
+  refreshFonts?(): void;
   preview(source: PptxSource): Promise<void>;
   destroy(): void;
   setScale(scale: number): void;

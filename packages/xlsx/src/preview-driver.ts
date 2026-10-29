@@ -1,5 +1,12 @@
 import {
   createDefaultPreviewRoutes,
+  analyzePreviewFonts,
+  buildPreviewFontStack,
+  classifyPreviewFont,
+  analyzeLoadedPreviewFonts,
+  bindPreviewFontLoading,
+  type PreviewFontReference,
+  type PreviewFontRefresh,
   type FormatDefinition,
   type PreviewDriver,
   type PreviewEventMap,
@@ -11,7 +18,7 @@ import {
   type WorkbookPreviewState
 } from '@filens/core';
 import { loadXlsxWorkbook, resolveCellValue } from './parser';
-import type { ParsedRow, ParsedSheet, ParsedWorkbook } from './types';
+import type { ParsedCell, ParsedRow, ParsedSheet, ParsedWorkbook } from './types';
 
 type PreviewListenerMap = {
   [K in PreviewEventName]: Set<(payload: PreviewEventMap[K]) => void>;
@@ -51,6 +58,9 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
   private loadController?: AbortController;
   private removeAbortListener?: () => void;
   private state: WorkbookPreviewState;
+  private readonly fontLoading: ReturnType<typeof bindPreviewFontLoading>;
+  private fontReferences: PreviewFontReference[] = [];
+  private allFontReferences: PreviewFontReference[] = [];
 
   constructor(private readonly host: HTMLElement, options: PreviewOptions = {}) {
     this.root = document.createElement('div');
@@ -77,9 +87,11 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
       sheets: [],
       scale: options.initialScale ?? 1
     };
+    this.fontLoading = bindPreviewFontLoading(this, host.ownerDocument, options);
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
+    this.fontLoading.reset(context.signal, context.route?.targetFormat ?? context.descriptor.extension ?? 'xlsx');
     const generation = ++this.loadGeneration;
     this.loadController?.abort();
     this.removeAbortListener?.();
@@ -113,11 +125,25 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
       if (generation !== this.loadGeneration) return;
       if (controller.signal.aborted) throw new DOMException('Workbook preview aborted.', 'AbortError');
       this.workbook = workbook;
+      const used = new Set<PreviewFontReference>();
+      for (const sheet of workbook.sheets) for (const row of sheet.rows) for (const cell of row.cells) {
+        if (cell.font) used.add(cell.font);
+      }
+      this.allFontReferences = (workbook.fonts ?? []).map(ref => ({ ...ref }));
+      this.fontReferences = this.allFontReferences.filter((_, index) => used.has(workbook.fonts![index]));
+      const fontAnalysis = analyzePreviewFonts(workbook.fonts ?? [], this.host.ownerDocument, { substitute: true });
+      // These references belong to this parsed workbook and are shared by its cells.
+      const targets = new Map(fontAnalysis.fonts.map(font => [JSON.stringify([font.fontFamily, font.classification]), font.resolvedFontFamily]));
+      for (const reference of workbook.fonts ?? []) {
+        const target = targets.get(JSON.stringify([reference.fontFamily, classifyPreviewFont(reference.fontFamily ?? '', reference.traits)]));
+        if (target) reference.resolvedFontFamily = target;
+      }
       this.state = {
         ...this.state,
         loading: false,
         error: null,
-        warnings: this.workbook.warnings.slice(),
+        warnings: [...new Set([...this.workbook.warnings, ...fontAnalysis.warnings])],
+        fonts: fontAnalysis.fonts,
         activeSheetIndex: 0,
         sheets: this.workbook.sheets.map((sheet, index) => ({
           id: sheet.id || String(index + 1),
@@ -144,6 +170,7 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
   }
 
   destroy(): void {
+    this.fontLoading.destroy();
     this.loadGeneration++;
     this.loadController?.abort();
     this.removeAbortListener?.();
@@ -161,8 +188,33 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
     return {
       ...this.state,
       warnings: this.state.warnings.slice(),
+      fonts: this.state.fonts?.map(font => ({ ...font, classification: font.classification ? { ...font.classification } : undefined })),
       sheets: this.state.sheets.slice()
     };
+  }
+
+  getFontReferences(): readonly PreviewFontReference[] { return this.fontReferences; }
+
+  refreshFonts(update: PreviewFontRefresh): void {
+    if (!this.workbook || this.loadController?.signal.aborted) return;
+    this.fontReferences = update.references;
+    this.allFontReferences = this.allFontReferences.map(ref => update.references.find(item => item.fontFamily === ref.fontFamily && item.traits?.weight === ref.traits?.weight) ?? ref);
+    const analysis = analyzeLoadedPreviewFonts({ ...update, references: this.allFontReferences }, this.host.ownerDocument);
+    for (const ref of this.workbook.fonts ?? []) {
+      const replacement = update.references.find(item => item.fontFamily === ref.fontFamily && item.traits?.weight === ref.traits?.weight);
+      if (replacement?.resolvedFontFamily) ref.resolvedFontFamily = replacement.resolvedFontFamily;
+    }
+    this.state.fonts = analysis.fonts;
+    this.state.warnings = [...new Set([...this.workbook.warnings, ...analysis.warnings])];
+    if (update.loaded.length || update.relayout) {
+      const sheet = this.workbook.sheets[this.state.activeSheetIndex];
+      const top = this.grid.scrollTop, left = this.grid.scrollLeft;
+      const rows = this.grid.querySelector('tbody')?.rows.length ?? ROW_BATCH_SIZE;
+      if (sheet) this.grid.replaceChildren(createSheetTable(sheet, rows));
+      this.grid.scrollTop = top; this.grid.scrollLeft = left;
+    }
+    this.emit('warnings', this.state.warnings);
+    this.emit('rendered', this.getState()); this.emit('statechange', this.getState());
   }
 
   on<T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void): () => void {
@@ -240,12 +292,15 @@ export class XlsxPreviewSession implements PreviewSession<WorkbookPreviewState> 
   };
 
   private releaseWorkbook(): void {
+    this.fontReferences = [];
+    this.allFontReferences = [];
     this.workbook = null;
     this.tabs.replaceChildren();
     this.grid.replaceChildren();
     this.grid.scrollTop = this.grid.scrollLeft = 0;
     this.state.activeSheetIndex = 0;
     this.state.sheets = [];
+    this.state.fonts = [];
   }
 
   private emit<T extends PreviewEventName>(event: T, payload: PreviewEventMap[T]): void {
@@ -297,6 +352,7 @@ export function createSheetTable(sheet: ParsedSheet, rowCount = Math.max(sheet.r
 
 export function appendSheetRows(tbody: HTMLTableSectionElement, sheet: ParsedSheet, firstRow: number, lastRow: number): void {
   if (firstRow > lastRow) return;
+  const fontStacks = new Map<ParsedCell['font'], string>();
   // Index only this batch. Preserve unordered/duplicate rows and caller edits
   // without allocating a complete-sheet map on every scroll.
   const rowMap = new Map<number, ParsedRow>();
@@ -317,6 +373,15 @@ export function appendSheetRows(tbody: HTMLTableSectionElement, sheet: ParsedShe
       td.className = 'xlsxv-cell';
       const cell = cells.get(column);
       td.textContent = cell ? resolveCellValue(sheet, cell) : '';
+      if (cell?.font?.fontFamily) {
+        let stack = fontStacks.get(cell.font);
+        if (!stack) {
+          stack = buildPreviewFontStack(cell.font.fontFamily, cell.font.traits, cell.font.resolvedFontFamily ? [cell.font.resolvedFontFamily] : []);
+          fontStacks.set(cell.font, stack);
+        }
+        td.style.fontFamily = stack;
+        if (cell.font.traits?.weight) td.style.fontWeight = String(cell.font.traits.weight);
+      }
       tr.appendChild(td);
     }
     fragment.appendChild(tr);

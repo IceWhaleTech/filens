@@ -1,0 +1,51 @@
+{
+  "samples": [
+    {
+      "file": "pdfjs-11066-copy-paste.pdf",
+      "issue": "https://github.com/mozilla/pdf.js/issues/11066",
+      "url": "https://github.com/mozilla/pdf.js/files/3489985/copy-paste-problem.pdf",
+      "sha256": "3bbac1f900edd9616d0d17d9f4af34a8492977fec8e6c862c9865b1ee7070b69",
+      "pages": 1,
+      "problem": "Quartz maps a single glyph to a radical plus its unified ideograph",
+      "contains": ["电子科技大学", "电子子科技大大学", "子子", "大大"],
+      "absent": ["⼦子", "⼤大"],
+      "repairedFonts": 1
+    },
+    {
+      "file": "pdfjs-19747-test-031.pdf",
+      "issue": "https://github.com/mozilla/pdf.js/issues/19747",
+      "url": "https://github.com/user-attachments/files/19547046/test-031.pdf",
+      "sha256": "28c168fa9fdbb86a81f75cdcc7f240668366a738056b582d7d8d5ce394274df4",
+      "pages": 1,
+      "problem": "Malformed CMap operators plus an unembedded font without ToUnicode; residual invalid controls require OCR",
+      "limitations": "Chinese headings are readable, but PDFium renders the missing numeric font incorrectly; OCR cannot recover reliable table numbers",
+      "contains": ["投标报价表", "分部分项工程", "工程名称", "河北尚义经济开发区"],
+      "absent": ["ᣅḷᣕԧ㺘"],
+      "repairedFonts": 2,
+      "ocr": true,
+      "ocrWarning": "PDF text mapping invalid on page 1; using OCR"
+    },
+    {
+      "file": "pymupdf-3538-python.pdf",
+      "issue": "https://github.com/pymupdf/PyMuPDF/issues/3538",
+      "url": "https://github.com/user-attachments/files/15511860/Python.pdf",
+      "sha256": "95344bc3d70b3cd2e2472ffbefdd44231c18c53947ab6fefe598e74c12622ab1",
+      "pages": 88,
+      "problem": "Extraction failure reported for MuPDF; PDFium already reads this sample",
+      "contains": ["Python单元测试框架", "unittest", "pytest"],
+      "repairedFonts": 0,
+      "unchanged": true
+    },
+    {
+      "file": "pymupdf-3945-1015.pdf",
+      "issue": "https://github.com/pymupdf/PyMuPDF/issues/3945",
+      "url": "https://github.com/user-attachments/files/17373987/1015.pdf",
+      "sha256": "fb58a378f2a32b1991e76b1b9886489752e16f29579ebaafa3c1bbff44e35371",
+      "pages": 18,
+      "problem": "Type3 fonts with numeric glyph names and no ToUnicode; render and OCR instead",
+      "contains": ["新能源汽车产业发展规划", "国务院办公厅", "市场主导", "开放合作"],
+      "repairedFonts": 0,
+      "ocr": true
+    }
+  ]
+}

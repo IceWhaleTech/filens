@@ -1,0 +1,23 @@
+filens — local document reading and conversion for agents
+
+  filens '你能做什么？以 JSON 输出'
+  filens '读取 "report.pdf"，以纯文本输出'
+  filens '理解 "meeting notes.docx"，以 JSON 输出'
+  filens 'read "report.pages" as json'
+  echo '{"input":"report.pdf","operation":"understand"}' | filens
+  filens convert report.doc --output report.docx --json
+  filens convert data.csv result.xlsx
+  filens convert photo.dng --to jpg
+
+Optional commands: capacity (capabilities), read, extract, understand, layout, convert.
+Optional flags: --json, --format text|json|markdown|html|yaml|xml|csv|tsv,
+                --layout, --input PATH, --max-bytes N,
+                --timeout 2m, --wasm PATH, --no-ocr, --help.
+Conversion flags: --output/-o PATH, --to/--target EXT, --from/--source EXT,
+                  --password VALUE, --locale VALUE, --force.
+Conversion pairs come from capacity.conversionPairs; JSON is the default response.
+Output extensions infer the target format. Existing files require --force.
+Use - to read a natural-language or JSON request from stdin; pipe with no args also works.
+JSON requests default to JSON responses; text requests default to plain text.
+The full bundle includes RapidOCR (OpenMP threads = 2); the lite bundle adds it on demand.
+Document understanding/reasoning is performed by the calling agent using returned evidence.

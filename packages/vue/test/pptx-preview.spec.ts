@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { mount } from '@vue/test-utils';
+import type { PreviewItemState } from '@filens/core';
 import JSZip from 'jszip';
 import { nextTick } from 'vue';
 import { describe, expect, it, vi, beforeAll, afterAll } from 'vitest';
@@ -869,6 +870,9 @@ describe('Preview', () => {
     expect(wrapper.emitted('warnings')?.[0]?.[0]).toEqual([
       'DXF references SHX font files (romans.shx), which browsers cannot render directly; CSS fallback fonts are used.'
     ]);
+    expect((wrapper.emitted('rendered')?.[0]?.[0] as PreviewItemState).fonts).toMatchObject([
+      { fontFile: 'romans.shx', status: 'unsupported', source: 'fallback' }
+    ]);
 
     wrapper.unmount();
   });
@@ -927,6 +931,46 @@ describe('Preview', () => {
     expect(wrapper.emitted('warnings')).toBeUndefined();
 
     wrapper.unmount();
+  });
+
+  it('loads host fonts through fontLoading and refreshes CAD while retaining hidden layers', async () => {
+    const previousFonts = Object.getOwnPropertyDescriptor(document, 'fonts');
+    const faces = new Set<unknown>();
+    let finishDecode!: () => void;
+    const decoded = new Promise<void>(resolve => { finishDecode = resolve; });
+    vi.stubGlobal('FontFace', class { async load() { await decoded; return this; } });
+    Object.defineProperty(document, 'fonts', { configurable: true, value: {
+      add: (face: unknown) => faces.add(face), delete: (face: unknown) => faces.delete(face)
+    } });
+    const canvas = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    const font = { id: 'host-cad', fontFamily: 'Host CAD', data: new Uint8Array([1, 2, 3]) };
+    const wrapper = mount(Preview, {
+      attachTo: document.body,
+      props: {
+        src: createDxfFixture(), name: 'floorplan.dxf', contentType: 'image/vnd.dxf',
+        fontLoading: { packs: [] }, fontResolver: () => ({ fontFamily: font.fontFamily, assets: [font] })
+      }
+    });
+    try {
+      await waitFor(() => expect(wrapper.emitted('rendered')).toBeTruthy());
+      const before = wrapper.find('svg.cadv-canvas').element;
+      const walls = wrapper.findAll('.pptxv-layer-row').find(row => row.text().includes('WALLS'))!.find('input');
+      await walls.setValue(false);
+      finishDecode();
+      await waitFor(() => {
+        const states = wrapper.emitted('state-change') ?? [];
+        expect(states.some(([state]) => (state as PreviewItemState).fonts?.some(font => font.status === 'substituted' && font.resolvedFontFamily === 'Host CAD'))).toBe(true);
+      });
+      expect(wrapper.find('svg.cadv-canvas').element).not.toBe(before);
+      expect(wrapper.find('svg.cadv-canvas text').attributes('font-family')).toContain('Host CAD');
+      expect(wrapper.find('svg.cadv-canvas line[data-layer="WALLS"]').attributes('display')).toBe('none');
+      expect(faces.size).toBe(1);
+      wrapper.unmount(); expect(faces.size).toBe(0);
+    } finally {
+      wrapper.unmount(); finishDecode(); canvas.mockRestore(); vi.unstubAllGlobals();
+      if (previousFonts) Object.defineProperty(document, 'fonts', previousFonts);
+      else delete (document as unknown as { fonts?: unknown }).fonts;
+    }
   });
 
   it('passes resourceResolver through to the DXF CAD driver', async () => {

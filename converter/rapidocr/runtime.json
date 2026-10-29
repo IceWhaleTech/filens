@@ -1,0 +1,35 @@
+{
+  "version": "2026.10.28.2",
+  "huggingFaceRepo": "orca-zhang/ncnn",
+  "huggingFaceRevision": "8ffa14f2024c6fe4fbb2b4a0ea88e8f2ab069f96",
+  "modelScopeRepo": "orcazhang/ncnn",
+  "modelScopeRevision": "31cac59f06413ab474246ad24f9a06ab14090a0f",
+  "platforms": {
+    "darwin-arm64": [],
+    "linux-x64": [
+      {
+        "name": "libncnn.so",
+        "bytes": 9123192,
+        "sha256": "15ce510ef179ae04198b182b3ebbef6e50db9419d64d7bfdd8ed76cc5473aa54",
+        "huggingFacePath": "runtime/releases/ncnn/2026.10.28.2/linux/amd64/libncnn.so",
+        "modelScopePath": "runtime/releases/ncnn/2026.10.28.2/linux/amd64/libncnn.so"
+      }
+    ],
+    "linux-arm64": [
+      {
+        "name": "libncnn.so",
+        "bytes": 3543520,
+        "sha256": "1eb9e66644ee90e178f92478040cd822419af30f7156b65026e564239c90228a",
+        "huggingFacePath": "runtime/releases/ncnn/2026.10.28.2/linux/arm64/libncnn.so",
+        "modelScopePath": "runtime/releases/ncnn/2026.10.28.2/linux/arm64/libncnn.so"
+      }
+    ]
+  },
+  "wrapperSource": {
+    "name": "wrapper-source.tar.gz",
+    "bytes": 144839,
+    "sha256": "2c781788bb7eb5d91e0bdb8fcb12b7415d49045e13b32c9b959e740432a833b7",
+    "huggingFacePath": "runtime/releases/ncnn/2026.10.28.2/wrapper-source.tar.gz",
+    "modelScopePath": "runtime/releases/ncnn/2026.10.28.2/wrapper-source.tar.gz"
+  }
+}

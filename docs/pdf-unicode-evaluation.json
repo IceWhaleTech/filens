@@ -1,0 +1,297 @@
+{
+  "wasmSha256": "ffd0f9a415691b217be3dbd3c200a57bfbe92730c28ac28d4a4aab10f57bc81e",
+  "samples": [
+    {
+      "file": "pdfjs-11066-copy-paste.pdf",
+      "issue": "https://github.com/mozilla/pdf.js/issues/11066",
+      "url": "https://github.com/mozilla/pdf.js/files/3489985/copy-paste-problem.pdf",
+      "pages": 1,
+      "problem": "Quartz maps a single glyph to a radical plus its unified ideograph",
+      "sha256": "3bbac1f900edd9616d0d17d9f4af34a8492977fec8e6c862c9865b1ee7070b69",
+      "before": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 2.17,
+        "characters": 552,
+        "textSha256": "a4a1cad5352844f20addf58c3e56480bffa2654ba2d0b4b43f672200042584ad",
+        "warnings": [],
+        "error": null,
+        "checks": {
+          "contains:电子科技大学": false,
+          "contains:电子子科技大大学": false,
+          "contains:子子": false,
+          "contains:大大": false,
+          "absent:⼦子": false,
+          "absent:⼤大": false,
+          "fontRecovery": false
+        }
+      },
+      "after": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 2.27,
+        "characters": 538,
+        "textSha256": "a0f5e884052dae8fea1d7a255539cf135fc85d925838eb0510cf6ea836d05ee2",
+        "warnings": [
+          "Recovered PDF Unicode mappings for 1 font(s)"
+        ],
+        "error": null,
+        "checks": {
+          "contains:电子科技大学": true,
+          "contains:电子子科技大大学": true,
+          "contains:子子": true,
+          "contains:大大": true,
+          "absent:⼦子": true,
+          "absent:⼤大": true,
+          "fontRecovery": true,
+          "sourceUnchanged": true
+        }
+      },
+      "passed": true
+    },
+    {
+      "file": "pdfjs-19747-test-031.pdf",
+      "issue": "https://github.com/mozilla/pdf.js/issues/19747",
+      "url": "https://github.com/user-attachments/files/19547046/test-031.pdf",
+      "pages": 1,
+      "problem": "Malformed CMap operators plus an unembedded font without ToUnicode; residual invalid controls require OCR",
+      "limitations": "Chinese headings are readable, but PDFium renders the missing numeric font incorrectly; OCR cannot recover reliable table numbers",
+      "sha256": "28c168fa9fdbb86a81f75cdcc7f240668366a738056b582d7d8d5ce394274df4",
+      "before": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 2.06,
+        "characters": 873,
+        "textSha256": "4958d7a669b144076500b7ef62cce4cc8f18d776e8e0e4f54f9bd7774d6ae7b5",
+        "warnings": [],
+        "error": null,
+        "checks": {
+          "contains:投标报价表": false,
+          "contains:分部分项工程": false,
+          "contains:工程名称": false,
+          "contains:河北尚义经济开发区": false,
+          "absent:ᣅḷᣕԧ㺘": false,
+          "fontRecovery": false,
+          "ocrRouting": false
+        }
+      },
+      "after": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 3.75,
+        "characters": 634,
+        "textSha256": "a0a89936b643ea6a951b251cc657b6af55ccf65b83706cca462361eff306658f",
+        "warnings": [
+          "Recovered PDF Unicode mappings for 2 font(s)",
+          "PDF text mapping invalid on page 1; using OCR"
+        ],
+        "error": null,
+        "checks": {
+          "contains:投标报价表": true,
+          "contains:分部分项工程": true,
+          "contains:工程名称": true,
+          "contains:河北尚义经济开发区": true,
+          "absent:ᣅḷᣕԧ㺘": true,
+          "fontRecovery": true,
+          "ocrRouting": true,
+          "sourceUnchanged": true,
+          "missingOCRFails": true
+        }
+      },
+      "passed": true
+    },
+    {
+      "file": "pymupdf-3538-python.pdf",
+      "issue": "https://github.com/pymupdf/PyMuPDF/issues/3538",
+      "url": "https://github.com/user-attachments/files/15511860/Python.pdf",
+      "pages": 88,
+      "problem": "Extraction failure reported for MuPDF; PDFium already reads this sample",
+      "sha256": "95344bc3d70b3cd2e2472ffbefdd44231c18c53947ab6fefe598e74c12622ab1",
+      "before": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 2.27,
+        "characters": 78085,
+        "textSha256": "9789812d4961fdb74bca0dc391e21ad25fa93ba91c2a93de3a84b5acdbee9787",
+        "warnings": [],
+        "error": null,
+        "checks": {
+          "contains:Python单元测试框架": true,
+          "contains:unittest": true,
+          "contains:pytest": true,
+          "fontRecovery": true
+        }
+      },
+      "after": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 2.6,
+        "characters": 78085,
+        "textSha256": "9789812d4961fdb74bca0dc391e21ad25fa93ba91c2a93de3a84b5acdbee9787",
+        "warnings": [],
+        "error": null,
+        "checks": {
+          "contains:Python单元测试框架": true,
+          "contains:unittest": true,
+          "contains:pytest": true,
+          "fontRecovery": true,
+          "unchangedFromBaseline": true,
+          "sourceUnchanged": true
+        }
+      },
+      "passed": true
+    },
+    {
+      "file": "pymupdf-3945-1015.pdf",
+      "issue": "https://github.com/pymupdf/PyMuPDF/issues/3945",
+      "url": "https://github.com/user-attachments/files/17373987/1015.pdf",
+      "pages": 18,
+      "problem": "Type3 fonts with numeric glyph names and no ToUnicode; render and OCR instead",
+      "sha256": "fb58a378f2a32b1991e76b1b9886489752e16f29579ebaafa3c1bbff44e35371",
+      "before": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 2.21,
+        "characters": 11381,
+        "textSha256": "78ea20d70655701dbfd183781a92fe1120b38cf8e5f7fff180f801de3118faf9",
+        "warnings": [],
+        "error": null,
+        "checks": {
+          "contains:新能源汽车产业发展规划": false,
+          "contains:国务院办公厅": false,
+          "contains:市场主导": false,
+          "contains:开放合作": false,
+          "fontRecovery": true,
+          "ocrRouting": false
+        }
+      },
+      "after": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 21.6,
+        "characters": 11421,
+        "textSha256": "656fec9c6ccc038f4ae1407568c5f0c7efbc7800033870c93f310be979c55081",
+        "warnings": [
+          "PDF text mapping unavailable; using OCR for 18 page(s)"
+        ],
+        "error": null,
+        "checks": {
+          "contains:新能源汽车产业发展规划": true,
+          "contains:国务院办公厅": true,
+          "contains:市场主导": true,
+          "contains:开放合作": true,
+          "fontRecovery": true,
+          "ocrRouting": true,
+          "sourceUnchanged": true,
+          "missingOCRFails": true
+        }
+      },
+      "passed": true
+    },
+    {
+      "file": "normal-cosmic-atlas.pdf",
+      "sha256": "7f085e7cfcb77645a9e296cd527150037868f7e1ead61fddf6d1a316b9576a69",
+      "before": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 1.91,
+        "characters": 559,
+        "textSha256": "bdc142a6e6aafb6216ab344f7d99a6b9c1a32a2121a26731f834a6a99355dc45",
+        "warnings": [],
+        "error": null,
+        "checks": {
+          "contains:COSMIC CLIFFS": true
+        }
+      },
+      "after": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 2.05,
+        "characters": 559,
+        "textSha256": "bdc142a6e6aafb6216ab344f7d99a6b9c1a32a2121a26731f834a6a99355dc45",
+        "warnings": [],
+        "error": null,
+        "checks": {
+          "contains:COSMIC CLIFFS": true,
+          "unchangedFromBaseline": true,
+          "sourceUnchanged": true
+        }
+      },
+      "passed": true
+    },
+    {
+      "file": "google-cpp-guide.pdf",
+      "pages": 58,
+      "sha256": "9482f7b83658775ffd6f313cd792364fdf3352b7f243c6ad0236d1af160336bd",
+      "before": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 2.03,
+        "characters": 52444,
+        "textSha256": "079eec0aefddc8ab2c87c2fb03995b57fc238d96eb4569e531e5c2db590a0134",
+        "warnings": [],
+        "error": null,
+        "checks": {
+          "contains:大多使用": true,
+          "contains:很多强大的语言特性": false,
+          "contains:不可避免": false,
+          "contains:现有不统一代码": true,
+          "absent:大大使用": true,
+          "absent:很大强大的语言特性": true,
+          "absent:现有与统一代码": true,
+          "fontRecovery": false
+        }
+      },
+      "after": {
+        "exit": 0,
+        "ok": true,
+        "complete": true,
+        "truncated": false,
+        "seconds": 2.45,
+        "characters": 52444,
+        "textSha256": "6e2156a7bf33e433e0b6ca407eccc8b5bac06a16edec3a2366fdbd52ce925bc0",
+        "warnings": [
+          "Recovered PDF Unicode mappings for 1 font(s)"
+        ],
+        "error": null,
+        "checks": {
+          "contains:大多使用": true,
+          "contains:很多强大的语言特性": true,
+          "contains:不可避免": true,
+          "contains:现有不统一代码": true,
+          "absent:大大使用": true,
+          "absent:很大强大的语言特性": true,
+          "absent:现有与统一代码": true,
+          "fontRecovery": true,
+          "sourceUnchanged": true
+        }
+      },
+      "passed": true
+    }
+  ],
+  "baselineWasmSha256": "dc1e6bc6faa5cf2c502226dd7ee9aeaff53ae0ca8de4cb748321818da835d77e",
+  "wasmUnchanged": true,
+  "passed": true
+}

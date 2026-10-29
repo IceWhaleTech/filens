@@ -3,8 +3,10 @@ module github.com/IceWhaleTech/filens/converter
 go 1.24.0
 
 require (
+	github.com/ebitengine/purego v0.10.0
 	github.com/klippa-app/go-pdfium v1.17.3
 	github.com/tetratelabs/wazero v1.11.0
+	go.yaml.in/yaml/v3 v3.0.4
 )
 
 require (

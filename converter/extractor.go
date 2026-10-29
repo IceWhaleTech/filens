@@ -29,17 +29,42 @@ const DefaultContentBytes = 8 << 20
 type OCRProvider interface {
 	Recognize(context.Context, string) (string, error)
 }
+type OCRLayoutProvider interface {
+	RecognizeLayout(context.Context, string) (json.RawMessage, error)
+}
 type Options struct {
-	MaxBytes    int `json:"maxBytes"`
-	MaxOCRPages int `json:"maxOCRPages"`
+	MaxBytes         int    `json:"maxBytes"`
+	MaxOCRPages      int    `json:"maxOCRPages"`
+	IncludeStructure bool   `json:"includeStructure,omitempty"`
+	IncludeLayout    bool   `json:"includeLayout,omitempty"`
+	OutputFormat     string `json:"outputFormat,omitempty"`
+}
+
+// Document spans address extracted UTF-8 text, with zero-based byte offsets
+// (end exclusive) and one-based line numbers. They are not source page numbers.
+type Document struct {
+	Bytes      int         `json:"bytes"`
+	Characters int         `json:"characters"`
+	Lines      int         `json:"lines"`
+	Blocks     []TextBlock `json:"blocks"`
+}
+type TextBlock struct {
+	ID        string `json:"id"`
+	StartByte int    `json:"startByte"`
+	EndByte   int    `json:"endByte"`
+	StartLine int    `json:"startLine"`
+	EndLine   int    `json:"endLine"`
 }
 type Result struct {
-	Text         string   `json:"text"`
-	Complete     bool     `json:"complete"`
-	Truncated    bool     `json:"truncated"`
-	Warnings     []string `json:"warnings,omitempty"`
-	ErrorCode    string   `json:"errorCode,omitempty"`
-	ErrorMessage string   `json:"errorMessage,omitempty"`
+	Text         string          `json:"text"`
+	Complete     bool            `json:"complete"`
+	Truncated    bool            `json:"truncated"`
+	Warnings     []string        `json:"warnings,omitempty"`
+	ErrorCode    string          `json:"errorCode,omitempty"`
+	ErrorMessage string          `json:"errorMessage,omitempty"`
+	Document     *Document       `json:"document,omitempty"`
+	Layout       json.RawMessage `json:"layout,omitempty"`
+	Rendered     string          `json:"rendered,omitempty"`
 }
 
 func (r Result) Err() error {
@@ -205,6 +230,7 @@ func (e *Extractor) hostCall(ctx context.Context, m api.Module, ptr, length, out
 		Path      string `json:"path"`
 		Page      int    `json:"page"`
 		DPI       int    `json:"dpi"`
+		Layout    bool   `json:"layout"`
 	}
 	if err := json.Unmarshal(data, &request); err != nil {
 		return respond(map[string]string{"error": err.Error()})
@@ -231,12 +257,19 @@ func (e *Extractor) hostCall(ctx context.Context, m api.Module, ptr, length, out
 		if err == nil {
 			ocrCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 			defer cancel()
+			if detailed, ok := e.config.OCR.(OCRLayoutProvider); request.Layout && ok {
+				value, detailErr := detailed.RecognizeLayout(ocrCtx, path)
+				if detailErr == nil {
+					return respond(value)
+				}
+				return respond(map[string]string{"error": detailErr.Error()})
+			}
 			text, err = e.config.OCR.Recognize(ocrCtx, path)
 		}
 		if err == nil {
 			return respond(map[string]string{"text": text})
 		}
-	case "pdf_open", "pdf_text", "pdf_render":
+	case "pdf_open", "pdf_text", "pdf_render", "pdf_layout":
 		if e.pdf == nil {
 			e.pdf = &pdfBridge{}
 		}

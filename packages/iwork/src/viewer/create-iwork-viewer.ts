@@ -45,6 +45,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
   const mountedPages = new Map<number, HTMLElement>();
   const visiblePages = new Set<number>();
   const sheetLoads = new Map<number, Promise<void>>();
+  let refreshedRows: number[] | undefined;
   let scrollFrame = 0;
 
   const emit = <T extends IworkViewerEventName>(event: T, payload: IworkViewerEventMap[T]) => {
@@ -166,7 +167,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
         title.textContent = `Table ${index + 1}`;
         section.appendChild(title);
       }
-      const table = createSheetTable(sheet, Math.min(Math.max(sheet.rowCount, 1), ROW_BATCH_SIZE));
+      const table = createSheetTable(sheet, Math.min(Math.max(sheet.rowCount, 1), refreshedRows?.[index] ?? ROW_BATCH_SIZE));
       decorateNumbersCells(table, item, mediaRegistry);
       section.appendChild(table);
       tables.appendChild(section);
@@ -388,6 +389,7 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
           render();
           setStatus();
         }
+        emit('sheetchange', getState());
       })
       .catch((error) => {
         if (state.document !== numbers) {
@@ -509,6 +511,18 @@ export function createIworkViewer(container: HTMLElement, options: IworkViewerOp
 
   return {
     preview,
+    refreshFonts() {
+      if (destroyed || state.loading || !state.document) return;
+      const top = container.scrollTop, left = container.scrollLeft;
+      const grid = stage.querySelector<HTMLElement>('.xlsxv-grid');
+      const gridTop = grid?.scrollTop ?? 0, gridLeft = grid?.scrollLeft ?? 0;
+      refreshedRows = [...stage.querySelectorAll('table')].map(table => table.tBodies[0]?.rows.length ?? ROW_BATCH_SIZE);
+      try { render(); } finally { refreshedRows = undefined; }
+      container.scrollTop = top; container.scrollLeft = left;
+      const nextGrid = stage.querySelector<HTMLElement>('.xlsxv-grid');
+      if (nextGrid) { nextGrid.scrollTop = gridTop; nextGrid.scrollLeft = gridLeft; }
+      emit('rendered', getState());
+    },
     destroy() {
       if (destroyed) return;
       destroyed = true;

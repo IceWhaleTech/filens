@@ -61,6 +61,7 @@ export class Previewer implements PreviewerInstance {
       maxScale: options.maxScale,
       virtual: options.virtual,
       fontResolver: options.fontResolver,
+      fontLoading: options.fontLoading,
       resourceResolver: options.resourceResolver,
       previewerFactory: options.previewerFactory
     };

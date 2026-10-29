@@ -1,8 +1,14 @@
 import {
   createDefaultPreviewRoutes,
+  analyzePreviewFonts,
+  getPreviewFontWarnings,
+  bindPreviewFontLoading,
+  analyzeLoadedPreviewFonts,
+  type PreviewFontRefresh,
   type CadPreviewState,
   type FormatDefinition,
   type PreviewFontResolver,
+  type PreviewFontReference,
   type PreviewDriver,
   type PreviewEventMap,
   type PreviewEventName,
@@ -442,6 +448,8 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
   private resourceUrls = new Set<string>();
   private readonly layerElements = new Map<string, SVGElement[]>();
   private appliedLayers = new Set<string>();
+  private readonly fontLoading: ReturnType<typeof bindPreviewFontLoading>;
+  private fontReferences: PreviewFontReference[] = [];
 
   constructor(private readonly host: HTMLElement, private readonly options: PreviewOptions = {}) {
     this.root = document.createElement('div');
@@ -464,10 +472,12 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
       layers: [],
       activeLayerIds: []
     };
+    this.fontLoading = bindPreviewFontLoading(this, host.ownerDocument, options);
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
     this.stopLoad();
+    this.fontLoading.reset(context.signal, context.route?.targetFormat ?? context.descriptor.extension ?? 'dxf');
     const controller = new AbortController();
     this.loadController = controller;
     const signal = controller.signal;
@@ -487,7 +497,8 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
       loading: true,
       error: null,
       title: context.descriptor.name,
-      warnings: []
+      warnings: [],
+      fonts: []
     };
     this.emit('loading', this.state);
     this.emit('statechange', this.state);
@@ -513,6 +524,10 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
       checkCadAborted(signal);
       const drawing = applyCadFontResolver(resourceResolvedDrawing, this.options.fontResolver, format);
       checkCadAborted(signal);
+      this.fontReferences = collectCadFontReferences(resourceResolvedDrawing, drawing);
+      const fontAnalysis = analyzePreviewFonts(this.fontReferences, this.host.ownerDocument);
+      // Drawing warnings already identify unsupported SHX files, including Big Fonts.
+      const fontWarnings = getPreviewFontWarnings(fontAnalysis.fonts.filter((font) => font.status !== 'unsupported'));
       const activeLayerIds = drawing.layerStyles.length
         ? drawing.layerStyles.filter((layer) => layer.visible).map((layer) => layer.name)
         : drawing.layers;
@@ -520,13 +535,14 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
         ...this.state,
         loading: false,
         error: null,
-        warnings: drawing.warnings,
+        warnings: [...new Set([...drawing.warnings, ...fontWarnings])],
+        fonts: fontAnalysis.fonts,
         layers: drawingLayersToState(drawing),
         activeLayerIds
       };
       this.render(drawing);
-      if (drawing.warnings.length) {
-        this.emit('warnings', drawing.warnings);
+      if (this.state.warnings.length) {
+        this.emit('warnings', this.state.warnings);
       }
       this.emit('rendered', this.state);
       this.emit('statechange', this.state);
@@ -546,6 +562,7 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
   }
 
   destroy(): void {
+    this.fontLoading.destroy();
     this.stopLoad();
     this.state.loading = false;
     if (this.root.parentElement === this.host) {
@@ -555,6 +572,7 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
   }
 
   private stopLoad(): void {
+    this.fontReferences = [];
     const controller = this.loadController;
     this.loadController = null;
     controller?.abort();
@@ -567,6 +585,7 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
     this.panY = 0;
     this.state.layers = [];
     this.state.activeLayerIds = [];
+    this.state.fonts = [];
     for (const url of this.resourceUrls) URL.revokeObjectURL(url);
     this.resourceUrls.clear();
   }
@@ -575,9 +594,33 @@ export class CadPreviewSession implements PreviewSession<CadPreviewState> {
     return {
       ...this.state,
       warnings: [...this.state.warnings],
+      fonts: this.state.fonts?.map((font) => ({ ...font, classification: font.classification ? { ...font.classification } : undefined })),
       layers: [...(this.state.layers ?? [])],
       activeLayerIds: [...(this.state.activeLayerIds ?? [])]
     };
+  }
+
+  getFontReferences(): readonly PreviewFontReference[] { return this.fontReferences; }
+
+  refreshFonts(update: PreviewFontRefresh): void {
+    if (!this.drawing || this.loadController?.signal.aborted) return;
+    for (const entity of this.drawing.entities) {
+      if (entity.type !== 'text') continue;
+      const index = this.fontReferences.findIndex(ref => ref.styleName === entity.styleName
+        && (ref.resolvedFontFamily ?? ref.fontFamily) === entity.fontFamily);
+      const target = update.references[index]?.resolvedFontFamily;
+      if (target) entity.fontFamily = target;
+    }
+    this.fontReferences = update.references;
+    const analysis = analyzeLoadedPreviewFonts(update, this.host.ownerDocument);
+    this.state.fonts = analysis.fonts;
+    this.state.warnings = [...new Set([...this.drawing.warnings, ...getPreviewFontWarnings(analysis.fonts.filter(font => font.status !== 'unsupported')), ...update.warnings])];
+    if (update.loaded.length || update.relayout) {
+      this.render(this.drawing);
+      this.appliedLayers = new Set(this.drawing.layers);
+      this.applyLayerVisibility();
+    }
+    this.emit('warnings', this.state.warnings); this.emit('rendered', this.getState()); this.emit('statechange', this.getState());
   }
 
   setScale(scale: number): void {
@@ -3747,6 +3790,29 @@ function normalizeResolvedPreviewSource(source: PreviewSource | undefined, resou
 
 function checkCadAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new DOMException('CAD preview aborted.', 'AbortError');
+}
+
+function collectCadFontReferences(original: CadDrawing, resolved: CadDrawing): PreviewFontReference[] {
+  const references: PreviewFontReference[] = [];
+  const usedStyles = new Set<string>();
+  for (const [index, entity] of original.entities.entries()) {
+    if (entity.type !== 'text') continue;
+    if (entity.styleName) usedStyles.add(normalizeTextStyleName(entity.styleName));
+    const mapped = resolved.entities[index];
+    const provided = mapped !== entity && mapped.type === 'text';
+    references.push({
+      fontFamily: entity.fontFamily, fontFile: entity.fontFile, styleName: entity.styleName,
+      resolvedFontFamily: provided ? mapped.fontFamily : undefined,
+      source: provided ? 'application' : undefined
+    });
+  }
+  for (const style of original.textStyles) {
+    if (!usedStyles.has(normalizeTextStyleName(style.name))) {
+      references.push({ fontFamily: style.fontFamily, fontFile: style.fontFile, styleName: style.name });
+    }
+    if (style.bigFontFile) references.push({ fontFile: style.bigFontFile, styleName: style.name });
+  }
+  return references;
 }
 
 function applyCadFontResolver(drawing: CadDrawing, fontResolver: PreviewFontResolver | undefined, sourceFormat: string): CadDrawing {

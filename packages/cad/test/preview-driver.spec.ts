@@ -2,6 +2,34 @@ import { describe, expect, it, vi } from 'vitest';
 import { createCadPreviewDriver, createCadPreviewRoutes, loadDxfDrawing } from '../src';
 
 describe('CAD preview driver', () => {
+  it.each([false, true])('exposes original SHX references and application mapping diagnostics (mapped: %s)', async (mapped) => {
+    const container = document.body.appendChild(document.createElement('div'));
+    const session = createCadPreviewDriver().createSession(container, {
+      fontResolver: mapped ? () => 'system-ui' : undefined
+    });
+    const source = new TextEncoder().encode(createStyledDxfFixture());
+    const warnings = vi.fn();
+    session.on('warnings', warnings);
+    try {
+      await session.load(source, { descriptor: { source, extension: 'dxf' } });
+      expect(session.getState().fonts).toMatchObject([{
+        fontFile: 'romans.shx', styleName: 'ARCH',
+        resolvedFontFamily: mapped ? 'system-ui' : undefined,
+        status: mapped ? 'substituted' : 'unsupported',
+        source: mapped ? 'application' : 'fallback'
+      }]);
+      expect(warnings).toHaveBeenLastCalledWith(session.getState().warnings);
+      if (mapped) expect(session.getState().warnings).toEqual(['Font "romans.shx" is mapped to "system-ui"; text layout may differ.']);
+      session.getState().fonts![0].status = 'available';
+      expect(session.getState().fonts![0].status).toBe(mapped ? 'substituted' : 'unsupported');
+      session.destroy();
+      expect(session.getState().fonts).toEqual([]);
+    } finally {
+      session.destroy();
+      container.remove();
+    }
+  });
+
   it.each(['INSERT', 'DIMENSION', 'nested INSERT'])('expands a large %s without exceeding the JavaScript argument limit', kind => {
     const count = 130_000;
     const lines = Array.from({ length: count }, (_, index) => `0\nLINE\n8\n0\n10\n${index}\n20\n0\n11\n${index + 1}\n21\n1\n`).join('');

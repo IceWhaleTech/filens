@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-29",
+  "platform": "darwin-arm64",
+  "published": false,
+  "baselineGoBinaryBytes": 11582274,
+  "rustBinaryBytes": 1937984,
+  "optimization": {
+    "rust": "opt-level=z, lto=true, codegen-units=1, panic=abort, strip=symbols",
+    "textWASM": "wasm-opt -Oz --strip-debug --strip-producers",
+    "imageWASM": "wasm-opt -O3 --strip-debug --strip-producers",
+    "resourceCompression": "gzip level 1"
+  },
+  "resources": [
+    {
+      "name": "converter-text.wasm",
+      "rawBytes": 4911914,
+      "gzipBytes": 2266520
+    },
+    {
+      "name": "converter-image.wasm",
+      "rawBytes": 1126286,
+      "gzipBytes": 340342
+    },
+    {
+      "name": "pdfium.wasm",
+      "rawBytes": 3993127,
+      "gzipBytes": 2107393
+    }
+  ],
+  "profiles": {
+    "lite": {
+      "installedBytes": 7602439,
+      "compressedBytes": 5874756
+    },
+    "full": {
+      "installedBytes": 31925411,
+      "compressedBytes": 20765136
+    }
+  },
+  "crossBuiltPlatforms": [
+    "darwin-arm64",
+    "linux-x64",
+    "linux-arm64"
+  ],
+  "locallyTestedPlatforms": [
+    "darwin-arm64"
+  ],
+  "binaryReductionPercent": 83.3
+}

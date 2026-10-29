@@ -83,6 +83,32 @@ func (p *pdfBridge) call(ctx context.Context, operation, path string, index, dpi
 			return nil, err
 		}
 		return map[string]string{"text": value.Text}, nil
+	case "pdf_layout":
+		if p.document == "" {
+			return nil, errors.New("PDF is not open")
+		}
+		size, err := p.instance.FPDF_GetPageSizeByIndex(&requests.FPDF_GetPageSizeByIndex{Document: p.document, Index: index})
+		if err != nil {
+			return nil, err
+		}
+		if size.Width <= 0 || size.Height <= 0 || size.Width > 1_000_000 || size.Height > 1_000_000 || math.IsNaN(size.Width+size.Height) {
+			return nil, errors.New("invalid PDF page geometry")
+		}
+		// Forward three PDFium page-to-device samples. The shared WASM core
+		// reconstructs the coordinate transform, including crop/rotation.
+		basis := make([]any, 0, 3)
+		for _, point := range [][2]float64{{0, 0}, {1000, 0}, {0, 1000}} {
+			position, err := p.instance.FPDF_PageToDevice(&requests.FPDF_PageToDevice{Page: requests.Page{ByIndex: &requests.PageByIndex{Document: p.document, Index: index}}, SizeX: int(math.Ceil(size.Width * 100)), SizeY: int(math.Ceil(size.Height * 100)), PageX: point[0], PageY: point[1]})
+			if err != nil {
+				return nil, err
+			}
+			basis = append(basis, position)
+		}
+		value, err := p.instance.GetPageTextStructured(&requests.GetPageTextStructured{Page: requests.Page{ByIndex: &requests.PageByIndex{Document: p.document, Index: index}}, Mode: requests.GetPageTextStructuredModeRects, CollectFontInformation: true})
+		if err != nil {
+			return nil, err
+		}
+		return map[string]any{"width": size.Width, "height": size.Height, "structured": value, "deviceBasis": basis}, nil
 	case "pdf_render":
 		if p.document == "" {
 			return nil, errors.New("PDF is not open")

@@ -20,6 +20,18 @@ beforeEach(() => {
 afterEach(() => { sessions.splice(0).forEach(session => session.destroy()); vi.restoreAllMocks(); vi.unstubAllGlobals(); document.body.replaceChildren(); });
 
 describe('DOCX asynchronous loading and resource lifetime', () => {
+  it('discards late font-table metadata when a newer document replaces the load', async () => {
+    const { host, session } = setup(), metadata = pending<string>();
+    const loadMetadata = vi.fn(() => metadata.promise);
+    mocks.parse.mockResolvedValueOnce({ text: 'Old', fontTablePart: { path: 'word/fontTable.xml', _package: { load: loadMetadata } } });
+    const first = session.load(new Blob(), context(new Blob(), 'old.docx'));
+    await vi.waitFor(() => expect(loadMetadata).toHaveBeenCalledTimes(1));
+    await session.load(new Blob(), context(new Blob(), 'current.docx'));
+    metadata.resolve('<fonts/>'); await first;
+    expect(host.textContent).toBe('Current');
+    expect(mocks.render).toHaveBeenCalledTimes(1);
+    expect(session.getState()).toMatchObject({ title: 'current.docx', loading: false, fonts: [] });
+  });
   it('keeps a newer document when the old parser resolves late', async () => {
     const { host, session } = setup(), old = pending<any>(); mocks.parse.mockImplementationOnce(() => old.promise);
     const first = session.load(new Blob(), context(new Blob(), 'old.docx'));

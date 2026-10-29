@@ -1,5 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
-import { openZipArchive, type ZipEntry, type PreviewLoadContext, type PreviewSource } from '@filens/core';
+import { openZipArchive, officeFontTraits, fontTraitsFromPanose, type PreviewFontReference, type ZipEntry, type PreviewLoadContext, type PreviewSource } from '@filens/core';
 import type { ParsedCell, ParsedRow, ParsedSheet, ParsedWorkbook } from './types';
 import { readSimpleWorksheet } from './simple-worksheet';
 
@@ -31,6 +31,7 @@ interface WorkbookSheetRef {
 interface RelationshipRef {
   id: string;
   target: string;
+  type?: string;
 }
 
 export async function loadXlsxWorkbook(source: PreviewSource, context?: PreviewLoadContext): Promise<ParsedWorkbook> {
@@ -51,6 +52,7 @@ export async function loadXlsxWorkbook(source: PreviewSource, context?: PreviewL
   checkAborted(context?.signal);
   const workbook = parser.parse(workbookXml) as Record<string, unknown>;
   const relationships = readRelationships(relsXml);
+  const fontStyles = await readFontStyles(zip, relationships, context?.signal);
   const sheets = readWorkbookSheets(workbook);
 
   const parsedSheets: ParsedSheet[] = [];
@@ -73,13 +75,15 @@ export async function loadXlsxWorkbook(source: PreviewSource, context?: PreviewL
     parsedSheets.push(readWorksheet(sheetXml, {
       id: sheet.sheetId,
       name: sheet.name,
-      sharedStrings
+      sharedStrings,
+      fontStyles: fontStyles.styles
     }));
   }
 
   return {
     sheets: parsedSheets,
-    warnings
+    warnings,
+    fonts: fontStyles.fonts
   };
 }
 
@@ -309,7 +313,8 @@ function readRelationships(xml: string): RelationshipRef[] {
   return toArray(readPath(document, ['Relationships', 'Relationship']))
     .map((relationship) => ({
       id: String(readPath(relationship, ['Id']) ?? ''),
-      target: String(readPath(relationship, ['Target']) ?? '')
+      target: String(readPath(relationship, ['Target']) ?? ''),
+      type: String(readPath(relationship, ['Type']) ?? '')
     }))
     .filter((relationship) => relationship.id && relationship.target);
 }
@@ -324,12 +329,73 @@ function readWorkbookSheets(workbook: Record<string, unknown>): WorkbookSheetRef
     .filter((sheet) => sheet.relationshipId);
 }
 
+async function readFontStyles(zip: Map<string, ZipEntry>, relationships: RelationshipRef[], signal?: AbortSignal): Promise<{
+  fonts: PreviewFontReference[]; styles: Array<PreviewFontReference | undefined>;
+}> {
+  const stylePath = resolveWorkbookTarget(relationships.find(rel => rel.type?.endsWith('/styles'))?.target ?? 'styles.xml');
+  const xml = await zip.get(stylePath)?.text();
+  checkAborted(signal);
+  if (!xml) return { fonts: [], styles: [] };
+  const styles = parser.parse(xml) as Record<string, unknown>;
+  const themePath = resolveWorkbookTarget(relationships.find(rel => rel.type?.endsWith('/theme'))?.target ?? 'theme/theme1.xml');
+  const themeXml = await zip.get(themePath)?.text();
+  checkAborted(signal);
+  const theme = themeXml ? parser.parse(themeXml) : undefined;
+  const fonts: PreviewFontReference[] = toArray(readPath(styles, ['styleSheet', 'fonts', 'font'])).map(font => {
+    const scheme = readPath(font, ['scheme', 'val']);
+    const latin = scheme === 'major' || scheme === 'minor'
+      ? readLocalPath(theme, ['theme', 'themeElements', 'fontScheme', `${scheme}Font`, 'latin']) : undefined;
+    const themeFamily = readLocalPath(latin, ['typeface']);
+    const themed = typeof themeFamily === 'string' && themeFamily.trim() ? themeFamily : undefined;
+    const fontFamily = String(themed ?? readPath(font, ['name', 'val']) ?? '').trim();
+    const pitchFamily = Number(readLocalPath(latin, ['pitchFamily']));
+    const validPitch = Number.isInteger(pitchFamily) && pitchFamily >= 0 && pitchFamily <= 255;
+    const pitch = validPitch && (pitchFamily & 3) === 1 ? 'fixed' : validPitch && (pitchFamily & 3) === 2 ? 'variable' : undefined;
+    const themeTraits = validPitch ? officeFontTraits(pitchFamily >> 4) : {};
+    const panose = readLocalPath(latin, ['panose']);
+    const bold = readPath(font, ['b']);
+    const weight = bold !== undefined && !['0', 'false'].includes(String(readPath(bold, ['val']) ?? bold)) ? 700 : 400;
+    return {
+      fontFamily: fontFamily || undefined,
+      // Saved family metadata describes the saved face, not a changed theme face.
+      traits: {
+        ...(themed ? { ...themeTraits, ...fontTraitsFromPanose(typeof panose === 'string' ? panose : undefined),
+          ...officeFontTraits(undefined, pitch) }
+          : officeFontTraits(readPath(font, ['family', 'val']) as string | undefined)),
+        weight
+      }
+    };
+  });
+  const bases = toArray(readPath(styles, ['styleSheet', 'cellStyleXfs', 'xf']));
+  const cells = toArray(readPath(styles, ['styleSheet', 'cellXfs', 'xf']));
+  return {
+    fonts,
+    styles: cells.map(cell => {
+      const base = bases[Number(readPath(cell, ['xfId']) ?? 0)];
+      const inherit = ['0', 'false'].includes(String(readPath(cell, ['applyFont'])));
+      const fontId = inherit ? readPath(base, ['fontId']) : readPath(cell, ['fontId']) ?? readPath(base, ['fontId']);
+      return fonts[Number(fontId ?? 0)];
+    })
+  };
+}
+
+function readLocalPath(value: unknown, segments: string[]): unknown {
+  for (const segment of segments) {
+    if (!value || typeof value !== 'object') return undefined;
+    const record = value as Record<string, unknown>;
+    const key = Object.keys(record).find(key => key.split(':').pop() === segment);
+    value = key ? record[key] : undefined;
+  }
+  return value;
+}
+
 function readWorksheet(
   xml: string,
   options: {
     id: string;
     name: string;
     sharedStrings: string[];
+    fontStyles?: ParsedCell['font'][];
   }
 ): ParsedSheet {
   const simple = readSimpleWorksheet(xml, options);
@@ -337,14 +403,24 @@ function readWorksheet(
   const document = parser.parse(xml) as Record<string, unknown>;
   const rowEntries = toArray(readPath(document, ['worksheet', 'sheetData', 'row']));
   const rows: ParsedRow[] = [];
+  const columns = toArray(readPath(document, ['worksheet', 'cols', 'col']));
   let maxColumn = 0;
   let maxRow = 0;
 
   for (const rowEntry of rowEntries) {
     const rowIndex = Number(readPath(rowEntry, ['r']) ?? rows.length + 1);
     maxRow = Math.max(maxRow, rowIndex);
+    const rowStyle = ['1', 'true'].includes(String(readPath(rowEntry, ['customFormat']))) ? readPath(rowEntry, ['s']) : undefined;
     const cells = toArray(readPath(rowEntry, ['c']))
-      .map((cellEntry) => readCell(cellEntry, options.sharedStrings))
+      .map((cellEntry) => {
+        const cell = readCell(cellEntry, options.sharedStrings);
+        if (!cell) return null;
+        const column = columns.find(column => cell.column >= Number(readPath(column, ['min'])) && cell.column <= Number(readPath(column, ['max'])));
+        const style = readPath(cellEntry, ['s']) ?? rowStyle ?? readPath(column, ['style']) ?? 0;
+        const font = options.fontStyles?.[Number(style)];
+        if (font) cell.font = font;
+        return cell;
+      })
       .filter((cell): cell is ParsedCell => cell != null);
     for (const cell of cells) {
       maxColumn = Math.max(maxColumn, cell.column);

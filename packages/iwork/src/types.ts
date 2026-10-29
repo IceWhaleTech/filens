@@ -203,6 +203,7 @@ export interface IworkViewerEventMap {
 }
 
 export interface IworkViewerInstance {
+  refreshFonts?(): void;
   preview(source: IworkSource, options?: { signal?: AbortSignal }): Promise<void>;
   destroy(): void;
   setScale(scale: number): void;

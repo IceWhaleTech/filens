@@ -1,15 +1,17 @@
-# filens：架构与方案对比
+# 探微（filens）：架构与方案对比
 
 [English](project-overview.md) | 简体中文
 
 **面向人的 File Lens，面向应用与 Agent 的 File Native Services。**
+
+中文名为“探微”，寓意探索文件内容、看见细节；英文名为 `filens`。
 
 `filens` 有两层互补的含义：
 
 - **File Lens**：无需先把文件上传到服务器，就能看见、检查和理解文件。
 - **File Native Services**：为预览、提取、转换、搜索和 Agent 工作流提供可复用的格式原生能力。
 
-filens 是一个以 WebAssembly 为核心的开源、本地优先文件理解运行时。它可以把大量现代、传统和专业文件格式能力带到浏览器、桌面与移动客户端、CLI、边缘节点、后端服务和 AI Agent 工作流中；只要能够集成兼容的 WASM/WASI 运行时，就能复用同一套核心能力。
+探微是一个以 WebAssembly 为核心的开源、本地优先文件理解运行时。它可以把大量现代、传统和专业文件格式能力带到浏览器、桌面与移动客户端、CLI、边缘节点、后端服务和 AI Agent 工作流中；只要能够集成兼容的 WASM/WASI 运行时，就能复用同一套核心能力。
 
 ## 三个核心目标
 
@@ -39,17 +41,15 @@ filens 是一个以 WebAssembly 为核心的开源、本地优先文件理解运
 
 ### 3. 面向 Agent 的 CLI
 
-第三个方向是提供统一 CLI，让 Agent 通过稳定命令和结构化结果检查、提取并理解文件。仓库已经包含基于 Go/wazero 的转换 CLI 示例；更完整的 Agent 接口将围绕以下操作逐步成形：
+Agent CLI 现在提供文档读取、能力发现和供上层 Agent 使用的结构化证据。支持中英文意图、纯文本或 JSON 输出；命令与参数是可选入口。Lite 仅交付 CLI + WASM，Full 默认包含 原生 RapidOCR NCNN（无需 Python、最大边长 960、OpenMP=2），并支持多源测速下载模型：
 
 ```bash
-filens inspect document.docx
-filens extract archive.zip --format text
-filens render drawing.dxf --page 1 --output preview.png
-filens thumbnail camera.raw --output thumbnail.jpg
-filens understand report.pages --json
+filens '你能做什么？以 JSON 输出'
+filens '读取 "document.docx"，以纯文本输出'
+filens '理解 "report.pages"，以 JSON 输出'
 ```
 
-filens 的目标不是让每个应用或 Agent 分别理解数百种格式，而是提供统一的文件理解层。
+文件解析、读取顺序与证据分块位于共享 WASM 核心，摘要和问答由调用方 Agent 完成。渲染、缩略图和归档读取等更广泛的 CLI 能力仍在后续范围内。[安装与协议](agent-cli.zh-CN.md)。
 
 ## filens 的独特能力
 

@@ -19,6 +19,7 @@ import {
   type PreviewDriver,
   type PreviewFitMode,
   type PreviewFontResolver,
+  type PreviewFontLoadingOptions,
   type PreviewItemState,
   type PreviewOptions,
   type PreviewResourceResolver,
@@ -95,6 +96,7 @@ const props = withDefaults(
     routes?: FormatDefinition[];
     converter?: ConverterClient;
     fontResolver?: PreviewFontResolver;
+    fontLoading?: boolean | PreviewFontLoadingOptions;
     resourceResolver?: PreviewResourceResolver;
     panoramaProcessor?: MediaPreviewDriverOptions['panoramaProcessor'];
   }>(),
@@ -107,6 +109,7 @@ const props = withDefaults(
     routes: undefined,
     converter: undefined,
     fontResolver: undefined,
+    fontLoading: undefined,
     resourceResolver: undefined,
     panoramaProcessor: undefined
   }
@@ -437,6 +440,7 @@ function clonePreviewState<T extends PreviewItemState>(state: T): T {
     capabilities: { ...state.capabilities },
     warnings: [...state.warnings]
   } as T;
+  if (state.fonts) cloned.fonts = state.fonts.map((font) => ({ ...font, classification: font.classification ? { ...font.classification } : undefined }));
 
   const measurement = (state as unknown as { measurement?: PreviewMeasurementInfo }).measurement;
   if (measurement) {
@@ -501,6 +505,7 @@ async function recreatePreviewer(): Promise<void> {
     minScale: childOptions.minScale ?? props.minScale,
     maxScale: childOptions.maxScale ?? props.maxScale,
     fontResolver: childOptions.fontResolver ?? props.fontResolver,
+    fontLoading: childOptions.fontLoading ?? props.fontLoading,
     resourceResolver: childOptions.resourceResolver ?? props.resourceResolver,
     drivers,
     routes,
@@ -1131,6 +1136,7 @@ watch(
     props.routes,
     props.converter,
     props.fontResolver,
+    props.fontLoading,
     props.resourceResolver,
     props.panoramaProcessor
   ],

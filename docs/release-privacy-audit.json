@@ -1,0 +1,169 @@
+{
+  "date": "2026-10-29",
+  "timezone": "Asia/Shanghai",
+  "scope": [
+    "non-ignored Git worktree files",
+    "Git index contents",
+    "private-sample markers in all reachable Git history",
+    "current CLI/WASM and all eight npm candidate directories and archive contents",
+    "shareable PDF evaluation report"
+  ],
+  "limits": [
+    "Pattern-based scanning cannot establish the absence of every possible secret or personal detail.",
+    "Private raw outputs remain in ignored local caches and are intentionally excluded from shareable artifacts.",
+    "History scan covers objects reachable from local refs; external copies and unreachable Git objects are outside its scope.",
+    "Linux binaries were cross-built and statically checked, not executed on this macOS host."
+  ],
+  "privatePdf": {
+    "identifyingFilenameAndPathInShareableFiles": false,
+    "inputOrOutputHashesInShareableFiles": false,
+    "distinctivePrivateCheckPhrasesInShareableFiles": false,
+    "includedInPublicEvaluationReport": false,
+    "publicSampleCount": 6,
+    "publicChecksPassed": true,
+    "privateLocalChecksPassed": true,
+    "privateReportsRestrictedToIgnoredOrExternalLocations": true
+  },
+  "scans": {
+    "worktree": {
+      "files": 1511,
+      "privateSampleMarkerMatches": 0,
+      "credentialOrSignedUrlMatches": 0,
+      "reviewedPublicFixturePathMatches": 1
+    },
+    "index": {
+      "entries": 1505,
+      "privateSampleMarkerMatches": 0,
+      "credentialOrSignedUrlMatches": 0,
+      "reviewedPublicFixturePathMatches": 1
+    },
+    "reachableHistoryPrivateMarkers": {
+      "objects": 2474,
+      "matches": 0
+    },
+    "npmCandidates": {
+      "version": "0.2.0",
+      "archives": 8,
+      "archiveFiles": 221,
+      "privacyMatches": 0,
+      "directoryAndArchiveGatesPassed": true,
+      "manifestHashesAndSizesMatch": true,
+      "obsoleteArchivesQuarantinedOutsideUploadDirectory": true
+    }
+  },
+  "reviewedFindings": [
+    {
+      "category": "private PDF identifiers and check phrases in pending report/docs/script",
+      "status": "removed from worktree and index; retained only in ignored local cache; not found in reachable Git history"
+    },
+    {
+      "category": "Finder directory metadata",
+      "status": "removed from index; .DS_Store added to Git ignore rules"
+    },
+    {
+      "category": "pre-existing public DWG fixture authoring path",
+      "file": "converter/testdata/sample_AC1015.dwg",
+      "source": "https://raw.githubusercontent.com/DomCR/ACadSharp/master/samples/sample_AC1015.dwg",
+      "sha256": "8ffbdc713f5838cbbb1596a8422e2b607e5c9e79921e852cbb5abee4af76ea4e",
+      "matchesPublicUpstreamBytes": true,
+      "status": "retained unchanged public regression fixture; excluded from npm packages; no matched author/path text reproduced here"
+    },
+    {
+      "category": "developer build paths in previously published artifacts",
+      "version": "0.1.0",
+      "packages": [
+        "filens-cli-darwin-arm64",
+        "filens-ocr-linux-x64",
+        "filens-ocr-linux-arm64"
+      ],
+      "registryMetadataMatchedOldArchiveIntegrity": true,
+      "privatePdfMarkersFound": false,
+      "checkedCredentialPatternsFound": false,
+      "status": "current candidates rebuilt cleanly; previously published immutable versions remain external and were not withdrawn"
+    }
+  ],
+  "controls": [
+    "font/PDF algorithms remain in shared Rust/WASM core",
+    "private PDF reports separated from public reports",
+    "Rust source path remapping",
+    "Go CLI and all OCR wrappers use -trimpath",
+    "OCR wrappers rebuilt from SHA-256-pinned public source",
+    "privacy gates inspect actual archive contents before any publish preflight network operation",
+    "obsolete archives moved to ignored local quarantine"
+  ],
+  "validation": {
+    "privacyRegressionTests": {
+      "node": 3,
+      "python": 4,
+      "passed": true
+    },
+    "pdfRegression": {
+      "publicAndProjectSamples": 6,
+      "additionalLocalPrivateSample": true,
+      "passed": true
+    },
+    "rustTextCoreTests": {
+      "passed": 108
+    },
+    "goConverterTests": {
+      "command": "go -C converter test -count=1 ./...",
+      "passed": true
+    },
+    "macOSOfflineNpmFullAndLiteInstall": {
+      "version": "0.2.0",
+      "nativeOCR": true,
+      "nativeExecutionWithoutPython": true,
+      "optionalOCRInstallation": true,
+      "passed": true
+    },
+    "linuxWrappers": {
+      "crossBuilt": true,
+      "targetMinimumGlibc": "2.17",
+      "highestRequiredGlibcSymbol": {
+        "linux-x64": "2.3.2",
+        "linux-arm64": "2.17"
+      },
+      "nativeExecutionVerified": false
+    }
+  },
+  "candidatePackages": [
+    {
+      "name": "filens-cli-darwin-arm64",
+      "sha256": "6bb83da702107aceee33fcd079f9f0d519495ac269c1c0100d2383ad1bc2b04e"
+    },
+    {
+      "name": "filens-ocr-darwin-arm64",
+      "sha256": "d8a96ca198255121e4725210e9979e1285a85c16fdda4163673b3b6cda75bf2f"
+    },
+    {
+      "name": "filens-cli-linux-x64",
+      "sha256": "ccdf3db72a07a1a1e61ef5b153973d236aba381a8ac7b90fb6b4fd64a267e570"
+    },
+    {
+      "name": "filens-ocr-linux-x64",
+      "sha256": "a0c4f13cee2c80995bf080be68585de3ec7d74857b00e43bbc29559236a6ca9c"
+    },
+    {
+      "name": "filens-cli-linux-arm64",
+      "sha256": "1b880dd63c5d139fdd8bb53f0efa2155ef6c5e291578ca32aa3a533a025c5cee"
+    },
+    {
+      "name": "filens-ocr-linux-arm64",
+      "sha256": "83945df802db206c1b4b4839336e9e314136b17f1c135489ee58874e6d324a43"
+    },
+    {
+      "name": "filens-cli",
+      "sha256": "23e9b9c24c9651409560d8c1bd85ebfa103e382fe8b5093423b20c0b1d1c4853"
+    },
+    {
+      "name": "filens-cli-lite",
+      "sha256": "b0a44c47d4dbc21f25fdd526f5a7129eec29d7d187a952545cd1697623ef492d"
+    }
+  ],
+  "externalWrites": {
+    "published": false,
+    "unpublished": false,
+    "pushed": false,
+    "historyRewritten": false
+  }
+}

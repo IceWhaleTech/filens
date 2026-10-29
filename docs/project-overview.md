@@ -39,17 +39,15 @@ All parsing and conversion algorithms live in the front-end WebAssembly conversi
 
 ### 3. An Agent-facing CLI
 
-The third direction is a unified CLI that lets Agents inspect and understand files through stable commands and structured results. The conversion core already has a Go/wazero CLI example; the broader Agent surface is being shaped around operations such as:
+The Agent CLI now reads documents, discovers capabilities and supplies structured evidence to a calling Agent. Chinese/English intents support plain text or JSON output, with commands and flags as optional entry points. Lite ships the CLI and WASM; Full includes native RapidOCR NCNN (no Python, max side 960, OpenMP threads = 2) and model downloads with concurrent mirror speed probes:
 
 ```bash
-filens inspect document.docx
-filens extract archive.zip --format text
-filens render drawing.dxf --page 1 --output preview.png
-filens thumbnail camera.raw --output thumbnail.jpg
-filens understand report.pages --json
+filens 'what can you do as json'
+filens 'read "document.docx" as text'
+filens 'understand "report.pages" as json'
 ```
 
-Instead of teaching every application or Agent hundreds of formats, filens aims to provide one consistent file-understanding layer.
+Parsing, reading order and evidence spans live in the shared WASM core; summarization and question answering belong to the calling Agent. Rendering, thumbnails and archive reading remain future CLI work. [Setup and protocol](agent-cli.md).
 
 ## What Makes filens Different
 

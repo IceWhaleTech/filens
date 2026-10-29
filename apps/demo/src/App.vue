@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import AppleLivePhotoPreview from './components/AppleLivePhotoPreview.vue';
 import LandingPage from './components/LandingPage.vue';
+import DocumentWorkbench from './components/DocumentWorkbench.vue';
 import { createWasmConverterClient } from '@filens/converter-client';
 import { createWasmPanoramaProcessor } from '@filens/panorama';
 import type { ZipArchiveResource } from '@filens/archive';
@@ -657,11 +658,11 @@ const staticSamples: DemoSource[] = [
   },
   {
     kind: 'model3d',
-    label: 'Crystal Crown OBJ',
-    name: 'crystal-crown.obj',
-    source: createCrystalCrownObjFixture(),
+    label: 'Viking horned helmet OBJ',
+    name: 'viking-helmet.obj',
+    source: '/samples/viking-helmet.obj',
     contentType: 'model/obj',
-    mode: 'generated'
+    mode: 'sample'
   },
   {
     kind: 'model3d',
@@ -1299,7 +1300,7 @@ const staticSamples: DemoSource[] = [
   }
 ];
 
-const defaultRemoteUrl = 'https://501351981.github.io/vue-office/examples/dist/static/test-files/test.pptx';
+const defaultRemoteUrl = 'https://filens-six.vercel.app/samples/filens-field-notes.pptx';
 const remotePrefetchKinds = new Set<DemoKind>(['pptx', 'key', 'pages', 'numbers', 'pdf', 'docx', 'xlsx', 'csv', 'ppt']);
 const Preview = defineAsyncComponent(() => import('@filens/vue').then(({ Preview: preview }) => preview));
 interface DemoBuildInfo {
@@ -1553,7 +1554,7 @@ function syncPageFromUrl(): void {
   const params = new URLSearchParams(window.location.search);
   showWorkbench.value = params.get('view') === 'preview';
   if (showWorkbench.value && params.has('format')) selectLandingSample(params.get('format')!);
-  if (showWorkbench.value) document.title = 'filens · 文件预览台';
+  if (showWorkbench.value) document.title = '探微 · 文件预览台';
 }
 
 function selectLandingSample(extension: string): void {
@@ -1696,7 +1697,7 @@ const businessFormatFamilies = computed(() => {
     )
   }));
 });
-const selectedFormatFamily = computed(() => businessFormatFamilies.value.find((family) => family.id === selectedFormatFamilyId.value));
+const sampleExtensions = computed(() => new Set(sampleByExtension.keys()));
 const activeFormatExtension = computed(() => current.value.catalogId ?? inferExtensionFromName(current.value.name) ?? '');
 const previewFit = computed<PreviewFitMode>(() => iworkFormats.has(activeFormatExtension.value) ? 'width' : 'contain');
 
@@ -1800,6 +1801,11 @@ async function previewRemote(): Promise<void> {
 async function onFileChange(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement;
   const files = Array.from(input.files ?? []);
+  input.value = '';
+  await previewFiles(files);
+}
+
+async function previewFiles(files: File[]): Promise<void> {
   const file = chooseUploadPrimaryFile(files);
   if (!file) {
     return;
@@ -1817,7 +1823,6 @@ async function onFileChange(event: Event): Promise<void> {
       if (bundle) {
         current.value = bundle.source;
         uploadResourceResolver.value = bundle.resourceResolver;
-        input.value = '';
         return;
       }
     }
@@ -1834,8 +1839,6 @@ async function onFileChange(event: Event): Promise<void> {
     uploadResourceResolver.value = files.length > 1 ? createFileSetResourceResolver(files) : undefined;
   } catch (error) {
     lastError.value = error instanceof Error ? error.message : String(error);
-  } finally {
-    input.value = '';
   }
 }
 
@@ -2653,43 +2656,6 @@ f 1//2 2//2 5//2
 f 2//3 3//3 6//3 5//3
 f 3//4 4//4 6//4
 f 4//5 1//5 5//5 6//5`);
-}
-
-function createCrystalCrownObjFixture(): Uint8Array {
-  return new TextEncoder().encode(`# faceted crystal crown
-o Crystal_Crown
-v 0 0 58
-v 34 0 0
-v 14.56 10.58 0
-v 10.51 32.36 0
-v -5.56 17.12 0
-v -27.51 19.98 0
-v -18 0 0
-v -27.51 -19.98 0
-v -5.56 -17.12 0
-v 10.51 -32.36 0
-v 14.56 -10.58 0
-v 0 0 -42
-f 1 2 3
-f 1 3 4
-f 1 4 5
-f 1 5 6
-f 1 6 7
-f 1 7 8
-f 1 8 9
-f 1 9 10
-f 1 10 11
-f 1 11 2
-f 12 3 2
-f 12 4 3
-f 12 5 4
-f 12 6 5
-f 12 7 6
-f 12 8 7
-f 12 9 8
-f 12 10 9
-f 12 11 10
-f 12 2 11`);
 }
 
 function createPlyFixture(): Uint8Array {
@@ -3608,6 +3574,7 @@ function createComicPageSvg(title: string, background: string, foreground: strin
 const genericSnippet = `<Preview
   :src="file"
   :name="file.name"
+  :font-loading="true"
   :font-resolver="fontResolver"
   :resource-resolver="resourceResolver"
   fit="contain"
@@ -3619,168 +3586,32 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 
 <template>
   <LandingPage v-if="!showWorkbench" :upload-accept="uploadAccept" @preview="openWorkbench" @upload="uploadFromLanding" />
-  <main v-else class="workbench">
-    <header class="wb-header">
-      <div class="wb-brand">
-        <span class="wb-brand-mark" aria-hidden="true">
-          <img :src="brandIconUrl" alt="" width="48" height="48" />
-        </span>
-        <div>
-          <button class="wb-home-link" type="button" @click="returnHome">← filens 首页</button>
-          <p class="wb-eyebrow">REAL FILE PREVIEW</p>
-          <h1 class="wb-title">文件预览台</h1>
-        </div>
-      </div>
-
-      <div class="wb-build-stats" aria-label="构建体积">
-        <div class="wb-build-stat">
-          <small>ENTRY JS</small>
-          <strong>{{ entrySizeLabel }}</strong>
-          <span>实际入口脚本</span>
-        </div>
-        <div class="wb-build-stat">
-          <small>CONVERTER-CORE.WASM</small>
-          <strong>{{ wasmSizeLabel }}</strong>
-          <span>{{ wasmDependencyLabel }}</span>
-        </div>
-        <div class="wb-build-stat">
-          <small>CONVERTER-IMAGE.WASM</small>
-          <strong>{{ imageWasmSizeLabel }}</strong>
-          <span>外挂 · RAW / ICNS 转换时加载</span>
-        </div>
-      </div>
-
-      <div class="wb-header-right">
-        <div class="wb-status" aria-live="polite">
-          <span class="wb-status-dot" aria-hidden="true"></span>
-          <strong>{{ familyLabel }}</strong>
-          <small>{{ sourceMode }}</small>
-        </div>
-
-        <label class="wb-upload">
-          <span aria-hidden="true">+</span>
-          导入文件
-          <input class="visually-hidden" type="file" :accept="uploadAccept" multiple @change="onFileChange" />
-        </label>
-
-        <form class="wb-remote" @submit.prevent="previewRemote">
-          <input v-model="remoteUrl" type="url" class="wb-remote-input" placeholder="粘贴远程文件 URL" />
-          <button type="submit" class="wb-remote-button">预览 <span aria-hidden="true">&rarr;</span></button>
-        </form>
-      </div>
-    </header>
-
-    <nav class="wb-tabs" aria-label="格式分类">
-      <span class="wb-command-label">格式</span>
-      <button
-        v-for="family in businessFormatFamilies"
-        :key="family.id"
-        type="button"
-        class="wb-tab"
-        :class="{ 'is-active': selectedFormatFamilyId === family.id }"
-        :aria-pressed="selectedFormatFamilyId === family.id"
-        @click="selectFormatFamily(family.id)"
-      >
-        {{ family.label }}
-      </button>
-    </nav>
-
-    <div class="wb-body">
-      <aside class="wb-sidebar" aria-label="格式与预览信息">
-        <header class="wb-sidebar-head">
-          <span class="wb-file-badge">{{ current.label }}</span>
-          <div>
-            <p>当前格式</p>
-            <h2>{{ current.label }}</h2>
-          </div>
-        </header>
-
-        <div class="wb-file-facts">
-          <span>
-            <small>驱动</small>
-            <strong>{{ familyLabel }}</strong>
-          </span>
-          <span>
-            <small>来源</small>
-            <strong>{{ sourceMode }}</strong>
-          </span>
-        </div>
-
-        <p v-if="warningCount" class="wb-note">{{ warningCount }} warning{{ warningCount > 1 ? 's' : '' }}</p>
-        <p v-if="lastError" class="wb-note is-error">{{ lastError }}</p>
-
-        <section v-if="selectedFormatFamily" class="wb-section wb-subformat-section">
-          <h2 class="wb-section-title">{{ selectedFormatFamily.label }}</h2>
-          <p class="wb-format-hint">实线：已支持 · 双线：转换后展示 · 虚线：已归类，待支持</p>
-          <div v-for="category in selectedFormatFamily.categories" :key="category.id" class="wb-format-category">
-            <h3>{{ category.label }}</h3>
-            <div class="wb-subformats">
-              <button
-                v-for="format in category.formats"
-                :key="`${format.family}:${format.extension}`"
-                type="button"
-                class="wb-subformat"
-                :class="{ 'is-active': activeFormatExtension === format.extension, 'is-sample-only': format.sampleOnly, 'is-unavailable': !format.supported && !format.sampleOnly }"
-                :disabled="(!format.supported && !format.sampleOnly) || !sampleByExtension.has(format.extension)"
-                :title="format.sampleOnly ? '转换后 SVG 展示示例；暂不支持直接上传原格式' : !format.supported ? '已归类，暂未支持预览' : sampleByExtension.has(format.extension) ? `预览 ${format.label} 示例` : '支持上传预览，暂无内置示例'"
-                @click="useFormatSample(format.extension)"
-              >
-                {{ format.label }}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section v-if="model3dSummary.length" class="wb-section">
-          <h2 class="wb-section-title">3D 元数据</h2>
-          <div class="wb-meta-grid">
-            <div v-for="row in model3dSummary" :key="row.label" class="wb-meta-item">
-              <span>{{ row.label }}</span>
-              <strong>{{ row.value }}</strong>
-            </div>
-          </div>
-        </section>
-
-        <section class="wb-performance-card" aria-label="小样例性能参考">
-          <small>小样例性能参考</small>
-          <strong>{{ performanceLabel }}</strong>
-          <span>{{ buildInfo?.typicalPerformance?.note ?? '仅供观察启动与执行量级' }}</span>
-        </section>
-
-      </aside>
-
-      <section class="wb-preview" :aria-label="current.name + ' 预览'">
-        <header class="wb-preview-head">
-          <div class="wb-window-dots" aria-hidden="true"><i></i><i></i><i></i></div>
-          <div class="wb-preview-title">
-            <span>{{ current.label }}</span>
-            <strong :title="current.name">{{ current.name }}</strong>
-          </div>
-          <div v-if="runtimeTimings.length" class="wb-runtime-timings" aria-label="此次预览耗时">
-            <span v-for="timing in runtimeTimings" :key="timing.label">
-              <small>{{ timing.label }}</small>
-              <strong>{{ timing.value }}</strong>
-            </span>
-          </div>
-          <button
-            v-if="!current.livePhoto"
-            type="button"
-            class="wb-toolbar-toggle"
-            :class="{ 'is-active': showPreviewToolbar }"
-            :aria-label="showPreviewToolbar ? '隐藏工具栏' : '显示工具栏'"
-            :aria-expanded="showPreviewToolbar"
-            aria-controls="wb-preview-content"
-            @click="showPreviewToolbar = !showPreviewToolbar"
-          >
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-              <path d="M3 5h14M3 10h14M3 15h14" />
-              <path d="M7 3v4m6 1v4m-6 1v4" stroke-width="3" />
-            </svg>
-            工具栏
-          </button>
-        </header>
-
-        <div id="wb-preview-content" class="wb-preview-stage">
+  <DocumentWorkbench
+    v-else
+    v-model:remote-url="remoteUrl"
+    v-model:toolbar="showPreviewToolbar"
+    :brand-icon="brandIconUrl"
+    :name="current.name"
+    :label="current.label"
+    :extension="activeFormatExtension"
+    :family="familyLabel"
+    :source="sourceMode"
+    :upload-accept="uploadAccept"
+    :families="businessFormatFamilies"
+    :selected-family="selectedFormatFamilyId"
+    :sample-extensions="sampleExtensions"
+    :timings="runtimeTimings"
+    :model-summary="model3dSummary"
+    :ready="renderTimeMs !== null || !!current.livePhoto"
+    :error="lastError"
+    :warning-count="warningCount"
+    :has-toolbar="!current.livePhoto"
+    @home="returnHome"
+    @upload="previewFiles"
+    @remote="previewRemote"
+    @family="selectFormatFamily"
+    @sample="useFormatSample"
+  >
           <AppleLivePhotoPreview
             v-if="current.livePhoto"
             :photo-src="current.livePhoto.photoSrc"
@@ -3798,6 +3629,7 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
             :content-type="current.contentType"
             :converter="converter"
             :panorama-processor="panoramaProcessor"
+            :font-loading="true"
             :font-resolver="fontResolver"
             :resource-resolver="uploadResourceResolver"
             :fit="previewFit"
@@ -3807,979 +3639,18 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
             @state-change="renderedState = $event"
             @error="onError"
           />
-        </div>
-      </section>
-    </div>
-  </main>
+    <template #diagnostics>
+      <details class="wb-diagnostics">
+        <summary>运行与构建信息</summary>
+        <div class="wb-build-stat"><small>ENTRY JS</small><strong>{{ entrySizeLabel }}</strong></div>
+        <div class="wb-build-stat"><small>CONVERTER-CORE.WASM</small><strong>{{ wasmSizeLabel }}</strong><span>{{ wasmDependencyLabel }}</span></div>
+        <div class="wb-build-stat"><small>CONVERTER-IMAGE.WASM</small><strong>{{ imageWasmSizeLabel }}</strong><span>RAW / ICNS 转换时按需加载</span></div>
+        <div class="wb-build-stat" aria-label="小样例性能参考"><small>小样例性能参考</small><strong>{{ performanceLabel }}</strong><span>{{ buildInfo?.typicalPerformance?.note ?? '仅供观察启动与执行量级' }}</span></div>
+      </details>
+    </template>
+  </DocumentWorkbench>
 </template>
 
-<style scoped>
-:global(html) {
-  min-width: 320px;
-  background: #e8e7df;
-}
-
-:global(body) {
-  margin: 0;
-  min-width: 320px;
-  background: #e8e7df;
-}
-
-.workbench,
-.workbench * {
-  box-sizing: border-box;
-}
-
-.workbench {
-  --ink: #151713;
-  --muted: #6f7369;
-  --paper: #f4f2e9;
-  --panel: rgba(255, 255, 255, 0.84);
-  --line: rgba(21, 23, 19, 0.13);
-  --lime: #c8ff3d;
-  --coral: #ff6847;
-  --blue: #3164ff;
-  min-height: 100vh;
-  min-height: 100dvh;
-  color: var(--ink);
-  background:
-    radial-gradient(circle at 10% 0%, rgba(200, 255, 61, 0.3), transparent 27rem),
-    radial-gradient(circle at 100% 16%, rgba(49, 100, 255, 0.12), transparent 30rem),
-    linear-gradient(135deg, #efeee7 0%, #e4e4dc 54%, #edede6 100%);
-  font-family: "Bahnschrift", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  isolation: isolate;
-}
-
-.wb-home-link {
-  padding: 0;
-  margin-bottom: 8px;
-  border: 0;
-  background: transparent;
-  color: #52594a;
-  font-size: 11px !important;
-  cursor: pointer;
-}
-
-@media (min-width: 781px) {
-  .workbench { height: 100dvh; }
-  .workbench .wb-body { min-height: 0; align-items: stretch; grid-template-rows: minmax(0, 1fr); overflow: hidden; }
-  .workbench .wb-sidebar { min-height: 0; overflow-y: auto; }
-  .workbench .wb-preview { min-height: 0; }
-  .workbench .wb-brand { flex-shrink: 0; }
-  .workbench .wb-title { font-size: 28px; white-space: nowrap; }
-}
-
-.workbench::before {
-  position: fixed;
-  z-index: -1;
-  right: -8rem;
-  bottom: -12rem;
-  width: 32rem;
-  height: 32rem;
-  border: 1px solid rgba(21, 23, 19, 0.08);
-  border-radius: 42%;
-  transform: rotate(18deg);
-  content: "";
-}
-
-.workbench button,
-.workbench input {
-  font: inherit;
-}
-
-.wb-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 22px clamp(18px, 3vw, 44px) 18px;
-}
-
-.wb-brand {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.wb-brand-mark {
-  position: relative;
-  flex: 0 0 auto;
-  width: 48px;
-  height: 48px;
-  box-shadow: 0 12px 28px rgba(21, 23, 19, 0.2);
-  transform: rotate(-3deg);
-}
-
-.wb-brand-mark img {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.wb-eyebrow {
-  margin: 0 0 3px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-}
-
-.wb-eyebrow span {
-  display: inline-block;
-  margin-left: 5px;
-  padding: 2px 6px;
-  border-radius: 99px;
-  background: var(--ink);
-  color: var(--lime);
-  letter-spacing: 0.08em;
-}
-
-.wb-title {
-  margin: 0;
-  font-family: Georgia, "Microsoft YaHei UI", serif;
-  font-size: clamp(24px, 2.6vw, 38px);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.04em;
-}
-
-.wb-build-stats {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-  min-width: 0;
-  margin-inline: auto;
-}
-
-.wb-build-stat {
-  display: grid;
-  min-width: 122px;
-  padding: 9px 11px 8px;
-  border: 1px solid rgba(21, 23, 19, 0.1);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.48);
-  box-shadow: 0 6px 18px rgba(21, 23, 19, 0.04);
-}
-
-.wb-build-stat small {
-  color: var(--muted);
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  white-space: nowrap;
-}
-
-.wb-build-stat strong {
-  margin-top: 4px;
-  overflow: hidden;
-  font-family: Consolas, "SFMono-Regular", monospace;
-  font-size: 11px;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wb-build-stat span {
-  margin-top: 3px;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wb-header-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.wb-status,
-.wb-upload,
-.wb-remote {
-  min-height: 42px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.68);
-  box-shadow: 0 8px 24px rgba(21, 23, 19, 0.05);
-  backdrop-filter: blur(16px);
-}
-
-.wb-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 13px;
-}
-
-.wb-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--lime);
-  box-shadow: 0 0 0 4px rgba(200, 255, 61, 0.2);
-}
-
-.wb-status strong {
-  font-size: 11px;
-  text-transform: uppercase;
-}
-
-.wb-status small {
-  padding-left: 7px;
-  border-left: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 10px;
-  text-transform: uppercase;
-}
-
-.wb-upload {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0 14px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 800;
-  transition: transform 160ms ease, background 160ms ease;
-}
-
-.wb-upload > span {
-  display: grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  border-radius: 7px;
-  background: var(--ink);
-  color: white;
-  font-size: 18px;
-  line-height: 1;
-}
-
-.wb-upload:hover {
-  background: white;
-  transform: translateY(-1px);
-}
-
-.wb-remote {
-  display: grid;
-  grid-template-columns: minmax(180px, 26vw) auto;
-  overflow: hidden;
-}
-
-.wb-remote-input {
-  min-width: 0;
-  padding: 0 14px;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--ink);
-  font-size: 12px;
-}
-
-.wb-remote-input::placeholder {
-  color: #979b91;
-}
-
-.wb-remote-button {
-  padding: 0 16px;
-  border: 0;
-  background: var(--ink);
-  color: white;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 800;
-  transition: background 160ms ease;
-}
-
-.wb-remote-button:hover {
-  background: var(--blue);
-}
-
-.wb-tabs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-inline: clamp(12px, 2vw, 28px);
-  border: 1px solid var(--line);
-  background: rgba(247, 246, 240, 0.76);
-  backdrop-filter: blur(18px);
-}
-
-.wb-command-label {
-  flex: 0 0 auto;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.wb-tab {
-  flex: 0 0 auto;
-  border: 0;
-  color: var(--muted);
-  cursor: pointer;
-  font-weight: 800;
-  white-space: nowrap;
-  transition: color 160ms ease, background 160ms ease, transform 160ms ease;
-}
-
-.wb-tab:hover {
-  color: var(--ink);
-  transform: translateY(-1px);
-}
-
-.wb-tabs {
-  display: flex;
-  align-items: stretch;
-  gap: 8px;
-  padding: 8px 12px 9px 14px;
-  border-top: 0;
-  border-radius: 0 0 18px 18px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.wb-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.wb-tab {
-  flex: 0 0 auto;
-  min-height: 31px;
-  padding: 0 11px;
-  border-radius: 99px;
-  background: transparent;
-  font-size: 10px;
-}
-
-.wb-tab.is-active {
-  background: var(--lime);
-  color: var(--ink);
-  box-shadow: inset 0 0 0 1px rgba(21, 23, 19, 0.08);
-}
-
-.wb-subformat-section {
-  margin-top: 16px;
-}
-
-.wb-subformats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.wb-format-category + .wb-format-category {
-  margin-top: 12px;
-}
-
-.wb-format-category h3 {
-  margin: 0 0 6px;
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: 0.04em;
-}
-
-.wb-format-hint {
-  margin: -4px 0 10px;
-  color: var(--muted);
-  font-size: 9px;
-}
-
-.wb-subformat {
-  min-width: 48px;
-  min-height: 30px;
-  padding: 0 9px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: var(--paper);
-  color: var(--ink);
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.wb-subformat.is-active {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--lime);
-}
-
-.wb-subformat:disabled {
-  cursor: default;
-  opacity: 0.58;
-}
-
-.wb-subformat.is-unavailable {
-  border-style: dashed;
-}
-
-.wb-subformat.is-sample-only {
-  border-style: double;
-  border-width: 3px;
-}
-
-.wb-body {
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(250px, 310px) minmax(0, 1fr);
-  align-items: start;
-  gap: 14px;
-  padding: 14px clamp(12px, 2vw, 28px) clamp(14px, 2vw, 28px);
-}
-
-.wb-sidebar,
-.wb-preview {
-  min-height: 0;
-  border: 1px solid var(--line);
-  box-shadow: 0 18px 50px rgba(21, 23, 19, 0.09);
-}
-
-.wb-sidebar {
-  padding: 16px;
-  border-radius: 24px;
-  background: var(--panel);
-  overflow: auto;
-  backdrop-filter: blur(20px);
-}
-
-.wb-sidebar-head {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
-}
-
-.wb-file-badge {
-  display: grid;
-  min-width: 50px;
-  height: 50px;
-  padding-inline: 8px;
-  place-items: center;
-  border-radius: 15px;
-  background: var(--ink);
-  color: var(--lime);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.wb-sidebar-head p {
-  margin: 0 0 3px;
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.wb-sidebar-head h2 {
-  margin: 0;
-  overflow: hidden;
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wb-file-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-  margin-top: 12px;
-}
-
-.wb-file-facts > span {
-  display: grid;
-  gap: 4px;
-  padding: 10px;
-  border-radius: 13px;
-  background: rgba(21, 23, 19, 0.045);
-}
-
-.wb-file-facts small {
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.wb-file-facts strong {
-  overflow: hidden;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.wb-note {
-  margin: 10px 0 0;
-  padding: 9px 11px;
-  border-radius: 11px;
-  background: rgba(255, 190, 47, 0.15);
-  color: #725100;
-  font-size: 11px;
-  font-weight: 700;
-  overflow-wrap: anywhere;
-}
-
-.wb-note.is-error {
-  background: rgba(255, 104, 71, 0.13);
-  color: #9b2e17;
-}
-
-.wb-section {
-  margin-top: 16px;
-}
-
-.wb-section-title {
-  margin: 0 0 9px;
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-.wb-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
-}
-
-.wb-meta-item {
-  display: grid;
-  gap: 4px;
-  padding: 10px;
-  border-radius: 13px;
-  background: rgba(49, 100, 255, 0.08);
-}
-
-.wb-meta-item span {
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.wb-meta-item strong {
-  font-size: 11px;
-}
-
-.wb-performance-card {
-  display: grid;
-  gap: 7px;
-  margin-top: 18px;
-  padding: 13px;
-  border: 1px solid rgba(49, 100, 255, 0.14);
-  border-radius: 15px;
-  background: rgba(49, 100, 255, 0.065);
-}
-
-.wb-performance-card small {
-  color: var(--blue);
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.wb-performance-card strong {
-  font-family: Consolas, "SFMono-Regular", monospace;
-  font-size: 10px;
-  line-height: 1.6;
-}
-
-.wb-performance-card span {
-  color: var(--muted);
-  font-size: 9px;
-  line-height: 1.45;
-}
-
-.wb-preview {
-  display: grid;
-  grid-template-rows: 48px minmax(0, 1fr);
-  min-height: 640px;
-  border-radius: 26px;
-  background: #191b18;
-  overflow: hidden;
-}
-
-.wb-preview-head {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 14px;
-  padding: 0 16px;
-  color: #f5f3eb;
-}
-
-.wb-window-dots {
-  display: flex;
-  gap: 5px;
-}
-
-.wb-window-dots i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #4a4d46;
-}
-
-.wb-window-dots i:first-child {
-  background: var(--coral);
-}
-
-.wb-window-dots i:nth-child(2) {
-  background: #ffc64c;
-}
-
-.wb-window-dots i:last-child {
-  background: var(--lime);
-}
-
-.wb-preview-title {
-  min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 9px;
-}
-
-.wb-preview-title span {
-  color: #aeb2a8;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.wb-preview-title strong {
-  overflow: hidden;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.wb-runtime-timings {
-  grid-column: 3;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 5px;
-}
-
-.wb-runtime-timings > span {
-  display: flex;
-  align-items: baseline;
-  gap: 5px;
-  padding: 5px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.055);
-  white-space: nowrap;
-}
-
-.wb-runtime-timings small {
-  color: #969b91;
-  font-size: 8px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.wb-runtime-timings strong {
-  font-family: Consolas, "SFMono-Regular", monospace;
-  font-size: 9px;
-  font-variant-numeric: tabular-nums;
-}
-
-.wb-toolbar-toggle {
-  grid-column: 4;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 30px;
-  padding: 0 10px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 9px;
-  background: transparent;
-  color: #d7dbd1;
-  font: inherit;
-  font-size: 10px;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.wb-toolbar-toggle svg {
-  width: 16px;
-  height: 16px;
-}
-
-.wb-toolbar-toggle:hover,
-.wb-toolbar-toggle.is-active {
-  border-color: var(--lime);
-  color: var(--lime);
-}
-
-.wb-toolbar-toggle:focus-visible {
-  outline: 2px solid var(--lime);
-  outline-offset: 3px;
-}
-
-.wb-preview-stage {
-  min-width: 0;
-  min-height: 0;
-  padding: 7px;
-  background:
-    linear-gradient(rgba(21, 23, 19, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(21, 23, 19, 0.04) 1px, transparent 1px),
-    #d7d8d0;
-  background-size: 24px 24px;
-  overflow: hidden;
-}
-
-.wb-preview-stage > :deep(.pptxv-shell) {
-  --pptxv-panel: #fbfaf5;
-  --pptxv-border: rgba(21, 23, 19, 0.12);
-  --pptxv-border-strong: rgba(21, 23, 19, 0.25);
-  --pptxv-text: #151713;
-  --pptxv-muted: #74786e;
-  --pptxv-accent: #3164ff;
-  --pptxv-surface: #e6e8e3;
-  border: 0;
-  border-radius: 17px;
-  overflow: hidden;
-  font-family: inherit;
-}
-
-.wb-preview :deep(.pptxv-toolbar) {
-  min-height: 48px;
-  gap: 8px;
-  padding: 8px 10px;
-  background: rgba(250, 249, 244, 0.96);
-}
-
-.wb-preview :deep(.pptxv-toolbar-group) {
-  gap: 5px;
-}
-
-.wb-preview :deep(.pptxv-button) {
-  min-height: 30px;
-  padding: 0 10px;
-  border: 0;
-  border-radius: 9px;
-  background: white;
-  box-shadow: inset 0 0 0 1px rgba(21, 23, 19, 0.13);
-  color: var(--ink);
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 800;
-}
-
-.wb-preview :deep(.pptxv-button:hover) {
-  background: var(--lime);
-  box-shadow: inset 0 0 0 1px rgba(21, 23, 19, 0.12);
-}
-
-.wb-preview :deep(.pptxv-button.is-active) {
-  background: var(--ink);
-  color: white;
-}
-
-.wb-preview :deep(.pptxv-status) {
-  color: #5f635a;
-  font-family: Consolas, monospace;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.wb-preview :deep(.pptxv-sidebar) {
-  background: #f1f0e9;
-}
-
-.workbench button:focus-visible,
-.workbench input:focus-visible,
-.wb-upload:has(input:focus-visible) {
-  outline: 3px solid rgba(49, 100, 255, 0.35);
-  outline-offset: 2px;
-}
-
-.wb-sidebar::-webkit-scrollbar {
-  width: 9px;
-}
-
-.wb-sidebar::-webkit-scrollbar-thumb {
-  border: 3px solid transparent;
-  border-radius: 99px;
-  background: rgba(21, 23, 19, 0.22);
-  background-clip: padding-box;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .wb-header,
-  .wb-tabs,
-  .wb-body {
-    animation: wb-rise 420ms both;
-  }
-
-  .wb-tabs {
-    animation-delay: 100ms;
-  }
-
-  .wb-body {
-    animation-delay: 140ms;
-  }
-}
-
-@keyframes wb-rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (max-width: 1080px) {
-  .wb-header {
-    align-items: flex-start;
-  }
-
-  .wb-header-right {
-    max-width: 58%;
-  }
-
-  .wb-build-stats {
-    order: 3;
-    width: 100%;
-    margin-inline: 0;
-    overflow-x: auto;
-  }
-
-  .wb-status {
-    display: none;
-  }
-
-  .wb-body {
-    grid-template-columns: minmax(220px, 270px) minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 780px) {
-  .workbench {
-    display: block;
-    min-height: 100vh;
-  }
-
-  .wb-header {
-    align-items: stretch;
-    flex-direction: column;
-    padding: 18px;
-  }
-
-  .wb-header-right {
-    max-width: none;
-    justify-content: stretch;
-  }
-
-  .wb-build-stats {
-    order: 0;
-    margin-inline: 0;
-  }
-
-  .wb-upload {
-    flex: 0 0 auto;
-  }
-
-  .wb-remote {
-    flex: 1 1 320px;
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .wb-tabs {
-    margin-inline: 10px;
-  }
-
-  .wb-body {
-    grid-template-columns: 1fr;
-    padding: 10px;
-  }
-
-  .wb-sidebar {
-    max-height: 360px;
-  }
-
-  .wb-preview {
-    grid-template-rows: auto minmax(0, 1fr);
-    min-height: 72vh;
-  }
-
-  .wb-preview-head {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    row-gap: 8px;
-    padding-block: 10px;
-  }
-
-  .wb-runtime-timings {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    justify-content: flex-start;
-    max-width: 100%;
-    overflow-x: auto;
-  }
-
-  .wb-toolbar-toggle {
-    grid-column: 3;
-    grid-row: 1;
-  }
-}
-
-@media (max-width: 520px) {
-  .wb-header-right {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .wb-upload {
-    justify-content: center;
-  }
-
-  .wb-remote {
-    width: 100%;
-  }
-
-  .wb-tabs {
-    border-radius: 16px;
-  }
-
-  .wb-preview {
-    min-height: 68vh;
-    border-radius: 20px;
-  }
-}
+<style>
+html, body { margin: 0; min-width: 320px; background: #f3f4f6; }
 </style>

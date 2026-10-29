@@ -354,6 +354,16 @@ export class PptxViewer implements ViewerInstance {
     }
   }
 
+  refreshFonts(): void {
+    if (!this.presentation || this.state.loading) return;
+    const top = this.scrollArea.scrollTop, left = this.scrollArea.scrollLeft;
+    const mounted = [...this.mountedSlides];
+    for (const index of mounted) this.unmountSlide(index);
+    for (const index of mounted) this.mountSlide(index);
+    this.scrollArea.scrollTop = top; this.scrollArea.scrollLeft = left;
+    this.emit('rendered', this.getState());
+  }
+
   private mountSlide(index: number): void {
     if (!this.presentation || !this.mediaRegistry) {
       return;

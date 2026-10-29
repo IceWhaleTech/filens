@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import FileFormatIcon from './FileFormatIcon.vue';
+import FileStory from './FileStory.vue';
+import demoMedia from '../home-media.json';
 import './landing.css';
 
 defineProps<{ uploadAccept: string }>();
@@ -17,8 +19,12 @@ const locale = ref<Locale>(
   (new URLSearchParams(location.search).get('lang') ?? storedLocale) === 'en' ? 'en' : 'zh'
 );
 const isEnglish = computed(() => locale.value === 'en');
+const landing = ref<HTMLElement>();
+let revealObserver: IntersectionObserver | undefined;
+const revealAnimations = new Set<Animation>();
 const t = (zh: string, en: string) => (isEnglish.value ? en : zh);
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`;
+const demoAsset = (file: string) => `${asset(`home/${file}`)}?v=${demoMedia.version}`;
 const repo = 'https://github.com/IceWhaleTech/filens';
 const supportMatrixUrl = computed(
   () => `${repo}/blob/main/docs/support-matrix${isEnglish.value ? '' : '.zh-CN'}.md`
@@ -124,7 +130,7 @@ const previews = [
     color: '#8572b6',
     image: 'model.webp',
     sample: 'obj',
-    file: 'crystal-crown.obj'
+    file: 'viking-helmet.obj'
   },
   {
     zh: '全景',
@@ -238,13 +244,13 @@ const formatFamilies = [
 ];
 function applyLocale(): void {
   document.documentElement.lang = isEnglish.value ? 'en' : 'zh-CN';
-  document.title = t('filens · 文件的精彩，打开就看见', 'filens · Files shine bright. Dreams take flight.');
+  document.title = t('探微 · 文件的精彩，打开就看见', 'filens · Files shine bright. Dreams take flight.');
   document
     .querySelector('meta[name="description"]')
     ?.setAttribute(
       'content',
       t(
-        'filens 在浏览器中预览 Office、iWork、PDF、CAD / STEP、3D、RAW 和全景，本地文件无需上传。按需加载，WASM 转换支持浏览器内运行及 CLI / HTTP 服务调用。',
+        '探微（filens）在浏览器中预览 Office、iWork、PDF、CAD / STEP、3D、RAW 和全景，本地文件无需上传。按需加载，WASM 转换支持浏览器内运行及 CLI / HTTP 服务调用。',
         'Preview Office, iWork, PDF, CAD / STEP, 3D, RAW, and panoramas in your browser. Local files stay on your device. Modules load on demand; WASM conversion runs in the browser or through CLI / HTTP tools.'
       )
     );
@@ -261,7 +267,32 @@ function toggleLocale(): void {
   history.replaceState({}, '', url);
 }
 watch(locale, applyLocale);
-onMounted(applyLocale);
+onMounted(() => {
+  applyLocale();
+  if (!('IntersectionObserver' in window)) return;
+  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  revealObserver = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      revealObserver?.unobserve(entry.target);
+      if (motionPreference.matches || !('animate' in entry.target)) continue;
+      const animation = entry.target.animate(
+        [{ opacity: 0.35, transform: 'translateY(20px)' }, { opacity: 1, transform: 'translateY(0)' }],
+        { duration: 700, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' }
+      );
+      revealAnimations.add(animation);
+      void animation.finished.then(() => revealAnimations.delete(animation), () => revealAnimations.delete(animation));
+    }
+  }, { threshold: 0.12 });
+  landing.value?.querySelectorAll('.chapter-heading, .hero-stage, .principle, .formats-heading, .zimaos-section, .demo-copy, .demo-media, .closing-section').forEach(
+    (element) => revealObserver?.observe(element)
+  );
+});
+onUnmounted(() => {
+  revealObserver?.disconnect();
+  for (const animation of revealAnimations) animation.cancel();
+  revealAnimations.clear();
+});
 
 function onTabKey(event: KeyboardEvent): void {
   const direction = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
@@ -287,12 +318,12 @@ async function playDemo(): Promise<void> {
 </script>
 
 <template>
-  <div class="landing" :class="{ 'is-english': isEnglish }">
+  <div ref="landing" class="landing" :class="{ 'is-english': isEnglish }">
     <a class="skip-link" href="#main-content">{{ t('跳到正文', 'Skip to content') }}</a>
     <header class="site-header">
-      <a class="brand" :href="asset('')" aria-label="filens home">
+      <a class="brand" :href="asset('')" :aria-label="t('探微首页', 'filens home')">
         <img :src="asset('brand/filens-icon.svg')" alt="" width="38" height="38" />
-        <span>filens<span class="brand-period">.</span></span>
+        <span>{{ t('探微', 'filens') }}<span v-if="isEnglish" class="brand-period">.</span></span>
       </a>
       <nav class="site-nav" :aria-label="t('主导航', 'Main navigation')">
         <a href="#formats">{{ t('预览效果', 'Previews') }}</a>
@@ -322,7 +353,8 @@ async function playDemo(): Promise<void> {
 
     <main id="main-content">
       <section class="hero section-width" :aria-labelledby="'hero-title'">
-        <p class="hero-kicker">{{ t('纯前端预览 · 高性能 · 极致小巧', 'PURE FRONTEND · FAST · TINY') }}</p>
+        <FileStory :is-english="isEnglish" />
+        <p class="hero-kicker">{{ t('一个镜头，看见文件的更多可能', 'A LITTLE LENS. A WORLD OF POSSIBILITIES.') }}</p>
         <h1 id="hero-title">
           <template v-if="!isEnglish">文件的精彩，<br /><span>打开就看见。</span></template
           ><template v-else>Files shine bright.<br /><span>Dreams take flight.</span></template>
@@ -330,11 +362,11 @@ async function playDemo(): Promise<void> {
         <p class="hero-description">
           {{
             t(
-              '从 Office、iWork 到 CAD、3D、RAW 与全景，本地文件无需上传。',
-              'From Office and iWork to CAD, 3D, RAW, and panoramas. Your local files stay on your device.'
+              '文档里的想法，照片里的远方，模型里的想象。',
+              'Ideas in a document. Places in a photo. Possibilities in a model.'
             )
           }}<br />
-          {{ t('转换能力也可通过 CLI 或 HTTP 服务独立使用。', 'Conversion is also available independently through CLI tools or HTTP services.') }}
+          {{ t('用探微，在浏览器里打开。本地文件，无需上传。', 'Open them in your browser with filens. Local files stay with you.') }}
         </p>
         <div class="hero-actions">
           <label class="button button-dark upload-button"
@@ -351,7 +383,17 @@ async function playDemo(): Promise<void> {
             {{ t('先试试示例', 'Try a sample') }} <span aria-hidden="true">↗</span>
           </button>
         </div>
-        <div id="formats" class="hero-stage">
+        <p class="hero-footnote"><span class="live-dot"></span>{{ t('开源 · 浏览器内运行 · 即开即看', 'OPEN SOURCE · IN YOUR BROWSER · READY TO EXPLORE') }}</p>
+        <a class="scroll-cue" href="#formats">{{ t('往下，看见更多', 'There’s more below') }}<span aria-hidden="true">↓</span></a>
+      </section>
+
+      <section id="formats" class="preview-section section-width" aria-labelledby="preview-title">
+        <div class="chapter-heading">
+          <p class="eyebrow"><span>01 /</span> {{ t('从文件，到内容', 'FROM FILES TO POSSIBILITIES') }}</p>
+          <h2 id="preview-title">{{ t('后缀不同。精彩相同。', 'Different formats. Same curiosity.') }}</h2>
+          <p>{{ t('一份提案、一张图纸，或整片星空。选一个文件，看看里面的世界。', 'A pitch deck, a blueprint, or a sky full of stars. Pick a file. See what’s inside.') }}</p>
+        </div>
+        <div class="hero-stage">
           <div class="preview-window">
             <div class="preview-window-bar">
               <span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span
@@ -366,18 +408,19 @@ async function playDemo(): Promise<void> {
               :aria-labelledby="`preview-tab-${activePreview}`"
               class="hero-preview-panel"
             >
-              <img
+              <Transition name="preview-fade" mode="out-in"><img
+                :key="selectedPreview.image"
                 :src="asset(`home/${selectedPreview.image}`)"
                 :alt="
                   t(
-                    `${selectedPreview.zh}在 filens 中的实际预览效果`,
+                    `${selectedPreview.zh}在探微中的实际预览效果`,
                     `Actual ${selectedPreview.en.toLowerCase()} preview in filens`
                   )
                 "
                 width="1120"
                 height="680"
                 fetchpriority="high"
-              />
+              /></Transition>
               <button class="preview-open" type="button" @click="emit('preview', selectedPreview.sample)">
                 {{ t('亲自打开看看', 'Explore this file') }} <span aria-hidden="true">↗</span>
               </button>
@@ -414,30 +457,12 @@ async function playDemo(): Promise<void> {
         </a>
       </section>
 
-      <section id="zimaos" class="zimaos-section section-width" aria-labelledby="zimaos-title">
-        <div class="zimaos-intro">
-          <img :src="asset('brand/zimaos-logo.png')" alt="ZimaOS" width="104" height="104" />
-          <div class="zimaos-copy">
-            <p class="zimaos-eyebrow">ZimaOS × FiLens</p>
-            <h2 id="zimaos-title">{{ t('ZimaOS，让个人云更简单。', 'ZimaOS. Your personal cloud, made simple.') }}</h2>
-            <p class="zimaos-integration">
-              <strong>{{ t('ZimaOS 深度使用了 FiLens 项目', 'ZimaOS is built with deep FiLens integration') }}</strong>{{ t('，将多格式文件预览融入个人云的文件体验，让文档、照片和创作素材在自己的设备上随时可看。', ', bringing multi-format previews to your personal cloud so documents, photos, and creative files are ready to view on your own device.') }}
-            </p>
-            <p class="zimaos-description">{{ t('面向家庭与个人的 NAS 操作系统，将文件管理、照片浏览、备份和应用服务整合在一个直观的界面中。', 'A NAS operating system for your home and personal use, bringing files, photos, backups, and apps together in one intuitive interface.') }}</p>
-          </div>
-        </div>
-        <ul class="zimaos-highlights">
-          <li v-for="highlight in zimaosHighlights" :key="highlight.en">
-            <h3>{{ t(highlight.zh, highlight.en) }}</h3>
-            <p>{{ t(highlight.descriptionZh, highlight.descriptionEn) }}</p>
-          </li>
-        </ul>
-        <a class="button zimaos-link" :href="zimaosUrl" target="_blank" rel="noopener noreferrer">
-          {{ t('了解 ZimaOS', 'Explore ZimaOS') }} <span aria-hidden="true">↗</span>
-        </a>
-      </section>
-
       <section class="principles-section section-width" :aria-label="t('项目特点', 'Why filens')">
+        <div class="chapter-heading">
+          <p class="eyebrow"><span>02 /</span> {{ t('看见，也守护', 'CLOSER TO YOU') }}</p>
+          <h2>{{ t('打开文件，不必交出文件。', 'Open your files. Keep them yours.') }}</h2>
+          <p>{{ t('本地文件在浏览器里解析和呈现。从打开到看见，都在你的设备上。', 'Your local files are parsed and rendered in your browser. From first click to first look, on your device.') }}</p>
+        </div>
         <div class="principle-grid">
           <article class="principle">
             <p class="principle-proof"><strong>0</strong><span>{{ t('本地文件上传', 'local file uploads') }}</span></p>
@@ -467,7 +492,7 @@ async function playDemo(): Promise<void> {
       <section id="more-formats" class="formats-section section-width" aria-labelledby="formats-title">
         <div class="formats-heading">
           <div>
-            <p class="eyebrow">{{ t('常见格式', 'MORE TO EXPLORE') }}</p>
+            <p class="eyebrow"><span>03 /</span> {{ t('常见格式', 'MORE TO EXPLORE') }}</p>
             <h2 id="formats-title">{{ t('更多文件，也能打开。', 'More files. More possibilities.') }}</h2>
           </div>
           <p>
@@ -519,23 +544,24 @@ async function playDemo(): Promise<void> {
         <div class="demo-media">
           <div class="demo-player">
             <video
+              :key="demoMedia.version"
               ref="video"
               :controls="videoStarted"
               playsinline
               preload="none"
-              :poster="asset('home/demo-poster.webp')"
+              :poster="demoAsset('demo-poster.webp')"
               :aria-label="
                 t(
-                  'filens 多格式文件预览操作演示，无旁白',
+                  '探微多格式文件预览操作演示，无旁白',
                   'filens multi-format preview walkthrough, no narration'
                 )
               "
               @error="videoError = true"
             >
-              <source :src="asset('home/filens-demo.mp4')" type="video/mp4" />
+              <source :src="demoAsset('filens-demo.mp4')" type="video/mp4" />
               <track
                 kind="captions"
-                :src="asset(`home/demo-${locale}.vtt`)"
+                :src="demoAsset(`demo-${locale}.vtt`)"
                 :srclang="locale === 'zh' ? 'zh-CN' : 'en'"
                 :label="t('中文', 'English')"
                 default
@@ -558,13 +584,42 @@ async function playDemo(): Promise<void> {
           </p>
         </div>
       </section>
+      <section class="closing-section section-width" aria-labelledby="closing-title">
+        <div class="closing-mark" aria-hidden="true">f<span>.</span></div>
+        <p class="eyebrow">{{ t('下一段故事，来自你的文件', 'YOUR FILES. YOUR NEXT DISCOVERY.') }}</p>
+        <h2 id="closing-title">{{ t('打开，就有新发现。', 'See what opens up.') }}</h2>
+        <button class="button button-dark" type="button" @click="emit('preview')">{{ t('进入预览台', 'Open the playground') }} <span aria-hidden="true">↗</span></button>
+      </section>
+
+      <section id="zimaos" class="zimaos-section section-width" aria-labelledby="zimaos-title">
+        <div class="zimaos-intro">
+          <img :src="asset('brand/zimaos-logo.png')" alt="ZimaOS" width="104" height="104" />
+          <div class="zimaos-copy">
+            <p class="zimaos-eyebrow">ZimaOS × FiLens</p>
+            <h2 id="zimaos-title">{{ t('ZimaOS，让个人云更简单。', 'ZimaOS. Your personal cloud, made simple.') }}</h2>
+            <p class="zimaos-integration">
+              <strong>{{ t('ZimaOS 深度使用了 FiLens 项目', 'ZimaOS is built with deep FiLens integration') }}</strong>{{ t('，将多格式文件预览融入个人云的文件体验，让文档、照片和创作素材在自己的设备上随时可看。', ', bringing multi-format previews to your personal cloud so documents, photos, and creative files are ready to view on your own device.') }}
+            </p>
+            <p class="zimaos-description">{{ t('面向家庭与个人的 NAS 操作系统，将文件管理、照片浏览、备份和应用服务整合在一个直观的界面中。', 'A NAS operating system for your home and personal use, bringing files, photos, backups, and apps together in one intuitive interface.') }}</p>
+          </div>
+        </div>
+        <ul class="zimaos-highlights">
+          <li v-for="highlight in zimaosHighlights" :key="highlight.en">
+            <h3>{{ t(highlight.zh, highlight.en) }}</h3>
+            <p>{{ t(highlight.descriptionZh, highlight.descriptionEn) }}</p>
+          </li>
+        </ul>
+        <a class="button zimaos-link" :href="zimaosUrl" target="_blank" rel="noopener noreferrer">
+          {{ t('了解 ZimaOS', 'Explore ZimaOS') }} <span aria-hidden="true">↗</span>
+        </a>
+      </section>
     </main>
 
     <footer class="site-footer section-width">
       <div>
-        <a class="brand" :href="asset('')"
+        <a class="brand" :href="asset('')" :aria-label="t('探微首页', 'filens home')"
           ><img :src="asset('brand/filens-icon.svg')" alt="" width="30" height="30" /><span
-            >filens<span class="brand-period">.</span></span
+            >{{ t('探微', 'filens') }}<span v-if="isEnglish" class="brand-period">.</span></span
           ></a
         >
         <p>{{ t('纯前端文件预览。开源、高性能、极致小巧。', 'Pure frontend file previews. Open source, fast, and compact.') }}</p>

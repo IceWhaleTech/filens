@@ -1,5 +1,49 @@
 import { expect, test } from '@playwright/test';
 
+test('unfolds the file story with the keyboard, pauses, and finishes without looping', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('./?lang=en');
+  const story = page.locator('.file-story');
+  const caption = story.getByRole('status');
+  await expect(story).toHaveAttribute('data-phase', 'idle');
+  await story.getByRole('button', { name: 'Click to unfold', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await page.clock.runFor(700);
+  await expect(story).toHaveAttribute('data-phase', 'revealed');
+  await expect(caption).toHaveText('A presentation. A story unfolding.');
+  await story.getByRole('button', { name: 'Pause animation', exact: true }).click();
+  await page.clock.runFor(8000);
+  await expect(caption).toHaveText('A presentation. A story unfolding.');
+  await story.getByRole('button', { name: 'Resume animation', exact: true }).click();
+  await page.clock.runFor(700);
+  await expect(caption).toHaveText('A model. A different perspective.');
+  await page.clock.runFor(4300);
+  await expect(caption).toHaveText('A panorama. A world to step into.');
+  await expect(story.getByRole('button', { name: 'Play again', exact: true })).toBeEnabled();
+  await expect(story.getByRole('button', { name: 'Pause animation', exact: true })).toHaveCount(0);
+  await story.getByRole('button', { name: 'Presentation', exact: true }).click();
+  await expect(caption).toHaveText('A presentation. A story unfolding.');
+});
+
+test('lets visitors explore the story without automatic motion when reduced motion is requested', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.clock.install();
+  await page.goto('./?lang=zh');
+  const story = page.locator('.file-story');
+  await story.getByRole('button', { name: '点击，让文件展开', exact: true }).click();
+  await expect(story).toHaveAttribute('data-phase', 'revealed');
+  await page.clock.runFor(10000);
+  await expect(story.getByRole('status')).toHaveText('一份演示，展开一个故事。');
+  await expect(story.getByRole('button', { name: '再看一次', exact: true })).toBeEnabled();
+  await story.getByRole('button', { name: '三维模型', exact: true }).click();
+  await expect(story.getByRole('status')).toHaveText('一个模型，看见每个角度。');
+  await expect(story.getByRole('button', { name: '三维模型', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Switch to English', exact: true }).click();
+  await expect(story.getByRole('status')).toHaveText('A model. A different perspective.');
+  await story.getByRole('button', { name: 'Panorama', exact: true }).click();
+  await expect(story.getByRole('status')).toHaveText('A panorama. A world to step into.');
+});
+
 test('opens public samples without NAS authentication even inside a host', async ({
   page
 }) => {
@@ -29,7 +73,7 @@ test('opens public samples without NAS authentication even inside a host', async
   await expect
     .poll(() => page.evaluate(() => (window as Window & { loginPaths: string[] }).loginPaths.length))
     .toBe(0);
-  await page.getByRole('button', { name: '← filens 首页', exact: true }).click();
+  await page.getByRole('button', { name: '← 探微首页', exact: true }).click();
   await page.getByRole('button', { name: '打开视频样例', exact: true }).click();
   await expect(page).toHaveURL(/view=preview&format=mp4/);
   await expect(page.locator('.wb-preview-title strong')).toHaveText('sample-video.mp4');
@@ -84,7 +128,7 @@ test('lets visitors select a preview with the keyboard and open the correspondin
   await expect(page).toHaveURL(/view=preview&format=docx/);
   await expect(page.locator('.wb-preview-title strong')).toHaveText('filens-aurora-guide.docx');
   await expect(page.locator('.wb-preview-stage')).toContainText('Trip overview');
-  await page.getByRole('button', { name: '← filens 首页' }).click();
+  await page.getByRole('button', { name: '← 探微首页' }).click();
   await expect(page.locator('.landing')).toBeVisible();
   await page.goBack();
   await expect(page.locator('.workbench')).toBeVisible();
@@ -108,9 +152,9 @@ test('opens the 3D showcase from its matching preview tab', async ({ page }) => 
   await page.goto('./?lang=en');
   await page.getByRole('tab', { name: '3D', exact: true }).click();
   await expect(page.locator('#preview-panel img')).toHaveAttribute('src', /model.webp$/);
-  await expect(page.locator('.preview-window-bar')).toContainText('crystal-crown.obj');
+  await expect(page.locator('.preview-window-bar')).toContainText('viking-helmet.obj');
   await page.getByRole('button', { name: 'Explore this file', exact: true }).click();
-  await expect(page.locator('.wb-preview-title strong')).toHaveText('crystal-crown.obj');
+  await expect(page.locator('.wb-preview-title strong')).toHaveText('viking-helmet.obj');
   await expect(page.locator('canvas.model3dv-canvas')).toBeVisible();
 });
 
@@ -146,7 +190,7 @@ test('plays the actual demo video on request with translated captions', async ({
   await page.goto('./?lang=en#demo');
   const video = page.locator('video');
   await expect(video).toHaveAttribute('preload', 'none');
-  await expect(video.locator('track')).toHaveAttribute('src', /demo-en.vtt$/);
+  await expect(video.locator('track')).toHaveAttribute('src', /demo-en\.vtt\?v=[a-f0-9]{12}$/);
   await page.getByRole('button', { name: /Play the walkthrough/ }).click();
   await expect
     .poll(() => video.evaluate((element: HTMLVideoElement) => element.currentTime))

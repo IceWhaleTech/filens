@@ -1,0 +1,1311 @@
+{
+  "date": "2026-10-29",
+  "platform": "darwin-arm64",
+  "node": "v20.20.2",
+  "binary": "dist/filens (native CLI 0.1.0)",
+  "method": "One process per request; sequential single run, including process startup, WASM compilation and OCR model loading. Synthetic text is not an accuracy benchmark corpus.",
+  "cases": [
+    {
+      "group": "discovery",
+      "label": "中文能力发现",
+      "args": [
+        "你能做什么？以 JSON 输出"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "capabilities",
+      "ok": true,
+      "elapsedMs": 1216,
+      "characters": 0,
+      "stderr": "",
+      "ocr": {
+        "provider": "rapidocr-ncnn",
+        "enabled": true,
+        "available": true,
+        "openmpThreads": 2,
+        "maxSideLen": 960,
+        "padding": 50,
+        "orientation": true
+      },
+      "formats": 326
+    },
+    {
+      "group": "discovery",
+      "label": "格式发现",
+      "args": [
+        "支持哪些格式？用 JSON 返回"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "capabilities",
+      "ok": true,
+      "elapsedMs": 1162,
+      "characters": 0,
+      "stderr": "",
+      "ocr": {
+        "provider": "rapidocr-ncnn",
+        "enabled": true,
+        "available": true,
+        "openmpThreads": 2,
+        "maxSideLen": 960,
+        "padding": 50,
+        "orientation": true
+      },
+      "formats": 326
+    },
+    {
+      "group": "discovery",
+      "label": "English discovery",
+      "args": [
+        "what can you do as json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "capabilities",
+      "ok": true,
+      "elapsedMs": 1179,
+      "characters": 0,
+      "stderr": "",
+      "ocr": {
+        "provider": "rapidocr-ncnn",
+        "enabled": true,
+        "available": true,
+        "openmpThreads": 2,
+        "maxSideLen": 960,
+        "padding": 50,
+        "orientation": true
+      },
+      "formats": 326
+    },
+    {
+      "group": "discovery",
+      "label": "English capability sentence",
+      "args": [
+        "what are your capabilities in json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "capabilities",
+      "ok": true,
+      "elapsedMs": 1178,
+      "characters": 0,
+      "stderr": "",
+      "ocr": {
+        "provider": "rapidocr-ncnn",
+        "enabled": true,
+        "available": true,
+        "openmpThreads": 2,
+        "maxSideLen": 960,
+        "padding": 50,
+        "orientation": true
+      },
+      "formats": 326
+    },
+    {
+      "group": "discovery",
+      "label": "可选 capacity 命令",
+      "args": [
+        "capacity",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "capabilities",
+      "ok": true,
+      "elapsedMs": 1167,
+      "characters": 0,
+      "stderr": "",
+      "ocr": {
+        "provider": "rapidocr-ncnn",
+        "enabled": true,
+        "available": true,
+        "openmpThreads": 2,
+        "maxSideLen": 960,
+        "padding": 50,
+        "orientation": true
+      },
+      "formats": 326
+    },
+    {
+      "group": "discovery",
+      "label": "能力问法同义变体",
+      "args": [
+        "你能做哪些事情？"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 4,
+      "characters": 0,
+      "text": "",
+      "stderr": "invalid_request: name the local file to read, for example: filens '读取 \"report.pdf\"，以 JSON 输出'\n"
+    },
+    {
+      "group": "discovery",
+      "label": "OCR 能力疑问",
+      "args": [
+        "你会 OCR 吗？"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 3,
+      "characters": 0,
+      "text": "",
+      "stderr": "invalid_request: name the local file to read, for example: filens '读取 \"report.pdf\"，以 JSON 输出'\n"
+    },
+    {
+      "group": "discovery",
+      "label": "混合发现与读取",
+      "args": [
+        "你能做什么？顺便读取 \"report.txt\"，以 JSON 输出"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "capabilities",
+      "ok": true,
+      "elapsedMs": 1186,
+      "characters": 0,
+      "stderr": "",
+      "ocr": {
+        "provider": "rapidocr-ncnn",
+        "enabled": true,
+        "available": true,
+        "openmpThreads": 2,
+        "maxSideLen": 960,
+        "padding": 50,
+        "orientation": true
+      },
+      "formats": 326
+    },
+    {
+      "group": "reading",
+      "label": "中文读取含空格路径",
+      "args": [
+        "请读取 \"季度 报告.txt\"，以纯文本输出"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 1161,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "reading",
+      "label": "中文理解弯引号",
+      "args": [
+        "帮我理解“季度 报告.txt”，用 JSON 返回"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "understand",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1164,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "reading",
+      "label": "English read",
+      "args": [
+        "read \"report.txt\" as json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1148,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "reading",
+      "label": "English polite request",
+      "args": [
+        "Please extract all text from \"report.txt\" in JSON"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1124,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "reading",
+      "label": "English contents",
+      "args": [
+        "show me the contents of \"report.txt\""
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 1139,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "reading",
+      "label": "路径独立 shell 参数",
+      "args": [
+        "understand",
+        "季度 报告.txt",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "understand",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1171,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "reading",
+      "label": "只传路径",
+      "args": [
+        "report.txt",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1142,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "reading",
+      "label": "不加引号的紧邻读取",
+      "args": [
+        "读取report.txt，以JSON输出"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1190,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "reading",
+      "label": "不加引号的客套变体",
+      "args": [
+        "帮我读取report.txt，以JSON输出"
+      ],
+      "exit": 1,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "error": {
+        "code": "io_error",
+        "message": "stat 帮我读取report.txt: no such file or directory"
+      },
+      "ok": false,
+      "elapsedMs": 4,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "reading",
+      "label": "不加引号的看一下",
+      "args": [
+        "看一下report.txt"
+      ],
+      "exit": 1,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 3,
+      "characters": 0,
+      "text": "",
+      "stderr": "io_error: stat 看一下report.txt: no such file or directory\n"
+    },
+    {
+      "group": "reading",
+      "label": "加引号的看一下",
+      "args": [
+        "看一下 \"report.txt\""
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 1139,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "reading",
+      "label": "文件名中的 why",
+      "args": [
+        "read",
+        "why notes.txt",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1149,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "format",
+      "label": "中文 JSON 格式",
+      "args": [
+        "请用 JSON 格式读取 \"report.txt\""
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1156,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "format",
+      "label": "大写 JSON",
+      "args": [
+        "Read \"report.txt\" as JSON"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1175,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "format",
+      "label": "输出 JSON 的另一种英语语序",
+      "args": [
+        "read \"report.txt\" and output JSON"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 1175,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "format",
+      "label": "自然语言要求 YAML",
+      "args": [
+        "read \"report.txt\" as yaml"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 1165,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "format",
+      "label": "自然语言要求 XML",
+      "args": [
+        "读取 \"report.txt\"，以 XML 输出"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 1170,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "format",
+      "label": "显式格式拒绝 YAML",
+      "args": [
+        "report.txt",
+        "--format",
+        "yaml"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 4,
+      "characters": 0,
+      "text": "",
+      "stderr": "invalid_request: unsupported output format \"yaml\"; choose text or json\n"
+    },
+    {
+      "group": "format",
+      "label": "显式 flag 覆盖自然语言",
+      "args": [
+        "读取 \"report.txt\"，以纯文本输出",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1163,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "format",
+      "label": "自然语言格式冲突",
+      "args": [
+        "read \"report.txt\" as json and as plain text"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1169,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "structured",
+      "label": "JSON stdin",
+      "args": [],
+      "stdin": "{\"operation\":\"understand\",\"input\":\"report.txt\"}",
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "understand",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1196,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "structured",
+      "label": "JSON 请求纯文本",
+      "args": [],
+      "stdin": "{\"operation\":\"read\",\"input\":\"report.txt\",\"format\":\"text\"}",
+      "exit": 0,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 1267,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "structured",
+      "label": "自然语言 stdin",
+      "args": [],
+      "stdin": "读取 \"report.txt\"，以 JSON 输出",
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1220,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "structured",
+      "label": "JSON 未知字段",
+      "args": [],
+      "stdin": "{\"input\":\"report.txt\",\"pages\":\"1-2\"}",
+      "exit": 2,
+      "signal": null,
+      "format": "json",
+      "error": {
+        "code": "invalid_request",
+        "message": "invalid JSON request: json: unknown field \"pages\""
+      },
+      "ok": false,
+      "elapsedMs": 4,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "structured",
+      "label": "JSON 非法 operation",
+      "args": [],
+      "stdin": "{\"operation\":\"summarize\",\"input\":\"report.txt\"}",
+      "exit": 2,
+      "signal": null,
+      "format": "json",
+      "operation": "summarize",
+      "error": {
+        "code": "invalid_request",
+        "message": "unsupported operation \"summarize\""
+      },
+      "ok": false,
+      "elapsedMs": 4,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "structured",
+      "label": "JSON 非法 format",
+      "args": [],
+      "stdin": "{\"input\":\"report.txt\",\"format\":\"xml\"}",
+      "exit": 2,
+      "signal": null,
+      "format": "json",
+      "error": {
+        "code": "invalid_request",
+        "message": "unsupported output format \"xml\"; choose text or json"
+      },
+      "ok": false,
+      "elapsedMs": 3,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "boundary",
+      "label": "中文摘要",
+      "args": [
+        "总结 \"report.txt\"，以 JSON 输出"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "error": {
+        "code": "invalid_request",
+        "message": "semantic reasoning belongs to the calling agent; request read/understand, then use the returned text and evidence blocks to answer"
+      },
+      "ok": false,
+      "elapsedMs": 3,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "boundary",
+      "label": "英文摘要",
+      "args": [
+        "summarize \"report.txt\" as json"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "error": {
+        "code": "invalid_request",
+        "message": "semantic reasoning belongs to the calling agent; request read/understand, then use the returned text and evidence blocks to answer"
+      },
+      "ok": false,
+      "elapsedMs": 3,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "boundary",
+      "label": "翻译",
+      "args": [
+        "翻译 \"report.txt\" 成英文"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 3,
+      "characters": 0,
+      "text": "",
+      "stderr": "invalid_request: semantic reasoning belongs to the calling agent; request read/understand, then use the returned text and evidence blocks to answer\n"
+    },
+    {
+      "group": "boundary",
+      "label": "中文金额问答",
+      "args": [
+        "\"report.txt\" 中预算是多少？"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 3,
+      "characters": 0,
+      "text": "",
+      "stderr": "invalid_request: semantic reasoning belongs to the calling agent; request read/understand, then use the returned text and evidence blocks to answer\n"
+    },
+    {
+      "group": "boundary",
+      "label": "英文明确问答",
+      "args": [
+        "how many projects are in \"report.txt\"?"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 3,
+      "characters": 0,
+      "text": "",
+      "stderr": "invalid_request: semantic reasoning belongs to the calling agent; request read/understand, then use the returned text and evidence blocks to answer\n"
+    },
+    {
+      "group": "boundary",
+      "label": "另一种英文问答",
+      "args": [
+        "what is the budget in \"report.txt\"?"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 1196,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "boundary",
+      "label": "筛选金额",
+      "args": [
+        "只列出 \"report.txt\" 中的金额，以 JSON 输出"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1171,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "boundary",
+      "label": "格式转换意图",
+      "args": [
+        "把 \"report.txt\" 转成 PDF"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "text",
+      "elapsedMs": 1181,
+      "characters": 45,
+      "text": "季度报告\n项目：本地文档读取\n预算：12345.67 元\n负责人：张三\nBudget 42",
+      "stderr": ""
+    },
+    {
+      "group": "boundary",
+      "label": "多个文件",
+      "args": [
+        "read \"report.txt\" and \"季度 报告.txt\" as json"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "error": {
+        "code": "invalid_request",
+        "message": "one file per request; multiple input paths found"
+      },
+      "ok": false,
+      "elapsedMs": 4,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "boundary",
+      "label": "目录遍历意图",
+      "args": [
+        "--input",
+        ".",
+        "--json"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "error": {
+        "code": "invalid_input",
+        "message": "input must be a regular file no larger than 256 MiB"
+      },
+      "ok": false,
+      "elapsedMs": 3,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "boundary",
+      "label": "URL 输入",
+      "args": [
+        "读取 \"https://example.com/report.pdf\"，以 JSON 输出"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "error": {
+        "code": "invalid_request",
+        "message": "input must be a local file path"
+      },
+      "ok": false,
+      "elapsedMs": 3,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "boundary",
+      "label": "没有文件路径",
+      "args": [
+        "帮我读取文档，以 JSON 输出"
+      ],
+      "exit": 2,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "error": {
+        "code": "invalid_request",
+        "message": "name the local file to read, for example: filens '读取 \"report.pdf\"，以 JSON 输出'"
+      },
+      "ok": false,
+      "elapsedMs": 5,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "boundary",
+      "label": "不存在的文件",
+      "args": [
+        "读取 \"missing.pdf\"，以 JSON 输出"
+      ],
+      "exit": 1,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "error": {
+        "code": "io_error",
+        "message": "stat missing.pdf: no such file or directory"
+      },
+      "ok": false,
+      "elapsedMs": 3,
+      "characters": 0,
+      "stderr": ""
+    },
+    {
+      "group": "ocr",
+      "label": "自然语言调用 OCR",
+      "args": [
+        "识别 \"invoice.png\" 中的文字，以 JSON 输出"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1316,
+      "characters": 37,
+      "text": "Invoice ID FILENS2026\nTotal 12345.67\n",
+      "stderr": ""
+    },
+    {
+      "group": "ocr",
+      "label": "只读第一页的自然语言",
+      "args": [
+        "只读取 \"scan.pdf\" 的第一页，以 JSON 输出"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 2320,
+      "characters": 75,
+      "text": "Invoice ID FILENS2026\nTotal 12345.67\nSecond page BRIGHT2027\nLocal OCR test\n",
+      "stderr": ""
+    },
+    {
+      "group": "ocr",
+      "label": "扫描 PDF 完整读取",
+      "args": [
+        "读取 \"scan.pdf\"，以 JSON 输出"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 2285,
+      "characters": 75,
+      "text": "Invoice ID FILENS2026\nTotal 12345.67\nSecond page BRIGHT2027\nLocal OCR test\n",
+      "stderr": ""
+    },
+    {
+      "group": "ocr",
+      "label": "文档内嵌透明图片回调",
+      "args": [
+        "理解 \"embedded.docx\"，以 JSON 输出"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "understand",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1880,
+      "characters": 52,
+      "text": "BEFORE 中文Invoice ID FILENS2026\nTotal 12345.67\nAFTER\n",
+      "stderr": ""
+    },
+    {
+      "group": "ocr",
+      "label": "关闭 OCR 保留已有文本",
+      "args": [
+        "understand",
+        "embedded.docx",
+        "--no-ocr",
+        "--json"
+      ],
+      "exit": 3,
+      "signal": null,
+      "format": "json",
+      "operation": "understand",
+      "error": {
+        "code": "ocr_failed",
+        "message": "OCR provider is unavailable"
+      },
+      "ok": false,
+      "complete": false,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1723,
+      "characters": 15,
+      "text": "BEFORE 中文AFTER\n",
+      "stderr": ""
+    },
+    {
+      "group": "ocr",
+      "label": "scan-rotated.png",
+      "args": [
+        "converter/rapidocr/testdata/scan-rotated.png",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1330,
+      "characters": 37,
+      "text": "Total 12345.67\nInvoice ID FILENS2026\n",
+      "stderr": ""
+    },
+    {
+      "group": "ocr",
+      "label": "scan-exif.jpg",
+      "args": [
+        "converter/rapidocr/testdata/scan-exif.jpg",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1300,
+      "characters": 37,
+      "text": "Invoice ID FILENS2026\nTotal 12345.67\n",
+      "stderr": ""
+    },
+    {
+      "group": "ocr",
+      "label": "scan-transparent.png",
+      "args": [
+        "converter/rapidocr/testdata/scan-transparent.png",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1823,
+      "characters": 37,
+      "text": "Invoice ID FILENS2026\nTotal 12345.67\n",
+      "stderr": ""
+    },
+    {
+      "group": "quality",
+      "label": "invoice-zh",
+      "args": [
+        "docs/assets/agent-cli/invoice-zh.png",
+        "--json"
+      ],
+      "reference": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1447,
+      "characters": 113,
+      "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "stderr": "",
+      "normalizedCER": 0,
+      "invoiceNumberCorrect": true,
+      "amountCorrect": true
+    },
+    {
+      "group": "quality",
+      "label": "invoice-blur",
+      "args": [
+        "docs/assets/agent-cli/invoice-blur.png",
+        "--json"
+      ],
+      "reference": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1397,
+      "characters": 110,
+      "text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和English。\n",
+      "stderr": "",
+      "normalizedCER": 0,
+      "invoiceNumberCorrect": true,
+      "amountCorrect": true
+    },
+    {
+      "group": "quality",
+      "label": "invoice-small",
+      "args": [
+        "docs/assets/agent-cli/invoice-small.png",
+        "--json"
+      ],
+      "reference": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1393,
+      "characters": 110,
+      "text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和English。\n",
+      "stderr": "",
+      "normalizedCER": 0,
+      "invoiceNumberCorrect": true,
+      "amountCorrect": true
+    },
+    {
+      "group": "quality",
+      "label": "invoice-tiny",
+      "args": [
+        "docs/assets/agent-cli/invoice-tiny.png",
+        "--json"
+      ],
+      "reference": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1422,
+      "characters": 97,
+      "text": "显风科胰采购单\n客产名称：上海示例公司\n项目名称：本地文格读取与识8）\n险付全额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，高缓织别中文和 English，\n",
+      "stderr": "",
+      "normalizedCER": 0.2632,
+      "invoiceNumberCorrect": false,
+      "amountCorrect": true
+    },
+    {
+      "group": "quality",
+      "label": "invoice-heavy-blur",
+      "args": [
+        "docs/assets/agent-cli/invoice-heavy-blur.png",
+        "--json"
+      ],
+      "reference": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1579,
+      "characters": 19,
+      "text": "ssi\nCes号 FLDG\n无P生E\n",
+      "stderr": "",
+      "normalizedCER": 0.9368,
+      "invoiceNumberCorrect": false,
+      "amountCorrect": false
+    },
+    {
+      "group": "documents",
+      "label": "filens-aurora-guide.docx",
+      "args": [
+        "apps/demo/public/samples/filens-aurora-guide.docx",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1947,
+      "characters": 1458,
+      "text": "FIELD NOTES / THE NIGHT ISSUE\nChasing the light\nA field guide to the edge of night.\n一\n心\n公\n\nPhotograph: Carsten / CC BY 2.0. Cropped and color-graded in pale blue.\nTrip overview\nPast the last village, the horizon opens into a quiet world of snow, sea and stars. Follow a fictional three-night expedition in search of a different perspective.\n03 NIGHTS\n\t66° NORTH\n\t01 SHARED SKY\n\t\nA slower journey\n\tFictional polar route\n\tA little more wonder\n\t\nAll places, groups, dates, and figures in this guide are fictional.\n\n\n01 / PLAN THE NIGHT\nRoute and activities\nNIGHT\n\tLOCATION\n\tMOMENT\n\tDETAIL\n\t\n01\n\tLyra fjo",
+      "stderr": "",
+      "textExcerpt": true
+    },
+    {
+      "group": "documents",
+      "label": "filens-observatory.xlsx",
+      "args": [
+        "apps/demo/public/samples/filens-observatory.xlsx",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 2,
+      "elapsedMs": 1165,
+      "characters": 2923,
+      "text": "Observatory\nAURORA LAB\tNIGHT / 03\tOBSERVATORY\t\t\t\t\t\nPUBLIC SAMPLE\t6 stations\tFICTIONAL DATA\t\t\t\t\t\n\t\t\t\t\t\t\t\nSTATION\tLATITUDE\tSKY\tKp INDEX\tACTIVITY\tSCORE / 100\tBEST WINDOW\tFORMATION\nLyra Fjord\t66.2° N\tCLEAR\t4.8\t▁▂▄▆█▆▄\t92\t22:40\tBLUE ARC\nOrion Camp\t68.1° N\tCLEAR\t5.2\t▂▃▅▇█▅▃\t96\t23:10\tCORONA\nVega Ridge\t67.4° N\tTHIN CLOUD\t4.1\t▁▂▃▅▆▄▂\t78\t21:55\tCURTAIN\nPolaris Bay\t69.0° N\tCLEAR\t5.6\t▂▄▅▆█▇▄\t98\t00:20\tRAYS\nAltair Point\t65.8° N\tCLEAR\t3.7\t▁▂▃▄▅▃▂\t71\t22:05\tLOW ARC\nNova Station\t70.2° N\tTHIN CLOUD\t4.9\t▂▃▄▇█▆▄\t86\t23:35\tFOLD\n\t\t\t\t\t\t\t\nSKY WATCH\t▁▂▃▅▆█▇▄\t21:00 → 01:00\t\t\t\t\t\nSTATUS\tALL SYSTEMS GO\tNEXT / 00:45\t\t\t\t\t\n\t\t\t\t",
+      "stderr": "",
+      "textExcerpt": true
+    },
+    {
+      "group": "documents",
+      "label": "filens-cosmic-atlas.pdf",
+      "args": [
+        "apps/demo/public/samples/filens-cosmic-atlas.pdf",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 1854,
+      "characters": 559,
+      "text": "THE NIGHT ISSUE / 01\r\nBEYOND\r\nTHE VISIBLE.\r\nAn atlas of extraordinary perspectives.\r\nPOLAR SKIES / DEEP SPACE\r\nfilens / public sample\nTHE COSMIC CLIFFS\r\nAn infrared view of a stellar nursery in the Carina Nebula.\r\nImage: NASA, ESA, CSA, STScI / 02\nFIELD NOTES / THE OBSERVATORY\r\nFollow your curiosity.\r\nA fictional observation plan, made for a closer look.\r\n03\r\nNIGHTS TO EXPLORE\r\n06\r\nFICTIONAL STATIONS\r\n360\r\nDEGREES OF WONDER\r\nPhotography: Carsten / CC BY 2.0 / cropped, pale-blue color grade\r\nAll observation data and itinerary details are fictional. / 03\n",
+      "stderr": "",
+      "textExcerpt": true
+    },
+    {
+      "group": "documents",
+      "label": "filens-field-notes.pptx",
+      "args": [
+        "apps/demo/public/samples/filens-field-notes.pptx",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 2878,
+      "characters": 503,
+      "text": "S\n一\n.\n1\n中\n酒\n家\n二\nFIELD NOTES / THE NIGHT ISSUE\nBEYOND\nTHE VISIBLE.\nFollow the light.\nA journey into the extraordinary.\nPOLAR SKIES / DEEP SPACE / NEW PERSPECTIVES\nfilens / 01\nA\n02 / AT THE EDGE OF NIGHT\nCHASE THE LIGHT.\nA winter horizon. A sky in motion. An entirely new point of view.\nPhotograph: Carsten / CC BY 2.0 / blue color grade\n.\n一\n区\ni\n1\n产\n福\n心\n03 / THE COSMIC ATLAS\nA universe\nof detail.\n01\nLOOK CLOSER\nDiscover a new perspective in every file.\nCARINA NEBULA / NASA, ESA, CSA, STScI\nfilens / 03\n",
+      "stderr": "",
+      "textExcerpt": true
+    },
+    {
+      "group": "documents",
+      "label": "legacy-project-workflow.doc",
+      "args": [
+        "apps/demo/public/samples/legacy-project-workflow.doc",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 9,
+      "elapsedMs": 1753,
+      "characters": 16145,
+      "text": "The Lifecycle of a Project: CDPMF \nThe Project Manager’s Perspective\nProject Workflow – inserted from the Project Workflow Overview document.\nOverview \niControl Project Management frame work is a logical my insert structure intended to provide a simplified, yet comprehensive  representation of a complex process that is independent of the tools and methods used in any particular situation, other than unforeseen catastrophes.\nThe two top level models making up the framework are:\nIThe Project Management Team Model - The Project Management Team Model defines the project management team structure a",
+      "stderr": "",
+      "textExcerpt": true
+    },
+    {
+      "group": "documents",
+      "label": "a.pages",
+      "args": [
+        "apps/demo/public/samples/a.pages",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 2,
+      "elapsedMs": 1426,
+      "characters": 2782,
+      "text": "Representative Import Fixture for Apple Pages\nThis document is intentionally ordinary: it is meant to be opened in Apple Pages and saved as a native .pages file for importer tests.\n1. Body text and inline formatting\nPurpose. Use this fixture to validate basic text extraction, paragraph ordering, character runs, and style preservation. It includes bold, italic, underlined, and code-like text: let importer = PagesImporter().\nUnicode coverage: café, naïve, coöperate, emojis 🚀 ✅, smart quotes “like this”, em dash —, non-breaking spaces, and CJK text: 日本語・中文・한국어.\n2. Lists\nPlain paragraph before li",
+      "stderr": "",
+      "textExcerpt": true
+    },
+    {
+      "group": "documents",
+      "label": "a.numbers",
+      "args": [
+        "apps/demo/public/samples/a.numbers",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 110,
+      "elapsedMs": 1254,
+      "characters": 221997,
+      "text": "Combined\nout-all\n    cloud\tmemory\tuseQueue\toptions\tcompleted\terrors\tretries\tawsCost\tawsLatency\tbilledTime\tgoogleCost\tgoogleLatency\tgoogleBilledTime\n    aws\t128\tfalse\t{}\t10\t0\t0\t0.00063013\t30.076\t30.13\t0.00027795\t11.764\t11.82\n    aws\t192\tfalse\t{}\t10\t0\t0\t0.00068367\t21.754\t21.8\t\t\t\n    aws\t256\tfalse\t{}\t10\t0\t0\t0.00069867\t16.663\t16.71\t0.00030385\t6.422\t6.47\n    aws\t320\tfalse\t{}\t10\t0\t0\t0.00071856\t13.707\t13.75\t\t\t\n    aws\t384\tfalse\t{}\t10\t0\t0\t0.00070679\t11.224\t11.27\t\t\t\n    aws\t448\tfalse\t{}\t10\t0\t0\t0.00069513\t9.466\t9.5\t\t\t\n    aws\t512\tfalse\t{}\t10\t0\t0\t0.00069909\t8.317\t8.36\t0.00043566\t4.596\t4.66\n    aws\t576\tfa",
+      "stderr": "",
+      "textExcerpt": true
+    },
+    {
+      "group": "documents",
+      "label": "filens-weekend.key",
+      "args": [
+        "apps/demo/public/samples/filens-weekend.key",
+        "--json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "format": "json",
+      "operation": "read",
+      "ok": true,
+      "complete": true,
+      "truncated": false,
+      "blocks": 1,
+      "elapsedMs": 3184,
+      "characters": 1022,
+      "text": "\nS\n一\n.\n1\n中\n酒\n家\n二\nFIELD NOTES / THE NIGHT ISSUE\nBEYOND\nTHE VISIBLE.\nFollow the light.\nA journey into the extraordinary.\nPOLAR SKIES / DEEP SPACE / NEW PERSPECTIVES\nfilens / 01\n\n\n￼\nOriginal public showcase. Photo sources and color grading are documented in samples/SOURCES.md.\nOriginal public showcase. Photo sources and color grading are documented in samples/SOURCES.md.\n\n一\n心\n公\n02 / AT THE EDGE OF NIGHT\nCHASE THE LIGHT.\nPhotograph: Carsten / CC BY 2.0 / pale-blue color grade\n\n\n￼\nOriginal public showcase. Photo sources and color grading are documented in samples/SOURCES.md.\nOriginal public showcas",
+      "stderr": "",
+      "textExcerpt": true
+    }
+  ]
+}

@@ -3,7 +3,7 @@
   <h1>filens</h1>
   <p><strong>Files shine bright. Dreams take flight.</strong></p>
   <p>A pure frontend file viewer for Office, iWork, CAD, panoramas, and more. Local files stay on your device.</p>
-  <p>English · <a href="README.zh-CN.md">简体中文</a></p>
+  <p>Chinese name: 探微 · English · <a href="README.zh-CN.md">简体中文</a></p>
   <p>
     <a href="#demo">Watch the demo</a> ·
     <a href="#quick-start">Try it locally</a> ·
@@ -17,39 +17,98 @@
 
 ---
 
-<p align="center">
-  <a href="https://www.zimaspace.com/en/zimaos?utm_source=github&amp;utm_medium=referral&amp;utm_campaign=filens_zimaos&amp;utm_content=readme_banner_en"><img src="docs/assets/readme/zimaos-banner.en.png" alt="ZimaOS. Your personal cloud, made simple. Deep FiLens integration, file management, RAW / 360° viewing, backup, and 800+ apps. Explore ZimaOS." width="640" /></a>
-</p>
-
-## A closer look at your files
-
-- **Pure frontend preview.** Parse and render files in the browser. Local previews require neither uploads nor a conversion server.
-- **WASM conversion, flexible deployment.** Run the conversion module directly in the browser or use it independently through [CLI / HTTP tools](examples/go-wazero-converter). WASM handles file parsing and conversion; the server manages requests and files.
-- **Load by format, spend less time waiting.** Format-based bundles, lazy loading, worker parsing, and page virtualization reduce download and rendering work. The document conversion WASM is **<!-- bundle-size:converter-core -->318.3<!-- /bundle-size --> KiB Brotli**; UI, shared dependencies, and other modules are measured separately in the [bundle report](docs/bundle-sizes.md).
-
-Native PPTX and iWork previews sit alongside documents, spreadsheets, CAD, 3D, RAW, panoramas, archives, and ebooks. Coverage and fidelity vary by format. See the [support matrix](docs/support-matrix.md) for current capabilities and limitations.
-
 ## See more, right in your browser
 
-**Open all three iWork formats, look around camera-original panoramas, and get a fast RAW preview.** From presentation slides to the data behind the lens, explore it all in one file workspace.
+| Frontend project | iWork | 360° photos / video | RAW preview | Native PPTX | CAD / 3D |
+| --- | --- | --- | --- | --- | --- |
+| **filens** | **✅ All three** | **✅** | **◐** | **✅** | **✅** |
+| [SheetJS CE](https://docs.sheetjs.com/docs/miscellany/formats/) | ◐ Numbers | — | — | — | — |
+| [Photo Sphere Viewer](https://github.com/mistic100/Photo-Sphere-Viewer) | — | ✅ | — | — | — |
+| [LibRaw-Wasm](https://github.com/ybouane/LibRaw-Wasm) | — | — | ✅ | — | — |
+| [vue-office](https://github.com/501351981/vue-office) | — | — | — | ✅ | — |
+| [PPTist](https://github.com/pipipi-pikachu/PPTist) | — | — | — | ✅ | — |
+| [Online 3D Viewer](https://github.com/kovacsv/Online3DViewer) | — | — | — | — | ✅ |
 
-This comparison selects browser-local projects by specialty.
+<sub>✅ Available path · ◐ Partial or conditional support · — No built-in path documented. [Format coverage and limits](docs/support-matrix.md).</sub>
 
-| Frontend project | Native PPTX preview | iWork | Panorama photos / video | Local RAW preview | CAD / 3D | Performance path and focus |
-| --- | --- | --- | --- | --- | --- | --- |
-| **filens** | **✅** | **✅ Keynote / Pages / Numbers** | **✅ Photos / video**<br><sub>◐ X5 original INSP, Insta360 / DJI distortion and calibration parsing, original-track sync and calibrated DNG stitching</sub> | **◐ Embedded JPEG / lightweight development** | **✅ DXF / STEP / 3D** | **Load by format; fast RAW path; panorama redraws on demand** |
-| [vue-office](https://github.com/501351981/vue-office) | ✅ [PPTX core is not open source](https://github.com/501351981/pptx-preview#关于授权) | — | — | — | — | Office document previews |
-| [PPTist](https://github.com/pipipi-pikachu/PPTist) | ✅ Import into presentation model | — | — | — | — | Presentation editing and playback |
-| [SheetJS CE](https://docs.sheetjs.com/docs/miscellany/formats/) | — | ◐ Numbers table data extraction | — | — | — | Workbook parsing; application supplies the UI |
-| [Photo Sphere Viewer](https://github.com/mistic100/Photo-Sphere-Viewer) | — | — | ✅ Photos / video<br><sub>◐ Generic dual fisheye; no X5 calibration parsing</sub> | — | — | WebGL panoramas, tiles, hotspots, and tours |
-| [LibRaw-Wasm](https://github.com/ybouane/LibRaw-Wasm) | — | — | — | ✅ WASM decoding and development | — | Full / half-size development; worker-based image processing API |
-| [Online 3D Viewer](https://github.com/kovacsv/Online3DViewer) | — | — | — | — | ✅ STEP / IGES / IFC / 3D | Specialist model viewing, inspection, and export |
+**iWork, panoramas, RAW, Office, and CAD / 3D in one browser-local workspace.** The projects above specialize in different areas; filens brings these previews together.
 
-<sub>✅ Available path; ◐ partial or conditional support; — no built-in path found in the project's documentation. See the [support matrix](docs/support-matrix.md) for fidelity boundaries. Camera-original stitching is experimental.</sub>
+<details>
+<summary>Comparison notes and support boundaries</summary>
 
-- **iWork, with a view for each format.** Parse Keynote, Pages, and Numbers directly, presenting text, images, shapes, and tables on slide, page, and sheet canvases. [See an actual preview](apps/demo/public/home/iwork.webp).
-- **Panoramas, from lens parameters to the view around you.** Parse supported originals' intrinsics, distortion, and extrinsics, then handle track synchronization, projection, exposure matching, and seams. Reuse static stitching results and adapt video seam-analysis frequency to its measured cost. [Implementation and camera validation](docs/panorama-rendering-implementation.md).
+- Entries follow public documentation and browser-local processing paths, rather than overall project rankings. Support and fidelity vary by file.
+- **iWork / PPTX:** filens previews Keynote, Pages, and Numbers natively. SheetJS extracts Numbers table data and needs an application UI. PPTist imports PPTX into its presentation model; vue-office's [PPTX core is not open source](https://github.com/501351981/pptx-preview#关于授权).
+- **Panoramas:** both filens and Photo Sphere Viewer display photos and video. filens also handles supported X5 INSP originals, Insta360 / DJI calibration and distortion, original-track synchronization, and calibrated DNG stitching. Camera-original stitching is experimental and depends on metadata, companion files, and browser codecs. PSV's [generic dual-fisheye adapter](https://photo-sphere-viewer.js.org/guide/adapters/dual-fisheye.html) does not parse X5 calibration.
+- **RAW:** filens prioritizes embedded JPEGs, then lightweight sensor development. LibRaw-Wasm offers full / half-size decoding and development through an API that needs an application UI. These paths have different image-quality goals.
+- **CAD / 3D:** filens covers DXF, STEP, and mesh previews. Online 3D Viewer specializes in model viewing, inspection, and export, including STEP / IGES / IFC. filens STEP previews retain geometry and instance placement, but omit source colors, names, and the assembly tree.
+
+</details>
+
+## iWork, panoramas, and RAW
+
+- **iWork, with a view for each format.** Open Keynote, Pages, and Numbers directly on slide, page, and sheet canvases. Layout and object fidelity vary by file. [See an actual preview](apps/demo/public/home/iwork.webp).
+- **Camera-original panoramas.** Look around 360° photos and video; supported originals use lens calibration, track synchronization, and stitching to reconstruct the view. Original stitching is experimental. [Implementation and camera validation](docs/panorama-rendering-implementation.md).
 - **RAW, with a faster path to a preview.** Load the image WASM on demand, extract an embedded JPEG first, and use lightweight sensor development when no preview is available. [RAW coverage](docs/support-matrix.md#camera-raw-conversion).
+
+## Demo
+
+**[▶ Watch the 30-second walkthrough](apps/demo/public/home/filens-demo.mp4)** — presentations, documents, spreadsheets, Keynote, CAD, a Viking helmet in 3D, and a 360° view, in one workspace.
+
+<details>
+<summary>Show an animated preview</summary>
+
+![A short recording of filens switching between real file previews](docs/assets/readme/demo.gif)
+
+The full recording is linked above. [Chinese captions](apps/demo/public/home/demo-zh.vtt) · [English captions](apps/demo/public/home/demo-en.vtt)
+
+</details>
+
+## Read documents with an Agent
+
+Describe what to read in Chinese or English, then receive text, JSON, Markdown, HTML, YAML, XML, CSV or TSV. Get source structure and PDF/OCR coordinates for the calling Agent. Parsing, layout and document export share the WASM core; the caller performs semantic reasoning.
+
+![Real filens CLI typing, Markdown output and source-aligned OCR geometry](docs/assets/agent-cli/terminal-demo.gif)
+
+[Output formats, layouts and reproducible demo](docs/agent-cli-formats-and-layout.zh-CN.md) · Actual CLI excerpts; typing/response timing edited.
+
+Explore [68 observed examples and natural-language limits](docs/agent-cli-examples.zh-CN.md) (Chinese), including OCR quality, working requests and unsupported page selection or questions.
+
+```sh
+# Full: CLI, WASM and native OCR
+npm install -g filens-cli
+filens 'read "report.pdf" as json'
+filens 'what can you do as json'
+filens 'read "report.docx" as markdown'
+filens '获取 "invoice.png" 的布局，以 YAML 输出'
+filens convert report.doc report.docx
+filens convert data.csv --to xlsx
+
+# Lite alternative; native OCR can be added with filens setup-ocr
+npm install -g filens-cli-lite
+# Temporary invocation
+npx --yes filens-cli-lite capacity --json
+```
+
+The source CLI is Rust, with strip, LTO and fast gzip-compressed WASM resources.
+`convert` uses the frontend conversion engines; inspect `capacity.conversionPairs`
+for supported targets. A distributable [agent skill](skills/filens/SKILL.md)
+covers reading, OCR, layout, evidence and conversion, with standard YAML front matter.
+
+The npm entry packages are [`filens-cli`](https://www.npmjs.com/package/filens-cli) and [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite); both expose the `filens` command. Full includes native RapidOCR NCNN and models, with **no Python environment**; defaults are max side **960**, OpenMP threads **2**, orientation classification and image preprocessing. WASM supports OCR callbacks for scanned pages and embedded document images. Rebuilt Rust candidates on macOS arm64 are about **7.25 MiB** (Lite) and **30.45 MiB** (Full) installed. Model downloads support concurrent speed probes across HF / ModelScope / HF Mirror and an optional fourth route, with hash verification. See [installation, packaging and protocol](docs/agent-cli.md).
+
+## Quick start
+
+Requires Node.js 20+ and [Rust via rustup](https://rustup.rs/). The repository pins the Rust compiler and WASI target.
+
+```sh
+npm ci
+npm run build:wasm
+npm run dev --workspace @filens/demo
+```
+
+Open [the local demo](http://localhost:5173/modules/filens/?lang=en), then choose a sample or drop in your own file. The website has Chinese and English homepages.
+
+To publish the demo, [import the repository into Vercel](docs/deploy-vercel.md). Git integration deploys pushes automatically; an optional manual GitHub Actions workflow is also included.
 
 ## What you can open today
 
@@ -64,6 +123,14 @@ This comparison selects browser-local projects by specialty.
 | Archives, ebooks, code, mind maps, and diagrams | Browse folders and chapters, read source, and explore node relationships. | See the support matrix for each format's supported subset. |
 
 The homepage has eight actual preview captures and directly accessible STEP, RAW, PPM, and legacy Office samples. See the [panorama package](packages/panorama/README.md) for RAW and panorama integration.
+
+## A closer look at your files
+
+- **Pure frontend preview.** Parse and render files in the browser. Local previews require neither uploads nor a conversion server.
+- **WASM conversion, flexible deployment.** Run the conversion module directly in the browser or use it independently through [CLI / HTTP tools](examples/go-wazero-converter). WASM handles file parsing and conversion; the server manages requests and files.
+- **Load by format, spend less time waiting.** Format-based bundles, lazy loading, worker parsing, and page virtualization reduce download and rendering work. The document conversion WASM is **<!-- bundle-size:converter-core -->318.3<!-- /bundle-size --> KiB Brotli**; UI, shared dependencies, and other modules are measured separately in the [bundle report](docs/bundle-sizes.md).
+
+Native PPTX and iWork previews sit alongside documents, spreadsheets, CAD, 3D, RAW, panoramas, archives, and ebooks. Coverage and fidelity vary by format. See the [support matrix](docs/support-matrix.md) for current capabilities and limitations.
 
 ## Small pieces, shared capabilities
 
@@ -104,60 +171,36 @@ Entry, preloaded JS, and CSS total **499.0 KiB Brotli** (2131.8 KiB raw / 596.6 
 Measured from the demo build. Compression columns describe artifacts; actual transfer depends on hosting. [Full report and reproduction](docs/bundle-sizes.md).
 <!-- bundle-sizes:en:end -->
 
-## Demo
-
-**[▶ Watch the 30-second walkthrough](apps/demo/public/home/filens-demo.mp4)** — presentations, documents, spreadsheets, Keynote, CAD, and a 360° view, in one workspace.
+## Measured performance
 
 <details>
-<summary>Show an animated preview</summary>
+<summary>Show SOTA benchmark results</summary>
 
-![A short recording of filens switching between real file previews](docs/assets/readme/demo.gif)
-
-The full recording is linked above. [Chinese captions](apps/demo/public/home/demo-zh.vtt) · [English captions](apps/demo/public/home/demo-en.vtt)
-
-</details>
-
-## Measured performance
+| Measured task | filens | Current peer | Speedup\* |
+| --- | ---: | --- | ---: |
+| 11.1 MB, 13-slide PPTX parse | **28.5 ms** | pptx-preview 1.0.7: 56.6 ms | **1.99×** |
+| 11.1 MB, 13-slide PPTX first preview | **48.8 ms** | pptx-preview 1.0.7: 71.8 ms | **1.47×** |
+| 3840×1920 panorama JPEG preview | **154.9 ms** | Photo Sphere Viewer 5.15.1: 205.2 ms | **1.32×** |
+| 11904×5952 original X5 INSP panorama preview | **369.4 ms** | Photo Sphere Viewer 5.15.1 dual fisheye: 414.5 ms | **1.12×** |
+| NEF without embedded JPEG → preview canvas | **152.7 ms** | LibRaw-Wasm 1.6.0 half-size: 326.7 ms | **2.14×** |
+| DNG without embedded JPEG → preview canvas | **167.7 ms** | LibRaw-Wasm 1.6.0 fast half-size: 314.4 ms | **1.87×** |
+| STEP geometry import: cube | **46.5 ms** | occt-import-js 0.0.23: 67.6 ms | 1.45× |
+| XLSX data read (80,000 cells) | **42.3 ms** | SheetJS CE 0.20.3: 109.6 ms | 2.59× |
+| XLS → XLSX preview conversion (6 sheets) | **12.3 ms** | x2t WASM v9.3.2+3: 49.1 ms | 4.00× |
+| 20,000×8 numeric CSV → XLSX | **137.6 ms** | x2t WASM v9.3.2+3: 198.8 ms | 1.44× |
 
 **Stable leads against specialized frontend libraries.** At least seven runs per configuration, with 21 for the X5 original; sensor development and preview drawing on five RAW inputs without embedded JPEGs are **1.11–2.14×** faster than the measured LibRaw paths.
 
-| Measured task | filens | Current peer | Peer time / filens | Result |
-| --- | ---: | --- | ---: | --- |
-| 11.1 MB, 13-slide PPTX parse | **28.5 ms** | pptx-preview 1.0.7: 56.6 ms | **1.99×** | **SOTA\*** |
-| 11.1 MB, 13-slide PPTX first preview | **48.8 ms** | pptx-preview 1.0.7: 71.8 ms | **1.47×** | **SOTA\*** |
-| 3840×1920 panorama JPEG preview | **154.9 ms** | Photo Sphere Viewer 5.15.1: 205.2 ms | **1.32×** | **SOTA\*** |
-| 11904×5952 original X5 INSP panorama preview | **369.4 ms** | Photo Sphere Viewer 5.15.1 dual fisheye: 414.5 ms | **1.12×** | **SOTA\*** |
-| NEF without embedded JPEG → preview canvas | **152.7 ms** | LibRaw-Wasm 1.6.0 half-size: 326.7 ms | **2.14×** | **SOTA\*** |
-| DNG without embedded JPEG → preview canvas | **167.7 ms** | LibRaw-Wasm 1.6.0 fast half-size: 314.4 ms | **1.87×** | **SOTA\*** |
-| STEP geometry import: cube | **46.5 ms** | occt-import-js 0.0.23: 67.6 ms | 1.45× | **SOTA\*** |
-| XLSX data read (80,000 cells) | **42.3 ms** | SheetJS CE 0.20.3: 109.6 ms | 2.59× | **SOTA\*** |
-| XLS → XLSX preview conversion (6 sheets) | **12.3 ms** | x2t WASM v9.3.2+3: 49.1 ms | 4.00× | **SOTA\*** |
-| 20,000×8 numeric CSV → XLSX | **137.6 ms** | x2t WASM v9.3.2+3: 198.8 ms | 1.44× | **SOTA\*** |
-
 <sub>\* Limited to this machine, measured inputs and listed peers, supported by paired bootstrap 95% intervals; downloads and library cold loading excluded. Apple M4 Pro / Chromium 147; **panoramas use SwiftShader software rendering**. On the X5 original, PSV's generic dual-fisheye projection visibly repeats scene content across hard seams; filens has lighter, localized ghosting. The speed label covers readable previews of this original. RAW measures development and drawing to a common canvas with different intermediate sizes; STEP targets geometry previews; XLSX compares data reading; XLS compares the main displayed content in the same viewer. [Full results, scope and reproduction](docs/performance-comparison.md).</sub>
 
-<details>
-<summary>Selection and measurement scope</summary>
+</details>
 
-<sub>Entries follow public documentation and browser-local processing paths. SheetJS and LibRaw-Wasm expose APIs that need an application UI. Panorama viewing and vendor-original stitching have different requirements; see the [support matrix](docs/support-matrix.md) and [Photo Sphere Viewer dual-fisheye guide](https://photo-sphere-viewer.js.org/guide/adapters/dual-fisheye.html).</sub>
+<details>
+<summary>Measurement scope</summary>
 
 <sub>RAW inputs have embedded JPEGs removed and unchanged sensor data. Both LibRaw half-size configurations draw to the same 1280×800 canvas; intermediate resolution, tone and crop differ slightly. Timing includes development, output decode/transfer and drawing. The full Numbers model and several small PPTX first previews still have room to improve; see the [full results and preview comparisons](docs/performance-comparison.md).</sub>
 
 </details>
-
-## Quick start
-
-Requires Node.js 20+ and [Rust via rustup](https://rustup.rs/). The repository pins the Rust compiler and WASI target.
-
-```sh
-npm ci
-npm run build:wasm
-npm run dev --workspace @filens/demo
-```
-
-Open [the local demo](http://localhost:5173/modules/filens/?lang=en), then choose a sample or drop in your own file. The website has Chinese and English homepages.
-
-To publish the demo, [import the repository into Vercel](docs/deploy-vercel.md). Git integration deploys pushes automatically; an optional manual GitHub Actions workflow is also included.
 
 ## Build with filens
 
@@ -168,6 +211,7 @@ To publish the demo, [import the repository into Vercel](docs/deploy-vercel.md).
 | Architecture, comparisons, and performance notes | [Project overview](docs/project-overview.md) |
 | Frontend timings, scoped leads, and raw data | [Frontend performance comparison](docs/performance-comparison.md) |
 | Full-text extraction / injectable OCR | [Optional Go host and text WASM](converter/README.md) |
+| Agent document reading / capacity / local OCR | [Agent CLI](docs/agent-cli.md) |
 | CLI / backend integration | [Go + wazero example](examples/go-wazero-converter/README.md) |
 | Deployment | [Vercel guide](docs/deploy-vercel.md) |
 
@@ -178,3 +222,7 @@ Try your everyday files and [report a reproducible issue](https://github.com/Ice
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=IceWhaleTech/filens&type=Date)](https://star-history.com/#IceWhaleTech/filens&Date)
+
+<p align="center">
+  <a href="https://www.zimaspace.com/en/zimaos?utm_source=github&amp;utm_medium=referral&amp;utm_campaign=filens_zimaos&amp;utm_content=readme_banner_en"><img src="docs/assets/readme/zimaos-banner.en.png" alt="ZimaOS. Your personal cloud, made simple. Deep FiLens integration, file management, RAW / 360° viewing, backup, and 800+ apps. Explore ZimaOS." width="640" /></a>
+</p>

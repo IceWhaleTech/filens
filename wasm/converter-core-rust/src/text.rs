@@ -2,12 +2,15 @@
 //! invocation bridge; it never decides reading order or when OCR is needed.
 use super::*;
 use calamine::Reader as WorkbookReader;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::cell::RefCell;
 use std::path::{Component, PathBuf};
 
+mod layout;
+mod ocr_image;
 mod odf_sheet;
+mod pdf_unicode;
 mod raster;
 
 const MAX_INPUT: u64 = 256 << 20;
@@ -22,6 +25,100 @@ struct Outcome {
     warnings: Vec<String>,
     error_code: String,
     error_message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    document: Option<Document>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    layout: Option<layout::Layout>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rendered: Option<String>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct Document {
+    bytes: usize,
+    characters: usize,
+    lines: usize,
+    blocks: Vec<TextBlock>,
+}
+
+// Offsets refer to the extracted UTF-8 text, never to source-file bytes or
+// physical pages. Keeping spans rather than duplicate text bounds result size.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TextBlock {
+    id: String,
+    start_byte: usize,
+    end_byte: usize,
+    start_line: usize,
+    end_line: usize,
+}
+
+fn document(text: &str) -> Document {
+    let mut blocks = Vec::new();
+    let mut start = 0;
+    let mut line = 1;
+    while start < text.len() {
+        let mut end = (start + 2048).min(text.len());
+        while !text.is_char_boundary(end) {
+            end -= 1;
+        }
+        if end < text.len() {
+            if let Some(n) = text[start..end].rfind('\n').filter(|n| *n >= 1024) {
+                end = start + n + 1;
+            }
+        }
+        let value = &text[start..end];
+        let newlines = value.bytes().filter(|b| *b == b'\n').count();
+        blocks.push(TextBlock {
+            id: format!("b{}", blocks.len() + 1),
+            start_byte: start,
+            end_byte: end,
+            start_line: line,
+            end_line: line + newlines - usize::from(value.ends_with('\n')),
+        });
+        line += newlines;
+        start = end;
+    }
+    Document {
+        bytes: text.len(),
+        characters: text.chars().count(),
+        lines: text.lines().count(),
+        blocks,
+    }
+}
+
+pub(super) fn capabilities(request: &Request, started: Instant) {
+    let mut formats: Vec<Value> =
+        serde_json::from_str::<Value>(include_str!("../../../converter/text-formats.json"))
+            .unwrap()["capabilities"]
+            .as_array()
+            .unwrap()
+            .clone();
+    let pairs: Vec<ConversionPair> = serde_json::from_str(CONVERSIONS).unwrap();
+    for pair in pairs {
+        if formats.iter().any(|f| f["format"] == pair.source_format) {
+            continue;
+        }
+        let (kind, ocr) = match pair.target_format.as_str() {
+            "docx" => ("text", false),
+            "xlsx" => ("spreadsheet", false),
+            "jpg" => ("image", true),
+            _ => continue,
+        };
+        formats
+            .push(json!({"format":pair.source_format,"kind":kind,"textExtraction":true,"ocr":ocr}));
+    }
+    formats.sort_by(|a, b| a["format"].as_str().cmp(&b["format"].as_str()));
+    let result = ResultContract {
+        ok: true,
+        payload: Some(json!(formats)),
+        ..Default::default()
+    };
+    if let Err(error) = write_result(&request.result, result, started.elapsed().as_millis()) {
+        eprintln!("{error}");
+        process::exit(1);
+    }
 }
 struct State {
     result: Outcome,
@@ -29,7 +126,7 @@ struct State {
     ocr_limit: usize,
     ocr_pages: usize,
     work: PathBuf,
-    images: HashMap<String, String>,
+    images: HashMap<String, Value>,
 }
 
 pub(super) fn active() -> bool {
@@ -127,9 +224,12 @@ fn image(bytes: &[u8], extension: &str) -> Result<(), ConvertError> {
     }
     let hash = format!("{:x}", Sha256::digest(bytes));
     let cached = STATE.with(|s| s.borrow().as_ref().unwrap().images.get(&hash).cloned());
-    if let Some(text) = cached {
+    if let Some(result) = cached {
+        let start = layout::offset();
+        let text = result["text"].as_str().unwrap_or("");
         append(&text);
         append("\n");
+        layout::ocr(&result, start, layout::source_image());
         return Ok(());
     }
     let ext: String = extension
@@ -144,16 +244,21 @@ fn image(bytes: &[u8], extension: &str) -> Result<(), ConvertError> {
             .work
             .join(format!("image-{hash}.{ext}"))
     });
-    fs::write(&path, bytes).map_err(|e| io_error(format!("write OCR image: {e}")))?;
-    let result = host(json!({"operation":"ocr", "path":path}));
+    // The same preprocessing applies to standalone images, PDF renders and
+    // embedded document images before invoking an injected OCR provider.
+    let prepared = ocr_image::prepare(bytes)?;
+    fs::write(&path, &prepared).map_err(|e| io_error(format!("write OCR image: {e}")))?;
+    let result = host(json!({"operation":"ocr", "path":path,"layout":layout::enabled()}));
     let _ = fs::remove_file(path);
     match result {
         Ok(result) => {
+            let start = layout::offset();
             let text = result["text"].as_str().unwrap_or("").to_owned();
             append(&text);
             append("\n");
+            layout::ocr(&result, start, layout::source_image());
             STATE.with(|s| {
-                s.borrow_mut().as_mut().unwrap().images.insert(hash, text);
+                s.borrow_mut().as_mut().unwrap().images.insert(hash, result);
             });
         }
         Err(error) => partial("ocr_failed", error.message),
@@ -166,6 +271,7 @@ pub(super) fn paragraphs(paragraphs: &[DocxParagraph]) -> Result<(), ConvertErro
         if full() {
             break;
         }
+        let block = layout::open("paragraph");
         if paragraph.runs.is_empty() {
             append(&paragraph.text);
         } else {
@@ -181,6 +287,7 @@ pub(super) fn paragraphs(paragraphs: &[DocxParagraph]) -> Result<(), ConvertErro
         } else {
             "\n"
         });
+        layout::close(block);
     }
     Ok(())
 }
@@ -188,22 +295,32 @@ pub(super) fn sheets(sheets: &[(&str, &[Vec<SheetCell>])]) -> Result<(), Convert
     for (name, rows) in sheets {
         append(name);
         append("\n");
-        for row in *rows {
+        let table = layout::open("table");
+        layout::properties(table, json!({"name":name}));
+        for (row_index, row) in rows.iter().enumerate() {
             if full() {
+                layout::close(table);
                 return Ok(());
             }
             for (index, cell) in row.iter().enumerate() {
                 if index > 0 {
                     append("\t");
                 }
+                let block = layout::open("cell");
+                layout::properties(
+                    block,
+                    json!({"row":row_index+1,"column":index+1,"table":table.map(|t|format!("l{}",t+1))}),
+                );
                 match cell {
                     SheetCell::Empty => {}
                     SheetCell::Text(s) | SheetCell::Number(s) | SheetCell::Date(s) => append(s),
                     SheetCell::Bool(v) => append(if *v { "true" } else { "false" }),
                 }
+                layout::close(block);
             }
             append("\n");
         }
+        layout::close(table);
     }
     Ok(())
 }
@@ -232,6 +349,12 @@ pub(super) fn execute(request: &Request, started: Instant) {
         *s.borrow_mut() = Some(State {
             result: Outcome {
                 complete: true,
+                layout: (request.options_json["includeLayout"].as_bool() == Some(true)
+                    || matches!(
+                        request.options_json["outputFormat"].as_str(),
+                        Some("markdown" | "html" | "csv" | "tsv")
+                    ))
+                .then(|| layout::Layout::new(&request.source)),
                 ..Default::default()
             },
             limit,
@@ -251,7 +374,44 @@ pub(super) fn execute(request: &Request, started: Instant) {
     if let Err(error) = extracted {
         partial(error.code, error.message);
     }
-    let result = STATE.with(|s| s.borrow_mut().take().unwrap().result);
+    let mut result = STATE.with(|s| s.borrow_mut().take().unwrap().result);
+    if let Some(layout) = &mut result.layout {
+        layout::finish(layout, &result.text);
+        if let Some(format @ ("markdown" | "html" | "csv" | "tsv")) =
+            request.options_json["outputFormat"].as_str()
+        {
+            result.rendered = Some(layout::render(
+                format,
+                &result.text,
+                layout,
+                request.options_json["includeLayout"].as_bool() == Some(true),
+            ));
+            if request.options_json["includeLayout"].as_bool() == Some(true)
+                && matches!(format, "markdown" | "html")
+            {
+                let metadata = serde_json::to_string_pretty(layout).unwrap();
+                let appendix = if format == "markdown" {
+                    format!("\n\n## Layout metadata\n\n```json\n{metadata}\n```\n")
+                } else {
+                    format!("<details id=\"filens-layout\"><summary>Layout metadata</summary><pre>{}</pre></details>\n",layout::html(&metadata))
+                };
+                if format == "html" {
+                    result.rendered = result
+                        .rendered
+                        .take()
+                        .map(|s| s.replace("</body></html>", &format!("{appendix}</body></html>")));
+                } else {
+                    result.rendered.as_mut().unwrap().push_str(&appendix);
+                }
+            }
+        }
+    }
+    if request.options_json["includeLayout"].as_bool() != Some(true) {
+        result.layout = None;
+    }
+    if request.options_json["includeStructure"].as_bool() == Some(true) {
+        result.document = Some(document(&result.text));
+    }
     let input_size = fs::metadata(&request.input).map_or(0, |m| m.len());
     let contract = ResultContract {
         ok: result.complete,
@@ -310,6 +470,8 @@ fn extract(request: &Request) -> Result<(), ConvertError> {
         _ if is_ppt_binary_source(source) => convert_ppt_binary(input, ""),
         _ if is_biff_source(source) => convert_biff(input, ""),
         _ if is_odf_source(source) => odf(input, source),
+        _ if is_legacy_tabular_source(source) => convert_legacy_tabular(input, "", source),
+        _ if is_tabular_source(source) => convert_tabular(input, "", source),
         "rtf" => paragraphs(&extract_rtf_paragraphs(
             &fs::read(input).map_err(|e| io_error(e.to_string()))?,
         )?),
@@ -331,7 +493,24 @@ fn extract(request: &Request) -> Result<(), ConvertError> {
                     message: format!("no text extraction for {source}"),
                 });
             }
-            convert_text(input, "", source)
+            // Plain text/code should not inherit the preview renderer's
+            // paragraph and line-length limits.
+            if !is_markdown_source(source)
+                && !is_subtitle_source(source)
+                && !is_xml_text_source(source)
+                && !is_html_source(source)
+                && !is_mhtml_source(source)
+                && !matches!(
+                    source,
+                    "ipynb" | "epub" | "fb2" | "ics" | "vcf" | "eml" | "mbox" | "msg" | "oft"
+                )
+            {
+                let bytes = fs::read(input).map_err(|e| io_error(e.to_string()))?;
+                append(&decode_text(&bytes));
+                Ok(())
+            } else {
+                convert_text(input, "", source)
+            }
         }
     }
 }
@@ -535,6 +714,8 @@ fn xml_part(z: &mut ZipArchive<File>, part: &str) -> Result<(), ConvertError> {
     let mut skip_depth: usize = 0;
     let mut image_depth: usize = 0;
     let mut binary: Option<String> = None;
+    let mut structure: Vec<(Vec<u8>, Option<usize>)> = Vec::new();
+    let mut tables: Vec<(Option<usize>, usize, usize)> = Vec::new();
     loop {
         if full() {
             break;
@@ -545,6 +726,83 @@ fn xml_part(z: &mut ZipArchive<File>, part: &str) -> Result<(), ConvertError> {
             Ok(Event::Start(v)) | Ok(Event::Empty(v)) => {
                 let name = v.name();
                 let local = local_name(name.as_ref());
+                if !empty && layout::enabled() {
+                    let kind = match local {
+                        b"tbl" => Some("table"),
+                        b"tc" => Some("cell"),
+                        b"p" => Some("paragraph"),
+                        b"h" => Some("heading"),
+                        _ => None,
+                    };
+                    if local == b"tr" {
+                        if let Some((_, row, col)) = tables.last_mut() {
+                            *row += 1;
+                            *col = 0;
+                        }
+                    }
+                    if let Some(kind) = kind {
+                        let token = layout::open(kind);
+                        layout::properties(token, json!({"sourcePart":part}));
+                        if local == b"tbl" {
+                            tables.push((token, 0, 0));
+                        }
+                        if local == b"tc" {
+                            if let Some((table, row, col)) = tables.last_mut() {
+                                *col += 1;
+                                layout::properties(
+                                    token,
+                                    json!({"row":*row,"column":*col,"table":table.map(|t|format!("l{}",t+1))}),
+                                );
+                            }
+                        }
+                        structure.push((local.to_vec(), token));
+                    }
+                }
+                if matches!(local, b"pStyle" | b"outlineLvl") {
+                    if let Some(style) = attribute(&v, b"val") {
+                        let level = if local == b"outlineLvl" {
+                            style
+                                .parse::<usize>()
+                                .ok()
+                                .filter(|n| *n < 9)
+                                .map(|n| n + 1)
+                        } else {
+                            let lower = style.to_lowercase();
+                            if lower.starts_with("heading") || lower.starts_with("标题") {
+                                lower
+                                    .chars()
+                                    .filter(char::is_ascii_digit)
+                                    .collect::<String>()
+                                    .parse()
+                                    .ok()
+                            } else if lower == "title" {
+                                Some(1)
+                            } else {
+                                None
+                            }
+                        };
+                        if let Some(level) = level {
+                            if let Some((_, token)) =
+                                structure.iter().rev().find(|(n, _)| n == b"p")
+                            {
+                                layout::properties(*token, json!({"kind":"heading","level":level}));
+                            }
+                        }
+                    }
+                }
+                if local == b"gridSpan" {
+                    if let Some(span) = attribute(&v, b"val")
+                        .and_then(|v| v.parse::<usize>().ok())
+                        .filter(|n| *n > 0 && *n <= 1024)
+                    {
+                        if let Some((_, token)) = structure.iter().rev().find(|(n, _)| n == b"tc") {
+                            layout::properties(*token, json!({"columnSpan":span}));
+                        }
+                        if let Some((_, _, col)) = tables.last_mut() {
+                            *col = col.saturating_add(span - 1);
+                        }
+                    }
+                }
                 if !empty && matches!(local, b"t" | b"p" | b"h") {
                     text_depth += 1;
                 }
@@ -590,26 +848,37 @@ fn xml_part(z: &mut ZipArchive<File>, part: &str) -> Result<(), ConvertError> {
                     }
                 }
             }
-            Ok(Event::End(v)) => match local_name(v.name().as_ref()) {
-                b"t" => text_depth = text_depth.saturating_sub(1),
-                b"p" | b"h" => {
-                    text_depth = text_depth.saturating_sub(1);
-                    append("\n");
-                }
-                b"tc" => append("\t"),
-                b"tr" => append("\n"),
-                b"instrText" | b"del" => skip_depth = skip_depth.saturating_sub(1),
-                b"image" => image_depth = image_depth.saturating_sub(1),
-                b"binary-data" => {
-                    skip_depth = skip_depth.saturating_sub(1);
-                    if let Some(encoded) = binary.take() {
-                        let bytes = decode_base64(&encoded)
-                            .ok_or_else(|| parse_error("invalid embedded ODF image".into()))?;
-                        image(&bytes, "bin")?;
+            Ok(Event::End(v)) => {
+                let name = v.name();
+                let local = local_name(name.as_ref());
+                match local {
+                    b"t" => text_depth = text_depth.saturating_sub(1),
+                    b"p" | b"h" => {
+                        text_depth = text_depth.saturating_sub(1);
+                        append("\n");
                     }
+                    b"tc" => append("\t"),
+                    b"tr" => append("\n"),
+                    b"instrText" | b"del" => skip_depth = skip_depth.saturating_sub(1),
+                    b"image" => image_depth = image_depth.saturating_sub(1),
+                    b"binary-data" => {
+                        skip_depth = skip_depth.saturating_sub(1);
+                        if let Some(encoded) = binary.take() {
+                            let bytes = decode_base64(&encoded)
+                                .ok_or_else(|| parse_error("invalid embedded ODF image".into()))?;
+                            image(&bytes, "bin")?;
+                        }
+                    }
+                    _ => {}
                 }
-                _ => {}
-            },
+                if structure.last().is_some_and(|(n, _)| n.as_slice() == local) {
+                    let (_, token) = structure.pop().unwrap();
+                    layout::close(token);
+                }
+                if local == b"tbl" {
+                    tables.pop();
+                }
+            }
             Ok(Event::Text(v)) if binary.is_some() => binary
                 .as_mut()
                 .unwrap()
@@ -629,6 +898,10 @@ fn xml_part(z: &mut ZipArchive<File>, part: &str) -> Result<(), ConvertError> {
             Err(e) => return Err(parse_error(e.to_string())),
             _ => {}
         }
+    }
+    for (_, token) in structure {
+        layout::close(token);
+        layout::properties(token, json!({"incomplete":true}));
     }
     Ok(())
 }
@@ -656,6 +929,7 @@ fn openxml(input: &str, family: &str) -> Result<(), ConvertError> {
         let rels = relationships(&mut z, part)?;
         let bytes = xml_entry(&mut z, part)?;
         let mut reader = Reader::from_reader(bytes.as_slice());
+        let mut slide_index = 0;
         loop {
             match reader.read_event() {
                 Ok(Event::Start(v)) | Ok(Event::Empty(v))
@@ -669,6 +943,8 @@ fn openxml(input: &str, family: &str) -> Result<(), ConvertError> {
                         .map(|a| String::from_utf8_lossy(&a.value).into_owned())
                         .and_then(|id| rels.get(&id))
                     {
+                        slide_index += 1;
+                        layout::page(slide_index, None, None, "", "slide");
                         xml_part(&mut z, path)?;
                     }
                     if full() {
@@ -725,18 +1001,32 @@ fn spreadsheet(input: &str) -> Result<(), ConvertError> {
         let range = workbook
             .worksheet_range(&name)
             .map_err(|e| parse_error(e.to_string()))?;
-        for row in range.rows() {
+        let table = layout::open("table");
+        layout::properties(
+            table,
+            json!({"name":name,"sourcePart":sheet_parts.get(&name)}),
+        );
+        let (start_row, start_col) = range.start().unwrap_or((0, 0));
+        for (row_index, row) in range.rows().enumerate() {
             if full() {
+                layout::close(table);
                 return Ok(());
             }
             for (index, cell) in row.iter().enumerate() {
                 if index > 0 {
                     append("\t");
                 }
+                let block = layout::open("cell");
+                layout::properties(
+                    block,
+                    json!({"row":start_row as usize+row_index+1,"column":start_col as usize+index+1,"table":table.map(|t|format!("l{}",t+1))}),
+                );
                 append(&cell.to_string());
+                layout::close(block);
             }
             append("\n");
         }
+        layout::close(table);
         if let Some(part) = sheet_parts.get(&name) {
             let rels = relationships(&mut z, part)?;
             let bytes = xml_entry(&mut z, part)?;
@@ -1014,20 +1304,92 @@ fn xps_references(
     Ok(refs)
 }
 fn pdf(input: &str) -> Result<(), ConvertError> {
-    let pages = host(json!({"operation":"pdf_open","path":input}))?["pages"]
+    let work = STATE.with(|s| s.borrow().as_ref().unwrap().work.clone());
+    let prepared = pdf_unicode::prepare(input, &work);
+    let pdf_input = prepared.path.as_deref().unwrap_or(Path::new(input));
+    if prepared.repaired_fonts > 0 {
+        STATE.with(|s| {
+            s.borrow_mut()
+                .as_mut()
+                .unwrap()
+                .result
+                .warnings
+                .push(format!(
+                    "Recovered PDF Unicode mappings for {} font(s)",
+                    prepared.repaired_fonts
+                ))
+        });
+    }
+    if !prepared.ocr_pages.is_empty() {
+        STATE.with(|s| {
+            s.borrow_mut()
+                .as_mut()
+                .unwrap()
+                .result
+                .warnings
+                .push(format!(
+                    "PDF text mapping unavailable; using OCR for {} page(s)",
+                    prepared.ocr_pages.len()
+                ))
+        });
+    }
+    let pages = host(json!({"operation":"pdf_open","path":pdf_input}))?["pages"]
         .as_u64()
         .ok_or_else(|| parse_error("missing PDF page count".into()))?;
     for page in 0..pages {
         if full() {
             break;
         }
+        let geometry = if layout::enabled() {
+            match host(json!({"operation":"pdf_layout","page":page})) {
+                Ok(value) => Some(value),
+                Err(error) => {
+                    layout::warning(&format!(
+                        "PDF page {} geometry unavailable: {}",
+                        page + 1,
+                        error.message
+                    ));
+                    None
+                }
+            }
+        } else {
+            None
+        };
+        layout::page(
+            page + 1,
+            geometry.as_ref().and_then(|v| v["width"].as_f64()),
+            geometry.as_ref().and_then(|v| v["height"].as_f64()),
+            "pt",
+            "page",
+        );
         let text = host(json!({"operation":"pdf_text","page":page}))?["text"]
             .as_str()
             .unwrap_or("")
             .to_owned();
-        if text.chars().any(|c| !c.is_whitespace() && !c.is_control()) {
+        let invalid_mapping = pdf_unicode::unusable_text(&text);
+        if invalid_mapping && !prepared.ocr_pages.contains(&page) {
+            STATE.with(|s| {
+                s.borrow_mut()
+                    .as_mut()
+                    .unwrap()
+                    .result
+                    .warnings
+                    .push(format!(
+                        "PDF text mapping invalid on page {}; using OCR",
+                        page + 1
+                    ))
+            });
+        }
+        if !prepared.ocr_pages.contains(&page)
+            && !invalid_mapping
+            && text.chars().any(|c| !c.is_whitespace() && !c.is_control())
+        {
+            let start = layout::offset();
             append(&text);
             append("\n");
+            if let Some(geometry) = &geometry {
+                layout::pdf_rects(geometry, &text, start);
+            }
             continue;
         }
         if !ocr_page() {
@@ -1195,6 +1557,8 @@ impl IWorkText<'_> {
         if let Some(table) = self.tables.get(&id) {
             append(&table.name);
             append("\n");
+            let block = layout::open("table");
+            layout::properties(block, json!({"name":table.name}));
             let mut cells = table.cells().to_vec();
             cells.sort_by_key(|c| (c.row, c.column));
             let mut last_row = None;
@@ -1210,9 +1574,16 @@ impl IWorkText<'_> {
                 } else {
                     append("\t");
                 }
+                let token = layout::open("cell");
+                layout::properties(
+                    token,
+                    json!({"row":cell.row+1,"column":cell.column+1,"table":block.map(|t|format!("l{}",t+1))}),
+                );
                 append(&iwork_cell(&cell.value));
+                layout::close(token);
             }
             append("\n");
+            layout::close(block);
         }
         if let Some(element) = self.elements.get(&id).cloned() {
             if let Some(storage) = element.text {
@@ -1296,6 +1667,32 @@ fn iwork_cell(value: &iwork::table::CellValue) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn evidence_spans_cover_utf8_and_keep_extracted_line_numbers() {
+        for text in [
+            String::new(),
+            "中文\nABC\n".into(),
+            "中".repeat(2500),
+            "x\n".repeat(3000),
+        ] {
+            let doc = document(&text);
+            let mut cursor = 0;
+            for block in &doc.blocks {
+                assert_eq!(block.start_byte, cursor);
+                let value = &text[block.start_byte..block.end_byte];
+                assert!(!value.is_empty());
+                assert!(value.len() <= 2048);
+                assert_eq!(
+                    block.start_line,
+                    text[..cursor].bytes().filter(|b| *b == b'\n').count() + 1
+                );
+                assert!(block.end_line >= block.start_line);
+                cursor = block.end_byte;
+            }
+            assert_eq!(cursor, text.len());
+            assert_eq!(doc.characters, text.chars().count());
+        }
+    }
     fn start(limit: usize) {
         STATE.with(|s| {
             *s.borrow_mut() = Some(State {

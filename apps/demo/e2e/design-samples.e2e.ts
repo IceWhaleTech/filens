@@ -6,7 +6,7 @@ test('renders the showcase design samples', async ({ page }) => {
 
   for (const [format, name, selector] of [
     ['DXF', 'filens-cafe.dxf', '.cadv-preview svg'],
-    ['OBJ', 'crystal-crown.obj', '.model3dv-canvas'],
+    ['OBJ', 'viking-helmet.obj', '.model3dv-canvas'],
     ['MM', 'moonshot-2035.mm', '.mindmapv-node'],
     ['DRAWIO', 'ai-command-center.drawio', '.diagramv-node'],
     ['PSD', 'chromatic-layers.psd.svg', 'img.pptxv-native-image'],

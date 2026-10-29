@@ -377,8 +377,31 @@ fn main() {
     };
 
     #[cfg(feature = "text-extraction")]
+    if request.operation == "text-capabilities" && parse_error.is_none() {
+        text::capabilities(&request, started);
+        return;
+    }
+    #[cfg(feature = "text-extraction")]
     if request.operation == "extract-text" && parse_error.is_none() {
         text::execute(&request, started);
+        return;
+    }
+    if request.operation == "conversion-capabilities" && parse_error.is_none() {
+        let result = ResultContract {
+            ok: true,
+            backend: "manifest".into(),
+            fidelity: FIDELITY.into(),
+            content_type: "application/json".into(),
+            payload: Some(serde_json::json!({
+                "pairs": serde_json::from_str::<serde_json::Value>(CONVERSIONS).unwrap(),
+                "imagePairs": serde_json::from_str::<serde_json::Value>(include_str!("../../converter-image/manifest/conversions.json")).unwrap()
+            })),
+            ..Default::default()
+        };
+        if let Err(error) = write_result(&request.result, result, started.elapsed().as_millis()) {
+            eprintln!("{error}");
+            process::exit(1);
+        }
         return;
     }
     let result = if let Some(message) = parse_error {
@@ -606,7 +629,9 @@ fn parse_request(request: &mut Request) -> Result<(), String> {
             _ => return Err(format!("flag provided but not defined: {flag}")),
         }
     }
-    let required: &[(&String, &str)] = if request.operation == "inspect-panorama" {
+    let required: &[(&String, &str)] = if matches!(request.operation.as_str(), "text-capabilities" | "conversion-capabilities") {
+        &[(&request.result, "missing --result")]
+    } else if request.operation == "inspect-panorama" {
         &[
             (&request.source, "missing --source"),
             (&request.options, "missing --options"),

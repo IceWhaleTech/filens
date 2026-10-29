@@ -43,16 +43,127 @@ export interface PreviewFontResolveRequest {
   fontFile?: string;
   styleName?: string;
   text?: string;
+  fontStyle?: 'normal' | 'italic' | 'oblique';
 }
 
 export interface PreviewFontResolveResult {
   fontFamily?: string;
   warnings?: string[];
+  /** Optional host-managed font files, loaded only when fontLoading is enabled. */
+  assets?: readonly PreviewFontAsset[];
 }
 
 export type PreviewFontResolver = (
   request: PreviewFontResolveRequest
 ) => string | PreviewFontResolveResult | null | undefined;
+
+export type PreviewFontSource = 'embedded' | 'application' | 'environment' | 'fallback' | 'unknown';
+export type PreviewFontStatus = 'available' | 'missing' | 'substituted' | 'unsupported' | 'unknown';
+
+export interface PreviewFontTraits {
+  serif?: boolean;
+  monospace?: boolean;
+  style?: 'text' | 'handwriting' | 'decorative' | 'symbol';
+  script?: 'latin' | 'cjk-sc' | 'cjk-tc' | 'japanese' | 'korean' | 'emoji';
+  /** Ten-byte PANOSE descriptor as twenty hexadecimal characters. */
+  panose?: string;
+  /** CSS weight (1–1000) and stretch percentage, when known. */
+  weight?: number;
+  stretch?: number;
+  /** Average advance width in em units, when provided by the font. */
+  averageWidth?: number;
+}
+
+export interface PreviewFontCandidate {
+  fontFamily: string;
+  traits?: PreviewFontTraits;
+  /** Inclusive Unicode cmap ranges; absent means coverage is unknown. */
+  coverage?: ReadonlyArray<readonly [number, number]>;
+}
+
+export interface PreviewFontAssetSource {
+  url: string;
+  /** Lower values are preferred before measured latency. Same-origin wins ties. */
+  priority?: number;
+  credentials?: RequestCredentials;
+  headers?: Record<string, string>;
+}
+
+export interface PreviewFontAsset extends PreviewFontCandidate {
+  id: string;
+  sources?: readonly PreviewFontAssetSource[];
+  data?: ArrayBuffer | Uint8Array;
+  descriptors?: FontFaceDescriptors;
+}
+
+export interface PreviewFontPack {
+  id: string;
+  version: string;
+  license?: string;
+  fonts: readonly PreviewFontAsset[];
+}
+
+export interface PreviewFontLoadingOptions {
+  /** Omit to use the built-in optional webfont packs. [] enables host assets only. */
+  packs?: readonly PreviewFontPack[];
+  concurrency?: number;
+  timeoutMs?: number;
+  /** Start one alternate mirror when the preferred route is still pending. */
+  hedgeDelayMs?: number;
+  budgetMs?: number;
+  maxAttempts?: number;
+  backoffMs?: number;
+  maxBackoffMs?: number;
+  maxFontBytes?: number;
+  /** Prefer an already available substitute over an equally ranked download. */
+  preferLocal?: boolean;
+}
+
+export interface PreviewFontRefresh {
+  references: PreviewFontReference[];
+  loaded: PreviewFontCandidate[];
+  warnings: string[];
+  relayout?: boolean;
+}
+
+export interface PreviewFontClassification extends PreviewFontTraits {
+  evidence: 'metadata' | 'known' | 'name' | 'unknown';
+}
+
+export interface PreviewFontReference {
+  fontFamily?: string;
+  fontFile?: string;
+  styleName?: string;
+  resolvedFontFamily?: string;
+  /** Origin of an active font supplied by the driver or host, when known. */
+  source?: PreviewFontSource;
+  /** The original font format cannot be used directly by the browser (e.g. SHX). */
+  browserUnsupported?: boolean;
+  traits?: PreviewFontTraits;
+  /** Declaration only; does not establish that an embedded font has loaded. */
+  embedded?: boolean;
+  /** Optional local matching sample; excluded from diagnostic output. */
+  text?: string;
+  fontStyle?: 'normal' | 'italic' | 'oblique';
+}
+
+export interface PreviewFontDiagnostic {
+  /** Renderer font identifier, when original family names are unavailable (e.g. PDF.js). */
+  fontId?: string;
+  fontFamily?: string;
+  fontFile?: string;
+  styleName?: string;
+  resolvedFontFamily?: string;
+  status: PreviewFontStatus;
+  source: PreviewFontSource;
+  classification?: PreviewFontClassification;
+  substitutionReason?: string;
+  /** Relative candidate-ranking score; not a confidence percentage. */
+  matchScore?: number;
+  /** Candidate cmap covers the local sample; not a whole-document shaping guarantee. */
+  coverage?: 'matched' | 'unknown';
+  embedded?: boolean;
+}
 
 export interface PreviewResourceResolveRequest {
   family?: PreviewFamily;
@@ -81,6 +192,8 @@ export interface PreviewOptions {
   maxScale?: number;
   virtual?: boolean;
   fontResolver?: PreviewFontResolver;
+  /** Opt-in background webfont loading, adaptive mirror routing and font-ready relayout. */
+  fontLoading?: boolean | PreviewFontLoadingOptions;
   resourceResolver?: PreviewResourceResolver;
   previewerFactory?: PreviewerFactory;
 }
@@ -130,6 +243,8 @@ export interface PreviewItemState {
   title?: string;
   family: PreviewFamily;
   warnings: string[];
+  /** A best-effort snapshot for fonts discovered by this driver; absent means uninspected. */
+  fonts?: PreviewFontDiagnostic[];
   capabilities: PreviewCapabilities;
 }
 
@@ -372,6 +487,8 @@ export interface PreviewEventMap {
 }
 
 export interface PreviewSession<TState extends PreviewItemState = PreviewItemState> {
+  getFontReferences?(): readonly PreviewFontReference[];
+  refreshFonts?(update: PreviewFontRefresh): Promise<void> | void;
   load(source: PreviewSource, context: PreviewLoadContext): Promise<void>;
   destroy(): void;
   getState(): TState;

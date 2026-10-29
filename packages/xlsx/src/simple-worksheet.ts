@@ -3,8 +3,9 @@ import type { ParsedCell, ParsedRow, ParsedSheet } from './types';
 /** Read the common numeric/shared-string cell representation directly into the
  * preview model. Rich text, formulas and other XML constructs use the general
  * parser; rejecting the entire fast path prevents partially missing content. */
-export function readSimpleWorksheet(xml: string, options: { id: string; name: string; sharedStrings: string[] }): ParsedSheet | undefined {
+export function readSimpleWorksheet(xml: string, options: { id: string; name: string; sharedStrings: string[]; fontStyles?: ParsedCell['font'][] }): ParsedSheet | undefined {
   if (xml.includes('<!')) return undefined;
+  if (options.fontStyles?.length && /<cols\b/.test(xml)) return undefined;
   const opening = /<sheetData\s*>/.exec(xml);
   if (!opening) return undefined;
   const start = opening.index + opening[0].length;
@@ -46,7 +47,11 @@ export function readSimpleWorksheet(xml: string, options: { id: string; name: st
         for (const char of ref[1].toUpperCase()) column = column * 26 + char.charCodeAt(0) - 64;
         const value = attrs.t === 's' ? options.sharedStrings[Number(raw)] ?? '' :
           attrs.t === 'b' ? (raw.trim() === '1' || raw.trim() === 'true' ? 'TRUE' : 'FALSE') : raw;
-        cells.push({ ref: attrs.r, row: Number(ref[2]), column, value });
+        const parsed: ParsedCell = { ref: attrs.r, row: Number(ref[2]), column, value };
+        const rowStyle = ['1', 'true'].includes(rowAttrs.customFormat) ? rowAttrs.s : undefined;
+        const font = options.fontStyles?.[Number(attrs.s ?? rowStyle ?? 0)];
+        if (font) parsed.font = font;
+        cells.push(parsed);
         maxColumn = Math.max(maxColumn, column);
       }
       cellOffset = cellPattern.lastIndex;

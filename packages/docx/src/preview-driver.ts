@@ -1,6 +1,9 @@
 import { parseAsync, renderDocument } from 'docx-preview';
 import {
   createDefaultPreviewRoutes,
+  bindPreviewFontLoading,
+  type PreviewFontReference,
+  type PreviewFontRefresh,
   type FlowPreviewState,
   type FormatDefinition,
   type PreviewDriver,
@@ -11,6 +14,7 @@ import {
   type PreviewSession,
   type PreviewSource
 } from '@filens/core';
+import { prepareDocxFonts, readDocxFontTraits } from './fonts';
 
 type PreviewListenerMap = {
   [K in PreviewEventName]: Set<(payload: PreviewEventMap[K]) => void>;
@@ -37,6 +41,9 @@ export class DocxPreviewSession implements PreviewSession<FlowPreviewState> {
   private documentHost: HTMLDivElement;
   private loadController: AbortController | null = null;
   private state: FlowPreviewState;
+  private readonly fontLoading: ReturnType<typeof bindPreviewFontLoading>;
+  private fontReferences: PreviewFontReference[] = [];
+  private refreshDocumentFonts?: (update: PreviewFontRefresh) => Promise<void>;
 
   constructor(private readonly host: HTMLElement, options: PreviewOptions = {}) {
     this.root = document.createElement('div');
@@ -58,16 +65,19 @@ export class DocxPreviewSession implements PreviewSession<FlowPreviewState> {
       scale: options.initialScale ?? 1,
       scrollTop: 0
     };
+    this.fontLoading = bindPreviewFontLoading(this, host.ownerDocument, options);
   }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
     this.stopLoad();
+    this.fontLoading.reset(context.signal, context.route?.targetFormat ?? context.descriptor.extension ?? 'docx');
     const controller = new AbortController();
     this.loadController = controller;
     const signal = controller.signal;
     const container = document.createElement('div');
     container.className = 'docxv-document';
     this.documentHost = container;
+    let activeContainer = container;
     this.root.replaceChildren(container);
     this.root.scrollTop = 0;
     const urls = new Set<string>();
@@ -76,11 +86,13 @@ export class DocxPreviewSession implements PreviewSession<FlowPreviewState> {
       context.signal?.removeEventListener('abort', abort);
       for (const url of urls) URL.revokeObjectURL(url);
       urls.clear();
-      container.replaceChildren();
-      container.remove();
+      activeContainer.replaceChildren();
+      activeContainer.remove();
       if (this.loadController === controller) {
         this.loadController = null;
         this.state.loading = false;
+        this.state.fonts = [];
+        this.state.warnings = [];
         this.emit('statechange', this.state);
       }
     }, { once: true });
@@ -89,7 +101,9 @@ export class DocxPreviewSession implements PreviewSession<FlowPreviewState> {
       ...this.state,
       loading: true,
       error: null,
-      title: context.descriptor.name
+      title: context.descriptor.name,
+      fonts: [],
+      warnings: []
     };
     this.emit('loading', this.state);
     this.emit('statechange', this.state);
@@ -109,6 +123,12 @@ export class DocxPreviewSession implements PreviewSession<FlowPreviewState> {
         return;
       }
       manageDocumentResources(document, signal, urls);
+      const fontTraits = await readDocxFontTraits(document, this.host.ownerDocument);
+      if (signal.aborted) {
+        if (context.signal?.aborted) checkAborted(signal);
+        return;
+      }
+      const fontAnalysis = prepareDocxFonts(document, this.host.ownerDocument, fontTraits);
       // Keep the container attached for renderer layout work, but give every
       // load its own container so late tasks cannot write into a new document.
       await renderDocument(document, container, undefined, options);
@@ -118,6 +138,36 @@ export class DocxPreviewSession implements PreviewSession<FlowPreviewState> {
       }
       this.state.loading = false;
       this.state.error = null;
+      this.state.fonts = fontAnalysis.fonts;
+      this.fontReferences = fontAnalysis.loadingReferences;
+      this.state.warnings = fontAnalysis.warnings;
+      this.refreshDocumentFonts = async update => {
+        if (signal.aborted || this.loadController !== controller) return;
+        const analysis = prepareDocxFonts(document, this.host.ownerDocument, fontTraits, update);
+        if (update.loaded.length || update.relayout) {
+          const next = this.host.ownerDocument.createElement('div');
+          next.className = 'docxv-document';
+          // Layout in an attached staging container; keep the current preview readable.
+          next.style.visibility = 'hidden';
+          this.root.appendChild(next);
+          try {
+            await renderDocument(document, next, undefined, options);
+            if (signal.aborted || this.loadController !== controller) return;
+            const top = this.root.scrollTop, left = this.root.scrollLeft;
+            next.style.visibility = '';
+            activeContainer = this.documentHost = next;
+            this.root.replaceChildren(next);
+            this.root.scrollTop = top; this.root.scrollLeft = left;
+          } finally { if (activeContainer !== next) next.remove(); }
+        }
+        if (signal.aborted || this.loadController !== controller) return;
+        this.fontReferences = analysis.loadingReferences;
+        this.state.fonts = analysis.fonts; this.state.warnings = analysis.warnings;
+        this.emit('warnings', this.state.warnings);
+        this.emit('rendered', this.getState());
+        this.emit('statechange', this.getState());
+      };
+      if (this.state.warnings.length) this.emit('warnings', this.state.warnings);
       this.emit('rendered', this.state);
       this.emit('statechange', this.state);
     } catch (error) {
@@ -138,8 +188,11 @@ export class DocxPreviewSession implements PreviewSession<FlowPreviewState> {
   }
 
   destroy(): void {
+    this.fontLoading.destroy();
     this.stopLoad();
     this.state.loading = false;
+    this.state.fonts = [];
+    this.state.warnings = [];
     this.documentHost.replaceChildren();
     this.root.replaceChildren();
     if (this.root.parentElement === this.host) {
@@ -149,6 +202,8 @@ export class DocxPreviewSession implements PreviewSession<FlowPreviewState> {
   }
 
   private stopLoad(): void {
+    this.refreshDocumentFonts = undefined;
+    this.fontReferences = [];
     const controller = this.loadController;
     this.loadController = null;
     controller?.abort();
@@ -157,9 +212,14 @@ export class DocxPreviewSession implements PreviewSession<FlowPreviewState> {
   getState(): FlowPreviewState {
     return {
       ...this.state,
+      fonts: this.state.fonts?.map(font => ({ ...font, classification: font.classification ? { ...font.classification } : undefined })),
+      warnings: [...this.state.warnings],
       scrollTop: this.root.scrollTop
     };
   }
+
+  getFontReferences(): readonly PreviewFontReference[] { return this.fontReferences; }
+  async refreshFonts(update: PreviewFontRefresh): Promise<void> { await this.refreshDocumentFonts?.(update); }
 
   on<T extends PreviewEventName>(event: T, handler: (payload: PreviewEventMap[T]) => void): () => void {
     this.listeners[event].add(handler as never);
