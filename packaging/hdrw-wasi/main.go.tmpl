@@ -1,0 +1,74 @@
+// This adapter calls private hdrw; only the compiled WASM is distributed.
+package main
+
+import (
+    "encoding/json"
+    "errors"
+    "os"
+    "path/filepath"
+    "strings"
+    "github.com/IceWhaleTech/hdrw"
+)
+
+type options struct {
+    MaxFiles int `json:"maxFiles"`
+    MaxEntries int `json:"maxEntries"`
+    MaxDepth int `json:"maxDepth"`
+    IncludeHidden bool `json:"includeHidden"`
+    Extensions []string `json:"extensions"`
+    Exclude []string `json:"exclude"`
+}
+type entry struct { Path string `json:"path"`; Bytes int64 `json:"bytes"` }
+type issue struct { Path string `json:"path"`; Message string `json:"message"` }
+type result struct {
+    Backend string `json:"backend"`
+    Entries []entry `json:"entries"`
+    Errors []issue `json:"errors"`
+    ErrorCount int `json:"errorCount"`
+    Visited int `json:"visited"`
+    Skipped int `json:"skipped"`
+    Truncated bool `json:"truncated"`
+}
+func main() {
+    result := result{Backend:"hdrw-wasi", Entries:[]entry{}, Errors:[]issue{}}
+    fail := func(path string, err error) {
+        result.ErrorCount++
+        if len(result.Errors)<64 { result.Errors=append(result.Errors,issue{path,err.Error()}) }
+    }
+    data, err := os.ReadFile("/work/walk-options.json")
+    var config options
+    if err == nil { err=json.Unmarshal(data,&config) }
+    if err != nil { fail(".",err) } else {
+        extensions := map[string]bool{}
+        for _, ext := range config.Extensions { extensions[ext]=true }
+        excluded := map[string]bool{}
+        for _, name := range config.Exclude { excluded[name]=true }
+        fs, err := hdrw.NewFilensWASIView("/scan")
+        if err != nil { fail(".",err) } else {
+            defer fs.Close()
+            stop := errors.New("scan limit")
+            err=fs.Walk("/",func(path string, info os.FileInfo, err error) error {
+                relative:=strings.TrimPrefix(filepath.ToSlash(path),"/")
+                if err!=nil { fail(relative,err); return nil }
+                if relative=="" { return nil }
+                result.Visited++
+                if result.Visited>config.MaxEntries { result.Truncated=true; return stop }
+                name:=filepath.Base(relative)
+                depth:=strings.Count(relative,"/")+1
+                if depth>config.MaxDepth || (!config.IncludeHidden && strings.HasPrefix(name,".")) || excluded[name] {
+                    result.Skipped++
+                    if info.IsDir() { return filepath.SkipDir }
+                    return nil
+                }
+                if !info.Mode().IsRegular() { return nil }
+                if !extensions["*"] && !extensions[strings.TrimPrefix(strings.ToLower(filepath.Ext(name)),".")] { result.Skipped++; return nil }
+                if len(result.Entries)>=config.MaxFiles { result.Truncated=true; return stop }
+                result.Entries=append(result.Entries,entry{relative,info.Size()})
+                return nil
+            })
+            if err!=nil && !errors.Is(err,stop) { fail(".",err) }
+        }
+    }
+    wire,_:=json.Marshal(result)
+    if os.WriteFile("/work/walk-result.json",wire,0600)!=nil { os.Exit(1) }
+}

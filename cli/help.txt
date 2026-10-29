@@ -4,20 +4,44 @@ filens — local document reading and conversion for agents
   filens '读取 "report.pdf"，以纯文本输出'
   filens '理解 "meeting notes.docx"，以 JSON 输出'
   filens 'read "report.pages" as json'
+  filens '提取 "report.pdf" 的关键内容，关注预算和风险，保留30%，以 JSON 输出'
+  filens summarize report.pdf --query 'budget risk' --summary-chars 1000 --json
+  filens '在 "./documents" 中搜索 "预算 风险"，以 JSON 输出'
+  filens search ./documents --query 'budget risk' --json
+  filens duplicates ./files --json
+  filens similar-images ./photos --threshold 8 --json
   echo '{"input":"report.pdf","operation":"understand"}' | filens
   filens convert report.doc --output report.docx --json
   filens convert data.csv result.xlsx
   filens convert photo.dng --to jpg
 
-Optional commands: capacity (capabilities), read, extract, understand, layout, convert.
+Optional commands: capacity (capabilities), read, extract, understand, layout,
+                   summarize (prune), search, similar, duplicates, similar-images, convert.
 Optional flags: --json, --format text|json|markdown|html|yaml|xml|csv|tsv,
                 --layout, --input PATH, --max-bytes N,
                 --timeout 2m, --wasm PATH, --no-ocr, --help.
 Conversion flags: --output/-o PATH, --to/--target EXT, --from/--source EXT,
                   --password VALUE, --locale VALUE, --force.
+Summary flags: --query TEXT, --summary-chars N (default 2000, max 20000),
+               --summary-ratio R (default 0.3; >0 and <=1).
+Summaries select original excerpts using local density/TF-IDF/BM25/diversity scoring.
+They use no language model. JSON includes source offsets, omissions and clipping.
+Search flags: --query TEXT, --search-mode bm25|exact|files, --max-results N,
+              --max-files N, --max-depth N, --include-hidden, --no-cache.
+Search ranks full extracted text; exact uses case-sensitive literal matching.
+It has no embedding model. Inspect search.complete and scan errors before citing.
+macOS uses native FTS; Windows/Linux embed private hdrw WASI. No raw disk access.
+Similarity: similar DIR --similarity-mode duplicates|images (default images).
+            duplicates DIR and similar-images DIR are aliases.
+            --threshold 0..24 (default 8, image pHash distance; lower is stricter),
+            --max-results N (groups, default 100, max 1000), --max-files N,
+            --max-depth N, --include-hidden. Scans only report groups.
+Duplicates use size, a prefix hash and full SHA-256; images use a 63-bit DCT pHash.
+Images: JPEG, PNG, WebP, GIF, BMP, TIFF; orientation is applied, first frame only.
+No OCR or model is required. Inspect similarity.complete and processing errors.
 Conversion pairs come from capacity.conversionPairs; JSON is the default response.
 Output extensions infer the target format. Existing files require --force.
 Use - to read a natural-language or JSON request from stdin; pipe with no args also works.
 JSON requests default to JSON responses; text requests default to plain text.
 The full bundle includes RapidOCR (OpenMP threads = 2); the lite bundle adds it on demand.
-Document understanding/reasoning is performed by the calling agent using returned evidence.
+Semantic understanding, translation and question answering belong to the calling agent.

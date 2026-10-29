@@ -5,9 +5,11 @@ import { gzipSync, constants } from 'node:zlib';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { privateRustBuildEnv } from './agent-release-privacy.mjs';
+import { compressAgentBinary } from './agent-upx.mjs';
+import { executableName } from './agent-platforms.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const triples = { 'darwin-arm64':'aarch64-apple-darwin', 'linux-x64':'x86_64-unknown-linux-gnu', 'linux-arm64':'aarch64-unknown-linux-gnu' };
+const triples = { 'darwin-arm64':'aarch64-apple-darwin', 'linux-x64':'x86_64-unknown-linux-gnu', 'linux-arm64':'aarch64-unknown-linux-gnu', 'win32-x64':'x86_64-pc-windows-gnu' };
 const pdfium = {
   url:'https://raw.githubusercontent.com/klippa-app/go-pdfium/v1.17.3/webassembly/pdfium.wasm',
   sha256:'73417fa7cdcb34fba2a23aa1f7a480cc873a7301c8d74f08a1dea800f782a454'
@@ -23,11 +25,11 @@ export function run(command, args, { capture = false, env = privateRustBuildEnv(
   });
 }
 
-export async function buildAgentBinary(destination, { lite = false, platform = `${process.platform}-${process.arch}` } = {}) {
+export async function buildAgentBinary(destination, { lite = false, platform = `${process.platform}-${process.arch}`, upx = true } = {}) {
   const target = triples[platform];
   if (!target) throw new Error(`Unsupported Rust CLI target ${platform}`);
   const cross = platform !== `${process.platform}-${process.arch}`;
-  const zig = cross || platform.startsWith('linux-');
+  const zig = cross || platform.startsWith('linux-') || platform.startsWith('win32-');
   const toolchain = /channel\s*=\s*"([^"]+)"/.exec(await readFile(path.join(root,'cli/rust-toolchain.toml'),'utf8'))[1];
   // cargo-zigbuild supplies a Linux glibc 2.17 linker for source-side --all.
   // Use it for native Linux builds too, preserving the advertised glibc floor.
@@ -40,7 +42,8 @@ export async function buildAgentBinary(destination, { lite = false, platform = `
   const env = { ...privateRustBuildEnv(root), MACOSX_DEPLOYMENT_TARGET:'12.0' };
   await run('cargo',args,{env});
   await mkdir(path.dirname(destination),{recursive:true});
-  await copyFile(path.join(root,'cli/target',...(zig?[target]:[]),'release/filens'),destination);
+  await copyFile(path.join(root,'cli/target',...(zig?[target]:[]),'release',executableName(platform)),destination);
+  return compressAgentBinary(destination,{platform,enabled:upx});
 }
 
 export async function preparePDFium(bundle) {

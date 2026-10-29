@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [macos-15-arm64, ubuntu-24.04, ubuntu-24.04-arm]
+        runner: [macos-15-arm64, ubuntu-24.04, ubuntu-24.04-arm, windows-2025]
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -45,18 +45,38 @@ jobs:
       - name: Install the pinned Rust/WASI toolchain
         working-directory: wasm/converter-core-rust
         run: rustup show active-toolchain
-      - name: Install the Linux glibc 2.17 linker
-        if: runner.os == 'Linux'
+      - name: Install the Zig Rust linker for Linux and Windows
+        if: runner.os != 'macOS'
         run: cargo install cargo-zigbuild --locked --version 0.24.0
       - run: npm ci
+      - run: node scripts/setup-agent-upx.mjs
       - run: npm run test:agent:privacy
       - run: npm run test:agent
       - run: npm run test:agent:layout
       - run: node scripts/package-agent-npm.mjs
       - run: npm run test:agent:npm
+      - name: Build the Windows portable testing bundle
+        if: runner.os == 'Windows'
+        run: node scripts/package-agent-windows.mjs
+      - name: Test the Windows portable bundles on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bundles = Get-ChildItem dist/windows -Directory -Filter 'filens-*-win32-x64-*'
+          if ($bundles.Count -ne 2) { throw 'Expected Full and Lite bundles' }
+          foreach ($bundle in $bundles) {
+            if ($bundle.Name.EndsWith('-full')) {
+              node scripts/test-agent-windows-artifacts.mjs $bundle.FullName
+              if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            }
+            node scripts/test-agent-windows.mjs --bundle $bundle.FullName --report "dist/windows/$($bundle.Name)-test.json"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
       - uses: actions/upload-artifact@v4
         with:
           name: agent-npm-${{ runner.os }}-${{ runner.arch }}
           path: |
             dist/npm/*.tgz
             dist/npm/release.json
+            dist/windows/*.zip
+            dist/windows/*-test.json

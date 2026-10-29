@@ -1,0 +1,26 @@
+Document center navigation
+Home / Products / Help / Contact
+Welcome to the product team's meeting notes.
+
+Meeting background
+The team is preparing the next release of the local document reader. This meeting covers the release plan, spending limits, and deployment dependencies.
+The product supports offline use on personal computers and automated calls from an agent.
+
+Key decisions
+The team decided to use local RapidOCR NCNN with a maximum side of 960 and two OpenMP threads. No private Python environment is required.
+The budget must not exceed 12345.67 yuan. Additional spending requires approval from project lead Alex Chen.
+The deadline is November 6, 2026. A stable release is allowed only after testing on an actual Windows machine.
+
+Risks and actions
+Risk: tiny fonts and heavily blurred scans may lose characters. Critical amounts must be checked against the original image.
+Morgan Lee will test OCR in both Windows packages before Friday.
+Until actual Windows testing is complete, provide a release candidate and do not claim Windows execution has passed.
+
+Office information
+Coffee beans are restocked every Wednesday. Open the meeting room windows when the weather is clear.
+The reading corner has three new novels. The borrowing register is at reception.
+Lunch options include rice, noodles, and vegetables.
+
+Document center navigation
+Home / Products / Help / Contact
+Welcome to the product team's meeting notes.

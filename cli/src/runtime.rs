@@ -118,14 +118,65 @@ impl Runtime {
     pub fn ocr_capacity(&mut self) -> Value {
         self.state.as_mut().unwrap().ocr.capacity()
     }
+    pub fn ocr_cache_identity(&self) -> Result<Value> {
+        use sha2::{Digest, Sha256};
+        let provider = &self.state.as_ref().unwrap().ocr;
+        let file_hash = |path: &Path| -> Result<String> {
+            if !path.is_file() {
+                return Ok("missing".into());
+            }
+            let mut file = std::fs::File::open(path)?;
+            let mut hasher = Sha256::new();
+            let mut buffer = [0; 65536];
+            loop {
+                let n = file.read(&mut buffer)?;
+                if n == 0 {
+                    break;
+                }
+                hasher.update(&buffer[..n]);
+            }
+            Ok(format!("{:x}", hasher.finalize()))
+        };
+        let mut models = vec![];
+        if provider.enabled && provider.models.is_dir() {
+            for entry in std::fs::read_dir(&provider.models)? {
+                let entry = entry?;
+                if entry.file_type()?.is_file()
+                    && ["bin", "param", "txt"].contains(
+                        &entry
+                            .path()
+                            .extension()
+                            .and_then(|s| s.to_str())
+                            .unwrap_or(""),
+                    )
+                {
+                    models.push(json!({"name":entry.file_name().to_string_lossy(),"sha256":file_hash(&entry.path())?}));
+                }
+            }
+            models.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
+        }
+        Ok(
+            json!({"enabled":provider.enabled,"library":if provider.enabled {file_hash(&provider.library)?} else {"disabled".into()},"models":models}),
+        )
+    }
     pub fn run(&mut self, args: &[String]) -> Result<Value> {
+        self.run_with_directory(args, None)
+    }
+    pub fn run_with_directory(&mut self, args: &[String], input: Option<&Path>) -> Result<Value> {
         let work = self.state.as_ref().unwrap().work.clone();
         let directory = wasmi_wasi::Dir::open_ambient_dir(&work, wasmi_wasi::ambient_authority())?;
-        let wasi = WasiCtxBuilder::new()
+        let mut builder = WasiCtxBuilder::new();
+        builder
             .args(args)?
             .inherit_stderr()
-            .preopened_dir(directory, "/work")?
-            .build();
+            .preopened_dir(directory, "/work")?;
+        if let Some(root) = input {
+            builder.preopened_dir(
+                wasmi_wasi::Dir::open_ambient_dir(root, wasmi_wasi::ambient_authority())?,
+                "/scan",
+            )?;
+        }
+        let wasi = builder.build();
         let mut state = self.state.take().unwrap();
         state.wasi = wasi;
         let mut store = Store::new(&self.engine, state);

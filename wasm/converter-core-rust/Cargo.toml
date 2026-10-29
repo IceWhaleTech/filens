@@ -27,7 +27,7 @@ djvu-rs = { version = "=0.43.0", optional = true }
 acadrust = { version = "=0.6.8", default-features = false, optional = true }
 cadkit-core = { version = "=0.5.1", optional = true }
 sha2 = { version = "0.10", optional = true }
-raster-codec = { package = "image", version = "=0.25.10", default-features = false, features = ["pnm", "hdr", "exr"], optional = true }
+raster-codec = { package = "image", version = "=0.25.10", default-features = false, features = ["pnm", "hdr", "exr", "png", "jpeg", "webp", "gif", "bmp", "tiff"], optional = true }
 matfile = { version = "=0.5.0", optional = true }
 fitsrs = { version = "=0.4.1", optional = true }
 lopdf = { version = "=0.46.0", default-features = false, optional = true }

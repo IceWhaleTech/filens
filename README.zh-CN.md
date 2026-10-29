@@ -2,24 +2,70 @@
   <img src="apps/demo/public/brand/filens-icon.svg" alt="探微标志" width="72" height="72" />
   <h1>探微 · filens</h1>
   <p><strong>文件的精彩，打开就看见。</strong></p>
-  <p>探微（filens），纯前端文件预览项目。从 Office、iWork 到 CAD 和全景照片，本地文件无需上传。</p>
+  <p>面向 Agent 与浏览器的本地文件工具：读取、搜索、OCR 与多格式预览。文件无需上传。</p>
   <p><a href="README.md">English</a> · 简体中文</p>
   <p>
-    <a href="#演示">观看演示</a> ·
+    <a href="#让-agent-读取和理解文档">Agent CLI</a> ·
+    <a href="#演示">浏览器预览</a> ·
     <a href="#快速开始">本地体验</a> ·
     <a href="docs/support-matrix.zh-CN.md">支持格式</a>
   </p>
 </div>
 
-[![filens 的八种实际预览：演示文稿、文档、表格、PDF、Keynote、CAD、3D 和全景照片](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
+![中文 CLI：逐字输入、OCR 坐标、关键摘录、文档搜索、重复文件与相似图片](docs/assets/agent-cli/terminal-demo.zh-CN.gif)
 
-<p align="center"><strong>纯前端预览 · WASM 转换，灵活部署 · 高性能、极致小巧</strong></p>
+<p align="center">源码版真实 CLI 输出 · 打字与响应时间经剪辑 · <a href="docs/assets/agent-cli/terminal-demo.gif">English GIF</a></p>
+
+<p align="center"><strong>本地运行 · Agent CLI 与浏览器预览 · 共享 WASM 核心</strong></p>
 
 <p align="center">
   <a href="https://www.zimaspace.com/zh/zimaos?utm_source=github&amp;utm_medium=referral&amp;utm_campaign=filens_zimaos&amp;utm_content=readme_banner_zh"><img src="docs/assets/readme/zimaos-banner.zh-CN.png" alt="ZimaOS，个人云更简单。ZimaOS 深度使用了 FiLens 项目，支持文件管理、RAW / 全景、备份和 800+ 应用。了解更多。" width="640" /></a>
 </p>
 
 ---
+
+## 让 Agent 读取和理解文档
+
+用中英文描述读取或总结意图，交付 text、JSON、Markdown、HTML、YAML、XML、CSV 或 TSV，并获取文档结构及 PDF / OCR 坐标。源码版的 `summarize` / `prune` 可无 LLM 地选取关键原文，保留出处与省略标记。解析、布局、摘录与文档导出共用 WASM 核心，改写总结、翻译和问答由上层 Agent 完成。
+
+[输出格式、布局信息与动图复现](docs/agent-cli-formats-and-layout.zh-CN.md) · 使用真实 CLI 输出节选，剪辑了打字与响应时间。
+
+先看[68 条实测案例与自然语言边界](docs/agent-cli-examples.zh-CN.md)：包括图片识别效果、成功问法，以及分页、问答等请求的实际限制。
+
+```sh
+# 完整版：CLI、WASM 和原生 OCR
+npm install -g filens-cli
+filens '理解 "report.pdf"，以 JSON 输出'
+filens '你能做什么？以 JSON 输出'
+filens 'read "report.docx" as markdown'
+filens '获取 "invoice.png" 的布局，以 YAML 输出'
+filens convert report.doc report.docx
+filens convert data.csv --to xlsx
+
+# 轻量版；需要 OCR 时再运行 filens setup-ocr
+npm install -g filens-cli-lite
+# 临时调用
+npx --yes filens-cli-lite capacity --json
+```
+
+源码 CLI 已改为 Rust，启用 strip、LTO、Windows/Linux 可执行文件的 UPX 压缩，以及 WASM 快速 gzip 压缩。macOS arm64 的可执行格式不受 UPX 支持，因此跳过。
+
+源码版支持[无 LLM 的关键内容提取](docs/agent-cli-pruning.zh-CN.md)：`filens '提取 "report.pdf" 的关键内容，关注预算和风险，以 JSON 输出'`。按密度、BM25 与相似距离裁剪原文，保留出处和省略标记；可用 `capacity` 检查当前安装是否包含 `summarize`。
+
+源码版还提供[目录搜索](docs/agent-cli-search.zh-CN.md)：`filens '在 "./documents" 中搜索 "预算 风险"，以 JSON 输出'`。支持 BM25、精确文本和文件名模式，返回原文偏移及可用布局；当前不含 embedding 语义检索。macOS 使用系统 FTS，Windows/Linux 嵌入编译后的私有 hdrw WASM。
+
+[搜索速度与准确性实测](docs/agent-cli-search-benchmark.zh-CN.md)对比 FiLens、ripgrep 和 git grep，覆盖固定合成查询、文档提取、缓存更新与 100–2000 文件扫描，同时公开漏检和无答案误报。
+
+源码版新增 [Czkawka 风格的重复文件与相似图片扫描](docs/agent-cli-similarity.zh-CN.md)：`filens duplicates ./files --json`、`filens similar-images ./photos --threshold 8 --json`。支持不同尺寸及重新压缩的图片分组，无需 OCR 或模型。使用 `capacity.operations` 检查 `similar`；已发布的 npm `0.2.0` 不包含这项能力。扫描输出分组供核对。
+
+`0.3.0-rc.1` 已补充 [Windows x64 候选包、实机测试说明和可复制的 Agent 提示词](docs/agent-cli-windows.zh-CN.md)；稳定版 npm `0.2.0` 尚不包含 Windows。
+`convert` 复用前端转换核心，支持的格式对见 `capacity.conversionPairs`。
+可分发的 [Agent Skill](skills/filens/SKILL.md) 带标准 YAML front matter，
+覆盖读取、搜索、重复文件与相似图片扫描、OCR、布局、证据引用和文件转换。
+
+npm 安装入口为 [`filens-cli`](https://www.npmjs.com/package/filens-cli) 和 [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite)，都提供 `filens` 命令。完整包内置原生 RapidOCR NCNN 与模型，**无需 Python 环境**；默认最大边长 **960**、OpenMP 线程 **2**，开启文字方向分类和图片预处理。WASM 支持扫描页及文档内嵌图片的 OCR 回调。macOS arm64 重建的 Rust 候选包安装体积：Lite 约 **7.25 MiB**，Full 约 **30.45 MiB**。模型支持 HF / ModelScope / HF Mirror 三源或四路并发测速下载和哈希校验，详见[安装、打包与输出协议](docs/agent-cli.zh-CN.md)。
+
+上述总体积为加入相似扫描之前的 2026-10-29 候选包。后续 macOS arm64 本地构建对比，主程序加 gzip WASM 资源增加约 **278 KiB**，见[实测范围](docs/agent-cli-similarity-size.json)；这不是重新打包后的 Lite/Full 总体积，也不是 npm 下载体积增量。
 
 ## 浏览器里，也能看见这些
 
@@ -56,6 +102,8 @@
 
 ## 演示
 
+[![filens 的八种实际预览：演示文稿、文档、表格、PDF、Keynote、CAD、3D 和全景照片](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
+
 **[▶ 观看 30 秒实录](apps/demo/public/home/filens-demo.mp4)**：演示文稿、文档、表格、Keynote、CAD、维京牛角头盔 3D 与 360° 全景，在同一个工作台轻松切换。
 
 <details>
@@ -66,39 +114,6 @@
 完整视频见上方链接。[中文字幕](apps/demo/public/home/demo-zh.vtt) · [English captions](apps/demo/public/home/demo-en.vtt)
 
 </details>
-
-## 让 Agent 读取和理解文档
-
-用中英文描述读取意图，交付 text、JSON、Markdown、HTML、YAML、XML、CSV 或 TSV，并获取文档结构及 PDF / OCR 坐标。解析、布局与文档导出共用 WASM 核心，上层 Agent 负责摘要、问答等语义推理。
-
-![真实 CLI 逐字输入、Markdown 导出与 OCR 坐标演示](docs/assets/agent-cli/terminal-demo.gif)
-
-[输出格式、布局信息与动图复现](docs/agent-cli-formats-and-layout.zh-CN.md) · 使用真实 CLI 输出节选，剪辑了打字与响应时间。
-
-先看[68 条实测案例与自然语言边界](docs/agent-cli-examples.zh-CN.md)：包括图片识别效果、成功问法，以及分页、问答等请求的实际限制。
-
-```sh
-# 完整版：CLI、WASM 和原生 OCR
-npm install -g filens-cli
-filens '理解 "report.pdf"，以 JSON 输出'
-filens '你能做什么？以 JSON 输出'
-filens 'read "report.docx" as markdown'
-filens '获取 "invoice.png" 的布局，以 YAML 输出'
-filens convert report.doc report.docx
-filens convert data.csv --to xlsx
-
-# 轻量版；需要 OCR 时再运行 filens setup-ocr
-npm install -g filens-cli-lite
-# 临时调用
-npx --yes filens-cli-lite capacity --json
-```
-
-源码 CLI 已改为 Rust，启用 strip、LTO 和 WASM 快速 gzip 压缩。
-`convert` 复用前端转换核心，支持的格式对见 `capacity.conversionPairs`。
-可分发的 [Agent Skill](skills/filens/SKILL.md) 带标准 YAML front matter，
-覆盖读取、OCR、布局、证据引用和文件转换。
-
-npm 安装入口为 [`filens-cli`](https://www.npmjs.com/package/filens-cli) 和 [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite)，都提供 `filens` 命令。完整包内置原生 RapidOCR NCNN 与模型，**无需 Python 环境**；默认最大边长 **960**、OpenMP 线程 **2**，开启文字方向分类和图片预处理。WASM 支持扫描页及文档内嵌图片的 OCR 回调。macOS arm64 重建的 Rust 候选包安装体积：Lite 约 **7.25 MiB**，Full 约 **30.45 MiB**。模型支持 HF / ModelScope / HF Mirror 三源或四路并发测速下载和哈希校验，详见[安装、打包与输出协议](docs/agent-cli.zh-CN.md)。
 
 ## 快速开始
 

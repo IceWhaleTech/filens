@@ -2,11 +2,17 @@
 
 English · [简体中文](agent-cli.zh-CN.md)
 
-filens reads local documents and supplies text and evidence to a calling agent. The caller performs summarization, question answering and other semantic reasoning. Chinese/English reading intents, optional commands and JSON requests share the same WASM parsing core. Outputs include text, JSON, Markdown, HTML, YAML, XML, CSV and TSV, with optional source layouts.
+filens reads local documents and supplies text and evidence to a calling agent. Source builds now provide model-free `summarize` / `prune`: density/TF-IDF, optional lexical BM25 focus and cosine-diversity selection keep original excerpts within a character budget. See [pruning, provenance and examples](agent-cli-pruning.zh-CN.md) (Chinese). Paraphrasing, question answering and semantic reasoning remain with the caller. Chinese/English intents, optional commands and JSON requests share the same WASM core. Outputs include text, JSON, Markdown, HTML, YAML, XML, CSV and TSV, with optional source layouts.
+
+Source builds add [directory-wide lexical search](agent-cli-search.zh-CN.md) (Chinese): BM25, literal and filename modes, original evidence, and a content-verified extraction cache. macOS uses native FTS; Windows/Linux embed compiled private hdrw WASI. Embedding-based semantic retrieval remains unimplemented. See the [evaluation plan](agent-cli-search-evaluation.zh-CN.md), including controlled retrieval, raw-document and Agent comparisons.
 
 See [68 observed examples and OCR quality results](agent-cli-examples.zh-CN.md) (Chinese), including unsupported phrases, fallback behavior and recognition errors.
 
 See [output formats, coordinates and the typing demo](agent-cli-formats-and-layout.zh-CN.md) (Chinese).
+
+See [Windows x64 test bundles and an agent handoff prompt](agent-cli-windows.zh-CN.md) (Chinese). The `0.3.0-rc.1` candidates include Windows; stable npm `0.2.0` does not. Windows native execution remains pending.
+
+Source builds provide [Czkawka-style duplicate-file and similar-image scans](agent-cli-similarity.md): `filens duplicates ./files --json` and `filens similar-images ./photos --threshold 8 --json`. Hashing, image decoding and grouping run in the shared WASM core, without OCR or a model. Check `capacity.operations` for `similar`; published npm `0.2.0` lacks these commands.
 
 ## One-command installation
 
@@ -42,11 +48,13 @@ For offline distribution, locally generated tarballs can also be installed in on
 npm install -g ./dist/npm/filens-cli-0.2.0.tgz ./dist/npm/filens-cli-darwin-arm64-0.2.0.tgz ./dist/npm/filens-ocr-darwin-arm64-0.2.0.tgz
 ```
 
+Those 2026-10-29 package totals predate similarity scanning. The 2026-10-30 macOS arm64 local comparison added about **278 KiB** for the native executable plus gzip WASM resources. See the [size record](agent-cli-similarity-size.json); this excludes OCR, license text and npm packaging, and is not a new Lite/Full package total or npm download delta.
+
 ## Source build and release packaging
 
-The CLI in `cli/` is Rust; document parsing stays in the shared frontend WASM core. Release builds use size optimization, LTO, one codegen unit, aborting panics and stripped symbols. Binaryen `-Oz` strips debug/producers metadata from the text WASM. npm packages store all WASM engines as gzip level 1 resources, decoded locally and loaded only when needed; no executable unpacker or external decompression tool is required.
+The CLI in `cli/` is Rust; document parsing stays in the shared frontend WASM core. Release builds use size optimization, LTO, one codegen unit, aborting panics and stripped symbols. Windows/Linux executables additionally use UPX `--best --lzma` and pass `upx --test`; macOS arm64 skips UPX because that executable format is unsupported. Binaryen `-Oz` strips debug/producers metadata from the text WASM. npm packages store all WASM engines as gzip level 1 resources, decoded locally and loaded only when needed; no external decompression tool is required at runtime. Build hosts can install pinned, SHA-256-verified UPX with `node scripts/setup-agent-upx.mjs`; `--no-upx` produces an uncompressed executable for comparison.
 
-Lite source builds require Node.js 20.11+ and the pinned Rust 1.93.0 / WASI toolchain, with no Go compiler. Linux builds also require Zig 0.16.0 and `cargo-zigbuild` 0.24.0 to preserve the glibc 2.17 floor. Full source builds still use Go 1.24+ to rebuild the separate Photos native OCR wrapper. A first macOS Full build also requires CMake and Xcode command-line tools for the CPU-only NCNN companion. Installed npm packages include these libraries already. `FILENS_ZIG` selects the Zig executable for the OCR wrapper; cargo-zigbuild uses Zig on PATH.
+Lite source builds require Node.js 20.11+ and the pinned Rust 1.93.0 / WASI toolchain, with no Go compiler. Linux and Windows builds also require Zig 0.16.0 and `cargo-zigbuild` 0.24.0; Linux targets preserve the glibc 2.17 floor. Full source builds still use Go 1.24+ to rebuild the separate Photos native OCR wrapper. A first macOS Full build also requires CMake and Xcode command-line tools for the CPU-only NCNN companion; Windows uses CMake and Ninja. Installed npm packages include these libraries already. `FILENS_ZIG` selects the Zig executable for the OCR wrapper; cargo-zigbuild uses Zig on PATH.
 
 ```sh
 npm run build:agent:lite
@@ -59,7 +67,7 @@ npm run setup:agent:ocr -- --lite --sources 4
 npm run build:agent
 ./dist/filens 'understand "meeting notes.docx" as json'
 
-# On macOS arm64: prepare all three platform targets and both profiles
+# On macOS arm64: prepare all four platform targets and both profiles
 cargo install cargo-zigbuild --locked --version 0.24.0
 npm run package:agent:npm
 npm run test:agent:npm
@@ -68,9 +76,9 @@ npm run publish:agent:npm -- --dry-run
 npm run publish:agent:npm
 ```
 
-The Agent CLI release version is set in `packaging/agent-release.json`, independently of the private workspace version. Update it before preparing a new release; published versions are immutable. Tarballs, sizes and SHA-256 hashes are recorded in `dist/npm/release.json`. Packaging uses explicit file allowlists and includes NCNN/C++ runtime notices and build provenance; it excludes source-build caches and the retired Python environment. The publication script checks tarball hashes and npm authentication before making registry writes. Linux binaries are cross-built; the installation smoke test exercises the host platform. The CI workflow is configured to validate native installs on macOS arm64 and Linux x64/arm64; it has not been run in this local session.
+The Agent CLI release version is set in `packaging/agent-release.json`, independently of the private workspace version. Update it before preparing a new release; published versions are immutable. Tarballs, sizes and SHA-256 hashes are recorded in `dist/npm/release.json`. Packaging uses explicit file allowlists and includes NCNN/C++ runtime notices and build provenance; it excludes source-build caches and the retired Python environment. The publication script checks tarball hashes and npm authentication before making registry writes. Linux and Windows binaries are cross-built; the installation smoke test exercises the host platform. The CI workflow is configured to validate native installs on macOS arm64, Linux x64/arm64 and Windows x64, including Windows portable bundles; it has not been run in this local session.
 
-One local file is read per request. Quote paths in natural-language intents, especially paths with spaces. Relative paths resolve from the caller's working directory. Optional commands are `read`, `extract`, `understand`, `layout`, and `capacity` / `capabilities`; optional flags include `--json`, `--format text|json|markdown|html|yaml|xml|csv|tsv`, `--layout`, `--input`, `--max-bytes`, `--timeout`, `--wasm` and `--no-ocr`.
+Reading and pruning accept one local file per request; `search` accepts one local directory. Quote paths in natural-language intents, especially paths with spaces. Relative paths resolve from the caller's working directory. Optional commands are `read`, `extract`, `understand`, `layout`, `summarize` / `prune`, `search`, and `capacity` / `capabilities`; optional flags include `--json`, `--format text|json|markdown|html|yaml|xml|csv|tsv`, `--layout`, `--input`, `--max-bytes`, `--timeout`, `--wasm` and `--no-ocr`. Search adds `--query`, `--search-mode bm25|exact|files`, `--max-results`, `--max-files`, `--max-depth`, `--include-hidden` and `--no-cache`; see the [search guide](agent-cli-search.zh-CN.md).
 
 ## Agent contract
 
@@ -82,7 +90,7 @@ filens capacity --json
 
 Use `filens -` for explicit stdin requests. JSON requests default to JSON responses; natural language defaults to plain text. Use the executable directly for pipelines, or `npm --silent run filens -- ...` to suppress npm's own startup output.
 
-Responses use `version: "filens-agent-v1"`, `ok`, `operation`, `source`, and `content`. `content` preserves `text`, `complete`, `truncated`, warnings and extraction errors. JSON output adds `content.document` with byte/character/line counts and evidence blocks:
+Document-reading responses use `version: "filens-agent-v1"`, `ok`, `operation`, `source`, and `content`. `content` preserves `text`, `complete`, `truncated`, warnings and extraction errors. Document JSON output adds `content.document` with byte/character/line counts and evidence blocks:
 
 ```json
 {"id":"b1","startByte":0,"endByte":2048,"startLine":1,"endLine":12}
@@ -94,12 +102,25 @@ Block offsets are zero-based UTF-8 byte offsets into `content.text`, end exclusi
 
 | Exit | Meaning |
 | --- | --- |
-| 0 | Complete, including genuinely empty content |
+| 0 | Complete extraction or scan, including empty content or no matching groups |
 | 1 | Host, runtime, I/O, cancellation or output failure |
 | 2 | Invalid request or unsupported format |
-| 3 | Incomplete or truncated extraction; retained text remains available |
+| 3 | Incomplete or truncated extraction/scan; retained text or groups remain available |
 
-Plain text stdout contains only document text; diagnostics go to stderr. JSON stdout contains one response object even on failure. Limits: 256 MiB input, 8 MiB default / 32 MiB maximum UTF-8 content, 200 OCR pages, 30 seconds per OCR unit, two-minute request timeout (`--timeout` overrides the latter). Missing OCR returns `ocr_failed` for scans and embedded images, retaining text already read.
+Reading uses plain text stdout for document text and stderr for diagnostics; similarity scans output group listings. JSON stdout contains one response object even on failure. Document/image limits: 256 MiB input, 8 MiB default / 32 MiB maximum extracted UTF-8 content, 200 OCR pages, 30 seconds per OCR unit, two-minute request timeout (`--timeout` overrides the latter). Streaming duplicate-file hashing uses a separate 16 GiB total scan-read budget. Missing OCR returns `ocr_failed` for scanned pages and embedded images, retaining text already read; duplicate and similar-image scans need no OCR.
+
+## Duplicate files and similar images
+
+```sh
+filens duplicates ./files --json
+filens similar-images ./photos --threshold 8 --json
+filens similar ./photos --similarity-mode images --format csv
+echo '{"operation":"similar","input":"./photos","similarityMode":"images","threshold":8}' | filens
+```
+
+`duplicates` filters by size/prefix hash and compares full SHA-256. `similar-images` uses perceptual hashes for JPEG, PNG, WebP, GIF, BMP and TIFF; resized or recompressed copies can appear in one group. Both aliases return `operation: "similar"`. The threshold is Hamming distance (0–24, default 8), not a similarity percentage. Image groups have a reference and can include false matches; distance 0 does not establish identical files.
+
+Results are in `similarity.groups`, with member paths relative to `source.path`. Inspect `similarity.complete`, `truncated`, `scan` and `processing`; errors and limits retain available groups with exit 3. Defaults are 2000 candidate files, depth 32 and 100 returned groups. Use `--max-files`, `--max-depth`, `--max-results`, `--include-hidden` and `--timeout` to adjust scope. Scans report groups for review and recompute fingerprints each time. See the [full guide](agent-cli-similarity.md) for limits, reference grouping, links, frame/orientation handling and source-build instructions.
 
 ## File conversion and agent skill
 
@@ -140,7 +161,7 @@ cp -R skills/filens ~/.codex/skills/
 
 RapidOCR uses NCNN with PP-OCRv6 small detection, mobile v2 orientation classification and PP-OCRv3 Chinese/English recognition. Defaults are **max side 960, padding 50, OpenMP threads 2**, classification enabled. The image is scaled proportionally for detection with network-aligned dimensions; text-line crops are prepared separately for recognition. The Photos runtime handles EXIF orientation, white padding, channel/normalization preparation and 0/180-degree text-line classification. WASM composites transparent PNG pixels onto white before calling OCR. The 960 setting is a practical default; it does not guarantee accurate recognition of tiny text on large scans.
 
-Standalone images and embedded document images use the same callback path. The WASM core controls image extraction, reading order, duplicate-image reuse and whether a PDF page needs OCR; the Rust host forwards temporary image paths to an isolated native worker. Repeated embedded images are recognized once per document and their text is inserted at each occurrence. A PDF text layer is preferred; scanned pages are rendered by the pinned PDFium WASM engine. Wasmi runs both engines with 512 MiB memory limits; only the request's temporary directory is mounted into the text engine. The Go extraction library remains available for existing integrations.
+Standalone images and embedded document images use the same callback path. The WASM core controls image extraction, reading order, duplicate-image reuse and whether a PDF page needs OCR; the Rust host forwards temporary image paths to an isolated native worker. Repeated embedded images are recognized once per document and their text is inserted at each occurrence. A PDF text layer is preferred; scanned pages are rendered by the pinned PDFium WASM engine. Wasmi runs both engines with 512 MiB memory limits. Document extraction mounts only the request's temporary directory into the text engine; similarity scans additionally mount the selected root so the core can read the discovered files. The Go extraction library remains available for existing integrations.
 
 A persistent copy of the CLI hosts the NCNN JSON ABI and is started lazily. It loads adjacent or injected native libraries and models; there is no separate interpreter. Cancellation or timeout kills the worker, and a later OCR unit can start a fresh process. Thread limits are applied before worker startup and through native load/infer requests. The CPU companions use bundled SimpleOMP, without external libomp/libgomp.
 
@@ -160,6 +181,8 @@ OCR wrappers with Go `-trimpath`; packaging and publication inspect both file
 contents and tarballs for personal build paths, signed URLs and credentials.
 See [release privacy checks](release-privacy.md). These source changes require
 a new release; they do not replace previously published immutable npm versions.
+
+Source verification includes `npm run test:agent:search`, `npm run test:agent:prune` and `npm run test:agent:similarity`. The similarity checks exercise real CLI/WASM duplicate and image groups, partial results, links, limits and eight output formats; the hdrw walker was also exercised on macOS. See the [verification record](agent-cli-similarity-size.json) for observed checks and platform scope.
 
 ## Multi-source model downloads
 

@@ -6,6 +6,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { executableName, ocrLibraryName, npmInvocation } from './agent-platforms.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const output=path.join(root,'dist/npm');
 const release=JSON.parse(await readFile(path.join(output,'release.json'),'utf8'));
@@ -20,7 +21,7 @@ const env={...process.env,FILENS_CACHE_DIR:path.join(work,'cache'),npm_config_of
 try {
   const full=path.join(work,'full');
   run('npm',['install',...installFlags,'--prefix',full,...(registry?[`${fullName}@${release.version}`]:[archive(fullName),archive(`filens-cli-${platform}`),archive(`filens-ocr-${platform}`)])]);
-  let executable=path.join(full,'node_modules/.bin/filens');
+  let executable=path.join(full,'node_modules',fullName,'cli.mjs');
   const capacity=JSON.parse(run(executable,['capacity','--json']).stdout);
   const installedSkill=await readFile(path.join(full,'node_modules',fullName,'skills/filens/SKILL.md'),'utf8');
   assert.ok(installedSkill.startsWith('---\nname: filens\ndescription:'));
@@ -45,12 +46,12 @@ try {
   // The native package also runs directly with no Node/Python on PATH.
   const core=path.join(full,`node_modules/filens-cli-${platform}`);
   const ocr=path.join(full,`node_modules/filens-ocr-${platform}`);
-  const direct=spawnSync(path.join(core,'filens'),[image,'--json'],{encoding:'utf8',env:{...env,PATH:'/usr/bin:/bin',FILENS_OCR_LIBRARY:path.join(ocr,'native',process.platform==='darwin'?'libzima_ncnn_runtime_v7.dylib':'libzima_ncnn_runtime_v7.so'),FILENS_OCR_MODEL_DIR:path.join(ocr,'models/rapidocr-ncnn')},timeout:120000});
+  const direct=spawnSync(path.join(core,executableName(platform)),[image,'--json'],{encoding:'utf8',env:{...env,PATH:process.platform==='win32'?path.join(process.env.SystemRoot??'C:\\Windows','System32'):'/usr/bin:/bin',FILENS_OCR_LIBRARY:path.join(ocr,'native',ocrLibraryName(platform)),FILENS_OCR_MODEL_DIR:path.join(ocr,'models/rapidocr-ncnn')},timeout:120000});
   assert.equal(direct.status,0,direct.stderr);
   assert.match(JSON.parse(direct.stdout).content.text,/FILENS2026/);
   const lite=path.join(work,'lite');
   run('npm',['install',...installFlags,'--prefix',lite,...(registry?[`${liteName}@${release.version}`]:[archive(liteName),archive(`filens-cli-${platform}`)])]);
-  executable=path.join(lite,'node_modules/.bin/filens');
+  executable=path.join(lite,'node_modules',liteName,'cli.mjs');
   assert.equal(JSON.parse(run(executable,['capacity','--json']).stdout).capacity.ocr.enabled,false);
   assert.equal(run(executable,[text]).stdout.trim(),'文档证据 42');
   if(!registry) env.FILENS_OCR_PACKAGE=archive(`filens-ocr-${platform}`);
@@ -67,6 +68,8 @@ try {
   console.log(`npm packages: ${registry?'public registry (fresh npm cache)':'offline tarball'} Full/Lite installs${registry?', automatic platform selection':''}, stdin JSON, native execution without Python, and one-command OCR component installation passed.`);
 } finally {await rm(work,{recursive:true,force:true});}
 function run(command,args,input) {
+  if(command==='npm') ({command,args}=npmInvocation(args));
+  else if(command.endsWith('.mjs')) {args=[command,...args];command=process.execPath;}
   const result=spawnSync(command,args,{cwd:work,env,input:input??'',encoding:'utf8',timeout:120000,maxBuffer:8<<20});
   assert.equal(result.error,undefined,result.error?.message);
   assert.equal(result.status,0,`${command} ${args.join(' ')}\n${result.stderr}\n${result.stdout}`);

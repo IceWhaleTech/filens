@@ -2,9 +2,9 @@
 
 从 Agent CLI 0.2.0 开始支持以下 8 种输出。文档解析、结构提取、坐标归一化和文档导出均在共享 WASM 核心中完成。
 
-![真实 CLI 输入、Markdown 导出与 OCR 坐标演示](assets/agent-cli/terminal-demo.gif)
+![中文 CLI：关键摘录、文档搜索与 OCR 坐标演示](assets/agent-cli/terminal-demo.zh-CN.gif)
 
-动图使用真实 CLI 结果，剪辑了打字和响应时间；右侧将返回的布局框叠加到输入图片上。JSON / YAML 展示输出节选，语义推理由调用 Agent 完成。
+动图提供[中文版](assets/agent-cli/terminal-demo.zh-CN.gif)与[英文版](assets/agent-cli/terminal-demo.gif)，命令、界面与样例分别对应语言。八个场景从 OCR 坐标开场，依次展示 Markdown、无模型摘录、跨文件词项搜索、完整文件查重、相似图片分组、YAML 和能力发现。使用真实 CLI 结果，剪辑打字和响应时间，搜索路径以相对形式展示；右侧将返回的布局框叠加到输入图片上，相似图片展示原图、缩小 JPEG 与重压缩 WebP 的实际扫描结果。JSON / YAML 展示输出节选，语义推理由调用 Agent 完成。
 
 | 输出 | 内容 | 示例 |
 | --- | --- | --- |
@@ -71,4 +71,4 @@ npm run test:agent:layout
 npm run demo:agent
 ```
 
-生成输入、完整实测输出和计时保存在 `dist/agent-layout/`、`dist/agent-demo/`。动图为 1280 × 820、12 fps、28.5 秒，使用 Playwright 和 FFmpeg 制作，安装后的 CLI 不需要这些工具。[0.1.0 的 68 条历史观察](agent-cli-examples.zh-CN.md)仍保留，其中 YAML / XML 等格式的旧行为已被 0.2.0 扩展。
+生成输入、完整实测输出和计时保存在 `dist/agent-demo/en/`、`dist/agent-demo/zh-CN/`，其中 `receipt.json` 记录 GIF 哈希、体积及真实请求耗时。每版为 1280 × 820、12 fps、48 秒，使用 Playwright 和 FFmpeg 制作，安装后的 CLI 不需要这些工具。`npm run demo:agent -- --lang en` 或 `--lang zh-CN` 可单独重建；`--poster-only` 只更新静态图并检查场景是否裁切。[68 条历史观察](agent-cli-examples.zh-CN.md)仍保留，其中 YAML / XML 等格式的旧行为已被后续版本扩展。

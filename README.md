@@ -2,24 +2,70 @@
   <img src="apps/demo/public/brand/filens-icon.svg" alt="filens logo" width="72" height="72" />
   <h1>filens</h1>
   <p><strong>Files shine bright. Dreams take flight.</strong></p>
-  <p>A pure frontend file viewer for Office, iWork, CAD, panoramas, and more. Local files stay on your device.</p>
+  <p>Local file tools for Agents and browsers. Read, search, OCR, and preview files without uploading them.</p>
   <p>Chinese name: 探微 · English · <a href="README.zh-CN.md">简体中文</a></p>
   <p>
-    <a href="#demo">Watch the demo</a> ·
+    <a href="#read-documents-with-an-agent">Agent CLI</a> ·
+    <a href="#demo">Browser previews</a> ·
     <a href="#quick-start">Try it locally</a> ·
     <a href="docs/support-matrix.md">Supported formats</a>
   </p>
 </div>
 
-[![Eight actual filens previews: presentations, documents, spreadsheets, PDF, Keynote, CAD, 3D, and panoramas](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
+![English CLI: typed requests, OCR geometry, key excerpts, document search, duplicate files and similar images](docs/assets/agent-cli/terminal-demo.gif)
 
-<p align="center"><strong>Pure frontend · WASM conversion, flexible deployment · Fast and tiny</strong></p>
+<p align="center">Source-build CLI results · Edited typing and response timing · <a href="docs/assets/agent-cli/terminal-demo.zh-CN.gif">中文动图</a></p>
+
+<p align="center"><strong>Local first · Agent CLI + browser previews · Shared WASM core</strong></p>
 
 <p align="center">
   <a href="https://www.zimaspace.com/en/zimaos?utm_source=github&amp;utm_medium=referral&amp;utm_campaign=filens_zimaos&amp;utm_content=readme_banner_en"><img src="docs/assets/readme/zimaos-banner.en.png" alt="ZimaOS. Your personal cloud, made simple. Deep FiLens integration, file management, RAW / 360° viewing, backup, and 800+ apps. Explore ZimaOS." width="640" /></a>
 </p>
 
 ---
+
+## Read documents with an Agent
+
+Describe what to read or summarize in Chinese or English, then receive text, JSON, Markdown, HTML, YAML, XML, CSV or TSV. Get source structure and PDF/OCR coordinates for the calling Agent. Source builds provide model-free `summarize` / `prune` with original excerpts, provenance and explicit omissions. Parsing, layout, pruning and document export share the WASM core; paraphrasing, translation and question answering belong to the caller.
+
+[Output formats, layouts and reproducible demo](docs/agent-cli-formats-and-layout.zh-CN.md) · Actual CLI excerpts; typing/response timing edited.
+
+Explore [68 observed examples and natural-language limits](docs/agent-cli-examples.zh-CN.md) (Chinese), including OCR quality, working requests and unsupported page selection or questions.
+
+```sh
+# Full: CLI, WASM and native OCR
+npm install -g filens-cli
+filens 'read "report.pdf" as json'
+filens 'what can you do as json'
+filens 'read "report.docx" as markdown'
+filens '获取 "invoice.png" 的布局，以 YAML 输出'
+filens convert report.doc report.docx
+filens convert data.csv --to xlsx
+
+# Lite alternative; native OCR can be added with filens setup-ocr
+npm install -g filens-cli-lite
+# Temporary invocation
+npx --yes filens-cli-lite capacity --json
+```
+
+The source CLI is Rust, with strip, LTO, UPX compression for Windows/Linux executables and fast gzip-compressed WASM resources. macOS arm64 executables skip UPX because that format is unsupported.
+
+Source builds support [model-free key excerpts](docs/agent-cli-pruning.zh-CN.md): `filens summarize report.pdf --query 'budget risk' --json`. Density, BM25 and cosine-diversity pruning select original text with provenance and explicit omissions. Check `capacity` for `summarize` in your installed build.
+
+Source builds also provide [directory search](docs/agent-cli-search.zh-CN.md): `filens 'search "./documents" for "budget risk" as json'`. BM25, literal and filename modes return original evidence and available layout; embedding retrieval is not included. macOS uses native FTS; Windows/Linux embed compiled private hdrw WASM.
+
+[Search speed and accuracy measurements](docs/agent-cli-search-benchmark.zh-CN.md) compare FiLens, ripgrep and git grep on fixed synthetic queries, document extraction, cache updates and 100–2000-file scans, including misses and no-answer false positives.
+
+Source builds add [Czkawka-style duplicate-file and similar-image scans](docs/agent-cli-similarity.md): `filens duplicates ./files --json` and `filens similar-images ./photos --threshold 8 --json`. Image groups can include resized and recompressed versions, without OCR or models. Check `capacity.operations` for `similar`; published npm `0.2.0` does not include it. Scans report groups for review.
+
+[Windows x64 candidates, native testing and a ready-to-copy agent prompt](docs/agent-cli-windows.zh-CN.md) are available for the upcoming `0.3.0-rc.1`; stable npm `0.2.0` does not include Windows.
+`convert` uses the frontend conversion engines; inspect `capacity.conversionPairs`
+for supported targets. A distributable [agent skill](skills/filens/SKILL.md)
+covers reading, search, duplicate/image scans, OCR, layout, evidence and conversion, with standard YAML front matter.
+
+The npm entry packages are [`filens-cli`](https://www.npmjs.com/package/filens-cli) and [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite); both expose the `filens` command. Full includes native RapidOCR NCNN and models, with **no Python environment**; defaults are max side **960**, OpenMP threads **2**, orientation classification and image preprocessing. WASM supports OCR callbacks for scanned pages and embedded document images. Rebuilt Rust candidates on macOS arm64 are about **7.25 MiB** (Lite) and **30.45 MiB** (Full) installed. Model downloads support concurrent speed probes across HF / ModelScope / HF Mirror and an optional fourth route, with hash verification. See [installation, packaging and protocol](docs/agent-cli.md).
+
+The size totals above are the 2026-10-29 candidates, before similarity scanning. A later macOS arm64 local comparison measured about **278 KiB** more for the executable plus gzip WASM resources; see the [measurement scope](docs/agent-cli-similarity-size.json). This is not a newly packaged Lite/Full total or an npm download-size delta.
 
 ## See more, right in your browser
 
@@ -56,6 +102,8 @@
 
 ## Demo
 
+[![Eight actual filens previews: presentations, documents, spreadsheets, PDF, Keynote, CAD, 3D, and panoramas](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
+
 **[▶ Watch the 30-second walkthrough](apps/demo/public/home/filens-demo.mp4)** — presentations, documents, spreadsheets, Keynote, CAD, a Viking helmet in 3D, and a 360° view, in one workspace.
 
 <details>
@@ -66,39 +114,6 @@
 The full recording is linked above. [Chinese captions](apps/demo/public/home/demo-zh.vtt) · [English captions](apps/demo/public/home/demo-en.vtt)
 
 </details>
-
-## Read documents with an Agent
-
-Describe what to read in Chinese or English, then receive text, JSON, Markdown, HTML, YAML, XML, CSV or TSV. Get source structure and PDF/OCR coordinates for the calling Agent. Parsing, layout and document export share the WASM core; the caller performs semantic reasoning.
-
-![Real filens CLI typing, Markdown output and source-aligned OCR geometry](docs/assets/agent-cli/terminal-demo.gif)
-
-[Output formats, layouts and reproducible demo](docs/agent-cli-formats-and-layout.zh-CN.md) · Actual CLI excerpts; typing/response timing edited.
-
-Explore [68 observed examples and natural-language limits](docs/agent-cli-examples.zh-CN.md) (Chinese), including OCR quality, working requests and unsupported page selection or questions.
-
-```sh
-# Full: CLI, WASM and native OCR
-npm install -g filens-cli
-filens 'read "report.pdf" as json'
-filens 'what can you do as json'
-filens 'read "report.docx" as markdown'
-filens '获取 "invoice.png" 的布局，以 YAML 输出'
-filens convert report.doc report.docx
-filens convert data.csv --to xlsx
-
-# Lite alternative; native OCR can be added with filens setup-ocr
-npm install -g filens-cli-lite
-# Temporary invocation
-npx --yes filens-cli-lite capacity --json
-```
-
-The source CLI is Rust, with strip, LTO and fast gzip-compressed WASM resources.
-`convert` uses the frontend conversion engines; inspect `capacity.conversionPairs`
-for supported targets. A distributable [agent skill](skills/filens/SKILL.md)
-covers reading, OCR, layout, evidence and conversion, with standard YAML front matter.
-
-The npm entry packages are [`filens-cli`](https://www.npmjs.com/package/filens-cli) and [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite); both expose the `filens` command. Full includes native RapidOCR NCNN and models, with **no Python environment**; defaults are max side **960**, OpenMP threads **2**, orientation classification and image preprocessing. WASM supports OCR callbacks for scanned pages and embedded document images. Rebuilt Rust candidates on macOS arm64 are about **7.25 MiB** (Lite) and **30.45 MiB** (Full) installed. Model downloads support concurrent speed probes across HF / ModelScope / HF Mirror and an optional fourth route, with hash verification. See [installation, packaging and protocol](docs/agent-cli.md).
 
 ## Quick start
 

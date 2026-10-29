@@ -1,0 +1,205 @@
+diff --git a/truck-stepio/src/in/mod.rs b/truck-stepio/src/in/mod.rs
+index 2e84cdc..db345e8 100644
+--- a/truck-stepio/src/in/mod.rs
++++ b/truck-stepio/src/in/mod.rs
+@@ -2819,7 +2819,7 @@ pub struct ProductContext {
+ pub struct Product {
+     pub id: String,
+     pub name: String,
+-    pub description: String,
++    pub description: Option<String>,
+     #[holder(use_place_holder)]
+     pub frame_of_reference: Vec<ProductContext>,
+ }
+@@ -2830,7 +2830,7 @@ pub struct Product {
+ #[holder(generate_deserialize)]
+ pub struct ProductDefinitionFormation {
+     pub id: String,
+-    pub description: String,
++    pub description: Option<String>,
+     #[holder(use_place_holder)]
+     pub of_product: Product,
+ }
+@@ -2852,7 +2852,7 @@ pub struct ProductDefinitionContext {
+ #[holder(generate_deserialize)]
+ pub struct ProductDefinition {
+     pub id: String,
+-    pub description: String,
++    pub description: Option<String>,
+     #[holder(use_place_holder)]
+     pub formation: ProductDefinitionFormation,
+     #[holder(use_place_holder)]
+@@ -2875,7 +2875,7 @@ pub enum CharacterizedDefinition {
+ #[holder(generate_deserialize)]
+ pub struct ProductDefinitionShape {
+     pub name: String,
+-    pub description: String,
++    pub description: Option<String>,
+     #[holder(use_place_holder)]
+     pub definition: CharacterizedDefinition,
+ }
+@@ -2920,7 +2920,7 @@ pub struct ShapeDefinitionRepresentation {
+ #[holder(generate_deserialize)]
+ pub struct ShapeRepresentationRelationship {
+     pub name: String,
+-    pub description: String,
++    pub description: Option<String>,
+     #[holder(use_place_holder)]
+     pub rep_1: ShapeRepresentation,
+     #[holder(use_place_holder)]
+@@ -2933,7 +2933,7 @@ pub struct ShapeRepresentationRelationship {
+ #[holder(generate_deserialize)]
+ pub struct ShapeRepresentationRelationshipWithTransformation {
+     pub name: String,
+-    pub description: String,
++    pub description: Option<String>,
+     #[holder(use_place_holder)]
+     pub rep_1: ShapeRepresentation,
+     #[holder(use_place_holder)]
+@@ -2949,7 +2949,7 @@ pub struct ShapeRepresentationRelationshipWithTransformation {
+ pub struct NextAssemblyUsageOccurrence {
+     pub id: String,
+     pub name: String,
+-    pub description: String,
++    pub description: Option<String>,
+     #[holder(use_place_holder)]
+     pub relating_product_definition: ProductDefinition,
+     #[holder(use_place_holder)]
+@@ -2963,7 +2963,7 @@ pub struct NextAssemblyUsageOccurrence {
+ #[holder(generate_deserialize)]
+ pub struct ItemDefinedTransformation {
+     name: String,
+-    description: String,
++    description: Option<String>,
+     #[holder(use_place_holder)]
+     transform_item_1: Axis2Placement,
+     #[holder(use_place_holder)]
+diff --git a/truck-stepio/src/in/convert.rs b/truck-stepio/src/in/convert.rs
+index f7be761..695703c 100644
+--- a/truck-stepio/src/in/convert.rs
++++ b/truck-stepio/src/in/convert.rs
+@@ -348,7 +348,7 @@ impl Table {
+         let attrs = PartAttrs {
+             id: product.id.clone(),
+             name: product.name.clone(),
+-            description: product.description.clone(),
++            description: product.description.clone().unwrap_or_default(),
+         };
+ 
+         let Some(sdr) = self.shape_definition_representation.values().find(|sdr| {
+@@ -402,7 +402,7 @@ impl Table {
+         let attrs = PartAttrs {
+             id: next_assy.id.clone(),
+             name: next_assy.name.clone(),
+-            description: next_assy.description.clone(),
++            description: next_assy.description.clone().unwrap_or_default(),
+         };
+ 
+         let Some(cdsr) = self
+diff --git a/truck-stepio/tests/import_optional_descriptions.rs b/truck-stepio/tests/import_optional_descriptions.rs
+new file mode 100644
+index 0000000..b5c1d21
+--- /dev/null
++++ b/truck-stepio/tests/import_optional_descriptions.rs
+@@ -0,0 +1,101 @@
++use std::str::FromStr;
++use truck_stepio::r#in::{
++    ruststep::{ast::DataSection, tables::EntityTable},
++    step_geometry::*,
++    *,
++};
++
++const ASSEMBLY: &str = "DATA;
++#1=PRODUCT('child','child',$,(#91));
++#2=PRODUCT_DEFINITION_FORMATION('v1',$,#1);
++#4=PRODUCT_DEFINITION('design',$,#2,#92);
++#5=PRODUCT_DEFINITION_SHAPE('',$,#4);
++#6=SHAPE_DEFINITION_REPRESENTATION(#5,#7);
++#7=SHAPE_REPRESENTATION('',(#8),#93);
++#8=AXIS2_PLACEMENT_3D('',#9,$,$);
++#9=CARTESIAN_POINT('',(0.,0.,0.));
++#11=PRODUCT('parent','parent',$,(#91));
++#12=PRODUCT_DEFINITION_FORMATION('v1',$,#11);
++#14=PRODUCT_DEFINITION('design',$,#12,#92);
++#15=PRODUCT_DEFINITION_SHAPE('',$,#14);
++#16=SHAPE_DEFINITION_REPRESENTATION(#15,#17);
++#17=SHAPE_REPRESENTATION('',(#18),#93);
++#18=AXIS2_PLACEMENT_3D('',#19,$,$);
++#19=CARTESIAN_POINT('',(10.,0.,0.));
++#20=NEXT_ASSEMBLY_USAGE_OCCURRENCE('instance','',$,#14,#4,$);
++#21=PRODUCT_DEFINITION_SHAPE('',$,#20);
++#22=CONTEXT_DEPENDENT_SHAPE_REPRESENTATION(#23,#21);
++#23=(REPRESENTATION_RELATIONSHIP('',$,#7,#17)
++REPRESENTATION_RELATIONSHIP_WITH_TRANSFORMATION(#24)
++SHAPE_REPRESENTATION_RELATIONSHIP());
++#24=ITEM_DEFINED_TRANSFORMATION('',$,#8,#18);
++#90=APPLICATION_CONTEXT('test');
++#91=PRODUCT_CONTEXT('',#90,'mechanical');
++#92=PRODUCT_DEFINITION_CONTEXT('',#90,'design');
++#93=REPRESENTATION_CONTEXT('','3D');
++ENDSEC;";
++
++fn strict_table(source: &str) -> std::result::Result<Table, String> {
++    let data = DataSection::from_str(source).unwrap();
++    let mut table = Table::default();
++    for entity in data.entities {
++        table.push_instance(&entity).map_err(|e| e.to_string())?;
++    }
++    Ok(table)
++}
++
++#[test]
++fn omitted_descriptions_do_not_drop_assembly_nodes_or_edges() {
++    let table = strict_table(ASSEMBLY).unwrap();
++    assert_eq!(table.product.len(), 2);
++    assert_eq!(table.product_definition.len(), 2);
++    assert_eq!(table.product_definition_shape.len(), 3);
++    assert_eq!(
++        table
++            .shape_representation_relationship_with_transformation
++            .len(),
++        1
++    );
++    let assembly = table.step_assy().unwrap();
++    assert_eq!(assembly.len(), 2);
++    assert_eq!(assembly.top_nodes().count(), 1);
++    let top = assembly.top_nodes().next().unwrap();
++    assert_eq!(assembly.maximal_paths_iter(top.index()).count(), 1);
++    assert_eq!(top.attrs().description, "");
++    let transform = EntityTable::<ItemDefinedTransformationHolder>::get_owned(&table, 24).unwrap();
++    let matrix = Matrix4::try_from(&transform).unwrap();
++    assert_eq!(
++        matrix.transform_point(Point3::origin()),
++        Point3::new(10., 0., 0.)
++    );
++}
++
++#[test]
++fn present_descriptions_are_preserved() {
++    let source = ASSEMBLY
++        .replace("$", "'description'")
++        .replace("#9,'description','description'", "#9,$,$")
++        .replace("#19,'description','description'", "#19,$,$");
++    let table = strict_table(&source).unwrap();
++    let assembly = table.step_assy().unwrap();
++    assert_eq!(
++        assembly.top_nodes().next().unwrap().attrs().description,
++        "description"
++    );
++}
++
++#[test]
++fn specified_source_formation_accepts_omitted_description() {
++    let table = strict_table("DATA; #1=PRODUCT_DEFINITION_FORMATION_WITH_SPECIFIED_SOURCE('v1',$,#2,.NOT_KNOWN.); ENDSEC;").unwrap();
++    assert_eq!(table.product_definition_formation.len(), 1);
++}
++
++#[test]
++fn mandatory_product_name_remains_required() {
++    assert!(strict_table("DATA; #1=PRODUCT('id',$,'',(#2)); ENDSEC;").is_err());
++}
++
++#[test]
++fn non_string_description_remains_an_error() {
++    assert!(strict_table("DATA; #1=PRODUCT('id','name',42,(#2)); ENDSEC;").is_err());
++}

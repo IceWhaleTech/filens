@@ -1,0 +1,46 @@
+[package]
+name = "filens-rust-engine-evaluation"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[features]
+pdf = ["dep:hayro", "dep:hayro-cmap"]
+pdf-fonts = ["pdf", "hayro/embed-fonts", "hayro/embed-cmaps"]
+step = ["dep:truck-stepio", "dep:truck-meshalgo", "dep:truck-assembly", "dep:truck-topology"]
+
+[dependencies]
+serde_json = "1.0"
+hayro = { version = "=0.8.0", default-features = false, optional = true }
+hayro-cmap = { version = "=0.1.0", optional = true }
+truck-stepio = { git = "https://github.com/ricosjp/truck", rev = "78d699b0792b39e27c2bf073b682986701644e91", default-features = false, features = ["in", "derive"], optional = true }
+truck-meshalgo = { git = "https://github.com/ricosjp/truck", rev = "78d699b0792b39e27c2bf073b682986701644e91", default-features = false, features = ["tessellation"], optional = true }
+truck-assembly = { git = "https://github.com/ricosjp/truck", rev = "78d699b0792b39e27c2bf073b682986701644e91", optional = true }
+truck-topology = { git = "https://github.com/ricosjp/truck", rev = "78d699b0792b39e27c2bf073b682986701644e91", optional = true }
+
+[[bin]]
+name = "hayro-eval"
+path = "src/pdf.rs"
+required-features = ["pdf"]
+
+[[bin]]
+name = "truck-eval"
+path = "src/step.rs"
+required-features = ["step"]
+
+[[bin]]
+name = "truck-baseline"
+path = "src/step_baseline.rs"
+required-features = ["step"]
+
+[[bin]]
+name = "truck-diagnose"
+path = "src/step_diagnose.rs"
+required-features = ["step"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

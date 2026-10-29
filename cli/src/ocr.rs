@@ -51,6 +51,8 @@ impl Native {
         let models = std::env::var("FILENS_OCR_MODEL_DIR")?;
         let companion = path.parent().unwrap().join(if cfg!(target_os = "macos") {
             "libncnn.dylib"
+        } else if cfg!(target_os = "windows") {
+            "ncnn.dll"
         } else {
             "libncnn.so"
         });
@@ -193,6 +195,8 @@ impl Provider {
                 .unwrap_or_else(|| {
                     bundle.join("native").join(if cfg!(target_os = "macos") {
                         "libzima_ncnn_runtime_v7.dylib"
+                    } else if cfg!(target_os = "windows") {
+                        "zima_ncnn_runtime_v7.dll"
                     } else {
                         "libzima_ncnn_runtime_v7.so"
                     })
@@ -281,5 +285,31 @@ impl Provider {
             }
         }
         result
+    }
+}
+
+pub fn terminate_worker(id: u32) {
+    if id == 0 {
+        return;
+    }
+    #[cfg(unix)]
+    unsafe {
+        libc::kill(id as i32, libc::SIGKILL);
+    }
+    #[cfg(windows)]
+    unsafe {
+        #[link(name = "kernel32")]
+        unsafe extern "system" {
+            fn OpenProcess(access: u32, inherit: i32, id: u32) -> *mut std::ffi::c_void;
+            fn TerminateProcess(handle: *mut std::ffi::c_void, code: u32) -> i32;
+            fn WaitForSingleObject(handle: *mut std::ffi::c_void, timeout: u32) -> u32;
+            fn CloseHandle(handle: *mut std::ffi::c_void) -> i32;
+        }
+        let handle = OpenProcess(0x00100001, 0, id); // SYNCHRONIZE | PROCESS_TERMINATE
+        if !handle.is_null() {
+            TerminateProcess(handle, 1);
+            WaitForSingleObject(handle, 5000);
+            CloseHandle(handle);
+        }
     }
 }

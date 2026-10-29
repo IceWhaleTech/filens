@@ -6,9 +6,12 @@ import { run } from './agent-rust-build.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const fallbacks = new Map();
+// This old import-library crate omits both license files and Cargo VCS metadata.
+// The pinned winapi 0.3.9 tree contains the same 0.4.0 crate and its MIT/Apache licenses.
+const licenseRevisions = { 'winapi-x86_64-pc-windows-gnu@0.4.0':'796a8e6c2971dc2ff1bcff166e6671284f9b5b6b' };
 async function upstreamLicense(dependency, base) {
   const repository = /^https:\/\/github.com\/([^/]+\/[^/]+)/.exec(dependency.repository ?? dependency.homepage ?? '')?.[1];
-  const revision = JSON.parse(await readFile(path.join(base,'.cargo_vcs_info.json'),'utf8')).git.sha1;
+  const revision = licenseRevisions[`${dependency.name}@${dependency.version}`] ?? JSON.parse(await readFile(path.join(base,'.cargo_vcs_info.json'),'utf8')).git.sha1;
   if (!repository || !/^[a-f0-9]{40}$/.test(revision)) throw new Error(`Cannot locate pinned license for ${dependency.name}`);
   const key = `${repository.replace('/','-')}-${revision}`;
   if (!fallbacks.has(key)) fallbacks.set(key,(async()=>{
@@ -35,7 +38,7 @@ async function upstreamLicense(dependency, base) {
 // Cargo's absolute cache paths in distributable metadata.
 export async function writeRustLicenses(directory) {
   const graphs = [
-    ...['aarch64-apple-darwin','x86_64-unknown-linux-gnu','aarch64-unknown-linux-gnu'].map(target=>({manifest:'cli/Cargo.toml',target})),
+    ...['aarch64-apple-darwin','x86_64-unknown-linux-gnu','aarch64-unknown-linux-gnu','x86_64-pc-windows-gnu'].map(target=>({manifest:'cli/Cargo.toml',target})),
     {manifest:'wasm/converter-core-rust/Cargo.toml',target:'wasm32-wasip1',features:'text-extraction'},
     {manifest:'wasm/converter-image-rust/Cargo.toml',target:'wasm32-wasip1'}
   ];

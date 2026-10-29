@@ -4,11 +4,12 @@ import { copyFile, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { executableName } from './agent-platforms.mjs';
 import { unzipSync, strFromU8 } from 'fflate';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const work = await mkdtemp(path.join(os.tmpdir(),'filens-convert-test-'));
-const binary = process.env.FILENS_AGENT_BINARY || path.join(root,'dist/agent-lite/filens');
+const binary = process.env.FILENS_AGENT_BINARY || path.join(root,'dist/agent-lite',executableName(`${process.platform}-${process.arch}`));
 const fixtures = path.join(root,'examples/go-wazero-converter/fixtures');
 let checks = 0;
 function invoke(args,input='',expected=0) {

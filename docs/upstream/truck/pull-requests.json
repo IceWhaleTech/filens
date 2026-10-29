@@ -1,0 +1,91 @@
+{
+  "repository": "ricosjp/truck",
+  "baseBranch": "master",
+  "baseCommit": "1ca3214e537004d466addbd85d6375807147a426",
+  "verifiedAt": "2026-10-29T16:27:51.061316+00:00",
+  "pullRequests": [
+    {
+      "number": 138,
+      "url": "https://github.com/ricosjp/truck/pull/138",
+      "title": "fix(stepio): respect direction ratios in vectors and axis placements",
+      "state": "OPEN",
+      "isDraft": false,
+      "createdAt": "2026-10-29T16:27:00Z",
+      "headOwner": "orca-zhang",
+      "headBranch": "fix/step-direction-ratios",
+      "headCommit": "dd4752ea3323b50f99d16500d6b51094c219ffd4",
+      "patch": "0001-normalize-step-placement-directions.patch",
+      "files": [
+        {
+          "path": "truck-stepio/src/in/mod.rs",
+          "additions": 8,
+          "deletions": 6
+        },
+        {
+          "path": "truck-stepio/tests/import_direction_ratios.rs",
+          "additions": 109,
+          "deletions": 0
+        }
+      ],
+      "mergeable": "MERGEABLE",
+      "statusCheckRollup": []
+    },
+    {
+      "number": 139,
+      "url": "https://github.com/ricosjp/truck/pull/139",
+      "title": "fix(stepio): preserve assemblies with omitted optional descriptions",
+      "state": "OPEN",
+      "isDraft": false,
+      "createdAt": "2026-10-29T16:27:04Z",
+      "headOwner": "orca-zhang",
+      "headBranch": "fix/step-optional-descriptions",
+      "headCommit": "2f0b8b567d082eddc47c3c211fe718d105fc8094",
+      "patch": "0002-honor-optional-assembly-descriptions.patch",
+      "files": [
+        {
+          "path": "truck-stepio/src/in/convert.rs",
+          "additions": 2,
+          "deletions": 2
+        },
+        {
+          "path": "truck-stepio/src/in/mod.rs",
+          "additions": 8,
+          "deletions": 8
+        },
+        {
+          "path": "truck-stepio/tests/import_optional_descriptions.rs",
+          "additions": 101,
+          "deletions": 0
+        }
+      ],
+      "mergeable": "MERGEABLE",
+      "statusCheckRollup": []
+    },
+    {
+      "number": 140,
+      "url": "https://github.com/ricosjp/truck/pull/140",
+      "title": "fix(geotrait): reject nonfinite samples before recursive curve subdivision",
+      "state": "OPEN",
+      "isDraft": false,
+      "createdAt": "2026-10-29T16:27:07Z",
+      "headOwner": "orca-zhang",
+      "headBranch": "fix/curve-subdivision-nonfinite",
+      "headCommit": "ee09dbdfa4eca5ca38e572b041a22f14551f3c99",
+      "patch": "0003-stop-nonfinite-curve-subdivision.patch",
+      "files": [
+        {
+          "path": "truck-geotrait/src/algo/curve.rs",
+          "additions": 9,
+          "deletions": 0
+        },
+        {
+          "path": "truck-geotrait/tests/curve_division_nonfinite.rs",
+          "additions": 98,
+          "deletions": 0
+        }
+      ],
+      "mergeable": "MERGEABLE",
+      "statusCheckRollup": []
+    }
+  ]
+}

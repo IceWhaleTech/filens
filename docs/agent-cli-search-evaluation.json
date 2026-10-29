@@ -1,0 +1,1028 @@
+{
+  "scope": "Synthetic functional checks of actual CLI/WASM requests. Not a retrieval-quality benchmark or a tool comparison.",
+  "sourceState": "Local source builds; not a published npm release.",
+  "reproduce": [
+    "npm run test:agent:search",
+    "FILENS_AGENT_BINARY=dist/filens node scripts/test-agent-search.mjs --ocr"
+  ],
+  "coverage": [
+    "Chinese and English intents",
+    "BM25, literal and filename modes",
+    "Exact numbers and identifiers",
+    "Long-document tail and no lexical matches",
+    "Eight output formats",
+    "Original UTF-8 offsets and logical layout",
+    "Hidden names, excluded directories, depth, symlinks and limits",
+    "Content cache hits, edits and deletions",
+    "Malformed files, OCR unavailable and partial errors",
+    "Two-page scan PDF OCR and page coordinates (FTS run)"
+  ],
+  "limitations": [
+    "No embedding retrieval, synonym/cross-language quality claim or semantic no-answer detection.",
+    "No comparison with rg or zvec-grep, human relevance labels or Agent success-rate measurement.",
+    "Cold/warm timings are each a single process observation, including startup and WASM execution; not stable performance estimates.",
+    "hdrw WASI was exercised on macOS; Windows/Linux native runtime remains untested."
+  ],
+  "hdrw": {
+    "name": "hdrw",
+    "license": "proprietary",
+    "sourceCommit": "c2263e5f64432772b0f8a445ea19ce37629816bf",
+    "sourceHasChanges": false,
+    "abi": "wasi-preview1",
+    "adapter": "filens-directory-v1",
+    "bytes": 3236964,
+    "gzipBytes": 972296,
+    "sha256": "6264cb0a9745ae96c162915ab2d0baf32b5a70e1d89c618fefc04281730d127a",
+    "gzipSHA256": "d17f7c1476c13073cb62a998551a65071c9d2e57b6ff55ef14b4c11d54d7c6c2",
+    "mode": "OS-backed read-only directory enumeration; no raw devices or filesystem drivers exposed"
+  },
+  "runs": [
+    {
+      "observedAt": "2026-10-29T15:48:39.235Z",
+      "platform": "darwin-arm64",
+      "backend": "fts",
+      "executedOnWindowsOrLinux": false,
+      "binary": "dist/filens",
+      "binarySHA256": "287a579343c64a47282abe823600b9f277984dec961bf7cc6e081e8079c5e122",
+      "textWasmSHA256": "9199412d17b18f53dd60a4535b6c1caeca210f94bdd0776463cf6bb7f13eac22",
+      "requests": 40,
+      "symlinksTested": true,
+      "scanPdfOcrTested": true,
+      "coldMs": 341,
+      "warmMs": 316,
+      "observations": [
+        {
+          "args": [
+            "capacity",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 178
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 341
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 316
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算 12345.67",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 308
+        },
+        {
+          "args": [
+            "read",
+            "dist/agent-search/corpus docs/budget.txt",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 177
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "FILENS2026",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 307
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "UNOBTAINIUM782",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 309
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "TAILNEEDLE782",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 309
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "HIDDENNEEDLE782",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 310
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "HIDDENNEEDLE782",
+            "--json",
+            "--no-ocr",
+            "--include-hidden"
+          ],
+          "exit": 0,
+          "ms": 313
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "EXCLUDEDNEEDLE782",
+            "--json",
+            "--no-ocr",
+            "--include-hidden"
+          ],
+          "exit": 0,
+          "ms": 311
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "DEPTHNEEDLE782",
+            "--json",
+            "--no-ocr",
+            "--max-depth",
+            "1"
+          ],
+          "exit": 0,
+          "ms": 310
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "OUTSIDENEEDLE782",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 313
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "opaque",
+            "--json",
+            "--no-ocr",
+            "--search-mode",
+            "files"
+          ],
+          "exit": 0,
+          "ms": 179
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "must pass Windows testing.",
+            "--json",
+            "--no-ocr",
+            "--search-mode",
+            "exact"
+          ],
+          "exit": 0,
+          "ms": 180
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "MUST PASS Windows testing.",
+            "--json",
+            "--no-ocr",
+            "--search-mode",
+            "exact"
+          ],
+          "exit": 0,
+          "ms": 180
+        },
+        {
+          "args": [
+            "-"
+          ],
+          "exit": 0,
+          "ms": 350
+        },
+        {
+          "args": [
+            "在 \"dist/agent-search/corpus docs\" 中搜索 \"预算\"，以 JSON 输出",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 309
+        },
+        {
+          "args": [
+            "search \"dist/agent-search/corpus docs\" for \"budget\" as json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 344
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "milestone",
+            "--json",
+            "--no-ocr",
+            "--layout",
+            "--no-cache"
+          ],
+          "exit": 0,
+          "ms": 387
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "text",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 310
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 309
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "markdown",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 312
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "html",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 315
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "yaml",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 310
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "xml",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 309
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "csv",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 312
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "tsv",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 312
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--json",
+            "--no-ocr",
+            "--max-results",
+            "1"
+          ],
+          "exit": 0,
+          "ms": 309
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "预算",
+            "--json",
+            "--no-ocr",
+            "--max-files",
+            "1"
+          ],
+          "exit": 3,
+          "ms": 178
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "12345.67",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 311
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "98765.43",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 313
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "98765.43",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 305
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "FILENS2026",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 3,
+          "ms": 317
+        },
+        {
+          "args": [
+            "-",
+            "--no-ocr"
+          ],
+          "exit": 2,
+          "ms": 5
+        },
+        {
+          "args": [
+            "-",
+            "--no-ocr"
+          ],
+          "exit": 2,
+          "ms": 4
+        },
+        {
+          "args": [
+            "-",
+            "--no-ocr"
+          ],
+          "exit": 2,
+          "ms": 5
+        },
+        {
+          "args": [
+            "-",
+            "--no-ocr"
+          ],
+          "exit": 2,
+          "ms": 5
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "BRIGHT2027",
+            "--layout",
+            "--no-cache",
+            "--json"
+          ],
+          "exit": 0,
+          "ms": 2967
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search/corpus docs",
+            "--query",
+            "BRIGHT2027",
+            "--json",
+            "--no-ocr",
+            "--no-cache"
+          ],
+          "exit": 3,
+          "ms": 2637
+        }
+      ]
+    },
+    {
+      "observedAt": "2026-10-29T15:50:01.912Z",
+      "platform": "darwin-arm64",
+      "backend": "hdrw-wasi",
+      "executedOnWindowsOrLinux": false,
+      "binary": "dist/agent-hdrw-check/filens",
+      "binarySHA256": "3a3d5b77877e878725aaef4aecf4f313d595cf95065e3bea0f5071fc2f144639",
+      "textWasmSHA256": "9199412d17b18f53dd60a4535b6c1caeca210f94bdd0776463cf6bb7f13eac22",
+      "requests": 38,
+      "symlinksTested": true,
+      "scanPdfOcrTested": false,
+      "coldMs": 444,
+      "warmMs": 404,
+      "observations": [
+        {
+          "args": [
+            "capacity",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 193
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 444
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 404
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算 12345.67",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 460
+        },
+        {
+          "args": [
+            "read",
+            "dist/agent-search-hdrw/corpus docs/budget.txt",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 162
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "FILENS2026",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 401
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "UNOBTAINIUM782",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 401
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "TAILNEEDLE782",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 404
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "HIDDENNEEDLE782",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 401
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "HIDDENNEEDLE782",
+            "--json",
+            "--no-ocr",
+            "--include-hidden"
+          ],
+          "exit": 0,
+          "ms": 400
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "EXCLUDEDNEEDLE782",
+            "--json",
+            "--no-ocr",
+            "--include-hidden"
+          ],
+          "exit": 0,
+          "ms": 395
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "DEPTHNEEDLE782",
+            "--json",
+            "--no-ocr",
+            "--max-depth",
+            "1"
+          ],
+          "exit": 0,
+          "ms": 397
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "OUTSIDENEEDLE782",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 422
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "opaque",
+            "--json",
+            "--no-ocr",
+            "--search-mode",
+            "files"
+          ],
+          "exit": 0,
+          "ms": 273
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "must pass Windows testing.",
+            "--json",
+            "--no-ocr",
+            "--search-mode",
+            "exact"
+          ],
+          "exit": 0,
+          "ms": 273
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "MUST PASS Windows testing.",
+            "--json",
+            "--no-ocr",
+            "--search-mode",
+            "exact"
+          ],
+          "exit": 0,
+          "ms": 273
+        },
+        {
+          "args": [
+            "-"
+          ],
+          "exit": 0,
+          "ms": 440
+        },
+        {
+          "args": [
+            "在 \"dist/agent-search-hdrw/corpus docs\" 中搜索 \"预算\"，以 JSON 输出",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 403
+        },
+        {
+          "args": [
+            "search \"dist/agent-search-hdrw/corpus docs\" for \"budget\" as json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 403
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "milestone",
+            "--json",
+            "--no-ocr",
+            "--layout",
+            "--no-cache"
+          ],
+          "exit": 0,
+          "ms": 477
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "text",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 398
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 393
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "markdown",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 397
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "html",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 397
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "yaml",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 400
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "xml",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 410
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "csv",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 398
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--format",
+            "tsv",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 397
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--json",
+            "--no-ocr",
+            "--max-results",
+            "1"
+          ],
+          "exit": 0,
+          "ms": 400
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "预算",
+            "--json",
+            "--no-ocr",
+            "--max-files",
+            "1"
+          ],
+          "exit": 3,
+          "ms": 266
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "12345.67",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 399
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "98765.43",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 394
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "98765.43",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 0,
+          "ms": 391
+        },
+        {
+          "args": [
+            "search",
+            "dist/agent-search-hdrw/corpus docs",
+            "--query",
+            "FILENS2026",
+            "--json",
+            "--no-ocr"
+          ],
+          "exit": 3,
+          "ms": 397
+        },
+        {
+          "args": [
+            "-",
+            "--no-ocr"
+          ],
+          "exit": 2,
+          "ms": 5
+        },
+        {
+          "args": [
+            "-",
+            "--no-ocr"
+          ],
+          "exit": 2,
+          "ms": 4
+        },
+        {
+          "args": [
+            "-",
+            "--no-ocr"
+          ],
+          "exit": 2,
+          "ms": 5
+        },
+        {
+          "args": [
+            "-",
+            "--no-ocr"
+          ],
+          "exit": 2,
+          "ms": 5
+        }
+      ]
+    }
+  ],
+  "otherVerification": {
+    "coreSearchUnitTests": 6,
+    "cliUnitTests": 5,
+    "pruningCliGroups": 18,
+    "compactBundleAndProcessChecks": 19,
+    "crossTargetChecks": [
+      {
+        "target": "x86_64-pc-windows-gnu",
+        "command": "cargo +1.93.0 check --locked --release --manifest-path cli/Cargo.toml --target x86_64-pc-windows-gnu",
+        "result": "passed",
+        "nativeExecution": false
+      },
+      {
+        "target": "x86_64-unknown-linux-gnu",
+        "command": "cargo +1.93.0 check --locked --release --manifest-path cli/Cargo.toml --target x86_64-unknown-linux-gnu",
+        "result": "passed",
+        "nativeExecution": false
+      },
+      {
+        "target": "aarch64-unknown-linux-gnu",
+        "command": "cargo +1.93.0 check --locked --release --manifest-path cli/Cargo.toml --target aarch64-unknown-linux-gnu",
+        "result": "passed",
+        "nativeExecution": false
+      }
+    ]
+  },
+  "finalRegression": {
+    "observedAt": "2026-10-29T16:03:53.708Z",
+    "platform": "darwin-arm64",
+    "backend": "fts",
+    "requests": 38,
+    "result": "passed",
+    "note": "Refreshed shared WASM after the global literal-match chunk-limit fix.",
+    "binary": "dist/agent-lite/filens",
+    "binarySHA256": "d8c720dfe74f6c96cf869af408fcc78e3df25faccce4327b64f92cd89aa526b1",
+    "textWasmSHA256": "3ca2f7812ace28221cbc7799479890146137dda1c500e82b055306d75d7751b6"
+  }
+}

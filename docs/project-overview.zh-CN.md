@@ -49,7 +49,11 @@ filens '读取 "document.docx"，以纯文本输出'
 filens '理解 "report.pages"，以 JSON 输出'
 ```
 
-文件解析、读取顺序与证据分块位于共享 WASM 核心，摘要和问答由调用方 Agent 完成。渲染、缩略图和归档读取等更广泛的 CLI 能力仍在后续范围内。[安装与协议](agent-cli.zh-CN.md)。
+文件解析、读取顺序、证据分块与关键内容裁剪位于共享 WASM 核心。源码版支持无 LLM 的 `summarize` / `prune`：按密度、BM25 与余弦相似度选取原文，保留出处、主动省略和预算截短信息；见[关键内容提取与实例](agent-cli-pruning.zh-CN.md)。改写总结、翻译和问答由调用方 Agent 完成。已发布的 npm 0.2.0 不含这项新能力，使用 `capacity` 检查当前安装。渲染、缩略图和归档读取等更广泛的 CLI 能力仍在后续范围内。[安装与协议](agent-cli.zh-CN.md)。
+
+源码版还提供支持 BM25、精确原文和文件名模式的[目录搜索](agent-cli-search.zh-CN.md)，以及 [Czkawka 风格的重复文件与相似图片扫描](agent-cli-similarity.zh-CN.md)。`filens duplicates ./files --json` 在大小及前缀筛选后比较完整 SHA-256；`filens similar-images ./photos --threshold 8 --json` 用感知哈希分组，可查找不同尺寸和压缩版本。两类扫描无需 OCR 或模型，哈希、图片解码和分组均在 WASM 中，宿主负责目录发现及结果映射。使用 `capacity.operations` 检查 `search` 或 `similar`；已发布的 npm `0.2.0` 不包含这些源码新增能力。
+
+相似扫描的 macOS arm64 本地构建对比，主程序加 gzip WASM 资源增加约 **278 KiB**。见[实测范围与验证记录](agent-cli-similarity-size.json)；这不是 npm 压缩包增量，也不代表已覆盖 Czkawka 的全部功能。
 
 ## filens 的独特能力
 

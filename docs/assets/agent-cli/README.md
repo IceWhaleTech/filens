@@ -18,14 +18,28 @@ OCR benchmark corpus. See ../../agent-cli-examples.zh-CN.md for actual errors.
 
 ## Agent CLI terminal demo
 
-`terminal-demo.gif` is a 1280 × 820, 12 fps, 28.5-second deterministic replay of
-actual CLI requests and responses. `terminal-demo.png` is its static poster.
+`terminal-demo.gif` (English) and `terminal-demo.zh-CN.gif` (Chinese) are
+1280 × 820, 12 fps, 48-second deterministic replays of actual CLI requests
+and responses, with localized commands, interface text and synthetic documents.
+The matching PNG files are static posters. The eight scenes open with OCR geometry,
+then demonstrate Markdown, model-free excerpts, lexical document search,
+full-file duplicates, perceptual image groups, YAML and capability discovery.
+The image scene uses a deterministic canvas landscape, a resized JPEG and a
+recompressed WebP; its distances come from the real WASM scan.
+`prune-meeting.en.txt` and `prune-meeting.txt` are fictional
+meeting notes used by the excerpt scene.
 The side panel visualizes returned OCR geometry over the actual fictional
-invoice input. JSON/YAML responses are excerpts; typing and response timings
-are edited. No hosted language model or semantic reasoning is depicted.
+invoice input. JSON/YAML responses are excerpts, search paths are shortened,
+and typing/response timings are edited. Retrieval uses BM25, without an embedding
+model. No hosted language model or generated reasoning is depicted.
+These are source-build capabilities; the build command in the animation is
+intentional. Published stable npm 0.2.0 does not include pruning, search or similarity scans.
 
-Run `npm run build:agent`, `npm run test:agent:layout`, then `npm run demo:agent`.
+Run `npm run build:agent`, then `npm run demo:agent` to rebuild both languages.
+Use `--lang en` or `--lang zh-CN` for one version, and `--poster-only` to validate
+the scenes and capture posters without encoding GIFs.
 Authoring source: `scripts/agent-cli-demo.html` and
 `scripts/capture-agent-cli-demo.mjs`. Complete native outputs, input files,
-timings and the GIF hash are recorded under `dist/agent-demo/`. Playwright and
+timings and the GIF hash are recorded under `dist/agent-demo/en/` and
+`dist/agent-demo/zh-CN/`. Playwright and
 FFmpeg are authoring dependencies only, with system sans/monospace fonts.

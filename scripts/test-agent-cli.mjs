@@ -5,6 +5,7 @@ import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ocrLibraryName } from './agent-platforms.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 let binary = path.join(root, 'dist', process.platform === 'win32' ? 'filens.exe' : 'filens');
@@ -106,7 +107,7 @@ try {
   assert.equal(liteScan.error.code, 'ocr_failed');
   // An existing OCR installation can be injected without installing anything
   // into the lite bundle. It is discovered when explicitly selected.
-  const attached = spawnSync(binary, [path.join(work, 'scan.png'), '--json'], { cwd: root, encoding: 'utf8', env: { ...process.env, FILENS_OCR_LIBRARY: path.join(root, 'dist/native', process.platform === 'darwin' ? 'libzima_ncnn_runtime_v7.dylib' : 'libzima_ncnn_runtime_v7.so'), FILENS_OCR_MODEL_DIR: path.join(root, 'dist/models/rapidocr-ncnn') }, timeout: 120000 });
+  const attached = spawnSync(binary, [path.join(work, 'scan.png'), '--json'], { cwd: root, encoding: 'utf8', env: { ...process.env, FILENS_OCR_LIBRARY: path.join(root, 'dist/native', ocrLibraryName(`${process.platform}-${process.arch}`)), FILENS_OCR_MODEL_DIR: path.join(root, 'dist/models/rapidocr-ncnn') }, timeout: 120000 });
   assert.equal(attached.status, 0, attached.stderr);
   assert.match(JSON.parse(attached.stdout).content.text, /FILENS2026/);
   checks++;

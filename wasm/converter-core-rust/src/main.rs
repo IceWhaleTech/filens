@@ -382,6 +382,16 @@ fn main() {
         return;
     }
     #[cfg(feature = "text-extraction")]
+    if request.operation == "scan-similar" && parse_error.is_none() {
+        text::similarity(&request, started);
+        return;
+    }
+    #[cfg(feature = "text-extraction")]
+    if request.operation == "search-text" && parse_error.is_none() {
+        text::search(&request, started);
+        return;
+    }
+    #[cfg(feature = "text-extraction")]
     if request.operation == "extract-text" && parse_error.is_none() {
         text::execute(&request, started);
         return;

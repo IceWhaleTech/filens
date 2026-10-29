@@ -18,10 +18,10 @@ await run(process.execPath,[path.join(root,'node_modules/binaryen/bin/wasm-opt')
 await preparePDFium(bundle);
 if (!lite) await setupOCR(bundle, { sourceCount: requestedSourceCount(process.argv) });
 const executable = path.join(bundle, windows ? 'filens.exe' : 'filens');
-await buildAgentBinary(executable,{lite});
+const binaryCompression = await buildAgentBinary(executable,{lite,upx:!process.argv.includes('--no-upx')});
 await cp(path.join(root,'skills/filens'),path.join(bundle,'skills/filens'),{recursive:true});
 const resources = await compressAgentWASM(bundle);
-await writeFile(path.join(bundle,'cli-size.json'),JSON.stringify({implementation:'rust',platform:`${process.platform}-${process.arch}`,binaryBytes:(await stat(executable)).size,resources},null,2)+'\n');
+await writeFile(path.join(bundle,'cli-size.json'),JSON.stringify({implementation:'rust',platform:`${process.platform}-${process.arch}`,binaryBytes:(await stat(executable)).size,binaryCompression,resources},null,2)+'\n');
 const health = JSON.parse(await run(executable, ['capacity', '--json', ...(lite ? ['--no-ocr'] : [])], {capture:true}));
 if (!health.ok || (!lite && (!health.capacity?.ocr?.available || health.capacity.ocr.openmpThreads !== 2))) {
   throw new Error(`Agent bundle health check failed: ${JSON.stringify(health.error ?? health.capacity?.ocr)}`);

@@ -1,0 +1,3919 @@
+{
+  "date": "2026-10-29",
+  "node": "v20.20.2",
+  "platform": "darwin-arm64",
+  "rust": "1.93.0",
+  "target": "wasm32-wasip1",
+  "optimization": "opt-level=z, LTO, codegen-units=1, panic=abort, strip; Binaryen 131 -Oz",
+  "compression": "gzip level 9; Brotli quality 11",
+  "truckCommit": "78d699b0792b39e27c2bf073b682986701644e91",
+  "sizes": [
+    {
+      "name": "pdfium",
+      "sha256": "73417fa7cdcb34fba2a23aa1f7a480cc873a7301c8d74f08a1dea800f782a454",
+      "raw": 3993127,
+      "gzip": 1994579,
+      "brotli": 1593081
+    },
+    {
+      "name": "hayro-fonts",
+      "sha256": "cd53693a81a719ce3b104faf826c7bc82a5a93d642ec1a957fd14ca9535446d7",
+      "raw": 4174378,
+      "gzip": 1729517,
+      "brotli": 1366963
+    },
+    {
+      "name": "hayro-no-fonts",
+      "sha256": "0a57d4d5eff00e5f4adb0a2508027cbeb24ab33a93a01620a219065bba17107d",
+      "raw": 3908892,
+      "gzip": 1496021,
+      "brotli": 1148134
+    },
+    {
+      "name": "truck",
+      "sha256": "5b1f12ccae0da9dc3e0bf4c25853cef42bfc5b0b8b669d7cc06b68d762355683",
+      "raw": 900867,
+      "gzip": 312802,
+      "brotli": 244155
+    },
+    {
+      "name": "occt",
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982",
+      "raw": 2688776,
+      "gzip": 1044639,
+      "brotli": 816177
+    }
+  ],
+  "pdf": [
+    {
+      "id": "demo-cover",
+      "input": "apps/demo/public/samples/filens-cosmic-atlas.pdf",
+      "sha256": "7f085e7cfcb77645a9e296cd527150037868f7e1ead61fddf6d1a316b9576a69",
+      "page": 0,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 1280,
+          "height": 720,
+          "pages": 3,
+          "parseMs": 8.27825,
+          "renderMs": 37.046457999999994,
+          "text": "THE NIGHT ISSUE / 01\r\nBEYOND\r\nTHE VISIBLE.\r\nAn atlas of extraordinary perspectives.\r\nPOLAR SKIES / DEEP SPACE\r\nfilens / public sample",
+          "image": "demo-cover-pdfium.png",
+          "textSha256": "ff27bfadc9dc9996027da2714af59ea94eea21ec3829bad6bcae433f35ca44df",
+          "textLength": 133
+        },
+        "hayro-fonts": {
+          "height": 720,
+          "pages": 3,
+          "parseMs": 1.341416,
+          "renderMs": 247.280041,
+          "success": true,
+          "text": "THE NIGHT ISSUE / 01BEYONDTHE VISIBLE.An atlas of extraordinary perspectives.POLAR SKIES / DEEP SPACEfilens / public sample",
+          "unmappedGlyphs": 0,
+          "width": 1280,
+          "image": "demo-cover-hayro-fonts.png",
+          "textSha256": "af23e376464ac6d2e92c5d18686b6309ae921e82304df80acc5900685c8033bb",
+          "textLength": 123,
+          "pixels": {
+            "meanAbsoluteError": 0.0024463777119644154,
+            "fractionPixelsOver32": 0.002620442708333333,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        },
+        "hayro-no-fonts": {
+          "height": 720,
+          "pages": 3,
+          "parseMs": 1.42275,
+          "renderMs": 206.622667,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 0,
+          "width": 1280,
+          "image": "demo-cover-hayro-no-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.023529479847494553,
+            "fractionPixelsOver32": 0.028540581597222222,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        }
+      }
+    },
+    {
+      "id": "demo-page2",
+      "input": "apps/demo/public/samples/filens-cosmic-atlas.pdf",
+      "sha256": "7f085e7cfcb77645a9e296cd527150037868f7e1ead61fddf6d1a316b9576a69",
+      "page": 1,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 1280,
+          "height": 720,
+          "pages": 3,
+          "parseMs": 8.263624999999998,
+          "renderMs": 39.97624999999999,
+          "text": "THE COSMIC CLIFFS\r\nAn infrared view of a stellar nursery in the Carina Nebula.\r\nImage: NASA, ESA, CSA, STScI / 02",
+          "image": "demo-page2-pdfium.png",
+          "textSha256": "3f2852a90f52118151edfd751b49d3d20d359dc7d2fb03c60ba367c4bada9774",
+          "textLength": 113
+        },
+        "hayro-fonts": {
+          "height": 720,
+          "pages": 3,
+          "parseMs": 1.443292,
+          "renderMs": 220.019667,
+          "success": true,
+          "text": "THE COSMIC CLIFFSAn infrared view of a stellar nursery in the Carina Nebula.Image: NASA, ESA, CSA, STScI / 02",
+          "unmappedGlyphs": 0,
+          "width": 1280,
+          "image": "demo-page2-hayro-fonts.png",
+          "textSha256": "7e4bef0f89f0d7d46b07775c7d3746456208d54f2adbeabfdf4441bc71a99092",
+          "textLength": 109,
+          "pixels": {
+            "meanAbsoluteError": 0.004269873082334786,
+            "fractionPixelsOver32": 0.005004340277777778,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        },
+        "hayro-no-fonts": {
+          "height": 720,
+          "pages": 3,
+          "parseMs": 1.353208,
+          "renderMs": 186.843291,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 0,
+          "width": 1280,
+          "image": "demo-page2-hayro-no-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.011342738686909949,
+            "fractionPixelsOver32": 0.013162977430555556,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        }
+      }
+    },
+    {
+      "id": "demo-page3",
+      "input": "apps/demo/public/samples/filens-cosmic-atlas.pdf",
+      "sha256": "7f085e7cfcb77645a9e296cd527150037868f7e1ead61fddf6d1a316b9576a69",
+      "page": 2,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 1280,
+          "height": 720,
+          "pages": 3,
+          "parseMs": 8.079415999999998,
+          "renderMs": 6.758458999999998,
+          "text": "FIELD NOTES / THE OBSERVATORY\r\nFollow your curiosity.\r\nA fictional observation plan, made for a closer look.\r\n03\r\nNIGHTS TO EXPLORE\r\n06\r\nFICTIONAL STATIONS\r\n360\r\nDEGREES OF WONDER\r\nPhotography: Carsten / CC BY 2.0 / cropped, pale-blue color grade\r\nAll observation data and itinerary details are fictional. / 03",
+          "image": "demo-page3-pdfium.png",
+          "textSha256": "d14e1fd0864184975ad56f01c8729b9a891c286b7e6eaadd6c6c74ec24e73cab",
+          "textLength": 310
+        },
+        "hayro-fonts": {
+          "height": 720,
+          "pages": 3,
+          "parseMs": 1.527333,
+          "renderMs": 59.781792,
+          "success": true,
+          "text": "FIELD NOTES / THE OBSERVATORYFollow your curiosity.A fictional observation plan, made for a closer look.03NIGHTS TO EXPLORE06FICTIONAL STATIONS360DEGREES OF WONDERPhotography: Carsten / CC BY 2.0 / cropped, pale-blue color gradeAll observation data and itinerary details are fictional. / 03",
+          "unmappedGlyphs": 0,
+          "width": 1280,
+          "image": "demo-page3-hayro-fonts.png",
+          "textSha256": "268ef253f507e7e625b55e90c6d49d91d44307a981633ad7c9732f99b14665cf",
+          "textLength": 290,
+          "pixels": {
+            "meanAbsoluteError": 0.0014117405932280319,
+            "fractionPixelsOver32": 0.0042664930555555555,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        },
+        "hayro-no-fonts": {
+          "height": 720,
+          "pages": 3,
+          "parseMs": 1.3564580000000002,
+          "renderMs": 29.751167,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 0,
+          "width": 1280,
+          "image": "demo-page3-hayro-no-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.017780991852759623,
+            "fractionPixelsOver32": 0.0315234375,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        }
+      }
+    },
+    {
+      "id": "scan",
+      "input": "converter/rapidocr/testdata/scan.pdf",
+      "sha256": "18da362e0f3c6dab0a5d574c171e83405920822e9f03e6474a1ef17c063091d7",
+      "page": 0,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 1600,
+          "height": 416,
+          "pages": 2,
+          "parseMs": 3.0767919999999975,
+          "renderMs": 21.855542,
+          "text": "",
+          "image": "scan-pdfium.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0
+        },
+        "hayro-fonts": {
+          "height": 416,
+          "pages": 2,
+          "parseMs": 1.423959,
+          "renderMs": 136.017375,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 0,
+          "width": 1600,
+          "image": "scan-hayro-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.0002726303261689291,
+            "fractionPixelsOver32": 0,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        },
+        "hayro-no-fonts": {
+          "height": 416,
+          "pages": 2,
+          "parseMs": 1.421875,
+          "renderMs": 135.12508400000002,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 0,
+          "width": 1600,
+          "image": "scan-hayro-no-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.0002726303261689291,
+            "fractionPixelsOver32": 0,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        }
+      }
+    },
+    {
+      "id": "unicode-radicals",
+      "input": "tmp/rust-engines/fixtures/pdf/pdfjs-11066-copy-paste.pdf",
+      "sha256": "3bbac1f900edd9616d0d17d9f4af34a8492977fec8e6c862c9865b1ee7070b69",
+      "page": 0,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 793,
+          "height": 1122,
+          "pages": 1,
+          "parseMs": 13.049500000000002,
+          "renderMs": 5.2699169999999995,
+          "text": "电⼦子科技⼤大学\r\nCopy the first line \"电⼦子科技⼤大学\", then paste it to somewhere, it \r\nwill become \"电⼦子⼦子科技⼤大⼤大学\".\r\nHow to generate this pdf file?\r\nThe pdf is generated in Mac OS. \r\nFirst, write \"电⼦子科技⼤大学\" in a txt file.\r\nSecond, click the \"File\".\r\nThird, click the \"Export As PDF\"\r\nThen, it becomes what you see.\r\nReason\r\nIt is because of the font's ToUnicode map's problem. You can check \r\nthe pdf file's structure, you will see the ToUnicode in the font, it \r\nmaps <09fc> to <2f26 5b50> which are \"⼦子⼦子\". Also, it maps <095f> to \r\n<2f24 5927> which are \"⼤大⼤大\".",
+          "image": "unicode-radicals-pdfium.png",
+          "textSha256": "16ae650ba9d8b3bd3992f72d3a3eb19d91b98e25eedf3d371b3b63d58822e8b2",
+          "textLength": 551
+        },
+        "hayro-fonts": {
+          "height": 1122,
+          "pages": 1,
+          "parseMs": 1.467208,
+          "renderMs": 60.516459000000005,
+          "success": true,
+          "text": "电⼦子科技⼤大学Copy the first line \"电⼦子科技⼤大学\", then paste it to somewhere, it will become \"电⼦子⼦子科技⼤大⼤大学\".How to generate this pdf file?The pdf is generated in Mac OS. First, write \"电⼦子科技⼤大学\" in a txt file.Second, click the \"File\".Third, click the \"Export As PDF\"Then, it becomes what you see.ReasonIt is because of the font's ToUnicode map's problem. You can check the pdf file's structure, you will see the ToUnicode in the font, it maps <09fc> to <2f26 5b50> which are \"⼦子⼦子\". Also, it maps <095f> to <2f24 5927> which are \"⼤大⼤大\".",
+          "unmappedGlyphs": 0,
+          "width": 793,
+          "image": "unicode-radicals-hayro-fonts.png",
+          "textSha256": "e01cf85897f0e16b3d736f29e42eabe5e7d4d91aaf3c7428d850d2956255f9c0",
+          "textLength": 525,
+          "pixels": {
+            "meanAbsoluteError": 0.00689247598885128,
+            "fractionPixelsOver32": 0.019077354660768354,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        },
+        "hayro-no-fonts": {
+          "height": 1122,
+          "pages": 1,
+          "parseMs": 1.5456249999999998,
+          "renderMs": 62.905792000000005,
+          "success": true,
+          "text": "电⼦子科技⼤大学Copy the first line \"电⼦子科技⼤大学\", then paste it to somewhere, it will become \"电⼦子⼦子科技⼤大⼤大学\".How to generate this pdf file?The pdf is generated in Mac OS. First, write \"电⼦子科技⼤大学\" in a txt file.Second, click the \"File\".Third, click the \"Export As PDF\"Then, it becomes what you see.ReasonIt is because of the font's ToUnicode map's problem. You can check the pdf file's structure, you will see the ToUnicode in the font, it maps <09fc> to <2f26 5b50> which are \"⼦子⼦子\". Also, it maps <095f> to <2f24 5927> which are \"⼤大⼤大\".",
+          "unmappedGlyphs": 0,
+          "width": 793,
+          "image": "unicode-radicals-hayro-no-fonts.png",
+          "textSha256": "e01cf85897f0e16b3d736f29e42eabe5e7d4d91aaf3c7428d850d2956255f9c0",
+          "textLength": 525,
+          "pixels": {
+            "meanAbsoluteError": 0.00689247598885128,
+            "fractionPixelsOver32": 0.019077354660768354,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        }
+      }
+    },
+    {
+      "id": "unicode-missing-font",
+      "input": "tmp/rust-engines/fixtures/pdf/pdfjs-19747-test-031.pdf",
+      "sha256": "28c168fa9fdbb86a81f75cdcc7f240668366a738056b582d7d8d5ce394274df4",
+      "page": 0,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 1125,
+          "height": 797,
+          "pages": 1,
+          "parseMs": 18.589083000000002,
+          "renderMs": 15.596415999999998,
+          "text": "ᣅḷᣕԧ㺘\u0010\u0017\r\n࠶䜘࠶亩ᐕ〻˄অԧ᧚ᯭ亩ⴞ˅␵অ䇑ԧ㺘\r\nᐕ〻਽〠˖⋣ेቊѹ㓿⍾ᔰਁ४ൠл㇑㓯ส⹰䇮ᯭ৺䝽྇ᐕ〻ᔪ䇮亩ⴞ\u0010ൠл⭥㔶ᧂ㇑ᐕ〻⭥≄䜘࠶\r\n⌘˖ᶀᵪ䍩\u0003 \u0003⎸㙇ᙗᶀᯉ䍩\u000eᵪỠ䍩Ǆѫ㾱ᶀᯉ䍩нਜ਼⭢׋ᶀǄ\r\nᒿਧ 亩ⴞ㕆⸱ 亩ⴞ਽〠 亩ⴞ⢩ᖱ 䇑䟿অ\r\nս ᐕ〻䟿\r\n˅ݳ˄ԧਸ˅ ݳ˄ԧ㔬ਸঅ⭘䍩ޘ\r\nঅԧ\r\nަѝ˖\r\nਸ䇑\r\nަѝ˖\r\nӪᐕ䍩 ᶀᵪ䍩\r\nѫ㾱ᶀᯉ䍩\r\nӪᐕ䍩 ᶀᵪ䍩\r\nѫ㾱ᶀᯉ䍩\r\nᶀᯉ䍩 ަѝ˖Ჲ\r\nՠԧ ᶀᯉ䍩 ަѝ˖Ჲ\r\nՠԧ\r\nа ᔪㆁᐕ〻䍩 \u0015\u001c\u001b\u0014\u0018\u0015 \u0014\u001a\u0013\u001a\u0015 \u0015\u0016\u0013\u001c\u001c\u001b\r\nа 䝽⭥ㄉǃᔰޣㄉᐕ〻 \u0015\u001c\u001b\u0014\u0018\u0015 \u0014\u001a\u0013\u001a\u0015 \u0015\u0016\u0013\u001c\u001c\u001b\r\n㇡ᔿਈ⭥ㄉ˄⧟㖁㇡˅ \u0015\u001c\u0018\u0013\u001c\u0019 \u0014\u0019\u0015\u0019\u0015 \u0015\u0016\u0013\u0014\u0014\u001c\r\n3$\u0015\u0014\u0014\u0014 ส⹰ᐕ〻 \u0015\u001c\u0018\u0013\u001c\u0019 \u0014\u0019\u0015\u0019\u0015 \u0015\u0016\u0013\u0014\u0014\u001c\r\n\u0015\u0013\u0013.9$㇡ਈส⹰ \u0017\u0017\u0014\u0019\u0018 \u0018\u0016 \u0017\u0013\u0016\u0019\u0017\r\n\u0014 3$\u0015\u0014\u0014\u00143$\u0013\u0016\u0013\u0014 ᥆ඁ‭൏⸣ᯩ\r\n\u001d࡛༔㊫൏\u0014\u0011\r\n㔬ਸ\r\n\u0015\u0011᥆൏␡ᓖ\u001d\r\n޵Pԕ\u0016\r\n\u0016\u0011␵অ䟿 ᇊ\r\n仍䟿\r\nP\u0016 \u0015\u0014\u0011\u0018\u0018 \u0016\u0011\u001a\u0019 \u0013\u0011\u0015\u0015 \u0015\u0011\u0017\u001a \u001b\u0014 \u0018 \u0018\u0016\r\n\u0015 3$\u0015\u0014\u0014\u00143$\u0013\u0019\u0013\u0014 ൏⸣ᯩഎປ\r\n\u001d࡛༔㊫൏\u0014\u0011\r\n㔬ਸ\r\n\u0015\u0011ཟປˈཟ\r\nᇎᓖı\u001c\u0018\b\r\nP\u0016 \u0014\u0014\u0011\u001a\u0017 \u001b\u0011\u001b\u001c \u0013\u0011\u0015\u0017 \u0019\u0011\u0016\u0014 \u0014\u0013\u0017 \u0016 \u001a\u0017\r\n\u0016 3$\u0015\u0014\u0014\u00143$\u0013\u0016\u0013\u0015 ᥆ඁ‭൏⸣ᯩ\r\n\u0014\u0011։൏ཆ䘀\r\n\u0015\u0011䘀䐍\u001d㠚㹼\r\n㘳㲁\r\nP\u0016 \u001c\u0011\u001b\u0014 \u0015\u0018\u0011\u0013\u001a \u0013\u0011\u0015\u0015 \u0014\u001a\u0011\u001a\u001a \u0015\u0017\u0019 \u0015 \u0014\u001a\u0017\r\n\u0017 3$\u0015\u0014\u0014\u00143$\u0014\u0015\u0013\u0014 \u0015\u0013\u0013.9$㇡ਈส⹰\r\nࠍ␧ෛቲ\u0014\u0011\r\n൏ㅹ㓗Ѫ&\u0014\u0018\r\n亴᣼\r\nࠍ␧ᓅᶯ\u0015\u0011\r\n൏ㅹ㓗Ѫ&\u0016\u0013\r\n亴᣼\r\nࠍ␧സằ\u0016\u0011\r\n൏ㅹ㓗Ѫ&\u0016\u0013\r\n亴᣼\r\n\u0017\u001108\u0014\u0018✗㔃\r\nᲞ䙊⹆Ǆ\r\n\u0017\u0011ᓅᶯ\u0015\u0013PP\r\n৊\u0014\u001d\u0015≤⌕⸲\r\n⍶᧪䱢≤㊹\r\nᡆަԆ䱢≤\r\nǄࡲ࣐␫\r\n\u0015\u0013ᣩ້޵\u0018\u0011\r\n৊\u0014˖\u0015䱢≤\r\nᓗ \u0014 \u0017\u0016\u0019\u0013\u0013 \u0017\u0013\u0013\u0013\u0013 \u0017\u0016\u0019\u0013\u0013 \u0017\u0013\u0013\u0013\u0013\r\n53ee91b2641c4743908f124e946853b3",
+          "image": "unicode-missing-font-pdfium.png",
+          "textSha256": "ceb9e58cc362f6c23a75be7b435acf68cb4c0331ee7d41496dbced046d46e550",
+          "textLength": 872
+        },
+        "hayro-fonts": {
+          "height": 797,
+          "pages": 1,
+          "parseMs": 1.220792,
+          "renderMs": 405.704375,
+          "success": true,
+          "text": "53ee91b2641c4743908f124e946853b3",
+          "unmappedGlyphs": 653,
+          "width": 1125,
+          "image": "unicode-missing-font-hayro-fonts.png",
+          "textSha256": "72c974eeb95b63234f051096d9566f65621fc4e77f8f0161894a880f02225a69",
+          "textLength": 32,
+          "pixels": {
+            "meanAbsoluteError": 0.021233397207574882,
+            "fractionPixelsOver32": 0.05653645615502579,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        },
+        "hayro-no-fonts": {
+          "height": 797,
+          "pages": 1,
+          "parseMs": 1.253375,
+          "renderMs": 389.97895900000003,
+          "success": true,
+          "text": "53ee91b2641c4743908f124e946853b3",
+          "unmappedGlyphs": 339,
+          "width": 1125,
+          "image": "unicode-missing-font-hayro-no-fonts.png",
+          "textSha256": "72c974eeb95b63234f051096d9566f65621fc4e77f8f0161894a880f02225a69",
+          "textLength": 32,
+          "pixels": {
+            "meanAbsoluteError": 0.020614700916381238,
+            "fractionPixelsOver32": 0.05593642827268925,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        }
+      }
+    },
+    {
+      "id": "python-first",
+      "input": "tmp/rust-engines/fixtures/pdf/pymupdf-3538-python.pdf",
+      "sha256": "95344bc3d70b3cd2e2472ffbefdd44231c18c53947ab6fefe598e74c12622ab1",
+      "page": 0,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 793,
+          "height": 1122,
+          "pages": 88,
+          "parseMs": 61.523209,
+          "renderMs": 50.98658299999998,
+          "text": "Python单元测试框架（⽆涯）\r\n单元测试概述\r\nPython测试框架\r\n从软件架构的⻆度来说，测试最重要的步骤是在软件开发的时候界⼊⽐较好，所以在早期测试的界⼊，\r\n从软件经济学的⻆度上来说，发现的问题解决成本低，投⼊的资源⽐较少。因此，对⼀个测试的系统，\r\n开始最佳的测试就是源代码级别的测试，也就是单元测试阶段，这个过程也被成为⽩盒测试。单元测试\r\n是最基本也是最底层的测试类型，单元测试应⽤于最基本的软件代码，如类，函数。⽅法等，单元测试\r\n通过可执⾏的断⾔检查被测单元的输出是否满⾜预期结果。在测试⾦字塔的理论上来说，越往下的测试\r\n投⼊资源越⾼，得到的回报率越⼤，⻅测试⾦字塔模型：\r\n抛开软件架构的层⾯，在⾃动化测试的体系中，单元测试框架以及单元测试的知识体系是必须要掌握的\r\n技能之⼀，单元测试的知识体系是⾃动化测试⼯程师以及测试开发⼯程师的知识体系之⼀，⽽且是必须\r\n具备的知识之⼀。在Python语⾔中应⽤最⼴泛的单元测试框架是unittest和pytest,unittest属于标准库，\r\n只要安装了Python解释器后就可以直接导⼊使⽤了,pytest是第三⽅的库，需要单独的安装。单元测试框\r\n架的知识体系就围绕unittest和pytest来讲解。",
+          "image": "python-first-pdfium.png",
+          "textSha256": "cafc89dfcbf35320aa98c40ea6ef8b50bef8e20a7d28b6817a9e70020cfb6651",
+          "textLength": 539
+        },
+        "hayro-fonts": {
+          "height": 1122,
+          "pages": 88,
+          "parseMs": 15.604667,
+          "renderMs": 294.478708,
+          "success": true,
+          "text": "Python单元测试框架（⽆涯） 单元测试概述 Python测试框架 从软件架构的⻆度来说，测试最重要的步骤是在软件开发的时候界⼊⽐较好，所以在早期测试的界⼊，从软件经济学的⻆度上来说，发现的问题解决成本低，投⼊的资源⽐较少。因此，对⼀个测试的系统，开始最佳的测试就是源代码级别的测试，也就是单元测试阶段，这个过程也被成为⽩盒测试。单元测试是最基本也是最底层的测试类型，单元测试应⽤于最基本的软件代码，如类，函数。⽅法等，单元测试通过可执⾏的断⾔检查被测单元的输出是否满⾜预期结果。在测试⾦字塔的理论上来说，越往下的测试投⼊资源越⾼，得到的回报率越⼤，⻅测试⾦字塔模型：抛开软件架构的层⾯，在⾃动化测试的体系中，单元测试框架以及单元测试的知识体系是必须要掌握的技能之⼀，单元测试的知识体系是⾃动化测试⼯程师以及测试开发⼯程师的知识体系之⼀，⽽且是必须具备的知识之⼀。在Python语⾔中应⽤最⼴泛的单元测试框架是unittest和pytest,unittest属于标准库，只要安装了Python解释器后就可以直接导⼊使⽤了,pytest是第三⽅的库，需要单独的安装。单元测试框架的知识体系就围绕unittest和pytest来讲解。",
+          "unmappedGlyphs": 0,
+          "width": 793,
+          "image": "python-first-hayro-fonts.png",
+          "textSha256": "a60d3cfb5a96e9328a71280767f4c082e3cf54322a8e0b54a104c12e25411714",
+          "textLength": 516,
+          "pixels": {
+            "meanAbsoluteError": 0.013467699065293937,
+            "fractionPixelsOver32": 0.03702404956021157,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        },
+        "hayro-no-fonts": {
+          "height": 1122,
+          "pages": 88,
+          "parseMs": 15.351625,
+          "renderMs": 294.805333,
+          "success": true,
+          "text": "Python单元测试框架（⽆涯） 单元测试概述 Python测试框架 从软件架构的⻆度来说，测试最重要的步骤是在软件开发的时候界⼊⽐较好，所以在早期测试的界⼊，从软件经济学的⻆度上来说，发现的问题解决成本低，投⼊的资源⽐较少。因此，对⼀个测试的系统，开始最佳的测试就是源代码级别的测试，也就是单元测试阶段，这个过程也被成为⽩盒测试。单元测试是最基本也是最底层的测试类型，单元测试应⽤于最基本的软件代码，如类，函数。⽅法等，单元测试通过可执⾏的断⾔检查被测单元的输出是否满⾜预期结果。在测试⾦字塔的理论上来说，越往下的测试投⼊资源越⾼，得到的回报率越⼤，⻅测试⾦字塔模型：抛开软件架构的层⾯，在⾃动化测试的体系中，单元测试框架以及单元测试的知识体系是必须要掌握的技能之⼀，单元测试的知识体系是⾃动化测试⼯程师以及测试开发⼯程师的知识体系之⼀，⽽且是必须具备的知识之⼀。在Python语⾔中应⽤最⼴泛的单元测试框架是unittest和pytest,unittest属于标准库，只要安装了Python解释器后就可以直接导⼊使⽤了,pytest是第三⽅的库，需要单独的安装。单元测试框架的知识体系就围绕unittest和pytest来讲解。",
+          "unmappedGlyphs": 0,
+          "width": 793,
+          "image": "python-first-hayro-no-fonts.png",
+          "textSha256": "a60d3cfb5a96e9328a71280767f4c082e3cf54322a8e0b54a104c12e25411714",
+          "textLength": 516,
+          "pixels": {
+            "meanAbsoluteError": 0.013467699065293937,
+            "fractionPixelsOver32": 0.03702404956021157,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        }
+      }
+    },
+    {
+      "id": "python-middle",
+      "input": "tmp/rust-engines/fixtures/pdf/pymupdf-3538-python.pdf",
+      "sha256": "95344bc3d70b3cd2e2472ffbefdd44231c18c53947ab6fefe598e74c12622ab1",
+      "page": 43,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 793,
+          "height": 1122,
+          "pages": 88,
+          "parseMs": 56.59845899999999,
+          "renderMs": 9.714624999999998,
+          "text": "pytest -v -k \"login or profile\" --collect-only，⻅执⾏命令后的输出信息：\r\n选择出来后，就可以执⾏这些测试点了，具体执⾏的命令为:\r\npytest -v -k \"login or profile\",⻅执⾏后的输出信息:\r\ncollecting ...\r\ntest_ascill.py::test_login_001 ✓ 20% ██\r\ntest_ascill.py::test_login_002 ✓ 40% ████\r\ntest_ascill.py::test_login_003 ✓ 60% ██████\r\ntest_ascill.py::test_profile_001 ✓ 80% ████████\r\ntest_ascill.py::test_profile_002 ✓ 100% ██████████\r\nResults (0.03s):\r\n5 passed\r\n5 deselected\r\n快速找到分组\r\n在上⾯的案例中，说是分类，不是说是分组，命令-m可以快速的找到分组并且执⾏，对代码进⾏修改，\r\n增加装饰器,案例代码为：\r\n**collecting ...** <Package '/Applications/code/stack/xunit'>\r\n<Module 'test_ascill.py'>\r\n <Function 'test_login_001'>\r\n <Function 'test_login_002'>\r\n <Function 'test_login_003'>\r\n <Function 'test_profile_001'>\r\n <Function 'test_profile_002'>\r\nResults (0.03s):\r\n 5 deselected\r\n#!/usr/bin/python3\r\n#coding:utf-8",
+          "image": "python-middle-pdfium.png",
+          "textSha256": "17c8d8ca29083d0d77c3e6467a1301625d292fab29db77dfe1e3d1c028a95fc2",
+          "textLength": 802
+        },
+        "hayro-fonts": {
+          "height": 1122,
+          "pages": 88,
+          "parseMs": 15.580084,
+          "renderMs": 98.100041,
+          "success": true,
+          "text": "pytest -v -k \"login or profile\" --collect-only，⻅执⾏命令后的输出信息：选择出来后，就可以执⾏这些测试点了，具体执⾏的命令为:pytest -v -k \"login or profile\",⻅执⾏后的输出信息:collecting ...test_ascill.py::test_login_001 ✓ 20% ██test_ascill.py::test_login_002 ✓ 40% ████test_ascill.py::test_login_003 ✓ 60% ██████test_ascill.py::test_profile_001 ✓ 80% ████████test_ascill.py::test_profile_002 ✓ 100% ██████████ Results (0.03s):5 passed5 deselected快速找到分组 在上⾯的案例中，说是分类，不是说是分组，命令-m可以快速的找到分组并且执⾏，对代码进⾏修改，增加装饰器,案例代码为：**collecting ...** <Package '/Applications/code/stack/xunit'>  <Module 'test_ascill.py'>   <Function 'test_login_001'>   <Function 'test_login_002'>   <Function 'test_login_003'>   <Function 'test_profile_001'>   <Function 'test_profile_002'>  Results (0.03s):     5 deselected#!/usr/bin/python3#coding:utf-8 ",
+          "unmappedGlyphs": 0,
+          "width": 793,
+          "image": "python-middle-hayro-fonts.png",
+          "textSha256": "299870910b0edfbfec5963f7ed8459ee561652d3bc3719f280590bf662a471c6",
+          "textLength": 773,
+          "pixels": {
+            "meanAbsoluteError": 0.007371311330696435,
+            "fractionPixelsOver32": 0.02335610387683676,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        },
+        "hayro-no-fonts": {
+          "height": 1122,
+          "pages": 88,
+          "parseMs": 15.929875,
+          "renderMs": 99.510792,
+          "success": true,
+          "text": "pytest -v -k \"login or profile\" --collect-only，⻅执⾏命令后的输出信息：选择出来后，就可以执⾏这些测试点了，具体执⾏的命令为:pytest -v -k \"login or profile\",⻅执⾏后的输出信息:collecting ...test_ascill.py::test_login_001 ✓ 20% ██test_ascill.py::test_login_002 ✓ 40% ████test_ascill.py::test_login_003 ✓ 60% ██████test_ascill.py::test_profile_001 ✓ 80% ████████test_ascill.py::test_profile_002 ✓ 100% ██████████ Results (0.03s):5 passed5 deselected快速找到分组 在上⾯的案例中，说是分类，不是说是分组，命令-m可以快速的找到分组并且执⾏，对代码进⾏修改，增加装饰器,案例代码为：**collecting ...** <Package '/Applications/code/stack/xunit'>  <Module 'test_ascill.py'>   <Function 'test_login_001'>   <Function 'test_login_002'>   <Function 'test_login_003'>   <Function 'test_profile_001'>   <Function 'test_profile_002'>  Results (0.03s):     5 deselected#!/usr/bin/python3#coding:utf-8 ",
+          "unmappedGlyphs": 0,
+          "width": 793,
+          "image": "python-middle-hayro-no-fonts.png",
+          "textSha256": "299870910b0edfbfec5963f7ed8459ee561652d3bc3719f280590bf662a471c6",
+          "textLength": 773,
+          "pixels": {
+            "meanAbsoluteError": 0.007371311330696435,
+            "fractionPixelsOver32": 0.02335610387683676,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        }
+      }
+    },
+    {
+      "id": "python-last",
+      "input": "tmp/rust-engines/fixtures/pdf/pymupdf-3538-python.pdf",
+      "sha256": "95344bc3d70b3cd2e2472ffbefdd44231c18c53947ab6fefe598e74c12622ab1",
+      "page": 87,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 793,
+          "height": 1122,
+          "pages": 88,
+          "parseMs": 56.479957999999996,
+          "renderMs": 22.55312500000001,
+          "text": "Saas化的验证",
+          "image": "python-last-pdfium.png",
+          "textSha256": "0ad91f0049f425d904aeac3c89156245dc93805360270e0e05e1e661e9f5928f",
+          "textLength": 8
+        },
+        "hayro-fonts": {
+          "height": 1122,
+          "pages": 88,
+          "parseMs": 18.925334,
+          "renderMs": 119.639334,
+          "success": true,
+          "text": "Saas化的验证 ",
+          "unmappedGlyphs": 0,
+          "width": 793,
+          "image": "python-last-hayro-fonts.png",
+          "textSha256": "d7d6ab0faf931bec797f5bc79fafc18c0b1b13e573aa2754ecd4f624623d1791",
+          "textLength": 9,
+          "pixels": {
+            "meanAbsoluteError": 0.0014478068933795295,
+            "fractionPixelsOver32": 0.0037606238184830277,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        },
+        "hayro-no-fonts": {
+          "height": 1122,
+          "pages": 88,
+          "parseMs": 15.041333,
+          "renderMs": 105.67929099999999,
+          "success": true,
+          "text": "Saas化的验证 ",
+          "unmappedGlyphs": 0,
+          "width": 793,
+          "image": "python-last-hayro-no-fonts.png",
+          "textSha256": "d7d6ab0faf931bec797f5bc79fafc18c0b1b13e573aa2754ecd4f624623d1791",
+          "textLength": 9,
+          "pixels": {
+            "meanAbsoluteError": 0.0014478068933795295,
+            "fractionPixelsOver32": 0.0037606238184830277,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": true
+        }
+      }
+    },
+    {
+      "id": "type3-first",
+      "input": "tmp/rust-engines/fixtures/pdf/pymupdf-3945-1015.pdf",
+      "sha256": "fb58a378f2a32b1991e76b1b9886489752e16f29579ebaafa3c1bbff44e35371",
+      "page": 0,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 793,
+          "height": 1122,
+          "pages": 18,
+          "parseMs": 21.037416999999998,
+          "renderMs": 16.596041999999997,
+          "text": "\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011 \n\u0012\u0013\u0014\u0015\u0016\u0017\u0016\u0018\u0019\u0016\u0017\u001a\u001b\u001c\u001d\u001e\u001f !\"#$%&%&'()*\r\n+,-./0-123456789:;+<=-+1>?@A BCDEFGHIJKLMNOPOQROPSTUVWXY9:;Z [8\\]J^_`8abcdefgh 9:;ijk OPOPUQPlOPm\r\nNnojpJqV \u000b\f\r\u000e\u000f\u0010\u0011\n\u0012\u0013\u0014\u0015\u0016 \u0011\n\u0012\u0013\u0014\u0015\u0016\u0017\u0016\u0018\u0019\u0016\u0017\u001a\u001b\u001c\u001d JKCDEFGrs9tFGu9vwFGx9yz{|}8 r~-JKyhOPQOU9:;Jq BDCDEFGHIJKLMNOPQOROPOPUVW8s9 w8CDEFGHIJKu8 FGHIJKy ¡¢£|¤hnZ¥8s9CDE FGJK¦§¨©ª«¬­CD¢®x-¯£°±²³´µ¶·- ¸¹º»¼º½¾¿À-HIÁÂÃ®ÄÅ-3ÆÇÈmÉÊËÌ ÍÎhCDEFGHIÏ¯£JK8ÊÐ¼ºFGx98Ñ ÒÓLMh ÔÕÔÖ×ØÕ×ØØÙØÚÛÔÜ ÝÞßàáâãäåæçèéêëìíæîïðñÔÕÔØòÔÕóÜôõö÷øùúûüýþ\u0002íùÝ\u0002\u0003\u0004 \u0005\u0006\u0006\u0007\bÛ××\t\t\t\n\u000b\f\r\n\u000e\u000f×\u0010\u0005\u0011\u000f\u000b\u000e\u0011×\u000e\f\u000f\u0006\u0011\u000f\u0006×ÔÕÔÕ\u0012ØØ×ÕÔ×\u000e\f\u000f\u0006\u0011\u000f\u0006ùÜÜÜ\u0013\u0014Ø\u0013\n\u0005\u0006\u0015 Ø×ØÚ",
+          "image": "type3-first-pdfium.png",
+          "textSha256": "6c61d3c83ce0640425d00c76a370c9e96aabe7276189ccdd2794eb2d2a0fa0b6",
+          "textLength": 576
+        },
+        "hayro-fonts": {
+          "height": 1122,
+          "pages": 18,
+          "parseMs": 8.911541999999999,
+          "renderMs": 164.579208,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 607,
+          "width": 793,
+          "image": "type3-first-hayro-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.014787386850464733,
+            "fractionPixelsOver32": 0.04848237586906825,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        },
+        "hayro-no-fonts": {
+          "height": 1122,
+          "pages": 18,
+          "parseMs": 9.211416999999999,
+          "renderMs": 160.846542,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 607,
+          "width": 793,
+          "image": "type3-first-hayro-no-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.014787386850464733,
+            "fractionPixelsOver32": 0.04848237586906825,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        }
+      }
+    },
+    {
+      "id": "type3-middle",
+      "input": "tmp/rust-engines/fixtures/pdf/pymupdf-3945-1015.pdf",
+      "sha256": "fb58a378f2a32b1991e76b1b9886489752e16f29579ebaafa3c1bbff44e35371",
+      "page": 8,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 793,
+          "height": 1122,
+          "pages": 18,
+          "parseMs": 21.753916999999998,
+          "renderMs": 13.587334000000006,
+          "text": "\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012 \u0004\u0004\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f !\"#$%&'()*\u001f+ ,\u0015\u0016\u0017\u0018\u0019-./01\u0017234567\u001f!8-./09\": ;<\u001a=1>?\u001b-./0@A#BCD\u0016EF\u0016EGH/IJ KL\u0015MN\u001f+,O\u0016PQERSTUEVWXNEY923I Z[\\\u001d>]^_\"XN#`ab\u001fc-de-./0fghi jklm\u001fno#`p\u0017^EjS^Eqr^\u001d\u001e> stu\u0004vwxyz{|} co~\u0016^Z[C\u0015\u0016\u0017\u0018\u0019\\\u001d7E\"#)ED E23EI*MN>+\u0015\u0016\u0017\u0018\u0019 ~\u0016)E23E)I`\u001d\u001f\u001e~\u0016 E^\u0019 MN¡¢>+#B9\":;<£¤23¥¦c §MN\u001f?\u001b7E)E¨©^¡¢4567\u001flª\u0015\u0016\u0017 \u0018\u00199#`«~\u0016^¬4> s­u\u0004®¯°±²³´µ ¶·¸¹º»¼½¾\u001e\u0015\u0016\u0017\u0018\u0019#B¿ÀlªÁ-\u001fÂÃ Ä`+,7E)EQÅÆÇI9ÈÉ\u001aÊËZ[\u001dMN\u001fG ÌXNÍÎÏEÐÑEÒÓ«IÔoZ[\u001fÕ9#B9\":;< ¿À)=1Ö)>ÂÃÄ`,^B×\u001d\u001eØÙ\u001fÚlª¿À ¬4ÛVÜ+,B×67>\r\nÝÞÝßàáÞàáá\u0004áâãÝä åæçèéêëìíîïðñòóôõîö÷øùÝÞÝáúÝÞûäüýþ\u0002\u0003\u0004\u0005\u0006\u0007\b\t\nõ\u0003\u000bå\f\r\u000e\r\n\u000f\u0010\u0010\u0011\u0012ãàà\u0013\u0013\u0013\u0014\u0015\u0016\u0017\u0014\u0018\u0019à\u001a\u000f\u001b\u0019\u0015\u0018\u001bà\u0018\u0016\u0019\u0010\u001b\u0019\u0010àÝÞÝÞ\u001cááàÞÝà\u0018\u0016\u0019\u0010\u001b\u0019\u0010\u0003äää\u001d\u001eá\u001d\u0014\u000f\u0010\u001f àáâ",
+          "image": "type3-middle-pdfium.png",
+          "textSha256": "25f3f20c74d2791dca9bf87ab45ba211c8df6209c82fdd6176c1ea2be71e0356",
+          "textLength": 645
+        },
+        "hayro-fonts": {
+          "height": 1122,
+          "pages": 18,
+          "parseMs": 9.635042,
+          "renderMs": 147.94475000000003,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 665,
+          "width": 793,
+          "image": "type3-middle-hayro-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.017315177369633096,
+            "fractionPixelsOver32": 0.05377489755503256,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        },
+        "hayro-no-fonts": {
+          "height": 1122,
+          "pages": 18,
+          "parseMs": 9.164292,
+          "renderMs": 141.496584,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 665,
+          "width": 793,
+          "image": "type3-middle-hayro-no-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.017315177369633096,
+            "fractionPixelsOver32": 0.05377489755503256,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        }
+      }
+    },
+    {
+      "id": "type3-last",
+      "input": "tmp/rust-engines/fixtures/pdf/pymupdf-3945-1015.pdf",
+      "sha256": "fb58a378f2a32b1991e76b1b9886489752e16f29579ebaafa3c1bbff44e35371",
+      "page": 17,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": true,
+          "width": 793,
+          "height": 1122,
+          "pages": 18,
+          "parseMs": 13.558749999999996,
+          "renderMs": 7.818749999999994,
+          "text": "\u0002\u0003\u0002\u0004\u0005 \u0006\u0006\u0006\u0006\u0007\b\t\b\n\u000b\f\u0006\f\u0006\r\u0006\u0006\u0007\u0006\b \u000e\u000f\u0010\u0011\u0005 \u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u0012 \u0013\r\n\u001e\u001f !\u0005 \"#$%&' (\u001f)*\u0005 \f (\u001f)*\u0005 \u0006\f\u0006+\u0007\u0006,\f\u0006-\r\n.//\u000f\u0005 \"#$%&'0123456789\u00133:;<=\f\u0006\f\u0007>\f\u0006\t?+@A\u0016\r\nB\r\n\u001e\u001fC\u0004\u0005 \"%3D\f\u0006\f\u0006E\t\nF \u001eG)*\u0005 \f \u001eG)*\u0005 \u0006\f\u0006+\u0007\u0007,\u0006\f-\r\nHIHJKLIKLL/LMNHO PQRSTUVWXYZ[\\]^_`YabcdHIHLeHIfOghijklmnopqrs`ltPuvw\r\nxyyz{NKK|||}~}Kx~KyyKHIHILLKIHKyylOOOL}xy LMKLM",
+          "image": "type3-last-pdfium.png",
+          "textSha256": "1002d8c2b666628c1849a8340b3f685a76ce2ea7065bbc2f198e433ae04847de",
+          "textLength": 321
+        },
+        "hayro-fonts": {
+          "height": 1122,
+          "pages": 18,
+          "parseMs": 9.041666000000001,
+          "renderMs": 89.843584,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 499,
+          "width": 793,
+          "image": "type3-last-hayro-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.002839484086293321,
+            "fractionPixelsOver32": 0.008483319958729795,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        },
+        "hayro-no-fonts": {
+          "height": 1122,
+          "pages": 18,
+          "parseMs": 8.882125,
+          "renderMs": 95.167583,
+          "success": true,
+          "text": "",
+          "unmappedGlyphs": 499,
+          "width": 793,
+          "image": "type3-last-hayro-no-fonts.png",
+          "textSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "textLength": 0,
+          "pixels": {
+            "meanAbsoluteError": 0.002839484086293321,
+            "fractionPixelsOver32": 0.008483319958729795,
+            "dimensionsEqual": true
+          },
+          "textEqualIgnoringWhitespace": false
+        }
+      }
+    },
+    {
+      "id": "password",
+      "input": "converter/testdata/password_test123.pdf",
+      "sha256": "5233982bddd7fe77749ec6fd7b5fa4ddd79ac402dc2ca12053187ecbfdb2c241",
+      "page": 0,
+      "dpi": 96,
+      "engines": {
+        "pdfium": {
+          "success": false,
+          "error": "PDFium error 4"
+        },
+        "hayro-fonts": {
+          "error": "Decryption(PasswordProtected)",
+          "success": false,
+          "exitError": "1"
+        },
+        "hayro-no-fonts": {
+          "error": "Decryption(PasswordProtected)",
+          "success": false,
+          "exitError": "1"
+        }
+      }
+    }
+  ],
+  "step": [
+    {
+      "id": "cax-if/as1-oc-214.stp",
+      "sha256": "bc7964773fa00c1ddedc80b58930ae531f91cfc5f1f42d693f903b4dc88c21ca",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 5180,
+          "meshMs": 294.85945799999996,
+          "geometry": {
+            "min": [
+              -10,
+              0,
+              -4.000000000000043
+            ],
+            "max": [
+              190,
+              150,
+              80
+            ],
+            "diagonal": 263.73471519691907,
+            "area": 141056.36533229123,
+            "signedVolume": 764431.2747411681,
+            "triangles": 5180
+          }
+        },
+        "truck": {
+          "faces": 160,
+          "instances": 18,
+          "meshMs": 276.54758400000003,
+          "missingFaces": 0,
+          "parseMs": 133.562541,
+          "shellFallback": false,
+          "sourceFaceReferences": 53,
+          "success": true,
+          "triangles": 28716,
+          "geometry": {
+            "min": [
+              -10,
+              0,
+              -4.000000000000007
+            ],
+            "max": [
+              190,
+              150,
+              80
+            ],
+            "diagonal": 263.734715196919,
+            "area": 141044.42240723802,
+            "signedVolume": 764314.4677914557,
+            "triangles": 28716
+          },
+          "comparison": {
+            "boundsRelativeError": 1.3470785126439826e-16,
+            "areaRelativeError": 0.00008466774983941875,
+            "volumeRelativeError": 0.00015280242131904221,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.031594366873414645,
+              "max": 0.08746246373036017
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.050886979281000895,
+              "max": 0.07069370130148343
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/as1-oc-214/as1-oc-214.stp",
+      "sha256": "bc7964773fa00c1ddedc80b58930ae531f91cfc5f1f42d693f903b4dc88c21ca",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 5180,
+          "meshMs": 333.812166,
+          "geometry": {
+            "min": [
+              -10,
+              0,
+              -4.000000000000043
+            ],
+            "max": [
+              190,
+              150,
+              80
+            ],
+            "diagonal": 263.73471519691907,
+            "area": 141056.36533229123,
+            "signedVolume": 764431.2747411681,
+            "triangles": 5180
+          }
+        },
+        "truck": {
+          "faces": 160,
+          "instances": 18,
+          "meshMs": 270.822292,
+          "missingFaces": 0,
+          "parseMs": 132.216625,
+          "shellFallback": false,
+          "sourceFaceReferences": 53,
+          "success": true,
+          "triangles": 28716,
+          "geometry": {
+            "min": [
+              -10,
+              0,
+              -4.000000000000007
+            ],
+            "max": [
+              190,
+              150,
+              80
+            ],
+            "diagonal": 263.734715196919,
+            "area": 141044.42240723086,
+            "signedVolume": 764314.4677914769,
+            "triangles": 28716
+          },
+          "comparison": {
+            "boundsRelativeError": 1.3470785126439826e-16,
+            "areaRelativeError": 0.00008466774989017535,
+            "volumeRelativeError": 0.0001528024212913254,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.031594366873414645,
+              "max": 0.08746246373036017
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.049848286992514736,
+              "max": 0.071174087846006
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/as1-tu-203.stp",
+      "sha256": "d2cac7ebad7240c7b7dd719c769a0e0d4a137d4229a31f25098f9073f6dd69c3",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 4736,
+          "meshMs": 250.84266600000004,
+          "geometry": {
+            "min": [
+              -10,
+              0,
+              -4.000000000000007
+            ],
+            "max": [
+              190.00000000000003,
+              150,
+              80
+            ],
+            "diagonal": 263.73471519691907,
+            "area": 141052.9407175772,
+            "signedVolume": 764433.6145132873,
+            "triangles": 4736
+          }
+        },
+        "truck": {
+          "faces": 53,
+          "instances": 5,
+          "meshMs": 118.748666,
+          "missingFaces": 0,
+          "parseMs": 20.83475,
+          "shellFallback": true,
+          "sourceFaceReferences": 53,
+          "success": true,
+          "triangles": 15280,
+          "geometry": {
+            "min": [
+              -7.5,
+              -7.499999999996251,
+              0
+            ],
+            "max": [
+              180,
+              150,
+              200.00000000000003
+            ],
+            "diagonal": 316.16846775097423,
+            "area": 103382.91077170258,
+            "signedVolume": 646931.1102149629,
+            "triangles": 15280
+          },
+          "comparison": {
+            "boundsRelativeError": 0.45500267156866825,
+            "areaRelativeError": 0.26706305982871587,
+            "volumeRelativeError": 0.1537118489656397,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 37.244339058925924,
+              "max": 60
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 96.96969610040819,
+              "max": 123.41182865533862
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/as1_pe_203.stp",
+      "sha256": "be1254354f6929a08ce1c8049d4a0a2f4406da4ea283fc4247d009c81976641c",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 16512,
+          "meshMs": 240.620875,
+          "geometry": {
+            "min": [
+              -3810,
+              -685.8,
+              -1905
+            ],
+            "max": [
+              1270,
+              1524.0000000000014,
+              1905
+            ],
+            "diagonal": 6723.519616986329,
+            "area": 91382452.2346716,
+            "signedVolume": 12551220889.807455,
+            "triangles": 16512
+          }
+        },
+        "truck": {
+          "faces": 53,
+          "instances": 5,
+          "meshMs": 14.790625,
+          "missingFaces": 0,
+          "parseMs": 20.575416,
+          "shellFallback": true,
+          "sourceFaceReferences": 53,
+          "success": true,
+          "triangles": 992,
+          "geometry": {
+            "min": [
+              -140,
+              -20,
+              -75
+            ],
+            "max": [
+              200,
+              60,
+              75
+            ],
+            "diagonal": 380.13155617496426,
+            "area": 103453.48201677915,
+            "signedVolume": 647085.1809770103,
+            "triangles": 992
+          },
+          "comparison": {
+            "boundsRelativeError": 0.5458450646485951,
+            "areaRelativeError": 0.9988679064799979,
+            "volumeRelativeError": 0.9999484444432412,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 3466.8193879743035,
+              "max": 3905.9057848340376
+            },
+            "candidateToReference": {
+              "samples": 1984,
+              "p95": 36.99999999999869,
+              "max": 59.99999999999869
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/dm1-id-214.stp",
+      "sha256": "59281108a72af555ef32f05597d38e293ad7667d86ff1baa10241cc76dea8b14",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1612,
+          "meshMs": 179.35629200000002,
+          "geometry": {
+            "min": [
+              0,
+              -27,
+              0
+            ],
+            "max": [
+              50.000000000000014,
+              60.000000000000014,
+              100.00000000000001
+            ],
+            "diagonal": 141.66509803053114,
+            "area": 31833.519268124495,
+            "signedVolume": 109119.7555155372,
+            "triangles": 1612
+          }
+        },
+        "truck": {
+          "faces": 48,
+          "instances": 7,
+          "meshMs": 25.285208,
+          "missingFaces": 0,
+          "parseMs": 16.228291,
+          "shellFallback": false,
+          "sourceFaceReferences": 24,
+          "success": true,
+          "triangles": 586,
+          "geometry": {
+            "min": [
+              0,
+              -1.0629921259842519,
+              0
+            ],
+            "max": [
+              1.968503937007874,
+              2.362204724409449,
+              3.937007874015748
+            ],
+            "diagonal": 5.577366064194139,
+            "area": 48.533864361728696,
+            "signedVolume": 6.518675007634692,
+            "triangles": 586
+          },
+          "comparison": {
+            "boundsRelativeError": 0.6780992175312025,
+            "areaRelativeError": 0.998475384893736,
+            "volumeRelativeError": 0.9999402612755423,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 77.95708211746845,
+              "max": 121.89027237515363
+            },
+            "candidateToReference": {
+              "samples": 1172,
+              "p95": 1.514233797698373,
+              "max": 1.968503937007874
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 1.0031302637534146e-16,
+            "areaRelativeErrorAfterScale": 0.016379318042718232
+          }
+        }
+      }
+    },
+    {
+      "id": "cax-if/dm1-oc-214.stp",
+      "sha256": "ae08c9bafcf8939875aa5e09d02c7cc40e6f70c26a06aca7b9e3135eec24e2b5",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1928,
+          "meshMs": 193.56775,
+          "geometry": {
+            "min": [
+              0,
+              -100,
+              -24.000000000000043
+            ],
+            "max": [
+              52.5,
+              0,
+              60
+            ],
+            "diagonal": 140.75599454374938,
+            "area": 31551.71391894625,
+            "signedVolume": 108422.35229002031,
+            "triangles": 1928
+          }
+        },
+        "truck": {
+          "faces": 61,
+          "instances": 7,
+          "meshMs": 128.616208,
+          "missingFaces": 0,
+          "parseMs": 73.643083,
+          "shellFallback": false,
+          "sourceFaceReferences": 31,
+          "success": true,
+          "triangles": 8988,
+          "geometry": {
+            "min": [
+              0,
+              -100,
+              -24.000000000000007
+            ],
+            "max": [
+              52.5,
+              0,
+              60
+            ],
+            "diagonal": 140.75599454374935,
+            "area": 31550.00059276853,
+            "signedVolume": 108388.37699716412,
+            "triangles": 8988
+          },
+          "comparison": {
+            "boundsRelativeError": 2.524023001873825e-16,
+            "areaRelativeError": 0.00005430215873918157,
+            "volumeRelativeError": 0.0003133605952886256,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.03766933059413002,
+              "max": 0.08014361806994195
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.05004745428642133,
+              "max": 0.06949514439286815
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/dm1-pe-214.stp",
+      "sha256": "eb596afbc044f32875b55a2b81463ae0fef7da74de93939f88eee22be14dc631",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 6208,
+          "meshMs": 153.971334,
+          "geometry": {
+            "min": [
+              -1270,
+              -685.8,
+              0
+            ],
+            "max": [
+              1270,
+              1524,
+              1270
+            ],
+            "diagonal": 3598.2934899754914,
+            "area": 20542480.180865083,
+            "signedVolume": 1788759412.9212873,
+            "triangles": 6208
+          }
+        },
+        "truck": {
+          "faces": 61,
+          "instances": 7,
+          "meshMs": 8.266041999999999,
+          "missingFaces": 0,
+          "parseMs": 16.572582999999998,
+          "shellFallback": false,
+          "sourceFaceReferences": 31,
+          "success": true,
+          "triangles": 952,
+          "geometry": {
+            "min": [
+              -50,
+              -27,
+              0
+            ],
+            "max": [
+              50,
+              60,
+              50
+            ],
+            "diagonal": 141.66509803053114,
+            "area": 31818.10404461468,
+            "signedVolume": 109009.67309535014,
+            "triangles": 952
+          },
+          "comparison": {
+            "boundsRelativeError": 0.4068595305187214,
+            "areaRelativeError": 0.9984511069858909,
+            "volumeRelativeError": 0.9999390585048453,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 1336.1169284406733,
+              "max": 1921.2579212588819
+            },
+            "candidateToReference": {
+              "samples": 1904,
+              "p95": 27,
+              "max": 27
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 0,
+            "areaRelativeErrorAfterScale": 0.0007161830174324107
+          }
+        }
+      }
+    },
+    {
+      "id": "cax-if/io1-cm-214.stp",
+      "sha256": "eb234e26bca411a6da39c311e74d5a47b5e7a1248ae589a3a86cd2dee1f91f9b",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 2536,
+          "meshMs": 120.532542,
+          "geometry": {
+            "min": [
+              0,
+              -44,
+              -43.95016292405236
+            ],
+            "max": [
+              31,
+              44,
+              43.95016292405235
+            ],
+            "diagonal": 128.18528497531602,
+            "area": 21121.06137966671,
+            "signedVolume": 78141.2128955491,
+            "triangles": 2536
+          }
+        },
+        "truck": {
+          "error": "\"failed to reference an element of `shape_representation.items`\"",
+          "success": false,
+          "exitError": "1"
+        }
+      }
+    },
+    {
+      "id": "cax-if/io1-tu-203.stp",
+      "sha256": "9c5013bb7c60fa6fde168ba119949069aa083f43b395c4970253fa1c6bc58006",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1880,
+          "meshMs": 211.898333,
+          "geometry": {
+            "min": [
+              0,
+              -44,
+              -43.950162924052364
+            ],
+            "max": [
+              31,
+              44,
+              43.95016292405236
+            ],
+            "diagonal": 128.18528497531605,
+            "area": 21091.268095329604,
+            "signedVolume": 78090.25148689625,
+            "triangles": 1880
+          }
+        },
+        "truck": {
+          "faces": 29,
+          "instances": 1,
+          "meshMs": 56.632458,
+          "missingFaces": 0,
+          "parseMs": 15.846958,
+          "shellFallback": true,
+          "sourceFaceReferences": 29,
+          "success": true,
+          "triangles": 4912,
+          "geometry": {
+            "min": [
+              0,
+              -44,
+              -44
+            ],
+            "max": [
+              31,
+              44,
+              44
+            ],
+            "diagonal": 128.25365491868058,
+            "area": 21089.92883116445,
+            "signedVolume": 78202.53634084661,
+            "triangles": 4912
+          },
+          "comparison": {
+            "boundsRelativeError": 0.00038878936811849994,
+            "areaRelativeError": 0.0000634985131810017,
+            "volumeRelativeError": 0.0014378856747465187,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.0871567065861854,
+              "max": 0.09355315402377701
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.05337884977794363,
+              "max": 0.08176037691634615
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/FOOT.stp",
+      "sha256": "de538c1733cd7b6f7912eaeebee6b00db322811f610aba5d71fba9684702fa25",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 19.992917000000002
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.553292,
+          "missingFaces": 0,
+          "parseMs": 4.415834,
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/FOOT_BACK_000.stp",
+      "sha256": "376338cbccd22fe0f2379a013c72816f5b98131dc671bae7d22d7fcbaa1016df",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1230,
+          "meshMs": 83.268,
+          "geometry": {
+            "min": [
+              -39.9999999998908,
+              -10.000000000010798,
+              -83.49999999991999
+            ],
+            "max": [
+              0,
+              10.000000000010798,
+              -63.000000000002
+            ],
+            "diagonal": 49.196036425598,
+            "area": 4793.95337404384,
+            "signedVolume": 2389.9930496507986,
+            "triangles": 1230
+          }
+        },
+        "truck": {
+          "success": false,
+          "error": "Failed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\n\nthread 'main' (1) panicked at /cargo/git/checkouts/truck-f79b47598c2fb2d2/78d699b/truck-meshalgo/src/tessellation/triangulation.rs:257:27:\nindex out of bounds: the len is 0 but the index is 0\nnote: run with `RUST_BACKTRACE=1` environment variable to"
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/FOOT_FRONT_000.stp",
+      "sha256": "56a6ba1e357cead25ccbfa3b0497ba4eaced74f98af157b81ca3a8bccc9dfbc2",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1230,
+          "meshMs": 83.646875,
+          "geometry": {
+            "min": [
+              0,
+              -10.000000000010798,
+              -83.49999999991999
+            ],
+            "max": [
+              39.9999999998908,
+              10.000000000010798,
+              -63.000000000002
+            ],
+            "diagonal": 49.196036425598,
+            "area": 4793.953374036041,
+            "signedVolume": 2389.993048232843,
+            "triangles": 1230
+          }
+        },
+        "truck": {
+          "success": false,
+          "error": "Failed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\n\nthread 'main' (1) panicked at /cargo/git/checkouts/truck-f79b47598c2fb2d2/78d699b/truck-meshalgo/src/tessellation/triangulation.rs:257:27:\nindex out of bounds: the len is 0 but the index is 0\nnote: run with `RUST_BACKTRACE=1` environment variable to"
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/HEAD.stp",
+      "sha256": "5cb8fd74198e8d285a81d11ca715d30d04d67019fa4261119490c1093c6d86e5",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 20.246542
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.6604169999999999,
+          "missingFaces": 0,
+          "parseMs": 3.784834,
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/HEAD_BACK.stp",
+      "sha256": "fff5821e398c9f61cef4b853955f16b8a7600d0cd553bb839f8bf004afd1e404",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 8160,
+          "meshMs": 173.753042,
+          "geometry": {
+            "min": [
+              180.00000000004198,
+              -59.98863740896403,
+              -60.000000000014
+            ],
+            "max": [
+              309.997529200842,
+              59.988637408932604,
+              60.000000000014
+            ],
+            "diagonal": 213.76132501238075,
+            "area": 71184.07073321356,
+            "signedVolume": 878559.7221570768,
+            "triangles": 8160
+          }
+        },
+        "truck": {
+          "success": false,
+          "error": "Failed to convert Circle\nFailed to convert Circle\n\nthread 'main' (1) panicked at /cargo/git/checkouts/truck-f79b47598c2fb2d2/78d699b/truck-meshalgo/src/tessellation/triangulation.rs:257:27:\nindex out of bounds: the len is 0 but the index is 0\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\nwasm://wasm/0036fc0e:1\n\n\nRuntimeError: unreachable\n    at wasm://wasm/0036fc0e:"
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/HEAD_FRONT.stp",
+      "sha256": "259946d56d5a76073f35ee1a79e4dd0880afe25e7e1b569debf02b689d4c142d",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 6340,
+          "meshMs": 111.665958,
+          "geometry": {
+            "min": [
+              250.00000000001597,
+              -59.98863740896403,
+              -60.000000000014
+            ],
+            "max": [
+              309.95133989032416,
+              59.988637408932604,
+              60.000000000014
+            ],
+            "diagonal": 179.96863512117622,
+            "area": 44808.26941517377,
+            "signedVolume": 22217.8534552908,
+            "triangles": 6340
+          }
+        },
+        "truck": {
+          "faces": 5,
+          "instances": 1,
+          "meshMs": 5.2345,
+          "missingFaces": 4,
+          "parseMs": 5.80725,
+          "shellFallback": true,
+          "sourceFaceReferences": 5,
+          "success": true,
+          "triangles": 32,
+          "geometry": {
+            "min": [
+              9.842519685039997,
+              -2.362204167882121,
+              -2.36220472441
+            ],
+            "max": [
+              9.842519685040003,
+              2.3622041678819565,
+              2.36220472441
+            ],
+            "diagonal": 6.681323129675499,
+            "area": 0.5646889908153486,
+            "signedVolume": -1.8526541693418164,
+            "triangles": 32
+          },
+          "comparison": {
+            "boundsRelativeError": 1.6675617948828434,
+            "areaRelativeError": 0.9999873976612311,
+            "volumeRelativeError": 1.0000833858308171,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 294.481368480094,
+              "max": 299.91136597101325
+            },
+            "candidateToReference": {
+              "samples": 64,
+              "p95": 246.74967383608842,
+              "max": 246.74977024197156
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/MAINBODY.stp",
+      "sha256": "11d8f3f04bdce024b619b79975ae35df1ce85910adad5361b68e57ab8b04aca5",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 21.041624999999996
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.544,
+          "missingFaces": 0,
+          "parseMs": 4.0816669999999995,
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/MAINBODY_BACK.stp",
+      "sha256": "801a4df118c5bda126fde7b659f4705528e3c1b7333b7d94dcc418df7e7d274b",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 14944,
+          "meshMs": 312.106791,
+          "geometry": {
+            "min": [
+              -160.000000000122,
+              -72.9902886029118,
+              -72.999999999962
+            ],
+            "max": [
+              -19.9999999999962,
+              72.99028860295672,
+              72.999999999962
+            ],
+            "diagonal": 249.45205736047075,
+            "area": 136629.09020705507,
+            "signedVolume": 72655.36342263031,
+            "triangles": 14944
+          }
+        },
+        "truck": {
+          "success": false,
+          "error": "Failed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\n"
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/MAINBODY_FRONT.stp",
+      "sha256": "1d94238d22df5352beb9f4bcc48ff09cfec533fa1716dd61ef734aa556578a04",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 13938,
+          "meshMs": 287.42079099999995,
+          "geometry": {
+            "min": [
+              29.99999999988,
+              -72.9902886029118,
+              -72.999999999962
+            ],
+            "max": [
+              175.000000000062,
+              72.99028860295672,
+              72.999999999962
+            ],
+            "diagonal": 252.29214994008262,
+            "area": 134646.22492039145,
+            "signedVolume": 69345.85224155949,
+            "triangles": 13938
+          }
+        },
+        "truck": {
+          "success": false,
+          "error": "Failed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\nFailed to convert Circle\n\nthread 'main' (1) panicked at /cargo/git/checkouts/truck-f79b47598c2fb2d2/78d699b/truck-meshalgo/sr"
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/TAIL.stp",
+      "sha256": "cdc37ab4360ddf8ae38dcfbc44c5e5ba47dd88b3fa6f03c915525f909010bea7",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 19.634666000000003
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.5810000000000001,
+          "missingFaces": 0,
+          "parseMs": 4.139916,
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/TAIL_MIDDLE_PART.stp",
+      "sha256": "7bbc9252ca0f93b4a4fd829895dd32c2c770f19e010ca50f64f9498d5614d8dc",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 236,
+          "meshMs": 87.716334,
+          "geometry": {
+            "min": [
+              -45.000000000073996,
+              -45.000000000073996,
+              -18.0000000000042
+            ],
+            "max": [
+              0,
+              45.000000000073996,
+              18.0000000000042
+            ],
+            "diagonal": 106.86907878349987,
+            "area": 8778.441186110324,
+            "signedVolume": 17637.617192326736,
+            "triangles": 236
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 5.951,
+          "missingFaces": 0,
+          "parseMs": 10.091125,
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 57,
+          "geometry": {
+            "min": [
+              -1.77165354331,
+              -1.77165354331,
+              -1
+            ],
+            "max": [
+              0,
+              1.77165354331,
+              1.0590551181102
+            ],
+            "diagonal": 4.464693647612364,
+            "area": 15.606367120380698,
+            "signedVolume": 0.15180608978998458,
+            "triangles": 57
+          },
+          "comparison": {
+            "boundsRelativeError": 0.4044981668115424,
+            "areaRelativeError": 0.9982221938053109,
+            "volumeRelativeError": 0.9999913930499719,
+            "referenceToCandidate": {
+              "samples": 472,
+              "p95": 45.568811543460576,
+              "max": 51.97398502697381
+            },
+            "candidateToReference": {
+              "samples": 114,
+              "p95": 1.77165354331,
+              "max": 1.77165354331
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/TAIL_TURBINE.stp",
+      "sha256": "a2595838d717b14e00e6d43f48c2f8a64240d799025ca7b45c883ce353a9b33e",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 306,
+          "meshMs": 91.14254199999999,
+          "geometry": {
+            "min": [
+              -240.000000000056,
+              62.00696005277479,
+              -50.000000000053994
+            ],
+            "max": [
+              -119.21549309205031,
+              97.99852573690711,
+              50.000000000053994
+            ],
+            "diagonal": 160.8859531140829,
+            "area": 23029.33585754701,
+            "signedVolume": 82304.52726794104,
+            "triangles": 306
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 6.887541,
+          "missingFaces": 0,
+          "parseMs": 9.450375000000001,
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 94,
+          "geometry": {
+            "min": [
+              -9.44881889764,
+              0.9050776548106146,
+              -1.96850393701
+            ],
+            "max": [
+              -1.2327613407352753,
+              4.11023622047,
+              1.96850393701
+            ],
+            "diagonal": 9.657984997373234,
+            "area": 42.82706688342608,
+            "signedVolume": 5.6673276735531415,
+            "triangles": 94
+          },
+          "comparison": {
+            "boundsRelativeError": 1.4330100088907953,
+            "areaRelativeError": 0.9981403255765454,
+            "volumeRelativeError": 0.9999311419692005,
+            "referenceToCandidate": {
+              "samples": 612,
+              "p95": 230.8685288850839,
+              "max": 247.13780029759417
+            },
+            "candidateToReference": {
+              "samples": 188,
+              "p95": 147.2247433166465,
+              "max": 151.2699862502205
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/s1-c5-214.stp",
+      "sha256": "96b083d50d9be57a432b72bce6f32c5737041683dffb14cf46952146d868a41e",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 22.498166
+        },
+        "truck": {
+          "error": "STEP parse failed",
+          "success": false,
+          "exitError": "1"
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/footback.stp",
+      "sha256": "db69f2973d1984543c24bbb8ddf124828338f1492f3fc503ca67a52c94726384",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1872,
+          "meshMs": 168.47325,
+          "geometry": {
+            "min": [
+              -40,
+              -10,
+              -10
+            ],
+            "max": [
+              0,
+              10,
+              10
+            ],
+            "diagonal": 48.98979485566356,
+            "area": 4765.814677750831,
+            "signedVolume": 2356.2311469199662,
+            "triangles": 1872
+          }
+        },
+        "truck": {
+          "faces": 9,
+          "instances": 1,
+          "meshMs": 39.526542,
+          "missingFaces": 0,
+          "parseMs": 8.179458,
+          "shellFallback": true,
+          "sourceFaceReferences": 9,
+          "success": true,
+          "triangles": 3588,
+          "geometry": {
+            "min": [
+              -40,
+              -10,
+              -10.000000000000002
+            ],
+            "max": [
+              0,
+              10,
+              10.000000000000002
+            ],
+            "diagonal": 48.98979485566356,
+            "area": 4768.725876181221,
+            "signedVolume": 2281.847515649829,
+            "triangles": 3588
+          },
+          "comparison": {
+            "boundsRelativeError": 3.625973214694716e-17,
+            "areaRelativeError": 0.0006108501121499471,
+            "volumeRelativeError": 0.031568902468406226,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.06411084741400586,
+              "max": 0.1055687189664397
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.047864651285358384,
+              "max": 0.08397680456732938
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/footfront.stp",
+      "sha256": "8e6d1502ec44d35ddc54af8b0ce4beb4b886d92168f21bd96c670947718b9384",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 3184,
+          "meshMs": 155.011042,
+          "geometry": {
+            "min": [
+              0,
+              -10,
+              -10
+            ],
+            "max": [
+              40,
+              10.5,
+              10
+            ],
+            "diagonal": 49.19603642571219,
+            "area": 4797.53888677105,
+            "signedVolume": 2409.9816769189647,
+            "triangles": 3184
+          }
+        },
+        "truck": {
+          "faces": 13,
+          "instances": 1,
+          "meshMs": 38.728625,
+          "missingFaces": 0,
+          "parseMs": 8.912167,
+          "shellFallback": true,
+          "sourceFaceReferences": 13,
+          "success": true,
+          "triangles": 3499,
+          "geometry": {
+            "min": [
+              0,
+              -10,
+              -10.000000000000002
+            ],
+            "max": [
+              40,
+              10.5,
+              10.000000000000002
+            ],
+            "diagonal": 49.19603642571219,
+            "area": 4792.805107113572,
+            "signedVolume": 2471.9404485499176,
+            "triangles": 3499
+          },
+          "comparison": {
+            "boundsRelativeError": 3.61077226634429e-17,
+            "areaRelativeError": 0.0009867100130299383,
+            "volumeRelativeError": 0.025709229337446238,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.05629047998649343,
+              "max": 0.7434169593044486
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.0488952813451638,
+              "max": 0.1061553406081701
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/headback.stp",
+      "sha256": "64a002eb2dc1858720650479b9b808de393aa1f7239d0e154eda6bf66f290dc7",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12840,
+          "meshMs": 264.08849999999995,
+          "geometry": {
+            "min": [
+              0,
+              -60,
+              -59.95133989029419
+            ],
+            "max": [
+              65,
+              60,
+              59.95133989029418
+            ],
+            "diagonal": 181.6635698717999,
+            "area": 46500.80746535189,
+            "signedVolume": 23087.63595676303,
+            "triangles": 12840
+          }
+        },
+        "truck": {
+          "faces": 12,
+          "instances": 1,
+          "meshMs": 114.65379200000001,
+          "missingFaces": 0,
+          "parseMs": 9.747209,
+          "shellFallback": true,
+          "sourceFaceReferences": 12,
+          "success": true,
+          "triangles": 13500,
+          "geometry": {
+            "min": [
+              0,
+              -60,
+              -60
+            ],
+            "max": [
+              65.00000000000001,
+              60,
+              60
+            ],
+            "diagonal": 181.72781845386248,
+            "area": 46522.20703860676,
+            "signedVolume": 23666.030465485415,
+            "triangles": 13500
+          },
+          "comparison": {
+            "boundsRelativeError": 0.00026785838096301157,
+            "areaRelativeError": 0.0004601978851831691,
+            "volumeRelativeError": 0.025052132223739233,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.07289006319881962,
+              "max": 0.14162117434065774
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.056943058428489256,
+              "max": 0.1139944731671525
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/headfront.stp",
+      "sha256": "a8259c77368a7fecba97610386a03b3b2e91d29076a7ae3b4226affcf75e9621",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 11952,
+          "meshMs": 259.520042,
+          "geometry": {
+            "min": [
+              0,
+              -60,
+              -59.95133989029419
+            ],
+            "max": [
+              60,
+              60,
+              59.95133989029418
+            ],
+            "diagonal": 179.93513447508332,
+            "area": 44832.32162406304,
+            "signedVolume": 22247.01778453737,
+            "triangles": 11952
+          }
+        },
+        "truck": {
+          "faces": 5,
+          "instances": 1,
+          "meshMs": 72.024833,
+          "missingFaces": 0,
+          "parseMs": 7.655666999999999,
+          "shellFallback": true,
+          "sourceFaceReferences": 5,
+          "success": true,
+          "triangles": 9427,
+          "geometry": {
+            "min": [
+              -1.0838124172454075e-14,
+              -60,
+              -60
+            ],
+            "max": [
+              60,
+              60,
+              60
+            ],
+            "diagonal": 180,
+            "area": 44824.19695718175,
+            "signedVolume": 22066.711816810675,
+            "triangles": 9427
+          },
+          "comparison": {
+            "boundsRelativeError": 0.0002704313965572938,
+            "areaRelativeError": 0.00018122342513104142,
+            "volumeRelativeError": 0.008104725292754257,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.07723626179440263,
+              "max": 0.34811460310810793
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.06696440622547703,
+              "max": 0.09722485400018056
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/mainbodyback.stp",
+      "sha256": "9dd00c091399fed94fb59783f24ca6763562a3df6cb6fbcece31ec3ff942126a",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12724,
+          "meshMs": 277.471458,
+          "geometry": {
+            "min": [
+              -30,
+              -73,
+              -72.9512979310275
+            ],
+            "max": [
+              115,
+              73,
+              72.95129793102748
+            ],
+            "diagonal": 252.2470366115054,
+            "area": 134648.78916178973,
+            "signedVolume": 69456.43227237111,
+            "triangles": 12724
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 158.580792,
+          "missingFaces": 0,
+          "parseMs": 11.190999999999999,
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 22680,
+          "geometry": {
+            "min": [
+              -30,
+              -73,
+              -73.00000000000001
+            ],
+            "max": [
+              115,
+              73,
+              73.00000000000001
+            ],
+            "diagonal": 252.30338880007145,
+            "area": 134649.45738061218,
+            "signedVolume": 69460.54044846,
+            "triangles": 22680
+          },
+          "comparison": {
+            "boundsRelativeError": 0.0001930729083154267,
+            "areaRelativeError": 0.000004962679773142243,
+            "volumeRelativeError": 0.0000591475253549138,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.043785652416009804,
+              "max": 0.09603455938823985
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.06277501980374485,
+              "max": 0.09122717680325416
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/mainbodyfront.stp",
+      "sha256": "563e91fd8c239800d94650156af6e1303631db6d336258eb4b98f53bb373ee3d",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 15022,
+          "meshMs": 347.648958,
+          "geometry": {
+            "min": [
+              -90,
+              -73,
+              -73
+            ],
+            "max": [
+              50,
+              73,
+              72.95129793102748
+            ],
+            "diagonal": 249.43492411398918,
+            "area": 136679.0298617976,
+            "signedVolume": 70422.0833709455,
+            "triangles": 15022
+          }
+        },
+        "truck": {
+          "faces": 37,
+          "instances": 1,
+          "meshMs": 171.72495800000002,
+          "missingFaces": 0,
+          "parseMs": 15.365666000000001,
+          "shellFallback": true,
+          "sourceFaceReferences": 37,
+          "success": true,
+          "triangles": 22264,
+          "geometry": {
+            "min": [
+              -90,
+              -73,
+              -73.00000000000001
+            ],
+            "max": [
+              50,
+              73,
+              73.00000000000001
+            ],
+            "diagonal": 249.46342417276327,
+            "area": 136683.78765470898,
+            "signedVolume": 70342.1543117938,
+            "triangles": 22264
+          },
+          "comparison": {
+            "boundsRelativeError": 0.00019524959925128576,
+            "areaRelativeError": 0.00003480996987018926,
+            "volumeRelativeError": 0.001134999922264192,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.06375118677872874,
+              "max": 0.09761520381548378
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.06157179787081562,
+              "max": 0.09351122458421034
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/s1-tu-203.stp",
+      "sha256": "3e0d09ebe18b197de438497ababd313df35380154e87fe8dd495b8f575671a29",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 30.650875
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.454042,
+          "missingFaces": 0,
+          "parseMs": 8.346875,
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/tailmiddlepart.stp",
+      "sha256": "4b2147b8cf453ccaefd39d34e125af51e9f1996a12d171d720d37234200fb008",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 236,
+          "meshMs": 100.986875,
+          "geometry": {
+            "min": [
+              0,
+              -45,
+              -18
+            ],
+            "max": [
+              47.5,
+              45,
+              18
+            ],
+            "diagonal": 107.94558814513913,
+            "area": 8973.008114755268,
+            "signedVolume": 17911.45783171532,
+            "triangles": 236
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 13.420791,
+          "missingFaces": 0,
+          "parseMs": 9.227792,
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 352,
+          "geometry": {
+            "min": [
+              0,
+              -45,
+              -18
+            ],
+            "max": [
+              47.5,
+              45,
+              18
+            ],
+            "diagonal": 107.94558814513913,
+            "area": 8965.74100029136,
+            "signedVolume": 17881.422837858165,
+            "triangles": 352
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0.0008098860907032854,
+            "volumeRelativeError": 0.0016768592562004692,
+            "referenceToCandidate": {
+              "samples": 472,
+              "p95": 0.09530224034558434,
+              "max": 0.09852949791978655
+            },
+            "candidateToReference": {
+              "samples": 704,
+              "p95": 0.061898035366190506,
+              "max": 0.07689844153339356
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/tailturbine.stp",
+      "sha256": "9eb2dc63eed19b5d89b6ea45106d7e1aeb5933bf85bbee424b72327c0201f4b7",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 4416,
+          "meshMs": 194.919042,
+          "geometry": {
+            "min": [
+              1.483142428,
+              -50,
+              -36
+            ],
+            "max": [
+              140,
+              50,
+              36
+            ],
+            "diagonal": 185.3939584550201,
+            "area": 35832.591408890556,
+            "signedVolume": 302306.1359901473,
+            "triangles": 4416
+          }
+        },
+        "truck": {
+          "faces": 21,
+          "instances": 1,
+          "meshMs": 62.470667,
+          "missingFaces": 0,
+          "parseMs": 11.398375,
+          "shellFallback": true,
+          "sourceFaceReferences": 21,
+          "success": true,
+          "triangles": 3592,
+          "geometry": {
+            "min": [
+              1.4831424279999936,
+              -50,
+              -36.00000000017579
+            ],
+            "max": [
+              140,
+              50,
+              36
+            ],
+            "diagonal": 185.3939584550884,
+            "area": 35824.495573059125,
+            "signedVolume": 302228.4333154047,
+            "triangles": 3592
+          },
+          "comparison": {
+            "boundsRelativeError": 9.481877095239765e-13,
+            "areaRelativeError": 0.00022593498022647462,
+            "volumeRelativeError": 0.0002570330717506373,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.06022804113448225,
+              "max": 0.088080388363591
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.054725442657893614,
+              "max": 0.09422251530137112
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/foot_asm.stp",
+      "sha256": "6358c7117ddb8e6039657338bf1e45c4cea6c44dfcf4dc1c632b80d00e9fc8d7",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 21.825916
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.585667,
+          "missingFaces": 0,
+          "parseMs": 5.34325,
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/foot_back_prt.stp",
+      "sha256": "33a62809e3b156d9948fa0cacb5e4f24b8f0de481a5be4ca170c2b6b6669b1d2",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1180,
+          "meshMs": 76.622917,
+          "geometry": {
+            "min": [
+              -40,
+              -10,
+              -10
+            ],
+            "max": [
+              0,
+              10,
+              10
+            ],
+            "diagonal": 48.98979485566356,
+            "area": 4763.182602525581,
+            "signedVolume": 2345.8286602427834,
+            "triangles": 1180
+          }
+        },
+        "truck": {
+          "faces": 9,
+          "instances": 1,
+          "meshMs": 5.825958,
+          "missingFaces": 0,
+          "parseMs": 6.928167,
+          "shellFallback": true,
+          "sourceFaceReferences": 9,
+          "success": true,
+          "triangles": 103,
+          "geometry": {
+            "min": [
+              -4,
+              -1,
+              -1
+            ],
+            "max": [
+              0,
+              1,
+              1
+            ],
+            "diagonal": 4.898979485566356,
+            "area": 45.411098088695844,
+            "signedVolume": 2.0636402034637547,
+            "triangles": 103
+          },
+          "comparison": {
+            "boundsRelativeError": 0.7348469228349535,
+            "areaRelativeError": 0.9904662277560768,
+            "volumeRelativeError": 0.9991202937203222,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 35.57173769810898,
+              "max": 35.9418344143088
+            },
+            "candidateToReference": {
+              "samples": 206,
+              "p95": 8.651108050605567,
+              "max": 8.950696843671947
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/foot_front_prt.stp",
+      "sha256": "e8e289ba29e830e13560b3d798e9e6d2f81e705f4d4ece0a7a6bce8d1b8c5a0e",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1200,
+          "meshMs": 81.675167,
+          "geometry": {
+            "min": [
+              0,
+              -10,
+              -10
+            ],
+            "max": [
+              40,
+              10.5,
+              10
+            ],
+            "diagonal": 49.19603642571219,
+            "area": 4793.455650424893,
+            "signedVolume": 2402.1229653432547,
+            "triangles": 1200
+          }
+        },
+        "truck": {
+          "faces": 13,
+          "instances": 1,
+          "meshMs": 5.645667,
+          "missingFaces": 0,
+          "parseMs": 7.840375,
+          "shellFallback": true,
+          "sourceFaceReferences": 13,
+          "success": true,
+          "triangles": 119,
+          "geometry": {
+            "min": [
+              0,
+              -1.0000000000000002,
+              -1
+            ],
+            "max": [
+              4,
+              1.05,
+              1
+            ],
+            "diagonal": 4.919603642571219,
+            "area": 45.68504587715212,
+            "signedVolume": 1.7089209624859665,
+            "triangles": 119
+          },
+          "comparison": {
+            "boundsRelativeError": 0.731766268495254,
+            "areaRelativeError": 0.9904692878772952,
+            "volumeRelativeError": 0.9992885788999392,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 35.86095851772063,
+              "max": 35.9418344143088
+            },
+            "candidateToReference": {
+              "samples": 238,
+              "p95": 8.56951724439801,
+              "max": 8.950696843671945
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/head_asm.stp",
+      "sha256": "31a5e338e758d6c34a0227a8de6c8ff771da1cf945d7e77963cb97b256ed74e8",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 24.7115
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.514916,
+          "missingFaces": 0,
+          "parseMs": 4.917708,
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/head_back_prt.stp",
+      "sha256": "240d0b4f5136477bc6f3d79d3b1bdf3837c4bdeabeb2a76dedf446f93a8a7d1c",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 6512,
+          "meshMs": 129.37025,
+          "geometry": {
+            "min": [
+              0,
+              -60,
+              -59.95133989029418
+            ],
+            "max": [
+              62.23635208502,
+              60,
+              59.95133989029418
+            ],
+            "diagonal": 180.69315465566726,
+            "area": 45868.707068454954,
+            "signedVolume": 22719.51661934292,
+            "triangles": 6512
+          }
+        },
+        "truck": {
+          "faces": 12,
+          "instances": 1,
+          "meshMs": 7.162209,
+          "missingFaces": 0,
+          "parseMs": 7.554875,
+          "shellFallback": true,
+          "sourceFaceReferences": 12,
+          "success": true,
+          "triangles": 417,
+          "geometry": {
+            "min": [
+              -1.4450832229938768e-15,
+              -6,
+              -5.908846518073249
+            ],
+            "max": [
+              6.223635208502,
+              6,
+              5.908846518073249
+            ],
+            "diagonal": 17.955263960885986,
+            "area": 449.0565671118851,
+            "signedVolume": 21.164582815604756,
+            "triangles": 417
+          },
+          "comparison": {
+            "boundsRelativeError": 0.3099880401294506,
+            "areaRelativeError": 0.9902099580343151,
+            "volumeRelativeError": 0.9990684404439493,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 54.09312173720564,
+              "max": 58.33289463680501
+            },
+            "candidateToReference": {
+              "samples": 834,
+              "p95": 53.16177850871857,
+              "max": 53.1851113646803
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/head_front_prt.stp",
+      "sha256": "2961d6198faa80955a9c8b6a8472b2355ece48cee16519df75e19db18f61fbfb",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 6324,
+          "meshMs": 107.88283299999999,
+          "geometry": {
+            "min": [
+              -60,
+              -60,
+              -59.95133989029418
+            ],
+            "max": [
+              0,
+              60,
+              59.95133989029418
+            ],
+            "diagonal": 179.93513447508332,
+            "area": 44807.81813859869,
+            "signedVolume": 22192.42223942367,
+            "triangles": 6324
+          }
+        },
+        "truck": {
+          "faces": 5,
+          "instances": 1,
+          "meshMs": 7.322125,
+          "missingFaces": 0,
+          "parseMs": 6.577042,
+          "shellFallback": true,
+          "sourceFaceReferences": 5,
+          "success": true,
+          "triangles": 365,
+          "geometry": {
+            "min": [
+              -6,
+              -6,
+              -5.908846518073249
+            ],
+            "max": [
+              1.4695761589768238e-15,
+              6,
+              5.908846518073249
+            ],
+            "diagonal": 17.878978401927373,
+            "area": 438.6622160276756,
+            "signedVolume": 21.3137456185715,
+            "triangles": 365
+          },
+          "comparison": {
+            "boundsRelativeError": 0.3003443075743749,
+            "areaRelativeError": 0.9902101411260238,
+            "volumeRelativeError": 0.9990395935428487,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 54.07820729132106,
+              "max": 54.15630452572271
+            },
+            "candidateToReference": {
+              "samples": 730,
+              "p95": 53.168297640523896,
+              "max": 53.19432757226743
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/main_body_back_prt.stp",
+      "sha256": "78eb4578da565e2865f87238ae1509e0958644c411acf3ebd9ab4dc7af55fc10",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 13636,
+          "meshMs": 254.31491700000004,
+          "geometry": {
+            "min": [
+              -30,
+              -73,
+              -72.95129793102747
+            ],
+            "max": [
+              115,
+              73,
+              72.95129793102747
+            ],
+            "diagonal": 252.24703661150537,
+            "area": 134619.77870823626,
+            "signedVolume": 68911.87406477347,
+            "triangles": 13636
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 25.164417,
+          "missingFaces": 0,
+          "parseMs": 10.775083,
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 1436,
+          "geometry": {
+            "min": [
+              -3,
+              -7.3,
+              -7.3
+            ],
+            "max": [
+              11.5,
+              7.3,
+              7.3
+            ],
+            "diagonal": 25.230338880007142,
+            "area": 1339.0111027750038,
+            "signedVolume": 68.11573339540985,
+            "triangles": 1436
+          },
+          "comparison": {
+            "boundsRelativeError": 0.41031205515965696,
+            "areaRelativeError": 0.9900533850551259,
+            "volumeRelativeError": 0.9990115530259506,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 93.75244031214106,
+              "max": 105.22413370335114
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 69.95244543627331,
+              "max": 71.5400413868843
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/main_body_front_prt.stp",
+      "sha256": "55458980ccb253d884c79a098b15b8732d5cac3c937ec70632943e3cac1e97ff",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 14772,
+          "meshMs": 270.210459,
+          "geometry": {
+            "min": [
+              -90,
+              -73,
+              -72.95129793102747
+            ],
+            "max": [
+              50,
+              73,
+              72.95129793102747
+            ],
+            "diagonal": 249.4064303086152,
+            "area": 136592.7130040084,
+            "signedVolume": 70141.45717255466,
+            "triangles": 14772
+          }
+        },
+        "truck": {
+          "faces": 29,
+          "instances": 1,
+          "meshMs": 25.336707999999998,
+          "missingFaces": 0,
+          "parseMs": 13.068083,
+          "shellFallback": true,
+          "sourceFaceReferences": 29,
+          "success": true,
+          "triangles": 1716,
+          "geometry": {
+            "min": [
+              -9,
+              -7.3,
+              -7.3
+            ],
+            "max": [
+              5,
+              7.3,
+              7.3
+            ],
+            "diagonal": 24.946342417276323,
+            "area": 1358.1526004375996,
+            "signedVolume": 69.27341373736574,
+            "triangles": 1716
+          },
+          "comparison": {
+            "boundsRelativeError": 0.3247710971195518,
+            "areaRelativeError": 0.9900569176014701,
+            "volumeRelativeError": 0.9990123756116595,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 78.98947449381228,
+              "max": 83.18454591201706
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 69.85090721432026,
+              "max": 70.9278928712201
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/mainbody_asm.stp",
+      "sha256": "e59478558d3e20cfc585681fa008bc4124b87c5012b375c4bd79a2f1abf2b4fb",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 22.717584000000002
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.5073340000000001,
+          "missingFaces": 0,
+          "parseMs": 4.742583,
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/s1_pe_214.stp",
+      "sha256": "29fe5af76814eebf73e5da5be316a90a7f82f84536061d6e126afc5637d47f51",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 24.361250000000002
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.582125,
+          "missingFaces": 0,
+          "parseMs": 7.4287909999999995,
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/tail_asm.stp",
+      "sha256": "5d9bbd984aa48d30d124ec176e109d5859659ebe3ee34c4a3a1e629e7f66d4fa",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 24.590708000000003
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.5956670000000001,
+          "missingFaces": 0,
+          "parseMs": 5.29275,
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/tail_middle_part_prt.stp",
+      "sha256": "832d442af9b2780414c196d12b6a96aac3ba06c64e5e59af8d376d4701cbe4ff",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 404,
+          "meshMs": 83.503209,
+          "geometry": {
+            "min": [
+              -10,
+              -45,
+              -18.000000000000004
+            ],
+            "max": [
+              37.5,
+              45,
+              18.000000000000004
+            ],
+            "diagonal": 107.94558814513913,
+            "area": 9853.403363251387,
+            "signedVolume": 10668.505728946515,
+            "triangles": 404
+          }
+        },
+        "truck": {
+          "faces": 23,
+          "instances": 1,
+          "meshMs": 6.272583,
+          "missingFaces": 0,
+          "parseMs": 10.929958,
+          "shellFallback": true,
+          "sourceFaceReferences": 23,
+          "success": true,
+          "triangles": 132,
+          "geometry": {
+            "min": [
+              -1,
+              -4.5,
+              -1.720944260880858
+            ],
+            "max": [
+              3.75,
+              4.5,
+              1.720944260880858
+            ],
+            "diagonal": 10.742862588539197,
+            "area": 97.09512686799283,
+            "signedVolume": 10.56841113073971,
+            "triangles": 132
+          },
+          "comparison": {
+            "boundsRelativeError": 0.37518902528508524,
+            "areaRelativeError": 0.9901460314483712,
+            "volumeRelativeError": 0.9990093822509684,
+            "referenceToCandidate": {
+              "samples": 808,
+              "p95": 35.77897427238387,
+              "max": 43.242166920540726
+            },
+            "candidateToReference": {
+              "samples": 264,
+              "p95": 1.45,
+              "max": 1.5
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/tail_turbine_prt.stp",
+      "sha256": "a0cd10655ef08ae0bc69cb33a9bdac64fe80210b9fea18cd7b2840fd97eb650a",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 332,
+          "meshMs": 108.45195799999999,
+          "geometry": {
+            "min": [
+              -98.51685757164,
+              -50.71796769724,
+              -36
+            ],
+            "max": [
+              40,
+              50.71796769724,
+              36
+            ],
+            "diagonal": 186.17241691742396,
+            "area": 35181.50077599387,
+            "signedVolume": 296289.1639531757,
+            "triangles": 332
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 6.93725,
+          "missingFaces": 0,
+          "parseMs": 11.433125,
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 122,
+          "geometry": {
+            "min": [
+              -9.851685757164,
+              -5.071796769724,
+              -3.6
+            ],
+            "max": [
+              4,
+              5.071796769724,
+              3.6000000000000005
+            ],
+            "diagonal": 18.617241691742397,
+            "area": 348.6876006919372,
+            "signedVolume": 245.3594734721188,
+            "triangles": 122
+          },
+          "comparison": {
+            "boundsRelativeError": 0.4762529986050677,
+            "areaRelativeError": 0.990088893509345,
+            "volumeRelativeError": 0.9991718918430953,
+            "referenceToCandidate": {
+              "samples": 664,
+              "p95": 84.52027787291838,
+              "max": 94.31830144172326
+            },
+            "candidateToReference": {
+              "samples": 244,
+              "p95": 8.874158188635477,
+              "max": 9.619738995159615
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/sg1-c5-214.stp",
+      "sha256": "5e8ff5347d6edc7b648455e469ec84850237faf9e96b8d3bc14f00afcdffe443",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 2040,
+          "meshMs": 89.409375,
+          "geometry": {
+            "min": [
+              -39.99833428005943,
+              -39.99833428005943,
+              -70
+            ],
+            "max": [
+              39.99833428005943,
+              39.99833428005943,
+              84.0312824249
+            ],
+            "diagonal": 191.1140233653573,
+            "area": 46562.353457528116,
+            "signedVolume": 355131.1973967278,
+            "triangles": 2040
+          }
+        },
+        "truck": {
+          "faces": 16,
+          "instances": 1,
+          "meshMs": 13.016625000000001,
+          "missingFaces": 0,
+          "parseMs": 7.475958,
+          "shellFallback": true,
+          "sourceFaceReferences": 16,
+          "success": true,
+          "triangles": 696,
+          "geometry": {
+            "min": [
+              -39.99038052549403,
+              -39.95701540266528,
+              -70
+            ],
+            "max": [
+              39.99038052549403,
+              39.95701540266528,
+              84.0312824249
+            ],
+            "diagonal": 191.07278828579928,
+            "area": 46523.84022475023,
+            "signedVolume": 354912.91627579747,
+            "triangles": 696
+          },
+          "comparison": {
+            "boundsRelativeError": 0.0002162001336509142,
+            "areaRelativeError": 0.0008271324346398119,
+            "volumeRelativeError": 0.0006146492409859567,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.08140745923344059,
+              "max": 0.09612359357039743
+            },
+            "candidateToReference": {
+              "samples": 1392,
+              "p95": 0.06815821637882676,
+              "max": 0.0814740592586449
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "conical-surface/conical-surface.step",
+      "sha256": "c4a65756a022264d8448b417fddbcc0ad24ccc02c4d1f41099b57ba0cd643b67",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 416,
+          "meshMs": 56.898500000000006,
+          "geometry": {
+            "min": [
+              -18.999999999999996,
+              -13.46779621366055,
+              13.99568929182463
+            ],
+            "max": [
+              -12.000000000000005,
+              13.516489522029069,
+              41.004310708175325
+            ],
+            "diagonal": 38.81516852310575,
+            "area": 1715.249246920676,
+            "signedVolume": 2512.709136321291,
+            "triangles": 416
+          }
+        },
+        "truck": {
+          "faces": 5,
+          "instances": 1,
+          "meshMs": 4.648167,
+          "missingFaces": 0,
+          "parseMs": 5.320959,
+          "shellFallback": true,
+          "sourceFaceReferences": 5,
+          "success": true,
+          "triangles": 50,
+          "geometry": {
+            "min": [
+              -0.748031496062992,
+              -0.5321452567727747,
+              0.6218258544857038
+            ],
+            "max": [
+              -0.47244094488189,
+              0.532145256772798,
+              1.543528476222956
+            ],
+            "diagonal": 1.434642872648356,
+            "area": 2.4273998069817515,
+            "signedVolume": 0.13351849853100586,
+            "triangles": 50
+          },
+          "comparison": {
+            "boundsRelativeError": 1.0166330260414123,
+            "areaRelativeError": 0.9985848122007109,
+            "volumeRelativeError": 0.9999468627321002,
+            "referenceToCandidate": {
+              "samples": 832,
+              "p95": 40.96578245689843,
+              "max": 42.872357830596634
+            },
+            "candidateToReference": {
+              "samples": 100,
+              "p95": 17.543601172339653,
+              "max": 17.674171719288214
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cube-10x10mm/Cube 10x10.stp",
+      "sha256": "963924fdd23de1127cab2a4d38426f36e3c05cadacd47561dba0b2fcb9886293",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 53.035917000000005,
+          "geometry": {
+            "min": [
+              -5,
+              0,
+              -5
+            ],
+            "max": [
+              5,
+              10,
+              5
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 3.732,
+          "missingFaces": 0,
+          "parseMs": 5.6181659999999995,
+          "shellFallback": true,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              -5,
+              0,
+              -5
+            ],
+            "max": [
+              5,
+              10,
+              5
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 1.4895204919483639e-15,
+              "max": 1.4895204919483639e-15
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 1.4895204919483639e-15,
+              "max": 1.5700924586837751e-15
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cube-fcstd/cube.step",
+      "sha256": "dc21bcabee7fc40694aaddbc0c91e2b9083e33b40e5a6055c0722c33ec9b50fb",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 51.550875000000005,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 2.667417,
+          "missingFaces": 0,
+          "parseMs": 8.707125,
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 6.280369834735101e-16,
+              "max": 8.881784197001252e-16
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 1.88411095042053e-15,
+              "max": 1.88411095042053e-15
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cube-fcstd/cube2.step",
+      "sha256": "c9607400b18df0389a8b89532334e28bd7f5ad039c5568d0153227dd0a54e8ae",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 121.59583299999998,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 3.0474590000000004,
+          "missingFaces": 0,
+          "parseMs": 9.520791000000001,
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 6.280369834735101e-16,
+              "max": 8.881784197001252e-16
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 1.88411095042053e-15,
+              "max": 1.88411095042053e-15
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cube-fcstd/cube3.step",
+      "sha256": "9a5855ff8aff9ea79178eee5994061b126e634a8a838bf37bf9ebe410f1c07b2",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 57.859041000000005,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 3.283125,
+          "missingFaces": 0,
+          "parseMs": 10.530041,
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 6.280369834735101e-16,
+              "max": 8.881784197001252e-16
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 1.88411095042053e-15,
+              "max": 1.88411095042053e-15
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cube-units/cube-in.step",
+      "sha256": "f52324692b57eba7684739c45c7f6ddbb7019a70c7e96bf70a6da726e70fbde1",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 78.775625,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              999.9999999999877,
+              999.9999999999877,
+              999.9999999999877
+            ],
+            "diagonal": 1732.0508075688558,
+            "area": 5999999.999999854,
+            "signedVolume": 999999999.9999632,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 2.8551670000000002,
+          "missingFaces": 0,
+          "parseMs": 9.509583000000001,
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              39.370078740157,
+              39.370078740157,
+              39.370078740157
+            ],
+            "diagonal": 68.19097667593921,
+            "area": 9300.018600036698,
+            "signedVolume": 61023.744094728245,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0.5546199436309792,
+            "areaRelativeError": 0.9984499968999939,
+            "volumeRelativeError": 0.9999389762559052,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 1663.85983037266,
+              "max": 1663.85983037266
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 39.370078740157,
+              "max": 39.370078740157
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 0,
+            "areaRelativeErrorAfterScale": 2.964710195859346e-14
+          }
+        }
+      }
+    },
+    {
+      "id": "cube-units/cube-m.step",
+      "sha256": "181f50a866062fe6bea05982491f3530c2be08a68d54f94ac3d5b8d037a09e45",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 54.496207999999996,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              1000,
+              1000,
+              1000
+            ],
+            "diagonal": 1732.0508075688772,
+            "area": 6000000,
+            "signedVolume": 999999999.9999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 2.700542,
+          "missingFaces": 0,
+          "parseMs": 9.654375,
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              1,
+              1,
+              1
+            ],
+            "diagonal": 1.7320508075688772,
+            "area": 6,
+            "signedVolume": 0.9999999999999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0.5767729189204361,
+            "areaRelativeError": 0.999999,
+            "volumeRelativeError": 0.999999999,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 1730.3187567613084,
+              "max": 1730.3187567613084
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 1,
+              "max": 1
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 1000,
+            "boundsRelativeErrorAfterScale": 0,
+            "areaRelativeErrorAfterScale": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "cube-units/cube-mm.step",
+      "sha256": "c3a7c0da333c4e3026468d5bc023557c3ba889609ab3232a7d577df5981d103d",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 55.61470799999999,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              1000,
+              1000,
+              1000
+            ],
+            "diagonal": 1732.0508075688772,
+            "area": 6000000,
+            "signedVolume": 999999999.9999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 2.783,
+          "missingFaces": 0,
+          "parseMs": 9.601375,
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              1000,
+              1000,
+              1000
+            ],
+            "diagonal": 1732.0508075688772,
+            "area": 6000000,
+            "signedVolume": 999999999.9999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 1.1368683772161603e-13,
+              "max": 1.1368683772161603e-13
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 8.038873388460929e-14,
+              "max": 1.1368683772161603e-13
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "rounded-cube/rounded-cube.step",
+      "sha256": "370c5474e50dc94923f0dacb5113f7258233601620ab530d937c18571869d49e",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 40,
+          "meshMs": 56.050957999999994,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 567.3162967146704,
+            "signedVolume": 944.7058172117753,
+            "triangles": 40
+          }
+        },
+        "truck": {
+          "success": false,
+          "error": "timeout"
+        }
+      }
+    },
+    {
+      "id": "simple-basic-cube/cube.stp",
+      "sha256": "cfa52db7eab6fe6a73986a87aff8702d24431bdb7da6382afdd94234deb3f648",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 47.09741699999999,
+          "geometry": {
+            "min": [
+              -160.000000000001,
+              -140,
+              0
+            ],
+            "max": [
+              140,
+              160,
+              300
+            ],
+            "diagonal": 519.6152422706638,
+            "area": 540000.0000000007,
+            "signedVolume": 27000000.000000045,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 4.120083,
+          "missingFaces": 0,
+          "parseMs": 5.338500000000001,
+          "shellFallback": true,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              -160.000000000001,
+              -140,
+              0
+            ],
+            "max": [
+              140.00000000000003,
+              160,
+              300
+            ],
+            "diagonal": 519.6152422706638,
+            "area": 540000.0000000006,
+            "signedVolume": 27000000.000000045,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 5.469760530157687e-17,
+            "areaRelativeError": 2.1558392930913828e-16,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 9.947598300641403e-13,
+              "max": 9.947598300641403e-13
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 9.947598300641403e-13,
+              "max": 9.947598300641403e-13
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    }
+  ],
+  "summary": {
+    "pdf": {
+      "renderedPages": 12,
+      "fontsRendered": 12,
+      "fontsTextMatchIgnoringWhitespace": 8,
+      "noFontsTextMatchIgnoringWhitespace": 5,
+      "passwordRejectedByAll": true
+    },
+    "step": {
+      "files": 55,
+      "referenceNonempty": 44,
+      "candidateNonempty": 37,
+      "geometryScreenPasses": 19,
+      "candidateFailures": 7,
+      "nonemptyButScreenFailed": 18,
+      "unitScaleDiagnostics": 4
+    }
+  }
+}

@@ -6,10 +6,12 @@ import { chmod, copyFile, mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { executableName, ocrLibraryName } from './agent-platforms.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const work = await mkdtemp(path.join(os.tmpdir(),'filens-rust-test-'));
-const binary = path.join(work,'filens');
+const platform = `${process.platform}-${process.arch}`;
+const binary = path.join(work,executableName(platform));
 const env = { ...process.env, FILENS_PROFILE:'lite' };
 delete env.FILENS_TEXT_WASM;
 delete env.FILENS_PDFIUM_WASM;
@@ -27,7 +29,7 @@ function run(args, input = '', expected = 0, overrides = {}) {
   return value;
 }
 try {
-  await copyFile(path.join(root,'dist/agent-lite/filens'),binary);
+  await copyFile(path.join(root,'dist/agent-lite',executableName(platform)),binary);
   await chmod(binary,0o755);
   for (const name of ['converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz']) await copyFile(path.join(root,'dist',name),path.join(work,name));
   const text = path.join(work,'report $(whoami) 中文.txt');
@@ -57,10 +59,12 @@ try {
   assert.equal(run(['corrupt.pdf','--json'],'',3).error.code,'parse_error');
   const scratch = path.join(work,'scratch'); await mkdir(scratch);
   const canceled = await new Promise((resolve,reject) => {
-    const child = spawn(binary,[scan,'--json'],{cwd:work,env:{...env,TMPDIR:scratch,FILENS_PROFILE:'full',FILENS_OCR_LIBRARY:path.join(root,'dist/native',process.platform==='darwin'?'libzima_ncnn_runtime_v7.dylib':'libzima_ncnn_runtime_v7.so'),FILENS_OCR_MODEL_DIR:path.join(root,'dist/models/rapidocr-ncnn')},stdio:['ignore','pipe','pipe']});
+    // Windows has no POSIX SIGTERM delivery through child.kill; exercise the
+    // same supervisor/worker cleanup through its request deadline instead.
+    const child = spawn(binary,[scan,'--json',...(process.platform==='win32'?['--timeout','200ms']:[])],{cwd:work,env:{...env,TMPDIR:scratch,TMP:scratch,TEMP:scratch,FILENS_PROFILE:'full',FILENS_OCR_LIBRARY:path.join(root,'dist/native',ocrLibraryName(platform)),FILENS_OCR_MODEL_DIR:path.join(root,'dist/models/rapidocr-ncnn')},stdio:['ignore','pipe','pipe']});
     let stdout='',stderr='';
     child.stdout.on('data',c=>{stdout+=c;}); child.stderr.on('data',c=>{stderr+=c;});
-    const timer = setTimeout(()=>child.kill('SIGTERM'),200);
+    const timer = process.platform==='win32'?undefined:setTimeout(()=>child.kill('SIGTERM'),200);
     const guard = setTimeout(()=>{child.kill('SIGKILL');reject(new Error('SIGTERM did not cancel request'));},10000);
     child.once('error',reject);
     child.once('exit',(code,signal)=>{clearTimeout(timer);clearTimeout(guard);resolve({code,signal,stdout,stderr});});

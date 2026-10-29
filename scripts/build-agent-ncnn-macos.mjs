@@ -60,7 +60,7 @@ export async function buildMacWrapper(destination, { signal, sourceCount = 3 } =
 // Rebuild every wrapper from the same hash-pinned snapshot. Upstream Linux
 // prebuilts contain personal source paths; -trimpath keeps them out of releases.
 export async function buildOCRWrapper(destination, { signal, sourceCount = 3, platform = `${process.platform}-${process.arch}` } = {}) {
-  if (!['darwin-arm64', 'linux-x64', 'linux-arm64'].includes(platform)) throw new Error('Unsupported OCR wrapper target');
+  if (!['darwin-arm64', 'linux-x64', 'linux-arm64', 'win32-x64'].includes(platform)) throw new Error('Unsupported OCR wrapper target');
   if (platform === 'darwin-arm64' && (process.platform !== 'darwin' || process.arch !== 'arm64')) throw new Error('The macOS wrapper must be built on macOS arm64');
   const { downloadArtifact } = await import('./model-download.mjs');
   const { modelSources } = await import('./download-agent-models.mjs');
@@ -68,11 +68,14 @@ export async function buildOCRWrapper(destination, { signal, sourceCount = 3, pl
   const manifest = JSON.parse(await readFile(path.join(root, 'converter/rapidocr/runtime.json'), 'utf8'));
   const artifact = manifest.wrapperSource;
   const darwin = platform === 'darwin-arm64';
-  const library = path.join(destination, darwin ? 'libzima_ncnn_runtime_v7.dylib' : 'libzima_ncnn_runtime_v7.so');
+  const windows = platform === 'win32-x64';
+  const windowsLoader = windows ? await readFile(path.join(root,'packaging/ncnn-windows/native_loader_windows.go')) : null;
+  const loaderSHA256 = windowsLoader ? createHash('sha256').update(windowsLoader).digest('hex') : undefined;
+  const library = path.join(destination, windows ? 'zima_ncnn_runtime_v7.dll' : darwin ? 'libzima_ncnn_runtime_v7.dylib' : 'libzima_ncnn_runtime_v7.so');
   const architecture = platform.endsWith('-x64') ? 'amd64' : 'arm64';
   try {
     const prior = JSON.parse(await readFile(path.join(destination, 'wrapper-build.json'), 'utf8'));
-    if (prior.sourceSHA256 === artifact.sha256 && prior.platform === platform && prior.trimpath === true
+    if (prior.sourceSHA256 === artifact.sha256 && prior.platform === platform && prior.trimpath === true && prior.loaderSHA256 === loaderSHA256
         && createHash('sha256').update(await readFile(library)).digest('hex') === prior.sha256) {
       await assertReleaseDirectory(destination);
       return;
@@ -83,19 +86,30 @@ export async function buildOCRWrapper(destination, { signal, sourceCount = 3, pl
     const archive = path.join(work, 'source.tar.gz');
     await downloadArtifact({ ...artifact, path:archive, sources:modelSources(artifact, sourceCount, manifest) }, { signal });
     await run('tar', ['-xzf', archive, '-C', work], signal);
+    if (windows) {
+      const source = path.join(work,'tools/ncnn_runtime_wrapper/native_embedding_runtime.go');
+      const text = await readFile(source,'utf8');
+      const calls = /purego\.Dlopen\((candidate), purego\.RTLD_NOW\|purego\.RTLD_GLOBAL\)/g;
+      if ([...text.matchAll(calls)].length !== 2) throw new Error('Pinned OCR wrapper loader patch no longer matches');
+      const registration = 'purego.RegisterLibFunc(target, handle, symbol)';
+      if (text.split(registration).length !== 2) throw new Error('Pinned OCR symbol patch no longer matches');
+      await writeFile(source,text.replace(calls,'nativeDlopen($1)').replace(registration,'registerWindowsNativeSymbol(target, handle, symbol)').replace('\n\t"github.com/ebitengine/purego"',''));
+      await writeFile(path.join(work,'tools/ncnn_runtime_wrapper/native_loader_windows.go'),windowsLoader);
+    }
     await new Promise((resolve, reject) => {
       const child = spawn('go', ['build','-trimpath','-buildmode=c-shared','-ldflags',`-s -w -X main.ncnnRuntimeVersion=${manifest.version}`,'-o',library,'./tools/ncnn_runtime_wrapper'], {
         cwd:work, stdio:'inherit', signal,
-        env:{...process.env,CGO_ENABLED:'1',GOOS:darwin?'darwin':'linux',GOARCH:architecture,
+        env:{...process.env,CGO_ENABLED:'1',GOOS:windows?'windows':darwin?'darwin':'linux',GOARCH:architecture,
           ...(darwin ? {MACOSX_DEPLOYMENT_TARGET:'12.0',CGO_CFLAGS:'-mmacosx-version-min=12.0',CGO_LDFLAGS:'-mmacosx-version-min=12.0'}
-            : {CC:`${process.env.FILENS_ZIG ?? 'zig'} cc -target ${architecture === 'amd64' ? 'x86_64' : 'aarch64'}-linux-gnu.2.17`})}
+            : {CC:`${process.env.FILENS_ZIG ?? 'zig'} cc -target ${windows ? 'x86_64-windows-gnu' : `${architecture === 'amd64' ? 'x86_64' : 'aarch64'}-linux-gnu.2.17`}`})}
       });
       child.on('error',reject);child.on('exit',code=>code===0?resolve():reject(new Error(`Build OCR wrapper exited with ${code}`)));
     });
     if (darwin) await run('codesign',['--force','--sign','-',library],signal);
     await rm(path.join(destination,'libzima_ncnn_runtime_v7.h'),{force:true});
+    if (windows) await rm(path.join(destination,'zima_ncnn_runtime_v7.h'),{force:true});
     await writeFile(path.join(destination,'wrapper-build.json'),JSON.stringify({release:manifest.version,sourceSHA256:artifact.sha256,platform,trimpath:true,
-      ...(darwin ? {minimumMacOS:'12.0'} : {minimumGlibc:'2.17',compiler:'zig cc'}),
+      ...(windows ? {minimumWindows:'10',compiler:'zig cc',loaderSHA256} : darwin ? {minimumMacOS:'12.0'} : {minimumGlibc:'2.17',compiler:'zig cc'}),
       sha256:createHash('sha256').update(await readFile(library)).digest('hex')},null,2)+'\n');
     await assertReleaseDirectory(destination);
   } finally { await rm(work,{recursive:true,force:true}); }

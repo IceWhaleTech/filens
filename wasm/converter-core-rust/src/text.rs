@@ -11,7 +11,18 @@ mod layout;
 mod ocr_image;
 mod odf_sheet;
 mod pdf_unicode;
+mod prune;
 mod raster;
+mod search;
+mod similarity;
+
+pub(super) fn similarity(request: &Request, started: Instant) {
+    similarity::execute(request, started);
+}
+
+pub(super) fn search(request: &Request, started: Instant) {
+    search::execute(request, started);
+}
 
 const MAX_INPUT: u64 = 256 << 20;
 thread_local! { static STATE: RefCell<Option<State>> = const { RefCell::new(None) }; }
@@ -29,6 +40,8 @@ struct Outcome {
     document: Option<Document>,
     #[serde(skip_serializing_if = "Option::is_none")]
     layout: Option<layout::Layout>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    summary: Option<prune::Summary>,
     #[serde(skip_serializing_if = "Option::is_none")]
     rendered: Option<String>,
 }
@@ -350,6 +363,7 @@ pub(super) fn execute(request: &Request, started: Instant) {
             result: Outcome {
                 complete: true,
                 layout: (request.options_json["includeLayout"].as_bool() == Some(true)
+                    || !request.options_json["summary"].is_null()
                     || matches!(
                         request.options_json["outputFormat"].as_str(),
                         Some("markdown" | "html" | "csv" | "tsv")
@@ -377,6 +391,18 @@ pub(super) fn execute(request: &Request, started: Instant) {
     let mut result = STATE.with(|s| s.borrow_mut().take().unwrap().result);
     if let Some(layout) = &mut result.layout {
         layout::finish(layout, &result.text);
+    }
+    if !request.options_json["summary"].is_null() {
+        let summarized = serde_json::from_value(request.options_json["summary"].clone())
+            .map_err(|e| ConvertError { code: "invalid_request", message: format!("summary options: {e}") })
+            .and_then(|options| prune::apply(&mut result, options));
+        if let Err(error) = summarized {
+            result.complete = false;
+            result.error_code = error.code.into();
+            result.error_message = error.message;
+        }
+    }
+    if let Some(layout) = &mut result.layout {
         if let Some(format @ ("markdown" | "html" | "csv" | "tsv")) =
             request.options_json["outputFormat"].as_str()
         {

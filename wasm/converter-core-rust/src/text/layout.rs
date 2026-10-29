@@ -13,8 +13,8 @@ pub(super) struct Layout {
     pub pages: Vec<Value>,
     pub images: Vec<Value>,
     pub blocks: Vec<Value>,
-    warnings: Vec<String>,
-    truncated: bool,
+    pub(super) warnings: Vec<String>,
+    pub(super) truncated: bool,
     #[serde(skip)]
     current_page: Option<u64>,
 }

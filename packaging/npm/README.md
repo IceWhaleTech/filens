@@ -3,8 +3,11 @@
 Read local documents and provide text and cited evidence for agents. Supports
 Chinese/English reading intents, text, JSON, Markdown, HTML, YAML, XML, CSV and
 TSV. Source layouts include PDF/OCR coordinates and logical document structure.
-Semantic reasoning is
-performed by the calling agent. All document parsing uses the shared WASM core.
+Source builds also provide model-free extractive summaries through
+`summarize` / `prune`, with optional lexical focus and original-text provenance.
+Published npm 0.2.0 does not include this addition; check `capacity.operations`
+for `summarize` in the installed build. Paraphrasing, translation and question
+answering belong to the calling agent. Parsing and pruning use the shared WASM core.
 
 ```sh
 # Full: native RapidOCR NCNN and models included; no Python
@@ -24,6 +27,8 @@ npx --yes filens-cli-lite read report.pdf --json
 ```
 
 The CLI is Rust, built with stripped symbols, LTO and size optimization.
+Windows/Linux executables use UPX `--best --lzma`, followed by `--test`.
+Mach-O arm64 is unsupported by UPX and remains uncompressed.
 WASM resources use fast gzip compression and are decoded locally as needed.
 The package includes `skills/filens/SKILL.md`, with standard YAML front matter
 and agent guidance for evidence, partial results, OCR and coordinate units.
@@ -45,10 +50,70 @@ filens read data.xlsx --format csv
 echo '{"operation":"understand","input":"report.pdf"}' | filens
 ```
 
-Natural language recognizes a bounded set of reading intents. `understand`
+Natural language recognizes a bounded set of document intents. `understand`
 returns source text and evidence for the calling agent; it does not generate
-an answer. One local file per request. Summarization,
-translation, questions, field extraction, page selection and URL fetching
+an answer. Reading and pruning accept one local file per request. Builds advertising `summarize` select
+key original excerpts without an LLM, using density/TF-IDF, optional BM25 focus
+and cosine-diversity pruning. For example:
+
+```sh
+filens summarize report.pdf --query 'budget risk' --summary-chars 1000 --json
+filens '提取 "report.pdf" 的关键内容，关注预算和风险，以 JSON 输出'
+```
+
+Inspect `content.summary` for original offsets, `sourceComplete`, `omitted`,
+`sampled` and per-excerpt `clipped` markers. The default budget is 30% of source
+characters, rounded up and capped at 2000 characters. Scores are ranking weights,
+not confidence, and an empty lexical match does not prove the topic is absent.
+
+Source builds also add directory-wide `search` with BM25, case-sensitive literal
+and filename modes, original excerpts, source hashes and optional layout. Check
+`capacity.operations` for `search`; published npm 0.2.0 does not include it.
+
+```sh
+filens '在 "./documents" 中搜索 "预算 风险"，以 JSON 输出'
+filens 'search "./documents" for "budget risk" as markdown'
+filens search ./documents --query FILENS2026 --search-mode exact --json
+```
+
+macOS uses native FTS and does not embed hdrw. Windows/Linux embed compiled
+private hdrw WASI for mounted-directory enumeration; no private source or raw
+device access is needed. Full-text extraction is cached and source hashes are
+checked on each scan. `--no-cache` disables this cache. Ranking runs in the shared
+WASM core; embedding-based semantic retrieval is not implemented. See the
+[search guide](https://github.com/IceWhaleTech/filens/blob/main/docs/agent-cli-search.zh-CN.md)
+for scope, limits, provenance and partial results.
+
+## Duplicate files and similar images
+
+Source builds provide Czkawka-style directory scans. Check `capacity.operations`
+for `similar`; published npm `0.2.0` does not include these commands.
+
+```sh
+filens duplicates ./files --json
+filens similar-images ./photos --threshold 8 --json
+filens similar ./photos --similarity-mode images --format csv
+echo '{"operation":"similar","input":"./photos","similarityMode":"images","threshold":8}' | filens
+```
+
+Duplicate scans filter by size and prefix hash, then compare full-file SHA-256.
+Image scans use perceptual hashes for JPEG, PNG, WebP, GIF, BMP and TIFF, including
+resized and recompressed variants. No OCR or model is required. Threshold is a
+Hamming distance from 0 to 24 (default 8), not a confidence percentage.
+
+Defaults are 2000 candidate files, depth 32 and 100 returned groups; adjust
+`--max-files`, `--max-depth`, `--max-results` and `--timeout` as needed. Inspect
+`similarity.complete`, `truncated`, `scan` and `processing`; partial scans retain
+groups and return exit 3. Paths are relative to `source.path`. Scans report groups
+for review; perceptual matches can miss altered images or match different images.
+Similarity fingerprints are recomputed each time. The document search cache and
+`--no-cache` flag do not apply. See the
+[similarity guide](https://github.com/IceWhaleTech/filens/blob/main/docs/agent-cli-similarity.md)
+for source builds, limits, grouping semantics and the measured resource-size delta.
+
+## Limits and conversion
+
+Paraphrasing, translation, questions, field extraction, page selection and URL fetching
 are not implemented by this CLI. Some unsupported phrasings fall
 back to reading the whole file: “only the first page” still reads all pages,
 “only list amounts” still returns all text.
@@ -84,7 +149,7 @@ sharing. Private evaluation inputs and raw reports are excluded from packages.
 EXIF orientation is applied, while a physically inverted image may still have
 its text lines returned in reversed order.
 
-Packages support macOS 12+ arm64 and Linux glibc 2.17+ x64/arm64. Only the current
+The 0.3.0 release candidates add Windows 10/11 x64 alongside macOS 12+ arm64 and Linux glibc 2.17+ x64/arm64. Native Windows execution is pending validation; published stable 0.2.0 has no Windows package. Only the current
 platform is installed. Node.js 20.11+ is required for the npm launcher; native
 binaries also work directly. No Python, Homebrew or compiler is needed at runtime.
 RapidOCR defaults: max side 960, padding 50, orientation classification enabled,
@@ -102,4 +167,4 @@ one profile at a time. Platform packages are implementation components.
 [Protocol, limitations and source build](https://github.com/IceWhaleTech/filens/blob/main/docs/agent-cli.md)
 
 Locally built release tarballs can also be installed with
-`npm install -g /path/to/filens-cli-0.2.0.tgz /path/to/filens-cli-PLATFORM-0.2.0.tgz /path/to/filens-ocr-PLATFORM-0.2.0.tgz`.
+`npm install -g /path/to/filens-cli-0.3.0-rc.1.tgz /path/to/filens-cli-PLATFORM-0.3.0-rc.1.tgz /path/to/filens-ocr-PLATFORM-0.3.0-rc.1.tgz`.

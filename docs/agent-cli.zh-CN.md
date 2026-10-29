@@ -2,11 +2,15 @@
 
 [English](agent-cli.md) · 简体中文
 
-filens 负责读取本地文档，向上层 Agent 交付文本、来源与证据片段；摘要、问答等语义推理由调用方完成。支持中英文读取意图，以及 text、JSON、Markdown、HTML、YAML、XML、CSV、TSV 输出和布局信息，也保留可选命令与参数。文档解析统一经过前端 WASM 核心。
+filens 负责读取本地文档，向上层 Agent 交付文本、来源与证据片段。源码版新增不依赖 LLM 的 `summarize` / `prune`，按密度、BM25 和相似距离选取关键原文，详见[关键内容提取与实例](agent-cli-pruning.zh-CN.md)。改写总结、问答等语义推理由调用方完成。支持中英文意图，以及 text、JSON、Markdown、HTML、YAML、XML、CSV、TSV 输出和布局信息，也保留可选命令与参数。文档解析和裁剪统一经过前端 WASM 核心。
 
 [68 条实测案例、OCR 效果与自然语言边界](agent-cli-examples.zh-CN.md)列出实际输出，包括不支持的句式、退化行为和识别错误。
 
 详见[多格式输出、坐标布局与打字机动图](agent-cli-formats-and-layout.zh-CN.md)。
+
+源码版新增[跨文件词项搜索](agent-cli-search.zh-CN.md)：中英文入口、BM25/精确匹配/文件名模式、原文证据和正文缓存；`prune` 继续在已知文件内提取片段。embedding 语义检索尚未实现，公平对照方法见[文档搜索与客观评价方案](agent-cli-search-evaluation.zh-CN.md)。
+
+源码版新增 [Czkawka 风格的重复文件与相似图片扫描](agent-cli-similarity.zh-CN.md)：`filens duplicates ./files --json`、`filens similar-images ./photos --threshold 8 --json`。支持缩放、重新压缩的图片分组，解析和匹配统一在 WASM 核心中，无需 OCR 或模型。使用 `capacity.operations` 检查 `similar`；已发布的 npm `0.2.0` 不包含这些命令。
 
 ## 一键安装
 
@@ -42,11 +46,15 @@ macOS arm64 重建的 Rust 候选包：轻量版 **7.25 MiB 安装体积 / 5.60 
 npm install -g ./dist/npm/filens-cli-0.2.0.tgz ./dist/npm/filens-cli-darwin-arm64-0.2.0.tgz ./dist/npm/filens-ocr-darwin-arm64-0.2.0.tgz
 ```
 
+上述 2026-10-29 包体积测量早于相似扫描。2026-10-30 的 macOS arm64 本地对比中，主程序加 gzip WASM 资源增加约 **278 KiB**，见[体积记录](agent-cli-similarity-size.json)；不含 OCR、许可文本及 npm 打包开销，不代表新版本 Lite/Full 总体积或 npm 下载增量。
+
 ## 从源码构建和发布
 
-`cli/` 中的 CLI 已改为 Rust，文档解析仍复用前端 WASM 核心。Release 开启体积优化、LTO、单 codegen unit、panic abort 和符号 strip；文本 WASM 使用 Binaryen `-Oz` 并移除 debug / producers 信息。npm 包中的WASM 引擎使用 gzip level 1 快速压缩，运行时按需在本机解压，无需可执行文件解包器或外部解压工具。
+`cli/` 中的 CLI 已改为 Rust，文档解析仍复用前端 WASM 核心。Release 开启体积优化、LTO、单 codegen unit、panic abort 和符号 strip；Windows/Linux 的 CLI 使用 UPX `--best --lzma`，并通过 `upx --test` 校验。macOS arm64 的可执行格式不受 UPX 支持，因此跳过。文本 WASM 使用 Binaryen `-Oz` 并移除 debug / producers 信息；WASM 引擎使用 gzip level 1 快速压缩，运行时按需在本机解压，无需外部解压工具。构建机器可运行 `node scripts/setup-agent-upx.mjs` 安装经 SHA-256 校验的固定版本 UPX；构建/打包脚本的 `--no-upx` 可生成未压缩对照。
 
-轻量版源码构建需要 Node.js 20.11+ 和锁定的 Rust 1.93.0 / WASI 工具链，无需 Go 编译器。Linux 构建还需 Zig 0.16.0 与 `cargo-zigbuild` 0.24.0，以保持 glibc 2.17 兼容。完整版仍使用 Go 1.24+ 重编译独立的 Photos 原生 OCR wrapper；首次构建 macOS 完整版还需 CMake 和 Xcode 命令行工具编译 CPU NCNN 库。npm 用户直接使用预编译库。OCR wrapper 可用 `FILENS_ZIG` 指定 Zig，cargo-zigbuild 使用 PATH 上的 Zig。
+`0.3.0-rc.1` 新增 Windows x64 候选产物；稳定版 npm `0.2.0` 尚不支持 Windows。见 [Windows 测试包、实机检查和可复制的 Agent 提示词](agent-cli-windows.zh-CN.md)，实际 Windows 运行结果仍待补充。
+
+轻量版源码构建需要 Node.js 20.11+ 和锁定的 Rust 1.93.0 / WASI 工具链，无需 Go 编译器。Linux 和 Windows 构建还需 Zig 0.16.0 与 `cargo-zigbuild` 0.24.0，其中 Linux 保持 glibc 2.17 兼容。完整版仍使用 Go 1.24+ 重编译独立的 Photos 原生 OCR wrapper；首次构建 macOS 完整版还需 CMake 和 Xcode 命令行工具编译 CPU NCNN 库，Windows 则需要 CMake 和 Ninja。npm 用户直接使用预编译库。OCR wrapper 可用 `FILENS_ZIG` 指定 Zig，cargo-zigbuild 使用 PATH 上的 Zig。
 
 ```sh
 npm run build:agent:lite
@@ -59,7 +67,7 @@ npm run setup:agent:ocr -- --lite --sources 4
 npm run build:agent
 ./dist/filens '理解 "meeting notes.docx"，以 JSON 输出'
 
-# 在 macOS arm64 上打包三个平台及两种安装入口
+# 在 macOS arm64 上打包四个平台及两种安装入口
 cargo install cargo-zigbuild --locked --version 0.24.0
 npm run package:agent:npm
 npm run test:agent:npm
@@ -68,9 +76,9 @@ npm run publish:agent:npm -- --dry-run
 npm run publish:agent:npm
 ```
 
-Agent CLI 的发布版本独立记录在 `packaging/agent-release.json`，不改动私有工作区版本；准备下一次发布前应先更新它，已发布版本不可覆盖。产物、体积和 SHA-256 记录于 `dist/npm/release.json`。打包采用文件白名单，包含 NCNN / C++ 运行时许可与构建来源，不包含源码构建缓存或旧 Python 环境。发布脚本先校验 tarball 和 npm 身份，再写入注册表。Linux 二进制通过交叉编译生成；本地安装测试验证宿主平台，CI 配置覆盖 macOS arm64、Linux x64 / arm64 的原生安装。
+Agent CLI 的发布版本独立记录在 `packaging/agent-release.json`，不改动私有工作区版本；准备下一次发布前应先更新它，已发布版本不可覆盖。产物、体积和 SHA-256 记录于 `dist/npm/release.json`。打包采用文件白名单，包含 NCNN / C++ 运行时许可与构建来源，不包含源码构建缓存或旧 Python 环境。发布脚本先校验 tarball 和 npm 身份，再写入注册表。Linux 和 Windows 二进制通过交叉编译生成；本地安装测试验证宿主平台，CI 已配置 macOS arm64、Linux x64 / arm64 和 Windows x64 的原生安装及 Windows 便携包测试，本轮尚未执行 CI。
 
-一次请求读取一个本地文件。自然语言中的路径应加引号，尤其是含空格路径；相对路径以调用方工作目录为准。可选命令为 `read`、`extract`、`understand`、`layout`、`capacity` / `capabilities`，可选参数有 `--json`、`--format text|json|markdown|html|yaml|xml|csv|tsv`、`--layout`、`--input`、`--max-bytes`、`--timeout`、`--wasm`、`--no-ocr`。
+读取和摘录每次接受一个本地文件，`search` 每次接受一个本地目录。自然语言中的路径应加引号，尤其是含空格路径；相对路径以调用方工作目录为准。可选命令为 `read`、`extract`、`understand`、`layout`、`summarize` / `prune`、`search`、`capacity` / `capabilities`，可选参数有 `--json`、`--format text|json|markdown|html|yaml|xml|csv|tsv`、`--layout`、`--input`、`--max-bytes`、`--timeout`、`--wasm`、`--no-ocr`。搜索增加 `--query`、`--search-mode bm25|exact|files`、`--max-results`、`--max-files`、`--max-depth`、`--include-hidden` 和 `--no-cache`，详见[搜索指南](agent-cli-search.zh-CN.md)。
 
 ## Agent 交付协议
 
@@ -82,7 +90,7 @@ filens capacity --json
 
 可以用 `filens -` 显式读取 stdin；无参数且 stdin 为管道时也会读取。JSON 请求默认返回 JSON，自然语言默认返回纯文本。在管道中直接使用二进制，或使用 `npm --silent run filens -- ...` 隐藏 npm 自身的提示。
 
-响应协议为 `version: "filens-agent-v1"`，包含 `ok`、`operation`、`source`、`content`。内容保留 `text`、`complete`、`truncated`、警告与提取错误。JSON 还交付 `content.document` 的字节数、字符数、行数和证据块：
+文档读取的响应协议为 `version: "filens-agent-v1"`，包含 `ok`、`operation`、`source`、`content`。内容保留 `text`、`complete`、`truncated`、警告与提取错误。文档 JSON 还交付 `content.document` 的字节数、字符数、行数和证据块：
 
 ```json
 {"id":"b1","startByte":0,"endByte":2048,"startLine":1,"endLine":12}
@@ -94,12 +102,25 @@ filens capacity --json
 
 | 退出码 | 含义 |
 | --- | --- |
-| 0 | 完整交付，包括真正的空文档 |
+| 0 | 完整提取或扫描，包括空文档或没有匹配组 |
 | 1 | 宿主、运行时、I/O、取消或输出失败 |
 | 2 | 请求不合法或格式不支持 |
-| 3 | 内容不完整或被截断，保留已经读取的文本 |
+| 3 | 提取或扫描不完整 / 被截断，保留可用文本或分组 |
 
-纯文本 stdout 只有文档内容，诊断写入 stderr；JSON stdout 即使失败也只输出一个响应对象。限制：输入 256 MiB、默认文本 8 MiB / 上限 32 MiB、最多 OCR 200 页、每个 OCR 单元 30 秒、整个请求默认两分钟，可用 `--timeout` 调整。扫描页或内嵌图片缺少 OCR 时返回 `ocr_failed`，不会将未识别伪装成成功，也会保留已经读出的文本。
+读取时纯文本 stdout 只有文档内容，诊断写入 stderr；相似扫描的纯文本输出为分组列表。JSON stdout 即使失败也只输出一个响应对象。文档 / 图片输入上限 256 MiB，提取文本默认 8 MiB / 上限 32 MiB、最多 OCR 200 页、每个 OCR 单元 30 秒、整个请求默认两分钟，可用 `--timeout` 调整。重复文件采用流式哈希，单独使用总计 16 GiB 的扫描读取预算。扫描页或内嵌图片缺少 OCR 时返回 `ocr_failed`，保留已经读出的文本；重复文件及相似图片扫描不需要 OCR。
+
+## 重复文件与相似图片
+
+```sh
+filens duplicates ./files --json
+filens similar-images ./photos --threshold 8 --json
+filens similar ./photos --similarity-mode images --format csv
+echo '{"operation":"similar","input":"./photos","similarityMode":"images","threshold":8}' | filens
+```
+
+`duplicates` 按大小和前缀哈希筛选后比较完整 SHA-256；`similar-images` 对 JPEG、PNG、WebP、GIF、BMP、TIFF 计算感知哈希，可将缩放或重新压缩后的副本分到一组。两者响应均为 `operation: "similar"`。图片阈值为汉明距离（0–24，默认 8），不是相似百分比；每组有参考图，可能误匹配，距离 0 也不代表文件完全相同。
+
+结果在 `similarity.groups` 中，成员路径相对 `source.path`。检查 `similarity.complete`、`truncated`、`scan` 和 `processing`；错误或限制会保留可用组并返回退出码 3。默认扫描 2000 个候选文件、深度 32、返回 100 组，可用 `--max-files`、`--max-depth`、`--max-results`、`--include-hidden`、`--timeout` 调整。扫描只报告分组供核对，每次重新计算指纹。限制、参考图分组语义、链接处理、帧 / 方向规则及源码构建见[完整指南](agent-cli-similarity.zh-CN.md)。
 
 ## 文件转换与 Agent Skill
 
@@ -135,7 +156,7 @@ cp -R skills/filens ~/.codex/skills/
 
 采用 RapidOCR NCNN：PP-OCRv6 small 检测、mobile v2 方向分类、PP-OCRv3 中英文识别。默认 **最大边长 960、补边 50、OpenMP 线程 2**，开启文字方向分类。检测阶段按比例缩放并对齐网络尺寸，识别阶段单独处理文字行裁剪。Photos 原生运行时负责 EXIF 方向、白色补边、通道 / 归一化和文字行 0 / 180 度分类；WASM 在回调前将透明 PNG 合成到白底。960 是实用默认值，超大扫描件中的细小文字仍可能影响准确率。
 
-独立图片和文档内嵌图片共用 OCR 回调。WASM 负责提取图片、确定阅读顺序、复用重复图片结果，以及决定 PDF 哪些页需要 OCR；Rust 宿主把临时图片路径交给隔离的原生 worker。同一文档中相同图片只识别一次，并在各自位置插入结果。PDF 优先读取文本层，扫描页通过固定版本的 PDFium WASM 渲染。Wasmi 为两个引擎分别设置 512 MiB 内存上限，文本引擎只能访问本次请求的临时目录。原有 Go 提取库保留供现有集成使用。
+独立图片和文档内嵌图片共用 OCR 回调。WASM 负责提取图片、确定阅读顺序、复用重复图片结果，以及决定 PDF 哪些页需要 OCR；Rust 宿主把临时图片路径交给隔离的原生 worker。同一文档中相同图片只识别一次，并在各自位置插入结果。PDF 优先读取文本层，扫描页通过固定版本的 PDFium WASM 渲染。Wasmi 为两个引擎分别设置 512 MiB 内存上限。文档提取仅向文本引擎挂载本次请求的临时目录；相似扫描额外挂载所选根目录，由核心按发现清单读取文件。原有 Go 提取库保留供现有集成使用。
 
 OCR worker 是 CLI 自身的隔离子进程，延迟启动并复用，通过 NCNN JSON ABI 加载库和本地模型，不需要解释器。取消或超时会终止 worker，后续 OCR 单元可启动新进程；线程限制在启动前和原生 load / infer 请求中同时传递。CPU NCNN 库使用内置 SimpleOMP，不依赖外部 libomp / libgomp。
 
@@ -175,5 +196,7 @@ npm run setup:agent:ocr -- --lite --sources 4
 受控部署可用 `FILENS_TEXT_WASM`、`FILENS_OCR_LIBRARY`、`FILENS_OCR_MODEL_DIR` 指定核心、原生库和模型；源码构建可通过 `FILENS_NCNN_LIBRARY` 提供可移植的 macOS NCNN 库。`--no-ocr` 显式关闭 OCR。
 
 ## 验证
+
+源码版还提供 `npm run test:agent:search`、`npm run test:agent:prune`、`npm run test:agent:similarity`。相似扫描通过实际 CLI/WASM 检查完整文件判重、图片分组、部分结果、链接、限制和八种输出；hdrw 遍历路径也在 macOS 上验证过，不能据此宣称已通过 Windows/Linux 原生执行。具体检查及平台范围见[验证记录](agent-cli-similarity-size.json)。
 
 `npm run test:agent` 覆盖中英文意图、JSON / UTF-8 证据、截断与空文档、Lite 注入 OCR、真实 PNG / 双页扫描 PDF / DOCX 内嵌图片、透明 / EXIF / 倒置预处理、取消和重启，以及下载器的并发、损坏源回退和缓存。`npm run test:agent:npm` 覆盖离线安装 Full / Lite tarball，以及无需 Python 的一键补装 OCR；追加 `-- --registry` 可验证全新缓存的公开 npm 安装、平台组件自动选择和临时调用。0.2.0 于 2026-10-29 已在 macOS arm64 上通过公开安装验证，当时核对的 0.1.0 tarball 与注册表一致；当前重建候选的哈希已变化，详见发布隐私审计。Linux 原生执行仍待上述 CI 验证。既有转换 CLI / HTTP 示例继续使用原来的接口。

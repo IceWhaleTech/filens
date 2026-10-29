@@ -4,6 +4,9 @@ mod output;
 mod pdf;
 mod request;
 mod runtime;
+mod search;
+mod similarity;
+mod walk;
 
 use anyhow::{Result, ensure};
 use request::Options;
@@ -78,7 +81,18 @@ fn run() -> Result<i32> {
                 return Ok(finish(&options.request.format, &value, 1));
             }
         };
-        if !metadata.is_file() || metadata.len() > 256 << 20 {
+        if matches!(options.request.operation.as_str(), "search" | "similar") {
+            if !metadata.is_dir() {
+                failure(
+                    &mut value,
+                    "invalid_input",
+                    "search/similar input must be a directory",
+                );
+                return Ok(finish(&options.request.format, &value, 2));
+            }
+            value["source"] =
+                json!({"path":std::fs::canonicalize(&options.request.input)?,"kind":"directory"});
+        } else if !metadata.is_file() || metadata.len() > 256 << 20 {
             failure(
                 &mut value,
                 "invalid_input",
@@ -86,16 +100,18 @@ fn run() -> Result<i32> {
             );
             return Ok(finish(&options.request.format, &value, 2));
         }
-        let path = std::path::absolute(&options.request.input)?;
-        let mut format = path
-            .extension()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_lowercase();
-        if options.request.operation == "convert" {
-            format = options.request.source_format.clone();
+        if !matches!(options.request.operation.as_str(), "search" | "similar") {
+            let path = std::path::absolute(&options.request.input)?;
+            let mut format = path
+                .extension()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_lowercase();
+            if options.request.operation == "convert" {
+                format = options.request.source_format.clone();
+            }
+            value["source"] = json!({"path":path,"format":format,"bytes":metadata.len()});
         }
-        value["source"] = json!({"path":path,"format":format,"bytes":metadata.len()});
     }
     let work = tempfile::Builder::new().prefix("filens-text-").tempdir()?;
     let work_path = work.path().to_owned();
@@ -125,15 +141,7 @@ fn run() -> Result<i32> {
     let deadline = Instant::now() + timeout;
     loop {
         if canceled.load(Ordering::SeqCst) || Instant::now() >= deadline {
-            #[cfg(unix)]
-            {
-                let id = pid.load(Ordering::SeqCst);
-                if id != 0 {
-                    unsafe {
-                        libc::kill(id as i32, libc::SIGKILL);
-                    }
-                }
-            }
+            ocr::terminate_worker(pid.load(Ordering::SeqCst));
             let mut value = initial;
             failure(
                 &mut value,
@@ -260,12 +268,31 @@ fn execute(
         metadata["profile"] = json!(profile);
         metadata["formats"] = capacity;
         metadata["ocr"] = engine.ocr_capacity();
+        metadata["search"]["discovery"] = walk::capacity();
+        metadata["similarity"]["discovery"] = walk::capacity();
         let conversion = convert::capabilities(&mut engine)?;
         metadata["conversionPairs"] = conversion["pairs"].clone();
         response["capacity"] = metadata;
         response["ok"] = json!(true);
         return Ok((response, 0));
     }
+    if o.request.operation == "search" {
+        return search::execute(o, response, &mut engine, work, &capacity, &wasm);
+    }
+    if o.request.operation == "similar" {
+        return similarity::execute(o, response, &mut engine, work);
+    }
+    extract_content(o, response, &mut engine, work, &capacity, false)
+}
+
+fn extract_content(
+    o: &Options,
+    mut response: Value,
+    engine: &mut runtime::Runtime,
+    work: &Path,
+    capacity: &Value,
+    prepared: bool,
+) -> Result<(Value, i32)> {
     let source = response["source"]["format"].as_str().unwrap().to_owned();
     if !capacity
         .as_array()
@@ -281,15 +308,20 @@ fn execute(
         return Ok((response, 2));
     }
     // Bound the copy as well as the initial stat: input can change while read.
-    let mut input =
-        std::fs::File::open(response["source"]["path"].as_str().unwrap())?.take((256 << 20) + 1);
-    let mut output = std::fs::File::create(work.join(format!("input.{source}")))?;
-    let copied = std::io::copy(&mut input, &mut output)?;
-    ensure!(
-        copied <= 256 << 20,
-        "input exceeded size limit while copying"
-    );
-    let options = json!({"maxBytes":if o.request.max_bytes == 0 { 8 << 20 } else { o.request.max_bytes },"maxOCRPages":200,"includeStructure":o.request.format != "text" || o.request.operation == "understand" || o.request.layout,"includeLayout":o.request.layout,"outputFormat":o.request.format});
+    if !prepared {
+        let mut input = std::fs::File::open(response["source"]["path"].as_str().unwrap())?
+            .take((256 << 20) + 1);
+        let mut output = std::fs::File::create(work.join(format!("input.{source}")))?;
+        let copied = std::io::copy(&mut input, &mut output)?;
+        ensure!(
+            copied <= 256 << 20,
+            "input exceeded size limit while copying"
+        );
+    }
+    let summary = (o.request.operation == "summarize").then(|| json!({
+        "query":o.request.query,"maxChars":o.request.summary_chars.unwrap_or(2000),"ratio":o.request.summary_ratio.unwrap_or(0.3)
+    }));
+    let options = json!({"maxBytes":if o.request.max_bytes == 0 { 8 << 20 } else { o.request.max_bytes },"maxOCRPages":200,"includeStructure":o.request.format != "text" || o.request.operation == "understand" || o.request.layout,"includeLayout":o.request.layout,"outputFormat":o.request.format,"summary":summary});
     std::fs::write(work.join("options.json"), serde_json::to_vec(&options)?)?;
     let args = [
         "converter-text",
@@ -310,7 +342,9 @@ fn execute(
     ]
     .map(String::from);
     // A failed invocation must never reuse the capabilities result.
-    std::fs::remove_file(work.join("result.json"))?;
+    if work.join("result.json").exists() {
+        std::fs::remove_file(work.join("result.json"))?;
+    }
     let wire = engine.run(&args)?;
     let Some(content) = wire.get("payload").filter(|v| v.is_object()) else {
         failure(

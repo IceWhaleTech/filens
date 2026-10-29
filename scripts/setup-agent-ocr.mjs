@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { downloadOCRModels, modelSources, requestedSourceCount } from './download-agent-models.mjs';
 import { downloadArtifact } from './model-download.mjs';
 import { buildMacNCNN, buildOCRWrapper } from './build-agent-ncnn-macos.mjs';
+import { buildWindowsNCNN } from './build-agent-ncnn-windows.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifest = JSON.parse(await readFile(path.join(root, 'converter/rapidocr/runtime.json'), 'utf8'));
@@ -42,6 +43,7 @@ export async function setupOCR(bundle, options = {}) {
         catch { await buildMacNCNN(native, { signal }); }
       }
     }
+    if (platform === 'win32-x64') await buildWindowsNCNN(native, { signal });
     await buildOCRWrapper(native, { signal, sourceCount:options.sourceCount ?? 3, platform });
     await writeFile(path.join(native, 'runtime.json'), JSON.stringify({ version: manifest.version, platform, artifacts: results.slice(1).map(r => r.value) }, null, 2) + '\n');
   } finally {

@@ -614,7 +614,9 @@
       "ok": false,
       "elapsedMs": 4,
       "characters": 0,
-      "stderr": ""
+      "stderr": "",
+      "supersededBy": "agent-cli-pruning-evaluation.json",
+      "historicalOnly": true
     },
     {
       "group": "structured",
@@ -650,7 +652,9 @@
       "ok": false,
       "elapsedMs": 3,
       "characters": 0,
-      "stderr": ""
+      "stderr": "",
+      "supersededBy": "agent-cli-pruning-evaluation.json",
+      "historicalOnly": true
     },
     {
       "group": "boundary",
@@ -669,7 +673,9 @@
       "ok": false,
       "elapsedMs": 3,
       "characters": 0,
-      "stderr": ""
+      "stderr": "",
+      "supersededBy": "agent-cli-pruning-evaluation.json",
+      "historicalOnly": true
     },
     {
       "group": "boundary",
@@ -1307,5 +1313,14 @@
       "stderr": "",
       "textExcerpt": true
     }
-  ]
+  ],
+  "measurementScope": "Point-in-time observations of the tested binary; failed summarize requests below are historical and superseded by current source capabilities.",
+  "capabilityUpdates": {
+    "extractiveSummary": {
+      "supported": true,
+      "availability": "Source builds advertising summarize in capacity.operations; published npm 0.2.0 and earlier Windows ZIPs do not include it.",
+      "documentation": "agent-cli-pruning.zh-CN.md",
+      "evaluation": "agent-cli-pruning-evaluation.json"
+    }
+  }
 }

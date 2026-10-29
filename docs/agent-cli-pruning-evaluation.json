@@ -1,0 +1,143 @@
+{
+  "date": "2026-10-29T14:55:50.319Z",
+  "platform": "darwin-arm64",
+  "method": "Actual Rust CLI with WASM pruning, sequential single runs on a public synthetic meeting note; includes startup and WASM execution. This is an illustrative fixture, not a general summarization benchmark.",
+  "input": "docs/assets/agent-cli/prune-meeting.txt",
+  "cases": [
+    {
+      "name": "自动选取关键原文",
+      "args": [
+        "总结 \"docs/assets/agent-cli/prune-meeting.txt\"，以 JSON 输出"
+      ],
+      "elapsedMs": 185,
+      "text": "决定采用本地 RapidOCR NCNN，统一设置最大边长960、OpenMP线程2，不引入私有Python环境。\n预算不得超过12345.67元；\n截止日期为2026年11月6日，Windows实机验证完成后才允许正式发布。\n风险：极小字体和严重模糊的扫描件可能漏字，关键金额必须核对原图。",
+      "complete": true,
+      "summary": {
+        "budgetCharacters": 150,
+        "characters": 146,
+        "excerpts": [
+          {
+            "clipped": false,
+            "endByte": 111,
+            "id": "s1",
+            "score": 0.526162,
+            "sourceEndByte": 454,
+            "sourceEndLine": 10,
+            "sourceStartByte": 343,
+            "sourceStartLine": 10,
+            "startByte": 0
+          },
+          {
+            "clipped": false,
+            "endByte": 144,
+            "id": "s2",
+            "score": 0.466627,
+            "sourceEndByte": 487,
+            "sourceEndLine": 11,
+            "sourceStartByte": 455,
+            "sourceStartLine": 11,
+            "startByte": 112
+          },
+          {
+            "clipped": false,
+            "endByte": 231,
+            "id": "s3",
+            "score": 0.456719,
+            "sourceEndByte": 619,
+            "sourceEndLine": 12,
+            "sourceStartByte": 533,
+            "sourceStartLine": 12,
+            "startByte": 145
+          },
+          {
+            "clipped": false,
+            "endByte": 328,
+            "id": "s4",
+            "score": 0.425911,
+            "sourceEndByte": 733,
+            "sourceEndLine": 15,
+            "sourceStartByte": 637,
+            "sourceStartLine": 15,
+            "startByte": 232
+          }
+        ],
+        "extractive": true,
+        "method": "density-tfidf-bm25-mmr",
+        "omitted": true,
+        "query": "",
+        "queryMatched": null,
+        "rankedSegments": 20,
+        "retainedRatio": 0.293763,
+        "sampled": false,
+        "sourceBytes": 1253,
+        "sourceCharacters": 497,
+        "sourceComplete": true,
+        "sourceCoordinates": "sourceStartByte/sourceEndByte: zero-based UTF-8 offsets in the full extracted text returned by read; end exclusive. startByte/endByte: offsets in content.text. Source lines are one-based, not page numbers.",
+        "totalSegments": 23,
+        "version": "filens-summary-v1"
+      }
+    },
+    {
+      "name": "聚焦预算和风险",
+      "args": [
+        "提取 \"docs/assets/agent-cli/prune-meeting.txt\" 的关键内容，关注预算和风险，保留40%，最多240字，以 JSON 输出"
+      ],
+      "elapsedMs": 177,
+      "text": "预算不得超过12345.67元；\n风险与行动\n风险：极小字体和严重模糊的扫描件可能漏字，关键金额必须核对原图。",
+      "complete": true,
+      "summary": {
+        "budgetCharacters": 199,
+        "characters": 55,
+        "excerpts": [
+          {
+            "clipped": false,
+            "endByte": 32,
+            "id": "s1",
+            "score": 0.893325,
+            "sourceEndByte": 487,
+            "sourceEndLine": 11,
+            "sourceStartByte": 455,
+            "sourceStartLine": 11,
+            "startByte": 0
+          },
+          {
+            "clipped": false,
+            "endByte": 48,
+            "id": "s2",
+            "score": 0.772594,
+            "sourceEndByte": 636,
+            "sourceEndLine": 14,
+            "sourceStartByte": 621,
+            "sourceStartLine": 14,
+            "startByte": 33
+          },
+          {
+            "clipped": false,
+            "endByte": 145,
+            "id": "s3",
+            "score": 0.467966,
+            "sourceEndByte": 733,
+            "sourceEndLine": 15,
+            "sourceStartByte": 637,
+            "sourceStartLine": 15,
+            "startByte": 49
+          }
+        ],
+        "extractive": true,
+        "method": "density-tfidf-bm25-mmr",
+        "omitted": true,
+        "query": "预算和风险",
+        "queryMatched": true,
+        "rankedSegments": 20,
+        "retainedRatio": 0.110664,
+        "sampled": false,
+        "sourceBytes": 1253,
+        "sourceCharacters": 497,
+        "sourceComplete": true,
+        "sourceCoordinates": "sourceStartByte/sourceEndByte: zero-based UTF-8 offsets in the full extracted text returned by read; end exclusive. startByte/endByte: offsets in content.text. Source lines are one-based, not page numbers.",
+        "totalSegments": 23,
+        "version": "filens-summary-v1"
+      }
+    }
+  ]
+}

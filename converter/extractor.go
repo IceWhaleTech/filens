@@ -33,11 +33,19 @@ type OCRLayoutProvider interface {
 	RecognizeLayout(context.Context, string) (json.RawMessage, error)
 }
 type Options struct {
-	MaxBytes         int    `json:"maxBytes"`
-	MaxOCRPages      int    `json:"maxOCRPages"`
-	IncludeStructure bool   `json:"includeStructure,omitempty"`
-	IncludeLayout    bool   `json:"includeLayout,omitempty"`
-	OutputFormat     string `json:"outputFormat,omitempty"`
+	MaxBytes         int             `json:"maxBytes"`
+	MaxOCRPages      int             `json:"maxOCRPages"`
+	IncludeStructure bool            `json:"includeStructure,omitempty"`
+	IncludeLayout    bool            `json:"includeLayout,omitempty"`
+	OutputFormat     string          `json:"outputFormat,omitempty"`
+	Summary          *SummaryOptions `json:"summary,omitempty"`
+}
+
+// SummaryOptions is forwarded to the shared WASM core; the Go host does not rank text.
+type SummaryOptions struct {
+	Query    string  `json:"query,omitempty"`
+	MaxChars int     `json:"maxChars,omitempty"`
+	Ratio    float64 `json:"ratio,omitempty"`
 }
 
 // Document spans address extracted UTF-8 text, with zero-based byte offsets
@@ -64,6 +72,7 @@ type Result struct {
 	ErrorMessage string          `json:"errorMessage,omitempty"`
 	Document     *Document       `json:"document,omitempty"`
 	Layout       json.RawMessage `json:"layout,omitempty"`
+	Summary      json.RawMessage `json:"summary,omitempty"`
 	Rendered     string          `json:"rendered,omitempty"`
 }
 

@@ -1,0 +1,3854 @@
+{
+  "date": "2026-10-29",
+  "node": "v20.20.2",
+  "platform": "darwin-arm64",
+  "rust": "1.93.0",
+  "target": "wasm32-wasip1",
+  "optimization": "opt-level=z, LTO, codegen-units=1, panic=abort, strip; Binaryen 131 -Oz",
+  "compression": "gzip level 9; Brotli quality 11",
+  "truckCommit": "78d699b0792b39e27c2bf073b682986701644e91",
+  "sizes": [
+    {
+      "name": "truck-fixed",
+      "sha256": "69a78cdadc4ef207814f7349ab717a9aa23e670d933341037866621dbcf2f41c",
+      "raw": 923160,
+      "gzip": 323829,
+      "brotli": 252752
+    },
+    {
+      "name": "occt",
+      "sha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982",
+      "raw": 2688776,
+      "gzip": 1044639,
+      "brotli": 816177
+    }
+  ],
+  "pdf": [],
+  "step": [
+    {
+      "id": "cax-if/as1-oc-214.stp",
+      "sha256": "bc7964773fa00c1ddedc80b58930ae531f91cfc5f1f42d693f903b4dc88c21ca",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 5180,
+          "meshMs": 266.54254199999997,
+          "geometry": {
+            "min": [
+              -10,
+              0,
+              -4.000000000000043
+            ],
+            "max": [
+              190,
+              150,
+              80
+            ],
+            "diagonal": 263.73471519691907,
+            "area": 141056.36533229123,
+            "signedVolume": 764431.2747411681,
+            "triangles": 5180
+          }
+        },
+        "truck": {
+          "faces": 160,
+          "instances": 18,
+          "meshMs": 249.725209,
+          "missingFaces": 0,
+          "parseMs": 122.546791,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 53,
+          "success": true,
+          "triangles": 28716,
+          "geometry": {
+            "min": [
+              -10,
+              0,
+              -4.000000000000007
+            ],
+            "max": [
+              190,
+              150,
+              80
+            ],
+            "diagonal": 263.734715196919,
+            "area": 141044.42240719142,
+            "signedVolume": 764314.4677914471,
+            "triangles": 28716
+          },
+          "comparison": {
+            "boundsRelativeError": 1.3470785126439826e-16,
+            "areaRelativeError": 0.00008466775016974934,
+            "volumeRelativeError": 0.00015280242133031168,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.031594366873414645,
+              "max": 0.08746246373036017
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.05103200023512172,
+              "max": 0.06867403188862632
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/as1-oc-214/as1-oc-214.stp",
+      "sha256": "bc7964773fa00c1ddedc80b58930ae531f91cfc5f1f42d693f903b4dc88c21ca",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 5180,
+          "meshMs": 267.42475,
+          "geometry": {
+            "min": [
+              -10,
+              0,
+              -4.000000000000043
+            ],
+            "max": [
+              190,
+              150,
+              80
+            ],
+            "diagonal": 263.73471519691907,
+            "area": 141056.36533229123,
+            "signedVolume": 764431.2747411681,
+            "triangles": 5180
+          }
+        },
+        "truck": {
+          "faces": 160,
+          "instances": 18,
+          "meshMs": 249.723084,
+          "missingFaces": 0,
+          "parseMs": 119.585667,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 53,
+          "success": true,
+          "triangles": 28716,
+          "geometry": {
+            "min": [
+              -10,
+              0,
+              -4.000000000000007
+            ],
+            "max": [
+              190,
+              150,
+              80
+            ],
+            "diagonal": 263.734715196919,
+            "area": 141044.42240723522,
+            "signedVolume": 764314.4677914601,
+            "triangles": 28716
+          },
+          "comparison": {
+            "boundsRelativeError": 1.3470785126439826e-16,
+            "areaRelativeError": 0.0000846677498592262,
+            "volumeRelativeError": 0.00015280242131325518,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.031594366873414645,
+              "max": 0.08746246373036017
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.045838017079514216,
+              "max": 0.07094985858517945
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/as1-tu-203.stp",
+      "sha256": "d2cac7ebad7240c7b7dd719c769a0e0d4a137d4229a31f25098f9073f6dd69c3",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 4736,
+          "meshMs": 210.601917,
+          "geometry": {
+            "min": [
+              -10,
+              0,
+              -4.000000000000007
+            ],
+            "max": [
+              190.00000000000003,
+              150,
+              80
+            ],
+            "diagonal": 263.73471519691907,
+            "area": 141052.9407175772,
+            "signedVolume": 764433.6145132873,
+            "triangles": 4736
+          }
+        },
+        "truck": {
+          "faces": 53,
+          "instances": 5,
+          "meshMs": 102.427375,
+          "missingFaces": 0,
+          "parseMs": 20.313917,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 53,
+          "success": true,
+          "triangles": 15280,
+          "geometry": {
+            "min": [
+              -7.5,
+              -7.499999999996251,
+              0
+            ],
+            "max": [
+              180,
+              150,
+              200.00000000000003
+            ],
+            "diagonal": 316.16846775097423,
+            "area": 103382.91077170258,
+            "signedVolume": 646931.1102149629,
+            "triangles": 15280
+          },
+          "comparison": {
+            "boundsRelativeError": 0.45500267156866825,
+            "areaRelativeError": 0.26706305982871587,
+            "volumeRelativeError": 0.1537118489656397,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 37.244339058925924,
+              "max": 60
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 96.96969610040819,
+              "max": 123.41182865533862
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/as1_pe_203.stp",
+      "sha256": "be1254354f6929a08ce1c8049d4a0a2f4406da4ea283fc4247d009c81976641c",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 16512,
+          "meshMs": 212.157417,
+          "geometry": {
+            "min": [
+              -3810,
+              -685.8,
+              -1905
+            ],
+            "max": [
+              1270,
+              1524.0000000000014,
+              1905
+            ],
+            "diagonal": 6723.519616986329,
+            "area": 91382452.2346716,
+            "signedVolume": 12551220889.807455,
+            "triangles": 16512
+          }
+        },
+        "truck": {
+          "faces": 53,
+          "instances": 5,
+          "meshMs": 13.720082999999999,
+          "missingFaces": 0,
+          "parseMs": 20.259375,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 53,
+          "success": true,
+          "triangles": 992,
+          "geometry": {
+            "min": [
+              -140,
+              -20,
+              -75
+            ],
+            "max": [
+              200,
+              60,
+              75
+            ],
+            "diagonal": 380.13155617496426,
+            "area": 103453.48201677915,
+            "signedVolume": 647085.1809770103,
+            "triangles": 992
+          },
+          "comparison": {
+            "boundsRelativeError": 0.5458450646485951,
+            "areaRelativeError": 0.9988679064799979,
+            "volumeRelativeError": 0.9999484444432412,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 3466.8193879743035,
+              "max": 3905.9057848340376
+            },
+            "candidateToReference": {
+              "samples": 1984,
+              "p95": 36.99999999999869,
+              "max": 59.99999999999869
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/dm1-id-214.stp",
+      "sha256": "59281108a72af555ef32f05597d38e293ad7667d86ff1baa10241cc76dea8b14",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1612,
+          "meshMs": 156.302458,
+          "geometry": {
+            "min": [
+              0,
+              -27,
+              0
+            ],
+            "max": [
+              50.000000000000014,
+              60.000000000000014,
+              100.00000000000001
+            ],
+            "diagonal": 141.66509803053114,
+            "area": 31833.519268124495,
+            "signedVolume": 109119.7555155372,
+            "triangles": 1612
+          }
+        },
+        "truck": {
+          "faces": 48,
+          "instances": 7,
+          "meshMs": 22.063834,
+          "missingFaces": 0,
+          "parseMs": 15.730041,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 24,
+          "success": true,
+          "triangles": 586,
+          "geometry": {
+            "min": [
+              0,
+              -1.0629921259842519,
+              0
+            ],
+            "max": [
+              1.968503937007874,
+              2.362204724409449,
+              3.937007874015748
+            ],
+            "diagonal": 5.577366064194139,
+            "area": 48.53386436172847,
+            "signedVolume": 6.518675007634706,
+            "triangles": 586
+          },
+          "comparison": {
+            "boundsRelativeError": 0.6780992175312025,
+            "areaRelativeError": 0.998475384893736,
+            "volumeRelativeError": 0.9999402612755423,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 77.95708211746845,
+              "max": 121.89027237515363
+            },
+            "candidateToReference": {
+              "samples": 1172,
+              "p95": 1.514233797698373,
+              "max": 1.968503937007874
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 1.0031302637534146e-16,
+            "areaRelativeErrorAfterScale": 0.016379318042722916
+          }
+        }
+      }
+    },
+    {
+      "id": "cax-if/dm1-oc-214.stp",
+      "sha256": "ae08c9bafcf8939875aa5e09d02c7cc40e6f70c26a06aca7b9e3135eec24e2b5",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1928,
+          "meshMs": 172.456792,
+          "geometry": {
+            "min": [
+              0,
+              -100,
+              -24.000000000000043
+            ],
+            "max": [
+              52.5,
+              0,
+              60
+            ],
+            "diagonal": 140.75599454374938,
+            "area": 31551.71391894625,
+            "signedVolume": 108422.35229002031,
+            "triangles": 1928
+          }
+        },
+        "truck": {
+          "faces": 61,
+          "instances": 7,
+          "meshMs": 116.34212500000001,
+          "missingFaces": 0,
+          "parseMs": 66.54358400000001,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 31,
+          "success": true,
+          "triangles": 8988,
+          "geometry": {
+            "min": [
+              0,
+              -100,
+              -24.000000000000007
+            ],
+            "max": [
+              52.5,
+              0,
+              60
+            ],
+            "diagonal": 140.75599454374935,
+            "area": 31550.000592769593,
+            "signedVolume": 108388.37699716422,
+            "triangles": 8988
+          },
+          "comparison": {
+            "boundsRelativeError": 2.524023001873825e-16,
+            "areaRelativeError": 0.00005430215870551336,
+            "volumeRelativeError": 0.0003133605952876861,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.03766933059413002,
+              "max": 0.08014361806994195
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.053678736177100964,
+              "max": 0.06896143875276656
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/dm1-pe-214.stp",
+      "sha256": "eb596afbc044f32875b55a2b81463ae0fef7da74de93939f88eee22be14dc631",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 6208,
+          "meshMs": 134.854334,
+          "geometry": {
+            "min": [
+              -1270,
+              -685.8,
+              0
+            ],
+            "max": [
+              1270,
+              1524,
+              1270
+            ],
+            "diagonal": 3598.2934899754914,
+            "area": 20542480.180865083,
+            "signedVolume": 1788759412.9212873,
+            "triangles": 6208
+          }
+        },
+        "truck": {
+          "faces": 61,
+          "instances": 7,
+          "meshMs": 7.803458,
+          "missingFaces": 0,
+          "parseMs": 15.501707999999999,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 31,
+          "success": true,
+          "triangles": 952,
+          "geometry": {
+            "min": [
+              -50,
+              -27,
+              0
+            ],
+            "max": [
+              50,
+              60,
+              50
+            ],
+            "diagonal": 141.66509803053114,
+            "area": 31818.104044614647,
+            "signedVolume": 109009.67309535027,
+            "triangles": 952
+          },
+          "comparison": {
+            "boundsRelativeError": 0.4068595305187214,
+            "areaRelativeError": 0.9984511069858909,
+            "volumeRelativeError": 0.9999390585048453,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 1336.1169284406733,
+              "max": 1921.2579212588819
+            },
+            "candidateToReference": {
+              "samples": 1904,
+              "p95": 27,
+              "max": 27
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 0,
+            "areaRelativeErrorAfterScale": 0.0007161830174334987
+          }
+        }
+      }
+    },
+    {
+      "id": "cax-if/io1-cm-214.stp",
+      "sha256": "eb234e26bca411a6da39c311e74d5a47b5e7a1248ae589a3a86cd2dee1f91f9b",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 2536,
+          "meshMs": 105.91758299999998,
+          "geometry": {
+            "min": [
+              0,
+              -44,
+              -43.95016292405236
+            ],
+            "max": [
+              31,
+              44,
+              43.95016292405235
+            ],
+            "diagonal": 128.18528497531602,
+            "area": 21121.06137966671,
+            "signedVolume": 78141.2128955491,
+            "triangles": 2536
+          }
+        },
+        "truck": {
+          "faces": 29,
+          "instances": 1,
+          "meshMs": 16.095625,
+          "missingFaces": 0,
+          "parseMs": 13.173625,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 9,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 29,
+          "success": true,
+          "triangles": 1304,
+          "geometry": {
+            "min": [
+              0,
+              -44,
+              -44
+            ],
+            "max": [
+              31,
+              44,
+              44
+            ],
+            "diagonal": 128.25365491868058,
+            "area": 21105.117074329944,
+            "signedVolume": 78082.44239622552,
+            "triangles": 1304
+          },
+          "comparison": {
+            "boundsRelativeError": 0.00038878936811855545,
+            "areaRelativeError": 0.0007549007623316967,
+            "volumeRelativeError": 0.0007521063104323735,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.11746382443444796,
+              "max": 0.16059984962913865
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.07951743583073867,
+              "max": 0.13241427324694252
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/io1-tu-203.stp",
+      "sha256": "9c5013bb7c60fa6fde168ba119949069aa083f43b395c4970253fa1c6bc58006",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1880,
+          "meshMs": 185.114791,
+          "geometry": {
+            "min": [
+              0,
+              -44,
+              -43.950162924052364
+            ],
+            "max": [
+              31,
+              44,
+              43.95016292405236
+            ],
+            "diagonal": 128.18528497531605,
+            "area": 21091.268095329604,
+            "signedVolume": 78090.25148689625,
+            "triangles": 1880
+          }
+        },
+        "truck": {
+          "faces": 29,
+          "instances": 1,
+          "meshMs": 52.911708000000004,
+          "missingFaces": 0,
+          "parseMs": 14.280249999999999,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 2,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 29,
+          "success": true,
+          "triangles": 4912,
+          "geometry": {
+            "min": [
+              0,
+              -44,
+              -44
+            ],
+            "max": [
+              31,
+              44,
+              44
+            ],
+            "diagonal": 128.25365491868058,
+            "area": 21089.92883116445,
+            "signedVolume": 78202.53634084661,
+            "triangles": 4912
+          },
+          "comparison": {
+            "boundsRelativeError": 0.00038878936811849994,
+            "areaRelativeError": 0.0000634985131810017,
+            "volumeRelativeError": 0.0014378856747465187,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.0871567065861854,
+              "max": 0.09355315402377701
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.05337884977794363,
+              "max": 0.08176037691634615
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/FOOT.stp",
+      "sha256": "de538c1733cd7b6f7912eaeebee6b00db322811f610aba5d71fba9684702fa25",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 19.581625
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.49941700000000006,
+          "missingFaces": 0,
+          "parseMs": 4.047667,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 8,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/FOOT_BACK_000.stp",
+      "sha256": "376338cbccd22fe0f2379a013c72816f5b98131dc671bae7d22d7fcbaa1016df",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1230,
+          "meshMs": 75.512667,
+          "geometry": {
+            "min": [
+              -39.9999999998908,
+              -10.000000000010798,
+              -83.49999999991999
+            ],
+            "max": [
+              0,
+              10.000000000010798,
+              -63.000000000002
+            ],
+            "diagonal": 49.196036425598,
+            "area": 4793.95337404384,
+            "signedVolume": 2389.9930496507986,
+            "triangles": 1230
+          }
+        },
+        "truck": {
+          "faces": 13,
+          "instances": 1,
+          "meshMs": 5.29125,
+          "missingFaces": 0,
+          "parseMs": 8.022333,
+          "preparation": {
+            "defaultReferenceAxes": 6,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 48,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 13,
+          "success": true,
+          "triangles": 81,
+          "geometry": {
+            "min": [
+              -1.5220572455800685,
+              -0.3905652530254492,
+              -3.2874015748
+            ],
+            "max": [
+              0,
+              0.3905600211340639,
+              -2.480314960628
+            ],
+            "diagonal": 1.8916140609355763,
+            "area": 6.767202315728842,
+            "signedVolume": 0.07038289945926911,
+            "triangles": 81
+          },
+          "comparison": {
+            "boundsRelativeError": 1.630468717666516,
+            "areaRelativeError": 0.9985883879571359,
+            "volumeRelativeError": 0.9999705510024519,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 84.94658343431125,
+              "max": 85.42796312988627
+            },
+            "candidateToReference": {
+              "samples": 162,
+              "p95": 60.48031496063,
+              "max": 60.519685039372
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/FOOT_FRONT_000.stp",
+      "sha256": "56a6ba1e357cead25ccbfa3b0497ba4eaced74f98af157b81ca3a8bccc9dfbc2",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1230,
+          "meshMs": 75.415708,
+          "geometry": {
+            "min": [
+              0,
+              -10.000000000010798,
+              -83.49999999991999
+            ],
+            "max": [
+              39.9999999998908,
+              10.000000000010798,
+              -63.000000000002
+            ],
+            "diagonal": 49.196036425598,
+            "area": 4793.953374036041,
+            "signedVolume": 2389.993048232843,
+            "triangles": 1230
+          }
+        },
+        "truck": {
+          "faces": 13,
+          "instances": 1,
+          "meshMs": 5.285459,
+          "missingFaces": 0,
+          "parseMs": 7.769209,
+          "preparation": {
+            "defaultReferenceAxes": 6,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 48,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 13,
+          "success": true,
+          "triangles": 81,
+          "geometry": {
+            "min": [
+              0,
+              -0.3905652530254492,
+              -3.2874015748
+            ],
+            "max": [
+              1.5220572455800687,
+              0.3905600211340639,
+              -2.480314960628
+            ],
+            "diagonal": 1.8916140609355767,
+            "area": 6.76720231573034,
+            "signedVolume": 0.07038289945936907,
+            "triangles": 81
+          },
+          "comparison": {
+            "boundsRelativeError": 1.630468717666516,
+            "areaRelativeError": 0.9985883879571334,
+            "volumeRelativeError": 0.9999705510024344,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 84.94658343431125,
+              "max": 85.42796312988627
+            },
+            "candidateToReference": {
+              "samples": 162,
+              "p95": 60.45417507200752,
+              "max": 60.519685039372
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/HEAD.stp",
+      "sha256": "5cb8fd74198e8d285a81d11ca715d30d04d67019fa4261119490c1093c6d86e5",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 19.605875
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.531083,
+          "missingFaces": 0,
+          "parseMs": 4.126458,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 8,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/HEAD_BACK.stp",
+      "sha256": "fff5821e398c9f61cef4b853955f16b8a7600d0cd553bb839f8bf004afd1e404",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 8160,
+          "meshMs": 150.997875,
+          "geometry": {
+            "min": [
+              180.00000000004198,
+              -59.98863740896403,
+              -60.000000000014
+            ],
+            "max": [
+              309.997529200842,
+              59.988637408932604,
+              60.000000000014
+            ],
+            "diagonal": 213.76132501238075,
+            "area": 71184.07073321356,
+            "signedVolume": 878559.7221570768,
+            "triangles": 8160
+          }
+        },
+        "truck": {
+          "faces": 12,
+          "instances": 1,
+          "meshMs": 6.056334,
+          "missingFaces": 1,
+          "parseMs": 9.159958,
+          "preparation": {
+            "defaultReferenceAxes": 2,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 30,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 12,
+          "success": true,
+          "triangles": 212,
+          "geometry": {
+            "min": [
+              7.086614173229998,
+              -2.362204167882121,
+              -2.36220472441
+            ],
+            "max": [
+              9.842519685040003,
+              2.3622041678819565,
+              2.36220472441
+            ],
+            "diagonal": 7.227385001033331,
+            "area": 70.12738139703929,
+            "signedVolume": 1.7125250678457646,
+            "triangles": 212
+          },
+          "comparison": {
+            "boundsRelativeError": 1.4041595667430367,
+            "areaRelativeError": 0.9990148444634495,
+            "volumeRelativeError": 0.9999980507585032,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 285.77751572513694,
+              "max": 299.9431006118764
+            },
+            "candidateToReference": {
+              "samples": 424,
+              "p95": 173.5192629069035,
+              "max": 173.6783385045847
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/HEAD_FRONT.stp",
+      "sha256": "259946d56d5a76073f35ee1a79e4dd0880afe25e7e1b569debf02b689d4c142d",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 6340,
+          "meshMs": 95.95291699999999,
+          "geometry": {
+            "min": [
+              250.00000000001597,
+              -59.98863740896403,
+              -60.000000000014
+            ],
+            "max": [
+              309.95133989032416,
+              59.988637408932604,
+              60.000000000014
+            ],
+            "diagonal": 179.96863512117622,
+            "area": 44808.26941517377,
+            "signedVolume": 22217.8534552908,
+            "triangles": 6340
+          }
+        },
+        "truck": {
+          "faces": 5,
+          "instances": 1,
+          "meshMs": 5.516709,
+          "missingFaces": 0,
+          "parseMs": 6.266542,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 12,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 5,
+          "success": true,
+          "triangles": 169,
+          "geometry": {
+            "min": [
+              9.842519685039997,
+              -2.362204167882121,
+              -2.36220472441
+            ],
+            "max": [
+              12.20472440945,
+              2.3622041678819565,
+              2.36220472441
+            ],
+            "diagonal": 7.0866134311927675,
+            "area": 65.86776124499885,
+            "signedVolume": 1.201761231509726,
+            "triangles": 169
+          },
+          "comparison": {
+            "boundsRelativeError": 1.654436148167684,
+            "areaRelativeError": 0.9985300088107689,
+            "volumeRelativeError": 0.9999459101108067,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 292.3165590314813,
+              "max": 297.57653548084954
+            },
+            "candidateToReference": {
+              "samples": 338,
+              "p95": 246.74689711464464,
+              "max": 246.74978899600166
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 0.0002703810565270391,
+            "areaRelativeErrorAfterScale": 0.051620484355663146
+          }
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/MAINBODY.stp",
+      "sha256": "11d8f3f04bdce024b619b79975ae35df1ce85910adad5361b68e57ab8b04aca5",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 19.217375
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.578416,
+          "missingFaces": 0,
+          "parseMs": 4.22625,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 8,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/MAINBODY_BACK.stp",
+      "sha256": "801a4df118c5bda126fde7b659f4705528e3c1b7333b7d94dcc418df7e7d274b",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 14944,
+          "meshMs": 275.14112500000005,
+          "geometry": {
+            "min": [
+              -160.000000000122,
+              -72.9902886029118,
+              -72.999999999962
+            ],
+            "max": [
+              -19.9999999999962,
+              72.99028860295672,
+              72.999999999962
+            ],
+            "diagonal": 249.45205736047075,
+            "area": 136629.09020705507,
+            "signedVolume": 72655.36342263031,
+            "triangles": 14944
+          }
+        },
+        "truck": {
+          "faces": 31,
+          "instances": 1,
+          "meshMs": 55.945208,
+          "missingFaces": 0,
+          "parseMs": 14.532708,
+          "preparation": {
+            "defaultReferenceAxes": 17,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 77,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 31,
+          "success": true,
+          "triangles": 794,
+          "geometry": {
+            "min": [
+              -6.2992125984300005,
+              -2.8740153303091125,
+              -2.87401574803
+            ],
+            "max": [
+              -0.7874015748029998,
+              2.8740153303103826,
+              2.87401574803
+            ],
+            "diagonal": 9.821394163523612,
+            "area": 209.14609714806525,
+            "signedVolume": 4.675798952765367,
+            "triangles": 794
+          },
+          "comparison": {
+            "boundsRelativeError": 0.6161536169637063,
+            "areaRelativeError": 0.998469241822286,
+            "volumeRelativeError": 0.9999356441323461,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 146.1550106130247,
+              "max": 155.02681146953762
+            },
+            "candidateToReference": {
+              "samples": 1588,
+              "p95": 67.60895837257223,
+              "max": 68.17361601070169
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 0.00003888838216967781,
+            "areaRelativeErrorAfterScale": 0.012416054066074062
+          }
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/MAINBODY_FRONT.stp",
+      "sha256": "1d94238d22df5352beb9f4bcc48ff09cfec533fa1716dd61ef734aa556578a04",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 13938,
+          "meshMs": 261.773958,
+          "geometry": {
+            "min": [
+              29.99999999988,
+              -72.9902886029118,
+              -72.999999999962
+            ],
+            "max": [
+              175.000000000062,
+              72.99028860295672,
+              72.999999999962
+            ],
+            "diagonal": 252.29214994008262,
+            "area": 134646.22492039145,
+            "signedVolume": 69345.85224155949,
+            "triangles": 13938
+          }
+        },
+        "truck": {
+          "faces": 22,
+          "instances": 1,
+          "meshMs": 57.525667000000006,
+          "missingFaces": 0,
+          "parseMs": 12.916917,
+          "preparation": {
+            "defaultReferenceAxes": 12,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 50,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 22,
+          "success": true,
+          "triangles": 624,
+          "geometry": {
+            "min": [
+              1.1811023621999999,
+              -2.8740153303091125,
+              -2.87401574803
+            ],
+            "max": [
+              6.889763779530001,
+              2.8740153303103826,
+              2.87401574803
+            ],
+            "diagonal": 9.933203800025032,
+            "area": 205.84415548053502,
+            "signedVolume": 4.98248059538613,
+            "triangles": 624
+          },
+          "comparison": {
+            "boundsRelativeError": 0.6663316169783992,
+            "areaRelativeError": 0.9984712222299419,
+            "volumeRelativeError": 0.9999281502723764,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 155.319089825076,
+              "max": 169.32345285607
+            },
+            "candidateToReference": {
+              "samples": 1248,
+              "p95": 75.03071214284901,
+              "max": 75.56585044216762
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 0.00003845060950945258,
+            "areaRelativeErrorAfterScale": 0.013693733869327752
+          }
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/TAIL.stp",
+      "sha256": "cdc37ab4360ddf8ae38dcfbc44c5e5ba47dd88b3fa6f03c915525f909010bea7",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 20.174709
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.554917,
+          "missingFaces": 0,
+          "parseMs": 4.619792,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 12,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/TAIL_MIDDLE_PART.stp",
+      "sha256": "7bbc9252ca0f93b4a4fd829895dd32c2c770f19e010ca50f64f9498d5614d8dc",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 236,
+          "meshMs": 77.596875,
+          "geometry": {
+            "min": [
+              -45.000000000073996,
+              -45.000000000073996,
+              -18.0000000000042
+            ],
+            "max": [
+              0,
+              45.000000000073996,
+              18.0000000000042
+            ],
+            "diagonal": 106.86907878349987,
+            "area": 8778.441186110324,
+            "signedVolume": 17637.617192326736,
+            "triangles": 236
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 5.165958,
+          "missingFaces": 0,
+          "parseMs": 9.272583,
+          "preparation": {
+            "defaultReferenceAxes": 6,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 92,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 92,
+          "geometry": {
+            "min": [
+              -1.77165354331,
+              -1.77165354331,
+              -0.708661417323
+            ],
+            "max": [
+              0,
+              1.77165354331,
+              0.708661417323
+            ],
+            "diagonal": 4.207444046594484,
+            "area": 13.288846686814793,
+            "signedVolume": 1.0242982357524801,
+            "triangles": 92
+          },
+          "comparison": {
+            "boundsRelativeError": 0.4044981668115424,
+            "areaRelativeError": 0.9984861951677888,
+            "volumeRelativeError": 0.9999419253618795,
+            "referenceToCandidate": {
+              "samples": 472,
+              "p95": 45.58945574601255,
+              "max": 51.97398502697381
+            },
+            "candidateToReference": {
+              "samples": 184,
+              "p95": 1.77165354331,
+              "max": 1.77165354331
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 0,
+            "areaRelativeErrorAfterScale": 0.023353674450683506
+          }
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/TAIL_TURBINE.stp",
+      "sha256": "a2595838d717b14e00e6d43f48c2f8a64240d799025ca7b45c883ce353a9b33e",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 306,
+          "meshMs": 83.273417,
+          "geometry": {
+            "min": [
+              -240.000000000056,
+              62.00696005277479,
+              -50.000000000053994
+            ],
+            "max": [
+              -119.21549309205031,
+              97.99852573690711,
+              50.000000000053994
+            ],
+            "diagonal": 160.8859531140829,
+            "area": 23029.33585754701,
+            "signedVolume": 82304.52726794104,
+            "triangles": 306
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 5.4075,
+          "missingFaces": 0,
+          "parseMs": 9.434584,
+          "preparation": {
+            "defaultReferenceAxes": 5,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 88,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 90,
+          "geometry": {
+            "min": [
+              -9.44881889764,
+              2.4434097848441336,
+              -1.96850393701
+            ],
+            "max": [
+              -4.693506532506786,
+              3.8582366465418896,
+              1.96850393701
+            ],
+            "diagonal": 6.333621534214516,
+            "area": 33.97739673434505,
+            "signedVolume": 3.552993997090176,
+            "triangles": 90
+          },
+          "comparison": {
+            "boundsRelativeError": 1.4330100088907953,
+            "areaRelativeError": 0.9985246037078741,
+            "volumeRelativeError": 0.9999568311232075,
+            "referenceToCandidate": {
+              "samples": 612,
+              "p95": 230.8685288850839,
+              "max": 247.13780029759417
+            },
+            "candidateToReference": {
+              "samples": 180,
+              "p95": 146.80809372920226,
+              "max": 146.9167824868416
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 0.00034588776203940707,
+            "areaRelativeErrorAfterScale": 0.04813332817210602
+          }
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-c5-214/s1-c5-214.stp",
+      "sha256": "96b083d50d9be57a432b72bce6f32c5737041683dffb14cf46952146d868a41e",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 20.3395
+        },
+        "truck": {
+          "error": "STEP parse failed: Error while tokenizing STEP input\n0: at line 11, in Tag:\nDATA;\n^\n\n",
+          "success": false,
+          "exitError": "1"
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/footback.stp",
+      "sha256": "db69f2973d1984543c24bbb8ddf124828338f1492f3fc503ca67a52c94726384",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1872,
+          "meshMs": 151.04066699999998,
+          "geometry": {
+            "min": [
+              -40,
+              -10,
+              -10
+            ],
+            "max": [
+              0,
+              10,
+              10
+            ],
+            "diagonal": 48.98979485566356,
+            "area": 4765.814677750831,
+            "signedVolume": 2356.2311469199662,
+            "triangles": 1872
+          }
+        },
+        "truck": {
+          "faces": 9,
+          "instances": 1,
+          "meshMs": 35.465875000000004,
+          "missingFaces": 0,
+          "parseMs": 8.133958,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 9,
+          "success": true,
+          "triangles": 3588,
+          "geometry": {
+            "min": [
+              -40,
+              -10,
+              -10.000000000000002
+            ],
+            "max": [
+              0,
+              10,
+              10.000000000000002
+            ],
+            "diagonal": 48.98979485566356,
+            "area": 4768.725876181221,
+            "signedVolume": 2281.847515649829,
+            "triangles": 3588
+          },
+          "comparison": {
+            "boundsRelativeError": 3.625973214694716e-17,
+            "areaRelativeError": 0.0006108501121499471,
+            "volumeRelativeError": 0.031568902468406226,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.06411084741400586,
+              "max": 0.1055687189664397
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.047864651285358384,
+              "max": 0.08397680456732938
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/footfront.stp",
+      "sha256": "8e6d1502ec44d35ddc54af8b0ce4beb4b886d92168f21bd96c670947718b9384",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 3184,
+          "meshMs": 136.19675,
+          "geometry": {
+            "min": [
+              0,
+              -10,
+              -10
+            ],
+            "max": [
+              40,
+              10.5,
+              10
+            ],
+            "diagonal": 49.19603642571219,
+            "area": 4797.53888677105,
+            "signedVolume": 2409.9816769189647,
+            "triangles": 3184
+          }
+        },
+        "truck": {
+          "faces": 13,
+          "instances": 1,
+          "meshMs": 34.588375,
+          "missingFaces": 0,
+          "parseMs": 8.903333,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 13,
+          "success": true,
+          "triangles": 3499,
+          "geometry": {
+            "min": [
+              0,
+              -10,
+              -10.000000000000002
+            ],
+            "max": [
+              40,
+              10.5,
+              10.000000000000002
+            ],
+            "diagonal": 49.19603642571219,
+            "area": 4792.805107113572,
+            "signedVolume": 2471.9404485499176,
+            "triangles": 3499
+          },
+          "comparison": {
+            "boundsRelativeError": 3.61077226634429e-17,
+            "areaRelativeError": 0.0009867100130299383,
+            "volumeRelativeError": 0.025709229337446238,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.05629047998649343,
+              "max": 0.7434169593044486
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.0488952813451638,
+              "max": 0.1061553406081701
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/headback.stp",
+      "sha256": "64a002eb2dc1858720650479b9b808de393aa1f7239d0e154eda6bf66f290dc7",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12840,
+          "meshMs": 235.12545899999998,
+          "geometry": {
+            "min": [
+              0,
+              -60,
+              -59.95133989029419
+            ],
+            "max": [
+              65,
+              60,
+              59.95133989029418
+            ],
+            "diagonal": 181.6635698717999,
+            "area": 46500.80746535189,
+            "signedVolume": 23087.63595676303,
+            "triangles": 12840
+          }
+        },
+        "truck": {
+          "faces": 12,
+          "instances": 1,
+          "meshMs": 115.842,
+          "missingFaces": 0,
+          "parseMs": 9.928292,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 12,
+          "success": true,
+          "triangles": 13500,
+          "geometry": {
+            "min": [
+              0,
+              -60,
+              -60
+            ],
+            "max": [
+              65.00000000000001,
+              60,
+              60
+            ],
+            "diagonal": 181.72781845386248,
+            "area": 46522.20703860676,
+            "signedVolume": 23666.030465485415,
+            "triangles": 13500
+          },
+          "comparison": {
+            "boundsRelativeError": 0.00026785838096301157,
+            "areaRelativeError": 0.0004601978851831691,
+            "volumeRelativeError": 0.025052132223739233,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.07289006319881962,
+              "max": 0.14162117434065774
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.056943058428489256,
+              "max": 0.1139944731671525
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/headfront.stp",
+      "sha256": "a8259c77368a7fecba97610386a03b3b2e91d29076a7ae3b4226affcf75e9621",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 11952,
+          "meshMs": 231.938209,
+          "geometry": {
+            "min": [
+              0,
+              -60,
+              -59.95133989029419
+            ],
+            "max": [
+              60,
+              60,
+              59.95133989029418
+            ],
+            "diagonal": 179.93513447508332,
+            "area": 44832.32162406304,
+            "signedVolume": 22247.01778453737,
+            "triangles": 11952
+          }
+        },
+        "truck": {
+          "faces": 5,
+          "instances": 1,
+          "meshMs": 66.309791,
+          "missingFaces": 0,
+          "parseMs": 6.880291000000001,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 5,
+          "success": true,
+          "triangles": 9427,
+          "geometry": {
+            "min": [
+              -1.0838124172454075e-14,
+              -60,
+              -60
+            ],
+            "max": [
+              60,
+              60,
+              60
+            ],
+            "diagonal": 180,
+            "area": 44824.19695718175,
+            "signedVolume": 22066.711816810675,
+            "triangles": 9427
+          },
+          "comparison": {
+            "boundsRelativeError": 0.0002704313965572938,
+            "areaRelativeError": 0.00018122342513104142,
+            "volumeRelativeError": 0.008104725292754257,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.07723626179440263,
+              "max": 0.34811460310810793
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.06696440622547703,
+              "max": 0.09722485400018056
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/mainbodyback.stp",
+      "sha256": "9dd00c091399fed94fb59783f24ca6763562a3df6cb6fbcece31ec3ff942126a",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12724,
+          "meshMs": 234.122917,
+          "geometry": {
+            "min": [
+              -30,
+              -73,
+              -72.9512979310275
+            ],
+            "max": [
+              115,
+              73,
+              72.95129793102748
+            ],
+            "diagonal": 252.2470366115054,
+            "area": 134648.78916178973,
+            "signedVolume": 69456.43227237111,
+            "triangles": 12724
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 141.94370800000002,
+          "missingFaces": 0,
+          "parseMs": 10.619708000000001,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 22680,
+          "geometry": {
+            "min": [
+              -30,
+              -73,
+              -73.00000000000001
+            ],
+            "max": [
+              115,
+              73,
+              73.00000000000001
+            ],
+            "diagonal": 252.30338880007145,
+            "area": 134649.45738061218,
+            "signedVolume": 69460.54044846,
+            "triangles": 22680
+          },
+          "comparison": {
+            "boundsRelativeError": 0.0001930729083154267,
+            "areaRelativeError": 0.000004962679773142243,
+            "volumeRelativeError": 0.0000591475253549138,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.043785652416009804,
+              "max": 0.09603455938823985
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.06277501980374485,
+              "max": 0.09122717680325416
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/mainbodyfront.stp",
+      "sha256": "563e91fd8c239800d94650156af6e1303631db6d336258eb4b98f53bb373ee3d",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 15022,
+          "meshMs": 306.682208,
+          "geometry": {
+            "min": [
+              -90,
+              -73,
+              -73
+            ],
+            "max": [
+              50,
+              73,
+              72.95129793102748
+            ],
+            "diagonal": 249.43492411398918,
+            "area": 136679.0298617976,
+            "signedVolume": 70422.0833709455,
+            "triangles": 15022
+          }
+        },
+        "truck": {
+          "faces": 37,
+          "instances": 1,
+          "meshMs": 152.109041,
+          "missingFaces": 0,
+          "parseMs": 13.916833,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 37,
+          "success": true,
+          "triangles": 22264,
+          "geometry": {
+            "min": [
+              -90,
+              -73,
+              -73.00000000000001
+            ],
+            "max": [
+              50,
+              73,
+              73.00000000000001
+            ],
+            "diagonal": 249.46342417276327,
+            "area": 136683.78765470898,
+            "signedVolume": 70342.1543117938,
+            "triangles": 22264
+          },
+          "comparison": {
+            "boundsRelativeError": 0.00019524959925128576,
+            "areaRelativeError": 0.00003480996987018926,
+            "volumeRelativeError": 0.001134999922264192,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.06375118677872874,
+              "max": 0.09761520381548378
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.06157179787081562,
+              "max": 0.09351122458421034
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/s1-tu-203.stp",
+      "sha256": "3e0d09ebe18b197de438497ababd313df35380154e87fe8dd495b8f575671a29",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 39.518333000000005
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.39475000000000005,
+          "missingFaces": 0,
+          "parseMs": 8.818375,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/tailmiddlepart.stp",
+      "sha256": "4b2147b8cf453ccaefd39d34e125af51e9f1996a12d171d720d37234200fb008",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 236,
+          "meshMs": 121.46637500000001,
+          "geometry": {
+            "min": [
+              0,
+              -45,
+              -18
+            ],
+            "max": [
+              47.5,
+              45,
+              18
+            ],
+            "diagonal": 107.94558814513913,
+            "area": 8973.008114755268,
+            "signedVolume": 17911.45783171532,
+            "triangles": 236
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 11.545875,
+          "missingFaces": 0,
+          "parseMs": 9.418790999999999,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 352,
+          "geometry": {
+            "min": [
+              0,
+              -45,
+              -18
+            ],
+            "max": [
+              47.5,
+              45,
+              18
+            ],
+            "diagonal": 107.94558814513913,
+            "area": 8965.74100029136,
+            "signedVolume": 17881.422837858165,
+            "triangles": 352
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0.0008098860907032854,
+            "volumeRelativeError": 0.0016768592562004692,
+            "referenceToCandidate": {
+              "samples": 472,
+              "p95": 0.09530224034558434,
+              "max": 0.09852949791978655
+            },
+            "candidateToReference": {
+              "samples": 704,
+              "p95": 0.061898035366190506,
+              "max": 0.07689844153339356
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1-tu-203/tailturbine.stp",
+      "sha256": "9eb2dc63eed19b5d89b6ea45106d7e1aeb5933bf85bbee424b72327c0201f4b7",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 4416,
+          "meshMs": 180.998875,
+          "geometry": {
+            "min": [
+              1.483142428,
+              -50,
+              -36
+            ],
+            "max": [
+              140,
+              50,
+              36
+            ],
+            "diagonal": 185.3939584550201,
+            "area": 35832.591408890556,
+            "signedVolume": 302306.1359901473,
+            "triangles": 4416
+          }
+        },
+        "truck": {
+          "faces": 21,
+          "instances": 1,
+          "meshMs": 52.709958,
+          "missingFaces": 0,
+          "parseMs": 12.055167,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 21,
+          "success": true,
+          "triangles": 3592,
+          "geometry": {
+            "min": [
+              1.4831424279999936,
+              -50,
+              -36.00000000017579
+            ],
+            "max": [
+              140,
+              50,
+              36
+            ],
+            "diagonal": 185.3939584550884,
+            "area": 35824.495573059125,
+            "signedVolume": 302228.4333154047,
+            "triangles": 3592
+          },
+          "comparison": {
+            "boundsRelativeError": 9.481877095239765e-13,
+            "areaRelativeError": 0.00022593498022647462,
+            "volumeRelativeError": 0.0002570330717506373,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.06022804113448225,
+              "max": 0.088080388363591
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 0.054725442657893614,
+              "max": 0.09422251530137112
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/foot_asm.stp",
+      "sha256": "6358c7117ddb8e6039657338bf1e45c4cea6c44dfcf4dc1c632b80d00e9fc8d7",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 22.331833000000003
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.5584159999999999,
+          "missingFaces": 0,
+          "parseMs": 4.960916999999999,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/foot_back_prt.stp",
+      "sha256": "33a62809e3b156d9948fa0cacb5e4f24b8f0de481a5be4ca170c2b6b6669b1d2",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1180,
+          "meshMs": 67.969791,
+          "geometry": {
+            "min": [
+              -40,
+              -10,
+              -10
+            ],
+            "max": [
+              0,
+              10,
+              10
+            ],
+            "diagonal": 48.98979485566356,
+            "area": 4763.182602525581,
+            "signedVolume": 2345.8286602427834,
+            "triangles": 1180
+          }
+        },
+        "truck": {
+          "faces": 9,
+          "instances": 1,
+          "meshMs": 5.313625,
+          "missingFaces": 0,
+          "parseMs": 6.885042,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 9,
+          "success": true,
+          "triangles": 103,
+          "geometry": {
+            "min": [
+              -4,
+              -1,
+              -1
+            ],
+            "max": [
+              0,
+              1,
+              1
+            ],
+            "diagonal": 4.898979485566356,
+            "area": 45.411098088695844,
+            "signedVolume": 2.0636402034637547,
+            "triangles": 103
+          },
+          "comparison": {
+            "boundsRelativeError": 0.7348469228349535,
+            "areaRelativeError": 0.9904662277560768,
+            "volumeRelativeError": 0.9991202937203222,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 35.57173769810898,
+              "max": 35.9418344143088
+            },
+            "candidateToReference": {
+              "samples": 206,
+              "p95": 8.651108050605567,
+              "max": 8.950696843671947
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/foot_front_prt.stp",
+      "sha256": "e8e289ba29e830e13560b3d798e9e6d2f81e705f4d4ece0a7a6bce8d1b8c5a0e",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 1200,
+          "meshMs": 72.330084,
+          "geometry": {
+            "min": [
+              0,
+              -10,
+              -10
+            ],
+            "max": [
+              40,
+              10.5,
+              10
+            ],
+            "diagonal": 49.19603642571219,
+            "area": 4793.455650424893,
+            "signedVolume": 2402.1229653432547,
+            "triangles": 1200
+          }
+        },
+        "truck": {
+          "faces": 13,
+          "instances": 1,
+          "meshMs": 5.3565000000000005,
+          "missingFaces": 0,
+          "parseMs": 8.07325,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 13,
+          "success": true,
+          "triangles": 119,
+          "geometry": {
+            "min": [
+              0,
+              -1,
+              -1
+            ],
+            "max": [
+              4,
+              1.05,
+              1
+            ],
+            "diagonal": 4.919603642571219,
+            "area": 45.68504587715212,
+            "signedVolume": 1.708920962485963,
+            "triangles": 119
+          },
+          "comparison": {
+            "boundsRelativeError": 0.731766268495254,
+            "areaRelativeError": 0.9904692878772952,
+            "volumeRelativeError": 0.9992885788999392,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 35.86095851772063,
+              "max": 35.9418344143088
+            },
+            "candidateToReference": {
+              "samples": 238,
+              "p95": 8.56951724439801,
+              "max": 8.950696843671945
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/head_asm.stp",
+      "sha256": "31a5e338e758d6c34a0227a8de6c8ff771da1cf945d7e77963cb97b256ed74e8",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 21.097417
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.554459,
+          "missingFaces": 0,
+          "parseMs": 5.1456669999999995,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/head_back_prt.stp",
+      "sha256": "240d0b4f5136477bc6f3d79d3b1bdf3837c4bdeabeb2a76dedf446f93a8a7d1c",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 6512,
+          "meshMs": 115.06187499999999,
+          "geometry": {
+            "min": [
+              0,
+              -60,
+              -59.95133989029418
+            ],
+            "max": [
+              62.23635208502,
+              60,
+              59.95133989029418
+            ],
+            "diagonal": 180.69315465566726,
+            "area": 45868.707068454954,
+            "signedVolume": 22719.51661934292,
+            "triangles": 6512
+          }
+        },
+        "truck": {
+          "faces": 12,
+          "instances": 1,
+          "meshMs": 6.738625,
+          "missingFaces": 0,
+          "parseMs": 7.68575,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 12,
+          "success": true,
+          "triangles": 417,
+          "geometry": {
+            "min": [
+              -1.4450832229938768e-15,
+              -6,
+              -5.908846518073249
+            ],
+            "max": [
+              6.223635208502,
+              6,
+              5.908846518073249
+            ],
+            "diagonal": 17.955263960885986,
+            "area": 449.0565671118851,
+            "signedVolume": 21.164582815604756,
+            "triangles": 417
+          },
+          "comparison": {
+            "boundsRelativeError": 0.3099880401294506,
+            "areaRelativeError": 0.9902099580343151,
+            "volumeRelativeError": 0.9990684404439493,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 54.09312173720564,
+              "max": 58.33289463680501
+            },
+            "candidateToReference": {
+              "samples": 834,
+              "p95": 53.16177850871857,
+              "max": 53.1851113646803
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/head_front_prt.stp",
+      "sha256": "2961d6198faa80955a9c8b6a8472b2355ece48cee16519df75e19db18f61fbfb",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 6324,
+          "meshMs": 100.06008299999999,
+          "geometry": {
+            "min": [
+              -60,
+              -60,
+              -59.95133989029418
+            ],
+            "max": [
+              0,
+              60,
+              59.95133989029418
+            ],
+            "diagonal": 179.93513447508332,
+            "area": 44807.81813859869,
+            "signedVolume": 22192.42223942367,
+            "triangles": 6324
+          }
+        },
+        "truck": {
+          "faces": 5,
+          "instances": 1,
+          "meshMs": 6.544833,
+          "missingFaces": 0,
+          "parseMs": 7.634792,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 5,
+          "success": true,
+          "triangles": 365,
+          "geometry": {
+            "min": [
+              -6,
+              -6,
+              -5.908846518073249
+            ],
+            "max": [
+              1.4695761589768238e-15,
+              6,
+              5.908846518073249
+            ],
+            "diagonal": 17.878978401927373,
+            "area": 438.6622160276756,
+            "signedVolume": 21.3137456185715,
+            "triangles": 365
+          },
+          "comparison": {
+            "boundsRelativeError": 0.3003443075743749,
+            "areaRelativeError": 0.9902101411260238,
+            "volumeRelativeError": 0.9990395935428487,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 54.07820729132106,
+              "max": 54.15630452572271
+            },
+            "candidateToReference": {
+              "samples": 730,
+              "p95": 53.168297640523896,
+              "max": 53.19432757226743
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/main_body_back_prt.stp",
+      "sha256": "78eb4578da565e2865f87238ae1509e0958644c411acf3ebd9ab4dc7af55fc10",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 13636,
+          "meshMs": 304.389542,
+          "geometry": {
+            "min": [
+              -30,
+              -73,
+              -72.95129793102747
+            ],
+            "max": [
+              115,
+              73,
+              72.95129793102747
+            ],
+            "diagonal": 252.24703661150537,
+            "area": 134619.77870823626,
+            "signedVolume": 68911.87406477347,
+            "triangles": 13636
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 23.354459000000002,
+          "missingFaces": 0,
+          "parseMs": 10.836375,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 1436,
+          "geometry": {
+            "min": [
+              -3,
+              -7.3,
+              -7.3
+            ],
+            "max": [
+              11.5,
+              7.3,
+              7.3
+            ],
+            "diagonal": 25.230338880007142,
+            "area": 1339.0111027750038,
+            "signedVolume": 68.11573339540985,
+            "triangles": 1436
+          },
+          "comparison": {
+            "boundsRelativeError": 0.41031205515965696,
+            "areaRelativeError": 0.9900533850551259,
+            "volumeRelativeError": 0.9990115530259506,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 93.75244031214106,
+              "max": 105.22413370335114
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 69.95244543627331,
+              "max": 71.5400413868843
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/main_body_front_prt.stp",
+      "sha256": "55458980ccb253d884c79a098b15b8732d5cac3c937ec70632943e3cac1e97ff",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 14772,
+          "meshMs": 260.878375,
+          "geometry": {
+            "min": [
+              -90,
+              -73,
+              -72.95129793102747
+            ],
+            "max": [
+              50,
+              73,
+              72.95129793102747
+            ],
+            "diagonal": 249.4064303086152,
+            "area": 136592.7130040084,
+            "signedVolume": 70141.45717255466,
+            "triangles": 14772
+          }
+        },
+        "truck": {
+          "faces": 29,
+          "instances": 1,
+          "meshMs": 24.40075,
+          "missingFaces": 0,
+          "parseMs": 15.221834,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 29,
+          "success": true,
+          "triangles": 1716,
+          "geometry": {
+            "min": [
+              -9,
+              -7.3,
+              -7.3
+            ],
+            "max": [
+              5,
+              7.3,
+              7.3
+            ],
+            "diagonal": 24.946342417276323,
+            "area": 1358.1526004375996,
+            "signedVolume": 69.27341373736574,
+            "triangles": 1716
+          },
+          "comparison": {
+            "boundsRelativeError": 0.3247710971195518,
+            "areaRelativeError": 0.9900569176014701,
+            "volumeRelativeError": 0.9990123756116595,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 78.98947449381228,
+              "max": 83.18454591201706
+            },
+            "candidateToReference": {
+              "samples": 2048,
+              "p95": 69.85090721432026,
+              "max": 70.9278928712201
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/mainbody_asm.stp",
+      "sha256": "e59478558d3e20cfc585681fa008bc4124b87c5012b375c4bd79a2f1abf2b4fb",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 20.904999999999998
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.508084,
+          "missingFaces": 0,
+          "parseMs": 4.898417,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/s1_pe_214.stp",
+      "sha256": "29fe5af76814eebf73e5da5be316a90a7f82f84536061d6e126afc5637d47f51",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 23.022833
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.577292,
+          "missingFaces": 0,
+          "parseMs": 6.448167000000001,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/tail_asm.stp",
+      "sha256": "5d9bbd984aa48d30d124ec176e109d5859659ebe3ee34c4a3a1e629e7f66d4fa",
+      "engines": {
+        "occt": {
+          "success": false,
+          "meshes": 0,
+          "triangles": 0,
+          "meshMs": 21.291917
+        },
+        "truck": {
+          "faces": 0,
+          "instances": 0,
+          "meshMs": 0.606042,
+          "missingFaces": 0,
+          "parseMs": 5.284042,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 0,
+          "success": false,
+          "triangles": 0
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/tail_middle_part_prt.stp",
+      "sha256": "832d442af9b2780414c196d12b6a96aac3ba06c64e5e59af8d376d4701cbe4ff",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 404,
+          "meshMs": 84.29916700000001,
+          "geometry": {
+            "min": [
+              -10,
+              -45,
+              -18.000000000000004
+            ],
+            "max": [
+              37.5,
+              45,
+              18.000000000000004
+            ],
+            "diagonal": 107.94558814513913,
+            "area": 9853.403363251387,
+            "signedVolume": 10668.505728946515,
+            "triangles": 404
+          }
+        },
+        "truck": {
+          "faces": 23,
+          "instances": 1,
+          "meshMs": 5.737540999999999,
+          "missingFaces": 0,
+          "parseMs": 12.068209,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 23,
+          "success": true,
+          "triangles": 132,
+          "geometry": {
+            "min": [
+              -1,
+              -4.5,
+              -1.720944260880858
+            ],
+            "max": [
+              3.75,
+              4.5,
+              1.720944260880858
+            ],
+            "diagonal": 10.742862588539197,
+            "area": 97.09512686799283,
+            "signedVolume": 10.56841113073971,
+            "triangles": 132
+          },
+          "comparison": {
+            "boundsRelativeError": 0.37518902528508524,
+            "areaRelativeError": 0.9901460314483712,
+            "volumeRelativeError": 0.9990093822509684,
+            "referenceToCandidate": {
+              "samples": 808,
+              "p95": 35.77897427238387,
+              "max": 43.242166920540726
+            },
+            "candidateToReference": {
+              "samples": 264,
+              "p95": 1.45,
+              "max": 1.5
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/s1_pe_214/tail_turbine_prt.stp",
+      "sha256": "a0cd10655ef08ae0bc69cb33a9bdac64fe80210b9fea18cd7b2840fd97eb650a",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 332,
+          "meshMs": 124.989333,
+          "geometry": {
+            "min": [
+              -98.51685757164,
+              -50.71796769724,
+              -36
+            ],
+            "max": [
+              40,
+              50.71796769724,
+              36
+            ],
+            "diagonal": 186.17241691742396,
+            "area": 35181.50077599387,
+            "signedVolume": 296289.1639531757,
+            "triangles": 332
+          }
+        },
+        "truck": {
+          "faces": 20,
+          "instances": 1,
+          "meshMs": 8.1265,
+          "missingFaces": 0,
+          "parseMs": 11.52375,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 20,
+          "success": true,
+          "triangles": 122,
+          "geometry": {
+            "min": [
+              -9.851685757164,
+              -5.071796769724,
+              -3.6000000000000005
+            ],
+            "max": [
+              4,
+              5.071796769724,
+              3.6000000000000005
+            ],
+            "diagonal": 18.617241691742397,
+            "area": 348.6876006919372,
+            "signedVolume": 245.3594734721188,
+            "triangles": 122
+          },
+          "comparison": {
+            "boundsRelativeError": 0.4762529986050677,
+            "areaRelativeError": 0.990088893509345,
+            "volumeRelativeError": 0.9991718918430953,
+            "referenceToCandidate": {
+              "samples": 664,
+              "p95": 84.52027787291838,
+              "max": 94.31830144172326
+            },
+            "candidateToReference": {
+              "samples": 244,
+              "p95": 8.874158188635477,
+              "max": 9.619738995159615
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cax-if/sg1-c5-214.stp",
+      "sha256": "5e8ff5347d6edc7b648455e469ec84850237faf9e96b8d3bc14f00afcdffe443",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 2040,
+          "meshMs": 86.128292,
+          "geometry": {
+            "min": [
+              -39.99833428005943,
+              -39.99833428005943,
+              -70
+            ],
+            "max": [
+              39.99833428005943,
+              39.99833428005943,
+              84.0312824249
+            ],
+            "diagonal": 191.1140233653573,
+            "area": 46562.353457528116,
+            "signedVolume": 355131.1973967278,
+            "triangles": 2040
+          }
+        },
+        "truck": {
+          "faces": 16,
+          "instances": 1,
+          "meshMs": 11.767916,
+          "missingFaces": 0,
+          "parseMs": 7.769917,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 16,
+          "success": true,
+          "triangles": 696,
+          "geometry": {
+            "min": [
+              -39.99038052549403,
+              -39.95701540266528,
+              -70
+            ],
+            "max": [
+              39.99038052549403,
+              39.95701540266528,
+              84.0312824249
+            ],
+            "diagonal": 191.07278828579928,
+            "area": 46523.84022475023,
+            "signedVolume": 354912.91627579724,
+            "triangles": 696
+          },
+          "comparison": {
+            "boundsRelativeError": 0.0002162001336509142,
+            "areaRelativeError": 0.0008271324346398119,
+            "volumeRelativeError": 0.0006146492409866123,
+            "referenceToCandidate": {
+              "samples": 2048,
+              "p95": 0.08140745923344059,
+              "max": 0.09612359357039743
+            },
+            "candidateToReference": {
+              "samples": 1392,
+              "p95": 0.06815821637882842,
+              "max": 0.0814740592586449
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "conical-surface/conical-surface.step",
+      "sha256": "c4a65756a022264d8448b417fddbcc0ad24ccc02c4d1f41099b57ba0cd643b67",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 416,
+          "meshMs": 54.085165999999994,
+          "geometry": {
+            "min": [
+              -18.999999999999996,
+              -13.46779621366055,
+              13.99568929182463
+            ],
+            "max": [
+              -12.000000000000005,
+              13.516489522029069,
+              41.004310708175325
+            ],
+            "diagonal": 38.81516852310575,
+            "area": 1715.249246920676,
+            "signedVolume": 2512.709136321291,
+            "triangles": 416
+          }
+        },
+        "truck": {
+          "faces": 5,
+          "instances": 1,
+          "meshMs": 4.947166999999999,
+          "missingFaces": 0,
+          "parseMs": 5.278292,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 5,
+          "success": true,
+          "triangles": 50,
+          "geometry": {
+            "min": [
+              -0.748031496062992,
+              -0.5321452567727747,
+              0.6218258544857038
+            ],
+            "max": [
+              -0.47244094488189,
+              0.532145256772798,
+              1.543528476222956
+            ],
+            "diagonal": 1.434642872648356,
+            "area": 2.4273998069817515,
+            "signedVolume": 0.13351849853100586,
+            "triangles": 50
+          },
+          "comparison": {
+            "boundsRelativeError": 1.0166330260414123,
+            "areaRelativeError": 0.9985848122007109,
+            "volumeRelativeError": 0.9999468627321002,
+            "referenceToCandidate": {
+              "samples": 832,
+              "p95": 40.96578245689843,
+              "max": 42.872357830596634
+            },
+            "candidateToReference": {
+              "samples": 100,
+              "p95": 17.543601172339653,
+              "max": 17.674171719288214
+            }
+          },
+          "geometryScreenPass": false
+        }
+      }
+    },
+    {
+      "id": "cube-10x10mm/Cube 10x10.stp",
+      "sha256": "963924fdd23de1127cab2a4d38426f36e3c05cadacd47561dba0b2fcb9886293",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 43.981165999999995,
+          "geometry": {
+            "min": [
+              -5,
+              0,
+              -5
+            ],
+            "max": [
+              5,
+              10,
+              5
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 3.9199170000000003,
+          "missingFaces": 0,
+          "parseMs": 5.391166,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              -5,
+              0,
+              -5
+            ],
+            "max": [
+              5,
+              10,
+              5
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 1.4895204919483639e-15,
+              "max": 1.4895204919483639e-15
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 1.4895204919483639e-15,
+              "max": 1.5700924586837751e-15
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cube-fcstd/cube.step",
+      "sha256": "dc21bcabee7fc40694aaddbc0c91e2b9083e33b40e5a6055c0722c33ec9b50fb",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 46.969458,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 2.489375,
+          "missingFaces": 0,
+          "parseMs": 8.746333,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 6.280369834735101e-16,
+              "max": 8.881784197001252e-16
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 1.88411095042053e-15,
+              "max": 1.88411095042053e-15
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cube-fcstd/cube2.step",
+      "sha256": "c9607400b18df0389a8b89532334e28bd7f5ad039c5568d0153227dd0a54e8ae",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 48.518209,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 2.443875,
+          "missingFaces": 0,
+          "parseMs": 9.187042,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 6.280369834735101e-16,
+              "max": 8.881784197001252e-16
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 1.88411095042053e-15,
+              "max": 1.88411095042053e-15
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cube-fcstd/cube3.step",
+      "sha256": "9a5855ff8aff9ea79178eee5994061b126e634a8a838bf37bf9ebe410f1c07b2",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 46.33779199999999,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 2.509375,
+          "missingFaces": 0,
+          "parseMs": 8.772042,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 600,
+            "signedVolume": 999.9999999999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 6.280369834735101e-16,
+              "max": 8.881784197001252e-16
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 1.88411095042053e-15,
+              "max": 1.88411095042053e-15
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "cube-units/cube-in.step",
+      "sha256": "f52324692b57eba7684739c45c7f6ddbb7019a70c7e96bf70a6da726e70fbde1",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 47.93154200000001,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              999.9999999999877,
+              999.9999999999877,
+              999.9999999999877
+            ],
+            "diagonal": 1732.0508075688558,
+            "area": 5999999.999999854,
+            "signedVolume": 999999999.9999632,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 2.559875,
+          "missingFaces": 0,
+          "parseMs": 9.609083,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              39.370078740157,
+              39.370078740157,
+              39.370078740157
+            ],
+            "diagonal": 68.19097667593921,
+            "area": 9300.018600036698,
+            "signedVolume": 61023.744094728245,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0.5546199436309792,
+            "areaRelativeError": 0.9984499968999939,
+            "volumeRelativeError": 0.9999389762559052,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 1663.85983037266,
+              "max": 1663.85983037266
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 39.370078740157,
+              "max": 39.370078740157
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 25.4,
+            "boundsRelativeErrorAfterScale": 0,
+            "areaRelativeErrorAfterScale": 2.964710195859346e-14
+          }
+        }
+      }
+    },
+    {
+      "id": "cube-units/cube-m.step",
+      "sha256": "181f50a866062fe6bea05982491f3530c2be08a68d54f94ac3d5b8d037a09e45",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 46.411833,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              1000,
+              1000,
+              1000
+            ],
+            "diagonal": 1732.0508075688772,
+            "area": 6000000,
+            "signedVolume": 999999999.9999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 2.503542,
+          "missingFaces": 0,
+          "parseMs": 9.299084,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              1,
+              1,
+              1
+            ],
+            "diagonal": 1.7320508075688772,
+            "area": 6,
+            "signedVolume": 0.9999999999999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0.5767729189204361,
+            "areaRelativeError": 0.999999,
+            "volumeRelativeError": 0.999999999,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 1730.3187567613084,
+              "max": 1730.3187567613084
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 1,
+              "max": 1
+            }
+          },
+          "geometryScreenPass": false,
+          "unitScaleDiagnostic": {
+            "scale": 1000,
+            "boundsRelativeErrorAfterScale": 0,
+            "areaRelativeErrorAfterScale": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "cube-units/cube-mm.step",
+      "sha256": "c3a7c0da333c4e3026468d5bc023557c3ba889609ab3232a7d577df5981d103d",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 45.37795800000001,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              1000,
+              1000,
+              1000
+            ],
+            "diagonal": 1732.0508075688772,
+            "area": 6000000,
+            "signedVolume": 999999999.9999999,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 2.597208,
+          "missingFaces": 0,
+          "parseMs": 9.314207999999999,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              1000,
+              1000,
+              1000
+            ],
+            "diagonal": 1732.0508075688772,
+            "area": 6000000,
+            "signedVolume": 999999999.9999999,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 1.1368683772161603e-13,
+              "max": 1.1368683772161603e-13
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 8.038873388460929e-14,
+              "max": 1.1368683772161603e-13
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "rounded-cube/rounded-cube.step",
+      "sha256": "370c5474e50dc94923f0dacb5113f7258233601620ab530d937c18571869d49e",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 40,
+          "meshMs": 51.413416000000005,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 567.3162967146704,
+            "signedVolume": 944.7058172117753,
+            "triangles": 40
+          }
+        },
+        "truck": {
+          "faces": 7,
+          "instances": 1,
+          "meshMs": 2.8865420000000004,
+          "missingFaces": 0,
+          "parseMs": 10.303916999999998,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 2,
+            "recoveredAnalyticCurves": 2
+          },
+          "shellFallback": false,
+          "sourceFaceReferences": 7,
+          "success": true,
+          "triangles": 28,
+          "geometry": {
+            "min": [
+              0,
+              0,
+              0
+            ],
+            "max": [
+              10,
+              10,
+              10
+            ],
+            "diagonal": 17.32050807568877,
+            "area": 566.3044720429602,
+            "signedVolume": 941.3417161825449,
+            "triangles": 28
+          },
+          "comparison": {
+            "boundsRelativeError": 0,
+            "areaRelativeError": 0.001783528302588308,
+            "volumeRelativeError": 0.003561003825676916,
+            "referenceToCandidate": {
+              "samples": 80,
+              "p95": 0.09410645516549589,
+              "max": 0.09410645516549762
+            },
+            "candidateToReference": {
+              "samples": 56,
+              "p95": 0.06733279004197325,
+              "max": 0.07568317233535714
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    },
+    {
+      "id": "simple-basic-cube/cube.stp",
+      "sha256": "cfa52db7eab6fe6a73986a87aff8702d24431bdb7da6382afdd94234deb3f648",
+      "engines": {
+        "occt": {
+          "success": true,
+          "meshes": 1,
+          "triangles": 12,
+          "meshMs": 44.39425000000001,
+          "geometry": {
+            "min": [
+              -160.000000000001,
+              -140,
+              0
+            ],
+            "max": [
+              140,
+              160,
+              300
+            ],
+            "diagonal": 519.6152422706638,
+            "area": 540000.0000000007,
+            "signedVolume": 27000000.000000045,
+            "triangles": 12
+          }
+        },
+        "truck": {
+          "faces": 6,
+          "instances": 1,
+          "meshMs": 3.7338750000000003,
+          "missingFaces": 0,
+          "parseMs": 5.269,
+          "preparation": {
+            "defaultReferenceAxes": 0,
+            "ignoredAnnotations": 0,
+            "normalizedDirections": 0,
+            "preferred3dCurves": 0,
+            "recoveredAnalyticCurves": 0
+          },
+          "shellFallback": true,
+          "sourceFaceReferences": 6,
+          "success": true,
+          "triangles": 12,
+          "geometry": {
+            "min": [
+              -160.000000000001,
+              -140,
+              0
+            ],
+            "max": [
+              140.00000000000003,
+              160,
+              300
+            ],
+            "diagonal": 519.6152422706638,
+            "area": 540000.0000000006,
+            "signedVolume": 27000000.000000045,
+            "triangles": 12
+          },
+          "comparison": {
+            "boundsRelativeError": 5.469760530157687e-17,
+            "areaRelativeError": 2.1558392930913828e-16,
+            "volumeRelativeError": 0,
+            "referenceToCandidate": {
+              "samples": 24,
+              "p95": 9.947598300641403e-13,
+              "max": 9.947598300641403e-13
+            },
+            "candidateToReference": {
+              "samples": 24,
+              "p95": 9.947598300641403e-13,
+              "max": 9.947598300641403e-13
+            }
+          },
+          "geometryScreenPass": true
+        }
+      }
+    }
+  ],
+  "summary": {
+    "files": 55,
+    "referenceNonempty": 44,
+    "candidateNonemptyBefore": 37,
+    "candidateNonemptyAfter": 44,
+    "geometryScreenBefore": 19,
+    "geometryScreenAfter": 21,
+    "recovered": [
+      "cax-if/io1-cm-214.stp",
+      "cax-if/s1-c5-214/FOOT_BACK_000.stp",
+      "cax-if/s1-c5-214/FOOT_FRONT_000.stp",
+      "cax-if/s1-c5-214/HEAD_BACK.stp",
+      "cax-if/s1-c5-214/MAINBODY_BACK.stp",
+      "cax-if/s1-c5-214/MAINBODY_FRONT.stp",
+      "rounded-cube/rounded-cube.step"
+    ],
+    "regressions": [],
+    "externalReferenceOnly": [
+      "cax-if/s1-c5-214/FOOT.stp",
+      "cax-if/s1-c5-214/HEAD.stp",
+      "cax-if/s1-c5-214/MAINBODY.stp",
+      "cax-if/s1-c5-214/TAIL.stp",
+      "cax-if/s1-c5-214/s1-c5-214.stp",
+      "cax-if/s1-tu-203/s1-tu-203.stp",
+      "cax-if/s1_pe_214/foot_asm.stp",
+      "cax-if/s1_pe_214/head_asm.stp",
+      "cax-if/s1_pe_214/mainbody_asm.stp",
+      "cax-if/s1_pe_214/s1_pe_214.stp",
+      "cax-if/s1_pe_214/tail_asm.stp"
+    ]
+  }
+}

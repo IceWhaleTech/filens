@@ -1,0 +1,47 @@
+//go:build wasip1
+
+// FiLens WASI bindings only. The private hdrw implementation is not vendored.
+package hdrw
+
+import (
+    "os"
+    "path/filepath"
+)
+
+type osFile struct { *os.File; fs *OSFilesystem; fullPath string }
+func newOSFile(file *os.File, fs *OSFilesystem, fullPath string) *osFile {
+    return &osFile{file, fs, fullPath}
+}
+func (fs *OSFilesystem) openFile(name string) (File, error) {
+    if fs.IsClosed() { return nil, os.ErrClosed }
+    path := fs.resolvePath(name)
+    file, err := os.Open(path)
+    if err != nil { return nil, err }
+    return newOSFile(file, fs, path), nil
+}
+func (f *osFile) OpenAt(name string, flags int) (File, error) {
+    if flags != 0 { return nil, ErrNotSupported }
+    path := f.fullPath
+    if name != "" { path = filepath.Join(path, name) }
+    file, err := os.Open(path)
+    if err != nil { return nil, err }
+    return newOSFile(file, f.fs, path), nil
+}
+func (f *osFile) FullPath() (string, error) { return f.fullPath, nil }
+func (f *osFile) XstatAt(name string, flags int) (*XstatInfo, error) {
+    path := f.fullPath
+    if name != "" { path = filepath.Join(path, name) }
+    var info os.FileInfo
+    var err error
+    if flags & XstatNoFollow != 0 { info, err = os.Lstat(path) } else { info, err = os.Stat(path) }
+    if err != nil { return nil, err }
+    return xstatFromInfo(info, flags), nil
+}
+func xstatFromInfo(info os.FileInfo, flags int) *XstatInfo {
+    return &XstatInfo{Size: info.Size(), Mode: info.Mode(), MtimeSec: info.ModTime().Unix(), MtimeNsec: int64(info.ModTime().Nanosecond())}
+}
+
+// Construct the OS-backed view directly: no mount discovery or device opening.
+func NewFilensWASIView(root string) (Filesystem, error) {
+    return newOSFilesystem(root, &FilesystemOptions{FollowSymlinks: false, ResolveMounts: false, Fallback: true})
+}

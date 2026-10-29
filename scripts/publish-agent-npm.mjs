@@ -4,10 +4,11 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertReleaseArchive } from './agent-release-privacy.mjs';
+import { supportedPlatforms, npmInvocation } from './agent-platforms.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const directory=path.join(root,'dist/npm');
 const release=JSON.parse(await readFile(path.join(directory,'release.json'),'utf8'));
-if(release.targets.length!==3)throw new Error('Build all supported targets with npm run package:agent:npm first');
+if(supportedPlatforms.some(p=>!release.targets.includes(p)))throw new Error('Build all supported targets with npm run package:agent:npm first');
 const integrities=new Map();
 for(const pkg of release.packages){
  const bytes=await readFile(path.join(directory,pkg.file));
@@ -16,6 +17,7 @@ for(const pkg of release.packages){
  integrities.set(pkg.name,`sha512-${createHash('sha512').update(bytes).digest('base64')}`);
 }
 const dry=process.argv.includes('--dry-run');
+const tag=release.version.includes('-')?'next':'latest';
 const entryNames=['filens-cli','filens-cli-lite'];
 const existing=new Set();
 if(!dry){
@@ -57,9 +59,10 @@ for(const pkg of release.packages.filter(p=>entryNames.includes(p.name)))await p
 async function publish(pkg){
  if(existing.has(pkg.name)){console.log(`Verified existing ${pkg.name}@${release.version}`);return;}
  console.log(`${dry?'Dry run':'Publishing'} ${pkg.name}@${release.version}`);
- await run(['publish',path.join(directory,pkg.file),'--access','public','--registry=https://registry.npmjs.org/',...(dry?['--dry-run']:[])]);
+ await run(['publish',path.join(directory,pkg.file),'--access','public','--tag',tag,'--registry=https://registry.npmjs.org/',...(dry?['--dry-run']:[])]);
 }
 function run(args){return new Promise((resolve,reject)=>{
- const child=spawn('npm',args,{cwd:root,stdio:'inherit'});
+ const npm=npmInvocation(args);
+ const child=spawn(npm.command,npm.args,{cwd:root,stdio:'inherit'});
  child.on('error',reject);child.on('exit',code=>code===0?resolve():reject(new Error(`npm ${args[0]} exited with ${code}`)));
 });}

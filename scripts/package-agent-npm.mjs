@@ -10,15 +10,16 @@ import { requestedSourceCount } from './download-agent-models.mjs';
 import { assertReleaseArchive, assertReleaseDirectory } from './agent-release-privacy.mjs';
 import { buildAgentBinary, compressAgentWASM, preparePDFium } from './agent-rust-build.mjs';
 import { writeRustLicenses } from './agent-rust-licenses.mjs';
+import { executableName, releaseTargets, npmInvocation } from './agent-platforms.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const version = JSON.parse(await readFile(path.join(root, 'packaging/agent-release.json'), 'utf8')).version;
-const targets = args.includes('--all') ? ['darwin-arm64', 'linux-x64', 'linux-arm64'] : [`${process.platform}-${process.arch}`];
-if (targets.some(p => !['darwin-arm64','linux-x64','linux-arm64'].includes(p))) throw new Error('Unsupported release target');
+const targets = releaseTargets(args);
 const output = path.join(root, 'dist/npm');
 await mkdir(output, { recursive: true });
 const packages = [];
+const binaryCompression = [];
 const rustLicenses = path.join(root,'dist/agent-rust-licenses');
 await writeRustLicenses(rustLicenses);
 const common = { version, license:'UNLICENSED', repository:{ type:'git', url:'git+https://github.com/IceWhaleTech/filens.git' }, homepage:'https://github.com/IceWhaleTech/filens#readme' };
@@ -29,10 +30,11 @@ await compressAgentWASM(path.join(root,'dist'));
 for (const platform of targets) {
   const [os, arch] = platform.split('-');
   const coreName = `filens-cli-${platform}`;
-  const core = await prepare(coreName, { os:[os], cpu:[arch], ...(os === 'linux' ? { libc:['glibc'] } : {}), description:'Rust filens document reading and conversion CLI with shared WASM engines', files:['filens','converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz','README.md','licenses','THIRD-PARTY-NOTICES.md'] });
+  const binary = executableName(platform);
+  const core = await prepare(coreName, { os:[os], cpu:[arch], ...(os === 'linux' ? { libc:['glibc'] } : {}), description:'Rust filens document reading and conversion CLI with shared WASM engines', files:[binary,'converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz','README.md','licenses','THIRD-PARTY-NOTICES.md'] });
   for (const name of ['converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz']) await copyFile(path.join(root,'dist',name),path.join(core,name));
-  await buildAgentBinary(path.join(core,'filens'),{lite:true,platform});
-  await chmod(path.join(core,'filens'), 0o755);
+  binaryCompression.push(await buildAgentBinary(path.join(core,binary),{lite:true,platform,upx:!args.includes('--no-upx')}));
+  await chmod(path.join(core,binary), 0o755);
   await cp(path.join(root,'packaging/ncnn-licenses'),path.join(core,'licenses'),{recursive:true});
   await cp(rustLicenses,path.join(core,'licenses'),{recursive:true});
   await copyFile(path.join(root,'packaging/agent-third-party.md'),path.join(core,'THIRD-PARTY-NOTICES.md'));
@@ -42,6 +44,11 @@ for (const platform of targets) {
   // Models are platform independent. Reuse only the verified source-build cache.
   await cp(path.join(root,'dist/models/rapidocr-ncnn'), path.join(ocr,'models/rapidocr-ncnn'), { recursive:true });
   if (platform === `${process.platform}-${process.arch}`) await cp(path.join(root,'dist/native'),path.join(ocr,'native'),{recursive:true});
+  else if (platform === 'win32-x64') {
+    // setupOCR rechecks both build fingerprints and library hashes before reuse.
+    try { await cp(path.join(root,'dist/windows/native'),path.join(ocr,'native'),{recursive:true}); }
+    catch (e) { if (e.code !== 'ENOENT') throw e; }
+  }
   await setupOCR(ocr, { platform, sourceCount:requestedSourceCount(args) });
   // Bundle pinned notices for the Linux companion's C++/OpenMP runtime.
   await cp(path.join(root,'packaging/ncnn-licenses'),path.join(ocr,'native/licenses'),{recursive:true});
@@ -66,7 +73,7 @@ for (const name of ['filens-cli','filens-cli-lite']) {
   await copyFile(path.join(root,'packaging/npm/cli.mjs'),path.join(directory,'cli.mjs'));
   await chmod(path.join(directory,'cli.mjs'),0o755);
   await mkdir(path.join(directory,'scripts'),{recursive:true});
-  for (const file of ['download-agent-models.mjs','model-download.mjs']) await copyFile(path.join(root,'scripts',file),path.join(directory,'scripts',file));
+  for (const file of ['download-agent-models.mjs','model-download.mjs','agent-platforms.mjs']) await copyFile(path.join(root,'scripts',file),path.join(directory,'scripts',file));
   await mkdir(path.join(directory,'converter/rapidocr'),{recursive:true});
   await copyFile(path.join(root,'converter/rapidocr/models.json'),path.join(directory,'converter/rapidocr/models.json'));
   await pack(directory);
@@ -80,7 +87,7 @@ if (obsolete.length) {
   for (const name of obsolete) await rename(path.join(output,name),path.join(quarantine,name));
   console.log(`Moved ${obsolete.length} obsolete tarballs into the ignored local quarantine.`);
 }
-await writeFile(path.join(output,'release.json'),JSON.stringify({version,targets,privacyChecked:true,packages},null,2)+'\n');
+await writeFile(path.join(output,'release.json'),JSON.stringify({version,targets,privacyChecked:true,binaryCompression,packages},null,2)+'\n');
 console.log(`Prepared ${packages.length} npm tarballs in dist/npm. No registry publication performed.`);
 
 async function prepare(name, metadata) {
@@ -100,6 +107,7 @@ async function pack(directory) {
   console.log(`${result.filename}: ${(result.size/1048576).toFixed(2)} MiB compressed, ${(result.unpackedSize/1048576).toFixed(2)} MiB installed`);
 }
 function run(command, argv, env = process.env, cwd = root) {
+  if (command === 'npm') ({command,args:argv}=npmInvocation(argv));
   return new Promise((resolve,reject) => {
     const child=spawn(command,argv,{env,cwd,stdio:['ignore','pipe','inherit']}); let stdout='';
     child.stdout.on('data',chunk=>{stdout+=chunk;});

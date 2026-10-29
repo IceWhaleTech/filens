@@ -1,0 +1,141 @@
+{
+  "version": "0.3.0-rc.1",
+  "date": "2026-10-29T14:31:25.235Z",
+  "buildHost": "darwin-arm64",
+  "target": "win32-x64",
+  "status": "Local release candidate; not published to npm",
+  "nativeWindowsExecution": false,
+  "portableArtifacts": [
+    {
+      "flavor": "full",
+      "file": "filens-0.3.0-rc.1-win32-x64-full.zip",
+      "bytes": 23055376,
+      "unpackedBytes": 36984275,
+      "sha256": "737b0f426a73c00809b175a5fa37879fe5fcb4b1313a39db9724ed9965cb4e66",
+      "binaryCompression": {
+        "platform": "win32-x64",
+        "originalBytes": 2661376,
+        "originalSHA256": "a7b7c7304a657dc46a6a23a8f16d45c5930e8a6b901de944028e9f5ee0cc2743",
+        "applied": true,
+        "tool": "upx 5.1.0",
+        "arguments": [
+          "--best",
+          "--lzma"
+        ],
+        "integrityTest": true,
+        "bytes": 842752,
+        "sha256": "bcadae2d9d1ac9b811ae3a09ec7945c67b4816352ac25a251bb961f4fce26a55"
+      },
+      "nativeWindowsExecution": false
+    },
+    {
+      "flavor": "lite",
+      "file": "filens-0.3.0-rc.1-win32-x64-lite.zip",
+      "bytes": 5893789,
+      "unpackedBytes": 6828294,
+      "sha256": "13ec07efbb8ac1c4ba681e44459739be8e09747c25236bd181b3d50ddbb47756",
+      "binaryCompression": {
+        "platform": "win32-x64",
+        "originalBytes": 2661376,
+        "originalSHA256": "92996761ce2110b2988f9eb2a7cfa7ffdea660cf212f72c767e5974ec2256556",
+        "applied": true,
+        "tool": "upx 5.1.0",
+        "arguments": [
+          "--best",
+          "--lzma"
+        ],
+        "integrityTest": true,
+        "bytes": 842752,
+        "sha256": "0eb9299e77e3830961f80457b4e41f7d523febba7674c5c465e10adb5ce7fdb2"
+      },
+      "nativeWindowsExecution": false
+    }
+  ],
+  "staticPE": {
+    "platform": "win32-x64",
+    "nativeExecution": false,
+    "checks": [
+      {
+        "name": "filens.exe",
+        "bytes": 842752,
+        "machine": "x86-64",
+        "imports": [
+          "advapi32.dll",
+          "api-ms-win-core-synch-l1-2-0.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "bcrypt.dll",
+          "bcryptprimitives.dll",
+          "KERNEL32.DLL",
+          "ntdll.dll"
+        ],
+        "requiredExports": []
+      },
+      {
+        "name": "native/ncnn.dll",
+        "bytes": 9497088,
+        "machine": "x86-64",
+        "imports": [
+          "KERNEL32.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-math-l1-1-0.dll",
+          "api-ms-win-crt-private-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll"
+        ],
+        "requiredExports": [
+          "ncnn_net_load_param_w",
+          "ncnn_net_load_model_w"
+        ]
+      },
+      {
+        "name": "native/zima_ncnn_runtime_v7.dll",
+        "bytes": 4433408,
+        "machine": "x86-64",
+        "imports": [
+          "KERNEL32.dll",
+          "api-ms-win-crt-environment-l1-1-0.dll",
+          "api-ms-win-crt-heap-l1-1-0.dll",
+          "api-ms-win-crt-runtime-l1-1-0.dll",
+          "api-ms-win-crt-stdio-l1-1-0.dll",
+          "api-ms-win-crt-string-l1-1-0.dll"
+        ],
+        "requiredExports": [
+          "zima_ncnn_create_json_v2",
+          "zima_ncnn_destroy_json_v2",
+          "zima_ncnn_load_json_v2",
+          "zima_ncnn_infer_json_v2"
+        ]
+      }
+    ]
+  },
+  "hostVerification": {
+    "platform": "darwin-arm64",
+    "cliEndToEndGroups": 8,
+    "rustRuntimeChecks": 19,
+    "conversionChecks": 19,
+    "outputAndLayoutChecks": 19,
+    "offlineNpmFullLiteAndSetupOCR": "passed",
+    "portableTestKit": {
+      "method": "The Windows test script was copied with only its platform/architecture guards adapted, and run against macOS binaries. This validates assertions and fixtures, not Windows compatibility.",
+      "full": {
+        "passed": 16,
+        "failed": 0
+      },
+      "lite": {
+        "passed": 9,
+        "failed": 0
+      }
+    }
+  },
+  "windowsCI": {
+    "configured": true,
+    "executedInThisSession": false
+  },
+  "nextStep": "Run the bundled test-windows.mjs on Windows x64 and retain the real native report."
+}

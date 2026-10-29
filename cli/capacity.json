@@ -1,5 +1,5 @@
 {
-  "description": "Read and convert local files using the shared frontend WASM engines. Semantic reasoning belongs to the calling agent.",
+  "description": "Read, search and convert local documents using the shared frontend WASM engines; select original key excerpts without a language model. Semantic reasoning belongs to the caller.",
   "operations": [
     {
       "name": "read",
@@ -14,12 +14,33 @@
       "description": "Read source structure and available page/image geometry; never invent coordinates for flow documents."
     },
     {
+      "name": "summarize",
+      "aliases": [
+        "prune",
+        "summary",
+        "summarise"
+      ],
+      "description": "Select key original excerpts with local density/TF-IDF, optional lexical BM25 focus and cosine-diversity pruning. No language model or paraphrasing."
+    },
+    {
+      "name": "search",
+      "description": "Find local files and original evidence with BM25, exact literal or filename matching over full extracted text. No embedding model."
+    },
+    {
       "name": "capabilities",
       "description": "Discover supported inputs, request schema, outputs, runtime OCR availability and limits."
     },
     {
       "name": "convert",
       "description": "Convert a local file using the shared frontend WASM conversion engines; return output metadata, fidelity and warnings."
+    },
+    {
+      "name": "similar",
+      "aliases": [
+        "duplicates",
+        "similar-images"
+      ],
+      "description": "Report groups of byte-identical files or perceptually similar resized/recompressed images using the shared WASM core. No model or OCR required."
     }
   ],
   "outputFormats": [
@@ -37,7 +58,11 @@
       "read",
       "understand",
       "capabilities",
-      "output format"
+      "output format",
+      "extractive summary",
+      "summary focus and character budget",
+      "directory search",
+      "duplicate files and similar images"
     ],
     "languages": [
       "zh",
@@ -63,7 +88,7 @@
       },
       "input": {
         "type": "string",
-        "description": "Local file path, resolved from the current working directory."
+        "description": "Local file path, or directory for search/similar, resolved from the current working directory."
       },
       "operation": {
         "enum": [
@@ -71,7 +96,13 @@
           "understand",
           "layout",
           "capabilities",
-          "convert"
+          "convert",
+          "summarize",
+          "prune",
+          "search",
+          "similar",
+          "duplicates",
+          "similar-images"
         ]
       },
       "format": {
@@ -118,6 +149,76 @@
         "type": "boolean",
         "default": false,
         "description": "Allow replacing an existing conversion output; source overwrite is rejected."
+      },
+      "query": {
+        "type": "string",
+        "description": "Required search query, or optional lexical focus for summarize; at most 4096 UTF-8 bytes."
+      },
+      "summaryChars": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20000,
+        "default": 2000,
+        "description": "Maximum Unicode scalar characters in selected text, including separators."
+      },
+      "summaryRatio": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "maximum": 1,
+        "default": 0.3,
+        "description": "Retain at most this fraction of extracted text characters, also capped by summaryChars."
+      },
+      "searchMode": {
+        "enum": [
+          "bm25",
+          "exact",
+          "files"
+        ],
+        "default": "bm25",
+        "description": "BM25/lexical ranking, case-sensitive literal matching, or filename-only ranking. No embedding retrieval."
+      },
+      "maxResults": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 1000,
+        "default": 10,
+        "description": "Search: 1–100 files, default 10. Similar: 1–1000 groups, default 100."
+      },
+      "maxFiles": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 20000,
+        "default": 2000
+      },
+      "maxDepth": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 256,
+        "default": 32
+      },
+      "includeHidden": {
+        "type": "boolean",
+        "default": false
+      },
+      "cache": {
+        "type": "boolean",
+        "default": true,
+        "description": "Reuse complete extracted text after verifying source and engine/OCR hashes; does not reuse deleted files."
+      },
+      "similarityMode": {
+        "enum": [
+          "duplicates",
+          "images"
+        ],
+        "default": "images",
+        "description": "similar operation only: full-file SHA-256 duplicates or perceptual image groups."
+      },
+      "threshold": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 24,
+        "default": 8,
+        "description": "Image pHash Hamming distance, 0 is strictest. Not a confidence or percentage."
       }
     }
   },
@@ -138,10 +239,16 @@
     "filens '读取 \"report.pdf\"，以纯文本输出'",
     "filens '理解 \"meeting notes.docx\"，以 JSON 输出'",
     "filens 'read \"report.pages\" as json'",
+    "filens '提取 \"report.pdf\" 的关键内容，关注预算和风险，保留30%，以 JSON 输出'",
+    "filens summarize report.pdf --query \"budget risk\" --json",
     "echo '{\"operation\":\"understand\",\"input\":\"report.pdf\"}' | filens",
     "filens convert report.doc --output report.docx --json",
     "filens convert data.csv result.xlsx",
-    "filens convert photo.dng --to jpg"
+    "filens convert photo.dng --to jpg",
+    "filens search ./documents --query \"budget risk\" --json",
+    "filens '在 \"./documents\" 中搜索 \"预算 风险\"，以 JSON 输出'",
+    "filens duplicates ./files --json",
+    "filens similar-images ./photos --threshold 8 --json"
   ],
   "layout": {
     "bounds": "top-left origin; x right, y down; explicit unit and coordinateSpace",
@@ -159,5 +266,85 @@
     "fidelity": "lightweight",
     "policy": "Only conversionPairs from the running WASM core are supported. Reading support does not imply conversion support.",
     "output": "Local file, committed atomically after core output validation. Existing outputs require force:true or --force."
+  },
+  "summary": {
+    "version": "filens-summary-v1",
+    "requiresModel": false,
+    "method": "density-tfidf-bm25-mmr",
+    "defaults": {
+      "maxChars": 2000,
+      "ratio": 0.3
+    },
+    "limits": {
+      "rankedSegments": 4096,
+      "shortlist": 512,
+      "excerpts": 64
+    },
+    "policy": "Extractive excerpts in original order; no paraphrasing or factual inference. Scores are ranking weights, not confidence. No lexical query match returns an empty summary with an explicit warning.",
+    "provenance": "content.summary.excerpts maps UTF-8 byte offsets in content.text to the full extracted text returned by read. Optional layout retains source geometry and marks boundsScope.",
+    "completeness": "Deliberate omissions are summary.omitted, not content.truncated. Source extraction/OCR failures and truncation remain visible. Large inputs are sampled uniformly and marked sampled; character clipping is explicit."
+  },
+  "search": {
+    "version": "filens-search-v1",
+    "semantic": false,
+    "requiresModel": false,
+    "modes": [
+      "bm25",
+      "exact",
+      "files"
+    ],
+    "exactCaseSensitive": true,
+    "defaults": {
+      "maxResults": 10,
+      "maxFiles": 2000,
+      "maxDepth": 32
+    },
+    "limits": {
+      "corpusTextBytes": 33554432,
+      "chunks": 65536,
+      "excerptsPerFile": 3
+    },
+    "policy": "Index complete extracted text, not pruned summaries. Results include file hashes, extracted UTF-8 offsets and available source geometry. Directory errors, extraction errors and coverage limits remain visible. Zero lexical hits do not prove no relevant document exists.",
+    "excludedDirectories": [
+      ".git",
+      "node_modules",
+      "target",
+      "dist"
+    ]
+  },
+  "similarity": {
+    "version": "filens-similarity-v1",
+    "requiresModel": false,
+    "requiresOCR": false,
+    "modes": [
+      "duplicates",
+      "images"
+    ],
+    "imageFormats": [
+      "jpeg",
+      "png",
+      "webp",
+      "gif",
+      "bmp",
+      "tiff"
+    ],
+    "methods": {
+      "duplicates": "size-prefix-sha256",
+      "images": "phash-dct-63"
+    },
+    "defaults": {
+      "threshold": 8,
+      "maxResults": 100,
+      "maxFiles": 2000,
+      "maxDepth": 32
+    },
+    "limits": {
+      "imageInputBytes": 268435456,
+      "imagePixels": 32000000,
+      "hashBytes": 17179869184,
+      "comparisons": 20000000
+    },
+    "grouping": "Each image group has a reference; every member is within threshold of that reference. Groups are disjoint and not a complete enumeration of all matching pairs.",
+    "policy": "Reports only. Image similarity is approximate; EXIF orientation is applied, transparent pixels are composited on white, and animations use the first frame. Full SHA-256 establishes file duplicates; equal perceptual hashes do not. Hard-link aliases are skipped on Unix. Inspect complete, truncated, scan and processing errors. No similarity cache yet."
   }
 }

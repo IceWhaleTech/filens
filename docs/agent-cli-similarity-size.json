@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-30",
+  "platform": "darwin-arm64",
+  "published": false,
+  "baseline": "Existing dist/cli-size.json at start of this task; includes earlier uncommitted search work.",
+  "measurement": "Native CLI plus gzip level 1 WASM resources; excludes OCR, licenses and npm packaging. Local build comparison, not a controlled npm tarball comparison.",
+  "before": {
+    "binaryBytes": 1954544,
+    "textWasmBytes": 4961618,
+    "textWasmGzipBytes": 2290544
+  },
+  "after": {
+    "binaryBytes": 2004816,
+    "textWasmBytes": 5580054,
+    "textWasmGzipBytes": 2524717
+  },
+  "delta": {
+    "binaryBytes": 50272,
+    "compressedResourcesBytes": 234173,
+    "installedRuntimeBytes": 284445
+  },
+  "verification": {
+    "cliSimilarityChecks": 27,
+    "directoryBackends": [
+      "macOS native FTS",
+      "hdrw WASI exercised on macOS"
+    ],
+    "searchRegressionChecks": 38,
+    "summaryRegressionGroups": 18,
+    "similarityCoreUnitTests": 4,
+    "cliUnitTests": 5
+  }
+}

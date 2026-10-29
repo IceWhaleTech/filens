@@ -6,6 +6,7 @@
   "modelScopeRevision": "31cac59f06413ab474246ad24f9a06ab14090a0f",
   "platforms": {
     "darwin-arm64": [],
+    "win32-x64": [],
     "linux-x64": [
       {
         "name": "libncnn.so",

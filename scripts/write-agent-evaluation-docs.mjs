@@ -2,7 +2,15 @@ import {readFile,writeFile}from'node:fs/promises';
 import path from'node:path';
 import{fileURLToPath}from'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const report=JSON.parse(await readFile(path.join(root,'dist/agent-evaluation/report.json'),'utf8'));
+const reportIndex=process.argv.indexOf('--report');
+const reportFile=reportIndex<0?path.join(root,'dist/agent-evaluation/report.json'):path.resolve(process.argv[reportIndex+1]);
+const report=JSON.parse(await readFile(reportFile,'utf8'));
+const pruning=JSON.parse(await readFile(path.join(root,'docs/agent-cli-pruning-evaluation.json'),'utf8'));
+const obsoleteSummary=c=>{
+ if(c.exit===0)return false;
+ if(c.label==='中文摘要'||c.label==='英文摘要')return true;
+ try{return Boolean(c.stdin&&JSON.parse(c.stdin).operation==='summarize');}catch{return false;}
+};
 const byLabel=label=>report.cases.find(c=>c.label===label);
 const cell=value=>String(value??'').replaceAll('|','\\|').replaceAll('\n',' ');
 const repoPath=value=>value?.replaceAll(root+'/', '');
@@ -34,7 +42,7 @@ const outputSummary=c=>{
  if(c.ocr)return `能力清单；${c.formats} 个扩展名；OCR available=${c.ocr.available}`;
  return `${c.operation??'read（纯文本不带操作字段）'}；${c.characters} 字符${c.blocks?`；${c.blocks} 个证据块`:''}`;
 };
-const table=cases=>`| 案例 | 实际请求 | 实际输出 / 退出码 | 观察 |\n| --- | --- | --- | --- |\n${cases.map(c=>`| ${cell(c.label)} | \`${cell(command(c))}\` | ${c.format} / ${c.exit} | ${cell(outputSummary(c))} |`).join('\n')}\n`;
+const table=cases=>`| 案例 | 实际请求 | 实际输出 / 退出码 | 观察 |\n| --- | --- | --- | --- |\n${cases.filter(c=>!obsoleteSummary(c)).map(c=>`| ${cell(c.label)} | \`${cell(command(c))}\` | ${c.format} / ${c.exit} | ${cell(outputSummary(c))} |`).join('\n')}\n`;
 const docNotes={
  'filens-aurora-guide.docx':'正文、表格可读；风景图回调混入“一 / 心 / 公”等误识别字符。',
  'filens-observatory.xlsx':'工作表、单元格与数值可读；不负责重新计算公式或解释图表。',
@@ -48,11 +56,37 @@ const docNotes={
 const qualityNames={'invoice-zh':'清晰，34 px','invoice-blur':'轻度模糊，34 px / blur 2.4 px','invoice-small':'小字号，13 px','invoice-tiny':'极小字号，7 px','invoice-heavy-blur':'重度模糊，34 px / blur 6.4 px'};
 const markdown=`# Agent CLI 实测案例与自然语言边界
 
+> 当前源码支持无 LLM 的原文摘录式总结：\`summarize\` / \`prune\`。旧版将总结请求拒绝或判为非法操作的结论已失效；原始记录保留在历史 JSON 中，并标记后续能力更新。已发布的 npm 0.2.0 和早先 Windows ZIP 不包含这项新能力，使用 \`capacity\` 检查当前安装。下方基础实测表属于历史观测；当前多格式与布局能力见[指南](agent-cli-formats-and-layout.zh-CN.md)。
+
 [安装与协议](agent-cli.zh-CN.md) · [机器可读的测试摘要](agent-cli-evaluation.json)
 
-本页来自 ${report.date} 在 macOS arm64 上对 **${report.cases.length} 条请求**的实际执行，使用 0.1.0 原生 CLI、RapidOCR NCNN、最大边长 960、OpenMP=2。包含合成的可核对 OCR 图片、仓库演示文档与公开旧版 Word / iWork 样本。这是功能观察与有限质量检查，不是通用准确率基准，也不是 ${report.cases.length} 条“全部正确”的声明。
+本页基础实测来自 ${report.date} 在 ${report.platform} 上对 **${report.cases.length} 条请求**的实际执行，使用报告记录的 CLI 产物、RapidOCR NCNN、最大边长 960、OpenMP=2。包含合成的可核对 OCR 图片、仓库演示文档与公开旧版 Word / iWork 样本。这是功能观察与有限质量检查，不是通用准确率基准，也不是 ${report.cases.length} 条“全部正确”的声明。
 
-当前自然语言入口能把常见中英文句式映射到**读取全文、准备理解所需的文本与证据、发现能力、选择 text / JSON**。它没有内置语言模型，不执行摘要、翻译、问答、字段筛选或分页指令；部分不支持的句式会被拒绝，部分会退回全文读取。生产调用请使用 capacity 给出的 JSON Schema，并自行验证响应。
+当前自然语言入口支持**读取全文、准备理解证据、发现能力、选择八种输出格式、提取关键内容、搜索本地目录**。总结通过密度/TF-IDF、可选 BM25 主题匹配和余弦多样性选择，保留原文及出处，无需语言模型。改写总结、翻译和问答仍由上层 Agent 完成。生产调用请使用 capacity 给出的 JSON Schema，并自行验证响应。
+
+源码版的 search 支持 BM25、区分大小写的精确文本、文件名搜索和可校验的原文片段；支持中英文意图及八种输出格式。它使用全文，正文缓存按源内容哈希更新，尚未提供 embedding 语义检索。macOS 使用原生 FTS，不嵌入 hdrw；Windows/Linux 仅嵌入私有 hdrw 的编译后 WASI。用法见[搜索指南](agent-cli-search.zh-CN.md)，独立的[当前功能检查](agent-cli-search-evaluation.json)不属于本页历史 ${report.cases.length} 条观测，也不能证明优于 rg 或 zvec-grep。
+
+## 当前总结能力：中文、英文与 JSON 均可用
+
+检查 \`capacity.operations\` 是否包含 \`summarize\` 后，可使用以下请求：
+
+\`\`\`sh
+filens '总结 "report.txt"，以 JSON 输出'
+filens 'summarize "report.txt" as json'
+filens '提取 "report.txt" 的关键内容，关注预算和风险，保留30%，最多800字，以 JSON 输出'
+filens prune report.txt --query '预算 风险' --summary-chars 800 --json
+echo '{"operation":"summarize","input":"report.txt","query":"预算 风险","format":"json"}' | filens
+\`\`\`
+
+\`summarize\` 是合法操作，\`prune\` 是别名；“总结”返回关键原文片段。检查 \`content.summary.sourceComplete\`、\`omitted\`、\`sampled\` 和每段的 \`clipped\`；主动裁剪不等于读取被截断。分数只用于排序，不能表示内容可信度。出处同时提供输出文本和完整提取文本的 UTF-8 偏移。
+
+公开合成会议记录的[当前真实 CLI 结果](agent-cli-pruning-evaluation.json)：
+
+| 场景 | 原文字符数 | 摘录字符数 | 单次耗时 |
+| --- | ---: | ---: | ---: |
+${pruning.cases.map(c=>`| ${cell(c.name)} | ${c.summary.sourceCharacters} | ${c.summary.characters} | ${c.elapsedMs} ms |`).join('\n')}
+
+这些是 ${pruning.platform} 上的单次观测，包含进程启动和 WASM 执行，不能代表通用摘要质量或稳定性能。完整用法、原文、摘录结果和限制见[无 LLM 关键内容提取](agent-cli-pruning.zh-CN.md)。历史总结失败记录不再列入下方边界表。
 
 ## 五分钟上手
 
@@ -131,18 +165,18 @@ ${table(report.cases.filter(c=>c.group==='reading'))}
 ## 输出格式：能识别的表达与严格入口
 
 ${table(report.cases.filter(c=>c.group==='format'))}
-最稳定的表达是“以 JSON 输出 / 用 JSON 返回 / as json / in JSON”。需要严格验证格式时，使用 --format 或 JSON format 字段；自然语言中的 YAML / XML 不会自动变成受支持的输出类型。
+上表保留旧版的格式观察。当前源码支持 text、JSON、Markdown、HTML、YAML、XML、CSV、TSV；需要严格验证格式时，使用 --format 或 JSON format 字段，详见[当前多格式指南](agent-cli-formats-and-layout.zh-CN.md)。
 
 ## JSON 与 stdin：给 Agent 的可验证协议
 
 ${table(report.cases.filter(c=>c.group==='structured'))}
-推荐调用链：读取 capacity → 根据 Schema 发送 understand/read 请求 → 检查 ok、complete、truncated、error → 将 content.text 与证据块交给上层 Agent 摘要、问答或字段提取。证据位置是提取文本的 UTF-8 字节偏移，不是原文页码。
+推荐调用链：读取 capacity → 根据 Schema 发送 search、understand/read 或 summarize 请求 → 检查 ok、complete、truncated、error 及摘录标记 → 根据需要将原文或关键摘录交给上层 Agent 改写总结、问答或字段提取。证据位置是提取文本的 UTF-8 字节偏移；物理页码和坐标需检查布局信息。
 
 \`\`\`json
 {"operation":"understand","input":"report.txt","format":"json"}
 \`\`\`
 
-## 明确边界：拒绝与退化行为都要看
+## 历史边界记录：改写、问答与其他操作
 
 ${table(report.cases.filter(c=>c.group==='boundary'))}
 “只列金额”“what is the budget”“转成 PDF”目前都不能作为已完成对应操作的证据。这些请求可能只返回全文，甚至仍为退出码 0。Agent 要对照返回的 operation / content 验证任务，不能把自然语言被接受等同于任务已执行。
@@ -163,9 +197,9 @@ node scripts/evaluate-agent-cli.mjs --binary /path/to/filens
 
 报告位于 dist/agent-evaluation/report.json；每条保存原始参数、退出码、文本、错误、耗时与质量指标。图片输入和期望原文已提交；通常不需要重新生成。要更新图片可运行 node scripts/generate-agent-ocr-fixtures.mjs，需要 Playwright Chromium，字体渲染会随系统变化。可用 node scripts/write-agent-evaluation-docs.mjs 从最近的报告重建本页。
 
-本页测试的是本地原生 0.1.0 产物；npm 注册表的安装验证由 node scripts/test-agent-npm.mjs --registry 单独执行，不把本地 tarball 成功当成注册表发布成功。
+历史失败行只描述当时的被测产物，不能用于判断当前源码是否支持总结。当前摘录能力由 agent-cli-pruning-evaluation.json 单独记录。npm 注册表的安装验证由 node scripts/test-agent-npm.mjs --registry 单独执行，不把本地构建成功当成注册表发布成功。
 `;
 await writeFile(path.join(root,'docs/agent-cli-examples.zh-CN.md'),markdown);
-const summary={...report,binary:'dist/filens (native CLI 0.1.0)',cases:report.cases.map(c=>({...c,args:c.args.map(repoPath),text:c.text?.slice(0,c.group==='documents'?600:5000),...(c.group==='documents'?{textExcerpt:true}:{} )}))};
+const summary={...report,binary:report.binary?.startsWith('dist/')?report.binary:path.basename(report.binary??'filens'),measurementScope:'Point-in-time observations of the tested binary; failed summarize requests below are historical and superseded by current source capabilities.',capabilityUpdates:{extractiveSummary:{supported:true,availability:'Source builds advertising summarize in capacity.operations; published npm 0.2.0 and earlier Windows ZIPs do not include it.',documentation:'agent-cli-pruning.zh-CN.md',evaluation:'agent-cli-pruning-evaluation.json'}},cases:report.cases.map(c=>({...c,args:c.args.map(repoPath),text:c.text?.slice(0,c.group==='documents'?600:5000),...(c.group==='documents'?{textExcerpt:true}:{}),...(obsoleteSummary(c)?{supersededBy:'agent-cli-pruning-evaluation.json',historicalOnly:true}:{} )}))};
 await writeFile(path.join(root,'docs/agent-cli-evaluation.json'),JSON.stringify(summary,null,2)+'\n');
 console.log(`Wrote ${report.cases.length} observed cases and OCR quality measurements to docs.`);

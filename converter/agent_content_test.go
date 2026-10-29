@@ -2,12 +2,50 @@ package converter
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"unicode/utf8"
 )
+
+func TestAgentSummaryUsesSharedCore(t *testing.T) {
+	e := testExtractor(t)
+	text := "文档中心导航。\n预算不得超过12345.67元。\n今天办公室补充咖啡豆。\n风险：部署前必须完成验证。\n"
+	p := filepath.Join(t.TempDir(), "meeting.txt")
+	if err := os.WriteFile(p, []byte(text), 0600); err != nil {
+		t.Fatal(err)
+	}
+	r, err := e.ExtractText(context.Background(), p, Options{IncludeStructure: true, Summary: &SummaryOptions{Query: "预算 风险", MaxChars: 80, Ratio: 1}})
+	if err != nil || !r.Complete || !strings.Contains(r.Text, "不得超过12345.67元") || strings.Contains(r.Text, "咖啡") {
+		t.Fatalf("%+v %v", r, err)
+	}
+	var summary struct {
+		Extractive bool `json:"extractive"`
+		Excerpts   []struct {
+			StartByte       int `json:"startByte"`
+			EndByte         int `json:"endByte"`
+			SourceStartByte int `json:"sourceStartByte"`
+			SourceEndByte   int `json:"sourceEndByte"`
+		} `json:"excerpts"`
+	}
+	if err := json.Unmarshal(r.Summary, &summary); err != nil {
+		t.Fatal(err)
+	}
+	if !summary.Extractive || len(summary.Excerpts) == 0 {
+		t.Fatal("missing WASM summary provenance")
+	}
+	for _, span := range summary.Excerpts {
+		if r.Text[span.StartByte:span.EndByte] != text[span.SourceStartByte:span.SourceEndByte] {
+			t.Fatal("summary altered source evidence")
+		}
+	}
+	r, err = e.ExtractText(context.Background(), p, Options{Summary: &SummaryOptions{Ratio: 2}})
+	if err == nil || r.ErrorCode != "invalid_request" {
+		t.Fatalf("core accepted invalid summary budget: %+v %v", r, err)
+	}
+}
 
 func TestAgentTextCapabilitiesAndEvidence(t *testing.T) {
 	e := testExtractor(t)

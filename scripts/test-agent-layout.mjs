@@ -6,9 +6,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { zipSync, strToU8 } from 'fflate';
+import { executableName } from './agent-platforms.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const binary=process.env.FILENS_AGENT_BINARY||path.join(root,'dist/filens');
+const binary=process.env.FILENS_AGENT_BINARY||path.join(root,'dist',executableName(`${process.platform}-${process.arch}`));
 const work=path.join(root,'dist/agent-layout');await mkdir(work,{recursive:true});
 const source='<w:document xmlns:w="word"><w:body><w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Aurora launch brief</w:t></w:r></w:p><w:p><w:r><w:t>Read locally. Keep the evidence.</w:t></w:r></w:p><w:tbl><w:tr><w:tc><w:p><w:r><w:t>Milestone</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Status</w:t></w:r></w:p></w:tc></w:tr><w:tr><w:tc><w:p><w:r><w:t>Native OCR</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>Ready</w:t></w:r></w:p></w:tc></w:tr></w:tbl><w:p><w:r><w:t>Budget: ¥12,345.67</w:t></w:r></w:p></w:body></w:document>';
 const doc=path.join(work,'launch-brief.docx');

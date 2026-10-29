@@ -7,7 +7,7 @@
   invokes it as an isolated optional capability; document parsing stays in WASM.
 - Tencent NCNN, source d0d50631179e380e587fb188338f5683d2c93275, BSD 3-Clause.
   License: native/licenses/NCNN.txt. OpenMP uses bundled SimpleOMP.
-- Linux companions include Zig, LLVM libc++, libc++abi and libunwind runtime
+- Linux/Windows companions include Zig and LLVM libc++ runtime components; Linux also includes libc++abi and libunwind runtime
   components. Their notices are in native/licenses/{Zig,libcxx,libcxxabi,libunwind}.txt.
   The macOS companion uses the operating system C++ library.
 - RapidAI RapidOcrNcnn 1.2.0 OCR pipeline; PaddleOCR models: PP-OCRv6 small
@@ -35,6 +35,16 @@ are included in the package license directory. All wrappers are rebuilt from the
 pinned published source snapshot with Go -trimpath. The macOS target is 12.0;
 Linux wrappers use Zig's glibc 2.17 target. wrapper-build.json records the
 source and rebuilt artifact hashes without workstation paths.
+Windows x64 uses Zig's GNU target, system-only DLL dependencies and bundled
+SimpleOMP. The NCNN source snapshot uses std::call_once for its Windows
+initialization; the wrapper uses LoadLibrary and NCNN's UTF-16 model-path APIs.
+These compatibility patches are maintained in scripts/build-agent-ncnn-windows.mjs
+and packaging/ncnn-windows/native_loader_windows.go.
+
+UPX 5.1.0 compresses Windows/Linux CLI executables. Its license explicitly
+permits distribution of packed programs without imposing its license on them:
+https://github.com/upx/upx/blob/v5.1.0/LICENSE
+The external UPX tool is needed only for source builds, not at runtime.
 
 The shared text WASM core uses lopdf 0.46.0 (MIT), ttf-parser 0.25.1
 (MIT OR Apache-2.0), and unicode-normalization 0.1.26
@@ -47,3 +57,10 @@ wazero and go.yaml.in/yaml/v3; the distributed CLI itself is Rust.
 
 This notice describes third-party components and does not grant a new license
 for filens or the Photos application code.
+
+## Private directory discovery component
+
+Windows and Linux CLI binaries embed compiled hdrw WASI, a proprietary component used through the FiLens directory adapter. hdrw source is not included or licensed as part of FiLens. macOS release binaries use native system FTS and do not embed this component. Maintainer provenance and artifact hashes are recorded in `cli/assets/hdrw.json`; the adapter exposes mounted-directory enumeration, without raw device access.
+
+The embedded WASI module also includes Go standard library/runtime components;
+their license is included in the package license directory as Go.txt.

@@ -1,11 +1,11 @@
 ---
 name: filens
-description: Read and convert local files with the FiLens CLI. Use for document text, scanned-page OCR, source evidence, layout coordinates, or supported file conversions through the shared WASM engines.
+description: Read, search and compare local files with the FiLens CLI, or convert supported formats. Use for document evidence, OCR, layout, duplicate files and resized or recompressed image variants through the shared WASM engines.
 ---
 
 # FiLens
 
-Use FiLens to obtain local file contents and source evidence, then perform the user's requested reasoning yourself. `understand` prepares evidence; the CLI does not summarize, translate, or answer questions.
+Use FiLens to obtain local file contents and source evidence, then perform the user's requested reasoning yourself. `understand` prepares evidence; builds advertising `summarize` can select original key excerpts without a language model. Translation, paraphrasing and question answering belong to the caller.
 
 ## Run the CLI
 
@@ -17,7 +17,7 @@ Inspect the running build when supported formats or OCR availability matter:
 filens capacity --json
 ```
 
-Check `capacity.formats`, `capacity.conversionPairs`, and `capacity.ocr.available`; reading support does not imply conversion support, and an advertised OCR route does not prove that OCR is installed. Reading and conversion are local; initial npm installation and explicit OCR setup may download dependencies.
+Check `capacity.operations` before using source additions such as `search` or `similar`. Check `capacity.formats`, `capacity.conversionPairs`, and `capacity.ocr.available` for document operations; reading support does not imply conversion support, and an advertised OCR route does not prove that OCR is installed. Reading, directory scans and conversion are local; initial npm installation and explicit OCR setup may download dependencies.
 
 For agent use, prefer explicit commands and JSON:
 
@@ -27,7 +27,7 @@ filens read '/path/report.pdf' --json
 filens layout '/path/invoice.png' --json
 ```
 
-Pass one local input per request. Quote paths with spaces. For generated paths, pass separate process arguments or a JSON request through stdin rather than interpolating a shell command:
+Pass one local file per reading/conversion request, or one directory for `search`/`similar`. Quote paths with spaces. For generated paths, pass separate process arguments or a JSON request through stdin rather than interpolating a shell command:
 
 ```json
 {"operation":"understand","input":"/path/report.pdf","format":"json","layout":false,"maxBytes":8388608}
@@ -41,12 +41,12 @@ JSON stdout contains one `filens-agent-v1` response, including failures. Keep st
 
 | Exit | Meaning | Agent action |
 | --- | --- | --- |
-| 0 | Complete extraction, possibly empty | Use returned evidence. |
+| 0 | Complete extraction or scan, possibly empty | Use returned evidence or groups. |
 | 1 | Host, I/O, runtime, timeout, or cancellation failure | Inspect `error`; correct the actual cause. |
 | 2 | Invalid request or unsupported format | Consult capabilities and correct the request. |
-| 3 | Incomplete or truncated content | Retain usable text; disclose the gap. |
+| 3 | Incomplete or truncated content/scan | Retain usable text or groups; disclose the gap. |
 
-Read `content.text`, `complete`, `truncated`, `warnings`, and extraction errors before making claims about the whole document. A partial result is not proof that omitted text does not exist. `--max-bytes N` caps UTF-8 output (default 8 MiB, maximum 32 MiB); `--timeout 2m` controls the request deadline. Input files are limited to 256 MiB.
+Read `content.text`, `complete`, `truncated`, `warnings`, and extraction errors before making claims about the whole document. A partial result is not proof that omitted text does not exist. `--max-bytes N` caps document UTF-8 output (default 8 MiB, maximum 32 MiB); `--timeout 2m` controls the request deadline. Document and image inputs are limited to 256 MiB; streaming duplicate-file hashes have a separate scan budget.
 
 Use `content.document.blocks` to cite `source.path#b1`, etc. `startByte` and `endByte` are zero-based UTF-8 byte offsets into `content.text`, end exclusive; slice encoded bytes, not JavaScript string indices. `startLine` and `endLine` are one-based extracted-text lines, not physical page numbers.
 
@@ -59,6 +59,37 @@ For scans and images, verify OCR availability first if extraction fails. npm Lit
 `layout` or `--layout` returns `content.layout` (`filens-layout-v1`) in JSON. PDF pages use points (`pt`); orientation-corrected images use pixels (`px`). Respect each block's `unit` and `coordinateSpace`. Flow documents may provide headings, paragraphs, and cells without pagination or bounds. Embedded-image bounds are local to the image; do not invent their position on a document page.
 
 Use `--format markdown|html|csv|tsv` for user-requested exports, or `yaml|xml` for structured responses. Plain text cannot carry layout metadata. Extraction is preview-oriented: charts, formulas, unsupported objects, and source formatting can be simplified or omitted.
+
+## Extract key excerpts without a model
+
+Check `capacity.operations` for `summarize`; older published builds do not provide it. Use `filens summarize report.pdf --query 'budget risk' --summary-chars 1000 --json`, or pipe `{"operation":"summarize","input":"report.pdf","query":"budget risk","summaryChars":1000,"summaryRatio":0.3}`. `prune` is an alias. Query is optional. Defaults retain at most 30% and 2000 Unicode characters, including separators; this is a budget, not a promise to retain all important facts.
+
+Inspect `content.summary.sourceComplete`, `omitted`, `sampled` and each excerpt's `clipped`. Scores are ranking weights, not confidence. Query matching is lexical; an empty match does not prove the topic is absent. `content.text` contains original excerpts in source order. Each summary excerpt maps output `startByte/endByte` to `sourceStartByte/sourceEndByte` in the full text returned by `read`. Preserve these distinctions when citing. Optional layout offsets are remapped to selected text; `boundsScope` identifies geometry belonging to the original source block. Read the full document if the task needs broader context or exact completeness.
+
+## Find files and original evidence
+
+Check `capacity.operations` for `search`. Use `filens search '/path/documents' --query 'budget risk' --json`, or pipe `{"operation":"search","input":"/path/documents","query":"预算 风险","format":"json"}`. Chinese and English quoted directory/query intents are supported. This is lexical BM25 with exact matching boosts, not embedding-based semantic retrieval. `--search-mode exact` matches case-sensitive literal text; `files` searches filenames without reading contents.
+
+Inspect `search.complete`, `search.truncated`, `search.scan` and each result's `sourceComplete`. Errors and limits can leave usable evidence while returning exit 3. Zero lexical matches do not prove no relevant document exists. Results are ranked by file, with up to three original excerpts per file. `startByte/endByte` address the full extracted text returned by `read`, not the combined search response. `sha256` identifies the source file version; it is null in filename-only mode. Keep available page/coordinate evidence and `boundsScope`; geometry belongs to the source block and can cover more than the excerpt.
+
+Default scope is 2000 supported files, depth 32, ten returned files; hidden names and `.git`, `node_modules`, `target`, `dist` are excluded. `--include-hidden` includes ordinary hidden names while the four excluded directories remain excluded. Subdirectory symlinks are not followed. Use `--max-files`, `--max-depth`, `--max-results` and `--timeout` to adjust scope and budget. Full extracted text is cached locally after source/engine/OCR hash verification; `--no-cache` disables it. Files removed from the current directory walk cannot reappear from cache. macOS uses native FTS; Windows/Linux embed compiled private hdrw WASI, without exposing raw devices.
+
+## Find duplicate files and similar image variants
+
+Check `capacity.operations` for `similar`; published npm `0.2.0` lacks it. Source builds include it in Lite without OCR or model setup.
+
+```sh
+filens duplicates '/path/files' --json
+filens similar-images '/path/photos' --threshold 8 --json
+```
+
+The aliases return `operation: "similar"`. JSON requests use `{"operation":"similar","input":"/path/photos","similarityMode":"images","threshold":8}`; mode is `images` (default) or `duplicates`. Full SHA-256 identifies duplicate files after size/prefix filtering. Perceptual image hashes identify possible variants, including different dimensions and compression, for JPEG, PNG, WebP, GIF, BMP and TIFF. This does not compare near-duplicate document text or retrieve different photos by semantic subject.
+
+Use `similarity.groups[].files` and resolve member paths relative to the absolute `source.path`. Image groups have a `reference`; each `distanceToReference` is within `threshold` (0–24, default 8, lower is stricter). Distance is not confidence, and zero perceptual distance does not prove identical files. Groups are disjoint reference matches; not all member pairs are necessarily within the threshold. Review images before treating a match as an interchangeable copy.
+
+Inspect `similarity.complete`, `truncated`, `scan` and `processing`; errors and budgets retain groups with exit 3. Defaults are 2000 candidate files, depth 32 and 100 returned groups; use `--max-files` (max 20000), `--max-depth` (max 256), `--max-results` (max 1000), `--include-hidden` and `--timeout` to adjust scope. Hidden names and the same fixed directory exclusions as search apply. Scans do not follow symbolic links. Unix hard-link aliases are skipped; Windows currently retains them. Images use EXIF orientation and the first frame, with transparent pixels composited on white. Duplicate hashing has a 16 GiB total read budget; images are limited to 32 million pixels and 32768 per side.
+
+Scans only report groups. Their results do not authorize deleting, moving or replacing source files. Similarity fingerprints are recomputed; search-cache flags, `--query` and `--layout` do not apply.
 
 ## Convert files
 

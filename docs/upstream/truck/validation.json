@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-30",
+  "upstream": "https://github.com/ricosjp/truck",
+  "base": "1ca3214e537004d466addbd85d6375807147a426",
+  "compiler": "rustc 1.93.0 (254b59607 2026-01-19)",
+  "dependencyOverlay": {
+    "file": "truck-topology/Cargo.toml",
+    "parking_lot": "0.12.5 (upstream HEAD requires 0.13.0 / Rust 1.95)",
+    "rclite": "0.4.1 (upstream HEAD: 0.4.2)"
+  },
+  "fullHeadDependencyGraphTested": false,
+  "fullUpstreamSuiteTested": false,
+  "patches": [
+    {
+      "file": "0001-normalize-step-placement-directions.patch",
+      "sha256": "ec91ca158bd68d7932dc0b449cca66deb6eac509a589953635ba2d771587fb1f",
+      "independentApplyCheck": true
+    },
+    {
+      "file": "0002-honor-optional-assembly-descriptions.patch",
+      "sha256": "c24e411ecc3ab037924992278d8f294ce13dc50d565122e5746b441a4491626e",
+      "independentApplyCheck": true
+    },
+    {
+      "file": "0003-stop-nonfinite-curve-subdivision.patch",
+      "sha256": "0aa898aeeb74f290e56e422a0501027998508bd20d165d095cbd9849e66a688b",
+      "independentApplyCheck": true
+    }
+  ],
+  "before": {
+    "curve_nonfinite": {
+      "passed": 2,
+      "failed": 4
+    },
+    "direction_ratios": {
+      "passed": 1,
+      "failed": 8
+    },
+    "optional_descriptions": {
+      "passed": 3,
+      "failed": 2
+    }
+  },
+  "after": {
+    "core_preparation": {
+      "passed": 10,
+      "failed": 0
+    },
+    "curve_nonfinite": {
+      "passed": 6,
+      "failed": 0
+    },
+    "direction_ratios": {
+      "passed": 9,
+      "failed": 0
+    },
+    "optional_descriptions": {
+      "passed": 5,
+      "failed": 0
+    }
+  },
+  "patchedRegressionTests": 30
+}

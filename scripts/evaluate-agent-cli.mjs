@@ -57,10 +57,11 @@ add('structured','JSON stdin',[],JSON.stringify({operation:'understand',input:'r
 add('structured','JSON 请求纯文本',[],JSON.stringify({operation:'read',input:'report.txt',format:'text'}));
 add('structured','自然语言 stdin',[],'读取 "report.txt"，以 JSON 输出');
 add('structured','JSON 未知字段',[],JSON.stringify({input:'report.txt',pages:'1-2'}));
-add('structured','JSON 非法 operation',[],JSON.stringify({operation:'summarize',input:'report.txt'}));
+add('structured','JSON 摘录请求',[],JSON.stringify({operation:'summarize',input:'report.txt',query:'预算',summaryChars:100}));
+add('structured','JSON 非法 operation',[],JSON.stringify({operation:'nonexistent',input:'report.txt'}));
 add('structured','JSON 非法 format',[],JSON.stringify({input:'report.txt',format:'xml'}));
-add('boundary','中文摘要','总结 "report.txt"，以 JSON 输出');
-add('boundary','英文摘要','summarize "report.txt" as json');
+add('summary','中文原文摘录','总结 "report.txt"，以 JSON 输出');
+add('summary','英文原文摘录','summarize "report.txt" as json');
 add('boundary','翻译','翻译 "report.txt" 成英文');
 add('boundary','中文金额问答','"report.txt" 中预算是多少？');
 add('boundary','英文明确问答','how many projects are in "report.txt"?');

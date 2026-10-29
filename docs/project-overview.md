@@ -47,7 +47,11 @@ filens 'read "document.docx" as text'
 filens 'understand "report.pages" as json'
 ```
 
-Parsing, reading order and evidence spans live in the shared WASM core; summarization and question answering belong to the calling Agent. Rendering, thumbnails and archive reading remain future CLI work. [Setup and protocol](agent-cli.md).
+Parsing, reading order, evidence spans and key-excerpt pruning live in the shared WASM core. Source builds provide model-free `summarize` / `prune`, combining density, BM25 and cosine similarity to select original text with provenance, omissions and explicit budget clipping; see [examples and limits](agent-cli-pruning.zh-CN.md) (Chinese). Paraphrasing, translation and question answering belong to the calling Agent. Published npm 0.2.0 does not include this addition; inspect the installed build with `capacity`. Rendering, thumbnails and archive reading remain future CLI work. [Setup and protocol](agent-cli.md).
+
+Source builds also provide [directory search](agent-cli-search.zh-CN.md) with BM25, literal and filename modes, and [Czkawka-style duplicate-file and similar-image scans](agent-cli-similarity.md). `filens duplicates ./files --json` compares full SHA-256 hashes after size/prefix filtering; `filens similar-images ./photos --threshold 8 --json` groups image variants using perceptual hashes, including different sizes and compression. These scan modes need no OCR or model. Hashing, image decoding and grouping stay in WASM; the host discovers directories and maps results. Check `capacity.operations` for `search` or `similar`; published npm `0.2.0` lacks these source additions.
+
+The similarity implementation's macOS arm64 local build comparison added about **278 KiB** for the executable plus gzip WASM resources. See [measurement scope and verification](agent-cli-similarity-size.json); this does not measure npm tarball growth or parity with Czkawka's full feature set.
 
 ## What Makes filens Different
 

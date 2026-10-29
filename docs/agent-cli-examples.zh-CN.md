@@ -1,12 +1,37 @@
 # Agent CLI 实测案例与自然语言边界
 
-> 本页记录 **0.1.0 的历史实测**。0.2.0 已增加 Markdown、HTML、YAML、XML、CSV、TSV 和布局信息；旧版的格式回退行为不适用于这些新增能力，见[当前多格式输出与布局指南](agent-cli-formats-and-layout.zh-CN.md)。
+> 当前源码支持无 LLM 的原文摘录式总结：`summarize` / `prune`。旧版将总结请求拒绝或判为非法操作的结论已失效；原始记录保留在历史 JSON 中，并标记后续能力更新。已发布的 npm 0.2.0 和早先 Windows ZIP 不包含这项新能力，使用 `capacity` 检查当前安装。下方基础实测表属于历史观测；当前多格式与布局能力见[指南](agent-cli-formats-and-layout.zh-CN.md)。
 
 [安装与协议](agent-cli.zh-CN.md) · [机器可读的测试摘要](agent-cli-evaluation.json)
 
-本页来自 2026-10-29 在 macOS arm64 上对 **68 条请求**的实际执行，使用 0.1.0 原生 CLI、RapidOCR NCNN、最大边长 960、OpenMP=2。包含合成的可核对 OCR 图片、仓库演示文档与公开旧版 Word / iWork 样本。这是功能观察与有限质量检查，不是通用准确率基准，也不是 68 条“全部正确”的声明。
+本页基础实测来自 2026-10-29 在 darwin-arm64 上对 **68 条请求**的实际执行，使用报告记录的 CLI 产物、RapidOCR NCNN、最大边长 960、OpenMP=2。包含合成的可核对 OCR 图片、仓库演示文档与公开旧版 Word / iWork 样本。这是功能观察与有限质量检查，不是通用准确率基准，也不是 68 条“全部正确”的声明。
 
-当前自然语言入口能把常见中英文句式映射到**读取全文、准备理解所需的文本与证据、发现能力、选择 text / JSON**。它没有内置语言模型，不执行摘要、翻译、问答、字段筛选或分页指令；部分不支持的句式会被拒绝，部分会退回全文读取。生产调用请使用 capacity 给出的 JSON Schema，并自行验证响应。
+当前自然语言入口支持**读取全文、准备理解证据、发现能力、选择八种输出格式、提取关键内容、搜索本地目录**。总结通过密度/TF-IDF、可选 BM25 主题匹配和余弦多样性选择，保留原文及出处，无需语言模型。改写总结、翻译和问答仍由上层 Agent 完成。生产调用请使用 capacity 给出的 JSON Schema，并自行验证响应。
+
+源码版的 search 支持 BM25、区分大小写的精确文本、文件名搜索和可校验的原文片段；支持中英文意图及八种输出格式。它使用全文，正文缓存按源内容哈希更新，尚未提供 embedding 语义检索。macOS 使用原生 FTS，不嵌入 hdrw；Windows/Linux 仅嵌入私有 hdrw 的编译后 WASI。用法见[搜索指南](agent-cli-search.zh-CN.md)，独立的[当前功能检查](agent-cli-search-evaluation.json)不属于本页历史 68 条观测，也不能证明优于 rg 或 zvec-grep。
+
+## 当前总结能力：中文、英文与 JSON 均可用
+
+检查 `capacity.operations` 是否包含 `summarize` 后，可使用以下请求：
+
+```sh
+filens '总结 "report.txt"，以 JSON 输出'
+filens 'summarize "report.txt" as json'
+filens '提取 "report.txt" 的关键内容，关注预算和风险，保留30%，最多800字，以 JSON 输出'
+filens prune report.txt --query '预算 风险' --summary-chars 800 --json
+echo '{"operation":"summarize","input":"report.txt","query":"预算 风险","format":"json"}' | filens
+```
+
+`summarize` 是合法操作，`prune` 是别名；“总结”返回关键原文片段。检查 `content.summary.sourceComplete`、`omitted`、`sampled` 和每段的 `clipped`；主动裁剪不等于读取被截断。分数只用于排序，不能表示内容可信度。出处同时提供输出文本和完整提取文本的 UTF-8 偏移。
+
+公开合成会议记录的[当前真实 CLI 结果](agent-cli-pruning-evaluation.json)：
+
+| 场景 | 原文字符数 | 摘录字符数 | 单次耗时 |
+| --- | ---: | ---: | ---: |
+| 自动选取关键原文 | 497 | 146 | 185 ms |
+| 聚焦预算和风险 | 497 | 55 | 177 ms |
+
+这些是 darwin-arm64 上的单次观测，包含进程启动和 WASM 执行，不能代表通用摘要质量或稳定性能。完整用法、原文、摘录结果和限制见[无 LLM 关键内容提取](agent-cli-pruning.zh-CN.md)。历史总结失败记录不再列入下方边界表。
 
 ## 五分钟上手
 
@@ -141,7 +166,7 @@ AFTER
 | 显式 flag 覆盖自然语言 | `filens "读取 \"report.txt\"，以纯文本输出" "--json"` | json / 0 | read；45 字符；1 个证据块 |
 | 自然语言格式冲突 | `filens "read \"report.txt\" as json and as plain text"` | json / 0 | 匹配到 JSON 后选择 JSON；不要同时指定两种格式。 |
 
-最稳定的表达是“以 JSON 输出 / 用 JSON 返回 / as json / in JSON”。需要严格验证格式时，使用 --format 或 JSON format 字段；自然语言中的 YAML / XML 不会自动变成受支持的输出类型。
+上表保留旧版的格式观察。当前源码支持 text、JSON、Markdown、HTML、YAML、XML、CSV、TSV；需要严格验证格式时，使用 --format 或 JSON format 字段，详见[当前多格式指南](agent-cli-formats-and-layout.zh-CN.md)。
 
 ## JSON 与 stdin：给 Agent 的可验证协议
 
@@ -151,21 +176,18 @@ AFTER
 | JSON 请求纯文本 | `stdin: {"operation":"read","input":"report.txt","format":"text"}` | text / 0 | read（纯文本不带操作字段）；45 字符 |
 | 自然语言 stdin | `stdin: 读取 "report.txt"，以 JSON 输出` | json / 0 | read；45 字符；1 个证据块 |
 | JSON 未知字段 | `stdin: {"input":"report.txt","pages":"1-2"}` | json / 2 | invalid_request: invalid JSON request: json: unknown field "pages" |
-| JSON 非法 operation | `stdin: {"operation":"summarize","input":"report.txt"}` | json / 2 | invalid_request: unsupported operation "summarize" |
 | JSON 非法 format | `stdin: {"input":"report.txt","format":"xml"}` | json / 2 | invalid_request: unsupported output format "xml"; choose text or json |
 
-推荐调用链：读取 capacity → 根据 Schema 发送 understand/read 请求 → 检查 ok、complete、truncated、error → 将 content.text 与证据块交给上层 Agent 摘要、问答或字段提取。证据位置是提取文本的 UTF-8 字节偏移，不是原文页码。
+推荐调用链：读取 capacity → 根据 Schema 发送 search、understand/read 或 summarize 请求 → 检查 ok、complete、truncated、error 及摘录标记 → 根据需要将原文或关键摘录交给上层 Agent 改写总结、问答或字段提取。证据位置是提取文本的 UTF-8 字节偏移；物理页码和坐标需检查布局信息。
 
 ```json
 {"operation":"understand","input":"report.txt","format":"json"}
 ```
 
-## 明确边界：拒绝与退化行为都要看
+## 历史边界记录：改写、问答与其他操作
 
 | 案例 | 实际请求 | 实际输出 / 退出码 | 观察 |
 | --- | --- | --- | --- |
-| 中文摘要 | `filens "总结 \"report.txt\"，以 JSON 输出"` | json / 2 | invalid_request: semantic reasoning belongs to the calling agent; request read/understand, then use the returned text and evidence blocks to answer |
-| 英文摘要 | `filens "summarize \"report.txt\" as json"` | json / 2 | invalid_request: semantic reasoning belongs to the calling agent; request read/understand, then use the returned text and evidence blocks to answer |
 | 翻译 | `filens "翻译 \"report.txt\" 成英文"` | text / 2 | invalid_request: semantic reasoning belongs to the calling agent; request read/understand, then use the returned text and evidence blocks to answer |
 | 中文金额问答 | `filens "\"report.txt\" 中预算是多少？"` | text / 2 | invalid_request: semantic reasoning belongs to the calling agent; request read/understand, then use the returned text and evidence blocks to answer |
 | 英文明确问答 | `filens "how many projects are in \"report.txt\"?"` | text / 2 | invalid_request: semantic reasoning belongs to the calling agent; request read/understand, then use the returned text and evidence blocks to answer |
@@ -206,4 +228,4 @@ node scripts/evaluate-agent-cli.mjs --binary /path/to/filens
 
 报告位于 dist/agent-evaluation/report.json；每条保存原始参数、退出码、文本、错误、耗时与质量指标。图片输入和期望原文已提交；通常不需要重新生成。要更新图片可运行 node scripts/generate-agent-ocr-fixtures.mjs，需要 Playwright Chromium，字体渲染会随系统变化。可用 node scripts/write-agent-evaluation-docs.mjs 从最近的报告重建本页。
 
-本页测试的是本地原生 0.1.0 产物；npm 注册表的安装验证由 node scripts/test-agent-npm.mjs --registry 单独执行，不把本地 tarball 成功当成注册表发布成功。
+历史失败行只描述当时的被测产物，不能用于判断当前源码是否支持总结。当前摘录能力由 agent-cli-pruning-evaluation.json 单独记录。npm 注册表的安装验证由 node scripts/test-agent-npm.mjs --registry 单独执行，不把本地构建成功当成注册表发布成功。
