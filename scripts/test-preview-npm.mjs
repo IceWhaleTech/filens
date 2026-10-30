@@ -100,10 +100,11 @@ document.querySelector('#file').onchange = event => {
       } finally {await page.close();await new Promise(resolve=>server.close(resolve));}
     }
   } finally {await browser.close();}
+  const browserReport = JSON.parse(await readFile(path.join(root,'docs/preview-validation.json'),'utf8'));
   const report = {observedAt:new Date().toISOString(),name:release.name,version:release.version,
     source:registry?'public registry with fresh npm cache':'offline npm tarball',platform:`${process.platform}-${process.arch}`,
     passed:true,checks:['Standalone installation without runtime dependencies','MIT license and third-party notices',
-      'TypeScript consumer imports of split and all-in-one exports','26 real browser previews from installed assets',
+      'TypeScript consumer imports of split and all-in-one exports',`${browserReport.observations.length} real browser previews from installed assets`,
       'No external runtime requests','Single JavaScript runtime request for all-in-one','CLI loopback HTTP restrictions',
       '8 PDF/iWork/RAW/STEP previews after Vite production bundling of npm exports'],
     browserReport:'preview-validation.json'};

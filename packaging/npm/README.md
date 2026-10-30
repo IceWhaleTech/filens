@@ -1,13 +1,13 @@
 # filens Agent CLI
 
 <!-- agent-cli-size:npm:start -->
-**v0.4.0 · MIT · CLI 2.15 MiB · Lite 8.04 MiB · Full 31.24 MiB** (macOS arm64, installed; Full includes OCR models).
+**v0.4.1 · MIT · CLI 2.15 MiB · Lite 8.04 MiB · Full 31.25 MiB** (macOS arm64, installed; Full includes OCR models).
 
 | Platform | CLI executable | Lite installed / download | Full installed / download |
 | --- | ---: | ---: | ---: |
-| darwin-arm64 | 2.15 MiB | 8.04 / 6.14 MiB | 31.24 / 20.34 MiB |
+| darwin-arm64 | 2.15 MiB | 8.04 / 6.14 MiB | 31.25 / 20.34 MiB |
 | linux-x64 | 1.89 MiB | 7.78 / 6.86 MiB | 36.74 / 22.84 MiB |
-| linux-arm64 | 1.79 MiB | 7.68 / 6.75 MiB | 31.10 / 20.54 MiB |
+| linux-arm64 | 1.78 MiB | 7.68 / 6.75 MiB | 31.10 / 20.54 MiB |
 | win32-x64 | 1.81 MiB | 7.71 / 6.78 MiB | 36.48 / 23.01 MiB |
 
 Totals add the launcher and selected platform packages from npm pack. Node.js, npm caches, filesystem overhead and the optional frontend preview package are excluded. Bundled dependencies retain their own licenses; see THIRD-PARTY-NOTICES.md in the platform packages.
@@ -196,4 +196,4 @@ one profile at a time. Platform packages are implementation components.
 [Protocol, limitations and source build](https://github.com/IceWhaleTech/filens/blob/main/docs/agent-cli.md)
 
 Locally built release tarballs can also be installed with
-`npm install -g /path/to/filens-cli-0.4.0.tgz /path/to/filens-cli-PLATFORM-0.4.0.tgz /path/to/filens-ocr-PLATFORM-0.4.0.tgz`.
+`npm install -g /path/to/filens-cli-0.4.1.tgz /path/to/filens-cli-PLATFORM-0.4.1.tgz /path/to/filens-ocr-PLATFORM-0.4.1.tgz`.

@@ -4,6 +4,10 @@ Build the same preview engines as a single JavaScript file or split modules. Bot
 include Vue, styles, PDF/iWork workers and the document, image/RAW and STEP WASM
 engines. No conversion server or host Vue installation is needed.
 
+Version 0.1.1 adds local HEIC/HEIF decoding and a WASM fallback for MOV video
+playback. The split build loads the video engine only when native playback fails;
+the all-in-one build embeds it with the other engines.
+
 ```sh
 npm install filens-preview
 ```
@@ -26,8 +30,8 @@ npm run build:preview
 
 | Build | Deploy | Approximate runtime size |
 | --- | --- | --- |
-| Split | Entire `packages/preview/dist/split/` directory | 12 MB raw / 3.5 MB gzip / 2.7 MB Brotli, across all files |
-| All in one | `packages/preview/dist/all-in-one/filens.js` | 14 MB raw / 4.3 MB gzip / 3.2 MB Brotli |
+| Split | Entire `packages/preview/dist/split/` directory | 47 MB raw / 15.0 MB gzip / 10.9 MB Brotli, across all runtime files |
+| All in one | `packages/preview/dist/all-in-one/filens.js` | 60 MB raw / 19.6 MB gzip / 14.2 MB Brotli |
 
 Both directories contain an `index.html` with a local file picker. Serve either
 directory over HTTP(S). To integrate into another page:
@@ -107,7 +111,7 @@ filens preview report.pdf --port 8080 --assets /path/to/preview/dist/all-in-one
 `FILENS_PREVIEW_DIR` overrides the default `<binary-directory>/preview` asset
 directory. Source npm packaging can include the assets with
 `node scripts/package-agent-npm.mjs --with-preview`; they are optional and add
-about 12 MB on disk, measured separately from the document-reading CLI.
+about 47 MB on disk, measured separately from the document-reading CLI.
 
 The server exposes one selected file, not its parent directory. Models or media
 with external sidecars need a supported ZIP bundle or a host-provided resource
@@ -123,9 +127,9 @@ macOS; Windows/Linux browser launching still needs native validation.
 另附第三方许可文件。单文件部署更简单，初次下载也更大。
 
 `filens preview 文件路径` 会启动本地浏览器预览，由前端完成格式解析与渲染。
-CLI 0.4.0 首次预览时自动安装前端资源，也可先运行 `filens setup-preview`；
+CLI 0.4.1 首次预览时自动安装 filens-preview 0.1.1，也可先运行 `filens setup-preview`；
 源码版先运行 `npm run build:agent:preview`。
-独立前端包同时包含单文件和分包产物，完整安装约 26 MB，不混入 CLI 的
-约 2 MB / Lite 8 MB / Full 30 多 MB 安装体积。源码仅附带分包时约 12 MB。`--no-open --json` 返回本地地址，`--assets` 可切换单文件或分包版，
+独立前端包同时包含单文件和分包产物，完整安装约 108 MB，包含 HEIC/HEIF 解码与视频 WASM 引擎，不混入 CLI 的
+约 2 MB / Lite 8 MB / Full 30 多 MB 安装体积。源码仅附带分包时约 47 MB。分包版在原生视频播放失败时才加载视频引擎。`--no-open --json` 返回本地地址，`--assets` 可切换单文件或分包版，
 Ctrl-C 退出。仅提供选中的文件，不开放整个父目录；伴随文件需要打成受支持的 ZIP
 或由宿主配置解析器。

@@ -40,15 +40,15 @@ npx --yes filens-cli 'what can you do as json'
 npx --yes filens-cli-lite '你能做什么？以 JSON 输出'
 ```
 
-Version 0.4.0 on macOS arm64: **2.15 MiB** native executable; Lite **8.04 MiB installed / 6.14 MiB download**; Full **31.24 MiB installed / 20.34 MiB download**, including OCR models. Optional frontend preview assets are measured separately. Totals combine the launcher and selected platform packages, excluding Node.js, npm caches and filesystem overhead. See [all platform sizes and exact bytes](agent-cli-npm-release.json). FiLens code and npm package metadata use [MIT](../LICENSE); dependencies retain their own licenses.
+Version 0.4.1 on macOS arm64: **2.15 MiB** native executable; Lite **8.04 MiB installed / 6.14 MiB download**; Full **31.25 MiB installed / 20.34 MiB download**, including OCR models. Optional frontend preview assets are measured separately. Totals combine the launcher and selected platform packages, excluding Node.js, npm caches and filesystem overhead. See [all platform sizes and exact bytes](agent-cli-npm-release.json). FiLens code and npm package metadata use [MIT](../LICENSE); dependencies retain their own licenses.
 
 For offline distribution, locally generated tarballs can also be installed in one command, for example on macOS arm64:
 
 ```sh
-npm install -g ./dist/npm/filens-cli-0.4.0.tgz ./dist/npm/filens-cli-darwin-arm64-0.4.0.tgz ./dist/npm/filens-ocr-darwin-arm64-0.4.0.tgz
+npm install -g ./dist/npm/filens-cli-0.4.1.tgz ./dist/npm/filens-cli-darwin-arm64-0.4.1.tgz ./dist/npm/filens-ocr-darwin-arm64-0.4.1.tgz
 ```
 
-Historical [Rust migration measurements](agent-cli-rust-size.json) and [similarity feature costs](agent-cli-similarity-size.json) describe earlier local builds; use the 0.4.0 report above for current installation sizes.
+Historical [Rust migration measurements](agent-cli-rust-size.json) and [similarity feature costs](agent-cli-similarity-size.json) describe earlier local builds; use the 0.4.1 report above for current installation sizes.
 
 ## Source build and release packaging
 
@@ -83,9 +83,9 @@ Reading and pruning accept one local file or archive-member path per request; `s
 ## Browser preview (0.4.0)
 
 `filens preview FILE` starts a loopback server and opens the shared frontend viewer.
-The first invocation installs `filens-preview@0.1.0` into the versioned cache;
+CLI 0.4.1 installs `filens-preview@0.1.1` into the versioned cache on first use;
 `filens setup-preview` installs it in advance. Later previews work offline.
-The separate frontend package includes both builds and uses about 26 MB installed,
+The separate frontend package includes both builds and uses about 108 MB installed,
 excluded from base CLI installation sizes.
 
 `--no-open --json` returns a local URL and keeps the server running until stopped.

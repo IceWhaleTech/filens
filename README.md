@@ -18,7 +18,7 @@
 | Approximate size | **2 MB executable → 8 MB Lite → 30+ MB Full**, including OCR models. | **A few KB to hundreds of KB per compressed chunk**; shared dependencies, workers and WASM add to the total. An **all-in-one JS file** is also available. |
 | Start here | [Install and use the CLI](#agent-cli) | [Preview and integrate](#pure-frontend-previews) |
 
-Sizes describe different things: CLI figures are installed v0.4.0 packages (platform-dependent, excluding Node.js and optional preview assets). Frontend chunk figures describe compressed build artifacts. The full standalone runtime is about **2.7 MB Brotli** across split files, or **3.2 MB Brotli / 4.3 MB gzip / 14 MB raw** as one JS file, including Vue, styles, workers and WASM. [CLI measurements](docs/agent-cli-npm-release.json) · [Standalone measurements](docs/preview-build-sizes.json).
+Sizes describe different things: CLI figures are installed v0.4.1 packages (platform-dependent, excluding Node.js and optional preview assets). Frontend chunk figures describe compressed build artifacts. The full standalone runtime is about **10.9 MB Brotli** across split files, or **14.2 MB Brotli / 19.6 MB gzip / 60 MB raw** as one JS file, including Vue, styles, workers and WASM. Version 0.1.1 includes HEIC/HEIF decoding and a video engine, loaded on demand in the split build. [CLI measurements](docs/agent-cli-npm-release.json) · [Standalone measurements](docs/preview-build-sizes.json).
 
 ## Agent CLI
 
@@ -36,13 +36,13 @@ filens convert report.doc report.docx
 npx --yes filens-cli-lite capacity --json
 ```
 
-**Browser preview from the CLI:** `filens preview report.pdf` opens the shared frontend viewer. The first use installs the separate `filens-preview` package; `filens setup-preview` prepares it in advance. `--no-open --json` prints a local URL and keeps the server running until stopped. The optional frontend package includes both builds (about **26 MB installed**), measured separately from CLI sizes. [Preview setup and limits](packages/preview/README.md#cli-preview).
+**Browser preview from the CLI:** `filens preview report.pdf` opens the shared frontend viewer. The first use installs the separate `filens-preview` package; `filens setup-preview` prepares it in advance. `--no-open --json` prints a local URL and keeps the server running until stopped. The optional frontend package includes both builds (about **108 MB installed**), measured separately from CLI sizes. [Preview setup and limits](packages/preview/README.md#cli-preview).
 
 <details>
 <summary>CLI sizes, capabilities and further examples</summary>
 
 <!-- agent-cli-size:en:start -->
-  <p><strong>CLI 2.15 MiB · Lite 8.04 MiB · Full 31.24 MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v0.4.0 · macOS arm64 · installed packages, Full includes OCR models; <a href="docs/agent-cli-npm-release.json">all platform sizes</a></sub></p>
+  <p><strong>CLI 2.15 MiB · Lite 8.04 MiB · Full 31.25 MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v0.4.1 · macOS arm64 · installed packages, Full includes OCR models; <a href="docs/agent-cli-npm-release.json">all platform sizes</a></sub></p>
 <!-- agent-cli-size:en:end -->
 
 - [Installation, protocol and packaging](docs/agent-cli.md) · [Agent skill](skills/filens/SKILL.md)

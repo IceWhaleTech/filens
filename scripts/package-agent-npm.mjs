@@ -15,6 +15,7 @@ import { executableName, releaseTargets, platformPackageName, npmInvocation } fr
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const version = JSON.parse(await readFile(path.join(root, 'packaging/agent-release.json'), 'utf8')).version;
+const previewVersion = JSON.parse(await readFile(path.join(root, 'packages/preview/package.json'), 'utf8')).version;
 const targets = releaseTargets(args);
 const output = path.join(root, 'dist/npm');
 await mkdir(output, { recursive: true });
@@ -81,7 +82,7 @@ for (const name of ['filens-cli','filens-cli-lite']) {
     optionalDependencies[platformPackageName('cli', platform)] = version;
     if (!lite) optionalDependencies[platformPackageName('ocr', platform)] = version;
   }
-  const directory = await prepare(name, { type:'module', engines:{node:'>=20.11'}, bin:{filens:'cli.mjs'}, filensPreviewVersion:'0.1.0', description:`Local document reading for agents (${!lite ? 'native RapidOCR included' : 'lite; OCR optional'})`, optionalDependencies, files:['cli.mjs','scripts','converter','skills','README.md'] });
+  const directory = await prepare(name, { type:'module', engines:{node:'>=20.11'}, bin:{filens:'cli.mjs'}, filensPreviewVersion:previewVersion, description:`Local document reading for agents (${!lite ? 'native RapidOCR included' : 'lite; OCR optional'})`, optionalDependencies, files:['cli.mjs','scripts','converter','skills','README.md'] });
   await cp(path.join(root,'skills/filens'),path.join(directory,'skills/filens'),{recursive:true});
   await copyFile(path.join(root,'packaging/npm/cli.mjs'),path.join(directory,'cli.mjs'));
   await chmod(path.join(directory,'cli.mjs'),0o755);

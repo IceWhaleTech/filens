@@ -1,6 +1,6 @@
 [package]
 name = "filens-cli"
-version = "0.4.0"
+version = "0.4.1"
 license = "MIT"
 edition = "2024"
 publish = false
