@@ -15,11 +15,12 @@ const platform=`${process.platform}-${process.arch}`;
 const coreName=platformPackageName('cli',platform),ocrName=platformPackageName('ocr',platform);
 const fullName='filens-cli';
 const liteName='filens-cli-lite';
+const hasPreview=release.packages.some(pkg=>pkg.name==='filens-preview');
 const registry=process.argv.includes('--registry');
 const installFlags=['--ignore-scripts','--no-audit','--no-fund',...(registry?['--registry=https://registry.npmjs.org/']:['--offline'])];
 const archive=name=>{const pkg=release.packages.find(p=>p.name===name);assert.ok(pkg,`Missing package ${name}`);return path.join(output,pkg.file);};
 const work=await mkdtemp(path.join(os.tmpdir(),'filens-npm-install-'));
-const env={...process.env,FILENS_CACHE_DIR:path.join(work,'cache'),npm_config_offline:registry?'false':'true',npm_config_registry:'https://registry.npmjs.org/',...(registry?{npm_config_cache:path.join(work,'npm-cache')}: {})};
+const env={...process.env,FILENS_CACHE_DIR:path.join(work,'cache'),npm_config_userconfig:path.join(work,'.npmrc'),npm_config_offline:registry?'false':'true',npm_config_registry:'https://registry.npmjs.org/',...(registry?{npm_config_cache:path.join(work,'npm-cache')}: {})};
 try {
   const full=path.join(work,'full');
   run('npm',['install',...installFlags,'--prefix',full,...(registry?[`${fullName}@${release.version}`]:[archive(fullName),archive(coreName),archive(ocrName)])]);
@@ -69,6 +70,30 @@ try {
   executable=path.join(lite,'node_modules',liteName,'cli.mjs');
   assert.equal(JSON.parse(run(executable,['capacity','--json']).stdout).capacity.ocr.enabled,false);
   assert.equal(run(executable,[text]).stdout.trim(),'文档证据 42');
+  if(hasPreview){
+    if(!registry)env.FILENS_PREVIEW_PACKAGE=archive('filens-preview');
+    // First preview must install the frontend automatically, keeping npm output
+    // on stderr so the first stdout line remains machine-readable JSON.
+    const {spawn}=await import('node:child_process');
+    const {createInterface}=await import('node:readline');
+    const child=spawn(process.execPath,[executable,'preview',text,'--no-open','--json'],{cwd:work,env});
+    let stderr='';child.stderr.on('data',bytes=>{stderr+=bytes;});
+    const ready=await new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>{child.kill('SIGTERM');reject(new Error('Installed preview startup timeout'));},120000);
+      child.once('error',reject);child.once('exit',code=>{clearTimeout(timer);reject(new Error(`Installed preview exited ${code}: ${stderr}`));});
+      createInterface({input:child.stdout}).once('line',line=>{clearTimeout(timer);resolve(JSON.parse(line));});
+    });
+    try{
+      assert.equal(ready.operation,'preview');
+      const response=await fetch(ready.url);assert.equal(response.status,200);
+      assert.match(await response.text(),/createPreview/);
+      const source=await (await fetch(new URL('./source.json',ready.url))).json();
+      assert.match(await (await fetch(new URL(source.url,ready.url))).text(),/文档证据 42/);
+    }finally{const closed=new Promise(resolve=>child.once('close',resolve));child.kill('SIGTERM');await closed;}
+    run(executable,['setup-preview']);
+    const previewCapacity=JSON.parse(run(executable,['capacity','--json']).stdout).capacity.preview;
+    assert.equal(previewCapacity.available,true);
+  }
   if(!registry) env.FILENS_OCR_PACKAGE=archive(ocrName);
   run(executable,['setup-ocr','--sources','4']);
   const enabled=JSON.parse(run(executable,['capacity','--json']).stdout);
@@ -80,7 +105,16 @@ try {
     assert.equal(temporary.capacity.profile,'full');
     assert.equal(temporary.capacity.ocr.available,true);
   }
-  console.log(`npm packages: ${registry?'public registry (fresh npm cache)':'offline tarball'} Full/Lite installs${registry?', automatic platform selection':''}, stdin JSON, native execution without Python, and one-command OCR component installation passed.`);
+  const validationFile=path.join(root,'docs/agent-cli-npm-validation.json');
+  let validation={version:release.version,tests:{}};
+  try {
+    const previous=JSON.parse(await readFile(validationFile,'utf8'));
+    if(previous.version===release.version)validation=previous;
+  } catch(error) {if(error.code!=='ENOENT')throw error;}
+  validation.tests[registry?'registry':'offline']={command:`node scripts/test-agent-npm.mjs${registry?' --registry':''}`,
+    platform,passed:true,observedAt:new Date().toISOString(),freshNpmCache:registry,preview:hasPreview};
+  await writeFile(validationFile,JSON.stringify(validation,null,2)+'\n');
+  console.log(`npm packages: ${registry?'public registry (fresh npm cache)':'offline tarball'} Full/Lite installs${registry?', automatic platform selection':''}, stdin JSON, native execution without Python, first-use preview installation/JSON server, and one-command OCR component installation passed.`);
 } finally {await rm(work,{recursive:true,force:true});}
 function run(command,args,input) {
   if(command==='npm') ({command,args}=npmInvocation(args));

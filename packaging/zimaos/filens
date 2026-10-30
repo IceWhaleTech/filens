@@ -1,0 +1,51 @@
+#!/bin/sh
+set -eu
+
+prefix=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+case "$(uname -m)" in
+  x86_64|amd64) platform=linux-x64 ;;
+  aarch64|arm64) platform=linux-arm64 ;;
+  *) printf 'filens: unsupported CPU architecture\n' >&2; exit 1 ;;
+esac
+bundle=$prefix/lib/filens
+version=$(cat "$bundle/cli-version")
+cache_base=${FILENS_CACHE_DIR:-${XDG_CACHE_HOME:-${HOME:-/tmp}/.cache}/filens}
+private_ocr=$cache_base/zimaos-ocr/$version/$platform
+
+# Reuse Photos' downloaded runtime and models without changing its files.
+photos_cache=${ZIMAOS_MODEL_CACHE_DIR:-/media/ZimaOS-HD/AppData/photos/models}
+if [ -z "${FILENS_OCR_LIBRARY:-}" ]; then
+  for runtime_dir in "$private_ocr/native" /usr/local/lib /usr/lib \
+    "$photos_cache/ncnn/runtime" /DATA/AppData/photos/models/ncnn/runtime \
+    /media/ZimaOS-HD/AppData/.models/ncnn/runtime; do
+    if [ -r "$runtime_dir/libzima_ncnn_runtime_v7.so" ] && [ -r "$runtime_dir/libncnn.so" ]; then
+      FILENS_OCR_LIBRARY=$runtime_dir/libzima_ncnn_runtime_v7.so
+      export FILENS_OCR_LIBRARY
+      break
+    fi
+  done
+fi
+if [ -z "${FILENS_OCR_MODEL_DIR:-}" ]; then
+  for model_dir in "$private_ocr/models/rapidocr-ncnn" "$photos_cache/ncnn/rapidocr-ncnn" \
+    /DATA/AppData/photos/models/ncnn/rapidocr-ncnn \
+    /media/ZimaOS-HD/AppData/.models/ncnn/rapidocr-ncnn; do
+    if [ -r "$model_dir/metadata.json" ]; then
+      FILENS_OCR_MODEL_DIR=$model_dir
+      export FILENS_OCR_MODEL_DIR
+      break
+    fi
+  done
+fi
+
+if [ -z "${FILENS_PROFILE:-}" ]; then
+  FILENS_PROFILE=lite
+  if [ -n "${FILENS_OCR_LIBRARY:-}" ] && [ -n "${FILENS_OCR_MODEL_DIR:-}" ]; then
+    FILENS_PROFILE=full
+  fi
+  export FILENS_PROFILE
+fi
+if [ "${1:-}" = setup-ocr ]; then
+  shift
+  exec "$bundle/setup-ocr" "$platform" "$@"
+fi
+exec "$prefix/lib/filens/$platform/filens" "$@"

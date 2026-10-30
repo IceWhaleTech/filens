@@ -1,0 +1,151 @@
+{
+  "date": "2026-10-30",
+  "unit": "bytes",
+  "scope": "Standalone runtime, including Vue, CSS, workers and document/image/STEP WASM; excludes HTML, notices, maps and source files.",
+  "builds": {
+    "split": {
+      "files": [
+        {
+          "file": "assets/iwork-worker-D64s_rsm.js",
+          "raw": 915578,
+          "gzip": 191223,
+          "brotli": 159940
+        },
+        {
+          "file": "chunks/archive-6Qub9mNw.js",
+          "raw": 27335,
+          "gzip": 7414,
+          "brotli": 6610
+        },
+        {
+          "file": "chunks/cad-EFq1g8br.js",
+          "raw": 74581,
+          "gzip": 18714,
+          "brotli": 16032
+        },
+        {
+          "file": "chunks/core-Btd5PUTt.js",
+          "raw": 446077,
+          "gzip": 99722,
+          "brotli": 82937
+        },
+        {
+          "file": "chunks/diagram-DF4cLJ7x.js",
+          "raw": 27188,
+          "gzip": 7691,
+          "brotli": 6775
+        },
+        {
+          "file": "chunks/docx-_znXEdDw.js",
+          "raw": 11766,
+          "gzip": 3745,
+          "brotli": 3282
+        },
+        {
+          "file": "chunks/ebook-DieqKVSP.js",
+          "raw": 21804,
+          "gzip": 7021,
+          "brotli": 6216
+        },
+        {
+          "file": "chunks/iwork-Dfnhl8e6.js",
+          "raw": 29712,
+          "gzip": 8282,
+          "brotli": 7394
+        },
+        {
+          "file": "chunks/mindmap-DHsLhGt7.js",
+          "raw": 20032,
+          "gzip": 5649,
+          "brotli": 4976
+        },
+        {
+          "file": "chunks/model3d-wQkZPAgr.js",
+          "raw": 223801,
+          "gzip": 56065,
+          "brotli": 48005
+        },
+        {
+          "file": "chunks/panorama-D_kQX6f4.js",
+          "raw": 271077,
+          "gzip": 69807,
+          "brotli": 58765
+        },
+        {
+          "file": "chunks/pdf-CecYOWld.js",
+          "raw": 604243,
+          "gzip": 148191,
+          "brotli": 119439
+        },
+        {
+          "file": "chunks/vendor-DRiz60Cl.js",
+          "raw": 2138808,
+          "gzip": 483686,
+          "brotli": 381477
+        },
+        {
+          "file": "chunks/xlsx-BzBqnY9p.js",
+          "raw": 29666,
+          "gzip": 8760,
+          "brotli": 7807
+        },
+        {
+          "file": "converter-core.wasm",
+          "raw": 1150015,
+          "gzip": 509719,
+          "brotli": 405043
+        },
+        {
+          "file": "converter-image.wasm",
+          "raw": 1126286,
+          "gzip": 305601,
+          "brotli": 221453
+        },
+        {
+          "file": "filens-step.wasm",
+          "raw": 947225,
+          "gzip": 334093,
+          "brotli": 260639
+        },
+        {
+          "file": "filens.js",
+          "raw": 121981,
+          "gzip": 25001,
+          "brotli": 21803
+        },
+        {
+          "file": "occt-import-js.wasm",
+          "raw": 2688776,
+          "gzip": 1044639,
+          "brotli": 816177
+        },
+        {
+          "file": "pdf.worker.min.mjs",
+          "raw": 1078612,
+          "gzip": 298067,
+          "brotli": 238652
+        }
+      ],
+      "total": {
+        "raw": 11954563,
+        "gzip": 3633090,
+        "brotli": 2873422
+      }
+    },
+    "all-in-one": {
+      "files": [
+        {
+          "file": "filens.js",
+          "raw": 14237551,
+          "gzip": 4469097,
+          "brotli": 3384455
+        }
+      ],
+      "total": {
+        "raw": 14237551,
+        "gzip": 4469097,
+        "brotli": 3384455
+      }
+    }
+  }
+}

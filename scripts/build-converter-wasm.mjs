@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { privateRustBuildEnv } from './agent-release-privacy.mjs';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const wasmOpt = path.join(rootDir, 'node_modules', 'binaryen', 'bin', 'wasm-opt');
@@ -40,6 +41,8 @@ for (const converter of converters) {
     converter.optimization ?? '-Oz',
     '--enable-bulk-memory',
     '--enable-nontrapping-float-to-int',
+    '--strip-debug',
+    '--strip-producers',
     '-o',
     outputPath
   ], rootDir);
@@ -48,7 +51,7 @@ for (const converter of converters) {
 
 function run(command, args, cwd) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd, env: process.env, stdio: 'inherit' });
+    const child = spawn(command, args, { cwd, env: privateRustBuildEnv(rootDir), stdio: 'inherit' });
     child.on('error', reject);
     child.on('exit', (code) => code === 0 ? resolve() : reject(new Error(`${command} exited with ${code ?? 1}`)));
   });

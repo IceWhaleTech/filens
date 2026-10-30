@@ -48,15 +48,17 @@ async function update(){
     await writeFile(path.join(root,file),block(text,`agent-cli-size:${language}`,body,anchor));
   }
   const table='| Platform | CLI executable | Lite installed / download | Full installed / download |\n| --- | ---: | ---: | ---: |\n'+rows.map(r=>`| ${r.platform} | ${mib(r.binaryBytes)} MiB | ${mib(r.lite.installedBytes)} / ${mib(r.lite.downloadBytes)} MiB | ${mib(r.full.installedBytes)} / ${mib(r.full.downloadBytes)} MiB |`).join('\n');
-  const body=`**v${release.version} · MIT · CLI ${mib(mac.binaryBytes)} MiB · Lite ${mib(mac.lite.installedBytes)} MiB · Full ${mib(mac.full.installedBytes)} MiB** (macOS arm64, installed; Full includes OCR models).\n\n${table}\n\nTotals add the launcher and selected platform packages from npm pack. Node.js, npm caches and filesystem overhead are excluded. Bundled dependencies retain their own licenses; see THIRD-PARTY-NOTICES.md in the platform packages.`;
+  const body=`**v${release.version} · MIT · CLI ${mib(mac.binaryBytes)} MiB · Lite ${mib(mac.lite.installedBytes)} MiB · Full ${mib(mac.full.installedBytes)} MiB** (macOS arm64, installed; Full includes OCR models).\n\n${table}\n\nTotals add the launcher and selected platform packages from npm pack. Node.js, npm caches, filesystem overhead and the optional frontend preview package are excluded. Bundled dependencies retain their own licenses; see THIRD-PARTY-NOTICES.md in the platform packages.`;
   const readme=path.join(root,'packaging/npm/README.md');
-  const next=block(await readFile(readme,'utf8'),'agent-cli-size:npm',body,'# filens Agent CLI');
+  const next=block(await readFile(readme,'utf8'),'agent-cli-size:npm',body,'# filens Agent CLI')
+    .replace(/(filens-(?:cli|ocr)[\w-]*)-\d+\.\d+\.\d+\.tgz/g,`$1-${release.version}.tgz`);
   await writeFile(readme,next);
   return {rows,readme:next};
 }
 async function repack(readme){
   for(let i=0;i<release.packages.length;i++){
     const pkg=release.packages[i],directory=path.join(output,pkg.name);
+    if(pkg.name==='filens-preview')continue; // Keeps its own frontend README and types.
     if(accepted.has(pkg.name)){
       // A later launcher adjustment can change rounded totals in the common
       // README. Accepted component tarballs keep their original snapshot;
@@ -75,7 +77,7 @@ async function repack(readme){
     assert.equal(r.status,0,r.stderr);const packed=JSON.parse(r.stdout)[0];
     assert.ok(packed.files.some(f=>f.path==='LICENSE'));
     assertReleaseArchive(path.join(output,packed.filename));
-    release.packages[i]={name:packed.name,file:packed.filename,bytes:packed.size,unpackedBytes:packed.unpackedSize,
+    release.packages[i]={name:packed.name,version:packed.version,file:packed.filename,bytes:packed.size,unpackedBytes:packed.unpackedSize,
       sha256:createHash('sha256').update(await readFile(path.join(output,packed.filename))).digest('hex')};
   }
   await writeFile(path.join(output,'release.json'),JSON.stringify(release,null,2)+'\n');
@@ -90,10 +92,11 @@ if(process.argv.includes('--repack')){
   assert.ok(stable,'README sizes did not stabilize; do not publish');
 }
 const report={observedAt:new Date().toISOString(),version:release.version,license:'MIT',
-  scope:'Actual npm pack artifacts; sum launcher and current platform packages. Full includes OCR runtime and models. Excludes Node.js, npm caches and filesystem overhead. CLI executable is separately measured.',
+  scope:'Actual npm pack artifacts; sum launcher and current platform packages. Full includes OCR runtime and models. Excludes Node.js, npm caches, filesystem overhead and optional frontend assets. CLI executable and frontend package are separately measured.',
   sourceState:'Locally built release artifacts. Registry publication is recorded separately.',
   componentReadmes:'Accepted component archives retain their original README snapshot; final totals include the current launcher and are recorded here.',
-  targets:state.rows,packages:release.packages,binaryCompression:release.binaryCompression};
+  targets:state.rows,preview:release.packages.find(p=>p.name==='filens-preview')??null,
+  packages:release.packages,binaryCompression:release.binaryCompression};
 const data=Buffer.from(JSON.stringify(report,null,2)+'\n');assert.deepEqual(privacyIssues(data),[]);
 await writeFile(path.join(root,'docs/agent-cli-npm-release.json'),data);
 console.log(JSON.stringify({version:release.version,license:'MIT',targets:state.rows},null,2));

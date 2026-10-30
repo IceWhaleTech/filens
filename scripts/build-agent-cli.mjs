@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, stat, writeFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setupOCR } from './setup-agent-ocr.mjs';
@@ -20,6 +20,14 @@ if (!lite) await setupOCR(bundle, { sourceCount: requestedSourceCount(process.ar
 const executable = path.join(bundle, windows ? 'filens.exe' : 'filens');
 const binaryCompression = await buildAgentBinary(executable,{lite,upx:!process.argv.includes('--no-upx')});
 await cp(path.join(root,'skills/filens'),path.join(bundle,'skills/filens'),{recursive:true});
+if (process.argv.includes('--with-preview')) {
+  await run(process.execPath, [path.join(root, 'scripts/build-converter-wasm.mjs')]);
+  await run(process.execPath, [path.join(root, 'scripts/build-preview.mjs')]);
+  if (lite) {
+    await rm(path.join(bundle, 'preview'), {recursive:true, force:true});
+    await cp(path.join(root, 'dist/preview'), path.join(bundle, 'preview'), {recursive:true});
+  }
+}
 const resources = await compressAgentWASM(bundle);
 await writeFile(path.join(bundle,'cli-size.json'),JSON.stringify({implementation:'rust',platform:`${process.platform}-${process.arch}`,binaryBytes:(await stat(executable)).size,binaryCompression,resources},null,2)+'\n');
 const health = JSON.parse(await run(executable, ['capacity', '--json', ...(lite ? ['--no-ocr'] : [])], {capture:true}));

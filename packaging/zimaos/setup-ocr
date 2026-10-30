@@ -1,0 +1,72 @@
+#!/bin/sh
+set -eu
+umask 077
+
+bundle=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+platform=$1
+shift
+refresh=false
+for arg in "$@"; do
+  case "$arg" in
+    --refresh) refresh=true ;;
+    --help|-h) printf 'filens setup-ocr [--refresh]\nChecks shared Photos OCR, or installs a private compatible runtime and models.\n'; exit 0 ;;
+    *) printf 'filens setup-ocr: unknown option: %s\n' "$arg" >&2; exit 2 ;;
+  esac
+done
+
+if [ "$refresh" = false ] && [ -n "${FILENS_OCR_LIBRARY:-}" ] && [ -n "${FILENS_OCR_MODEL_DIR:-}" ]; then
+  if printf '{"operation":"health"}\n' | "$bundle/$platform/filens" --ocr-worker >/dev/null 2>&1; then
+    printf 'OCR is ready using %s\n' "$FILENS_OCR_LIBRARY"
+    exit 0
+  fi
+fi
+
+version=$(cat "$bundle/cli-version")
+checksum=$(awk -v platform="$platform" '$1 == platform {print $2}' "$bundle/ocr-packages.sha256")
+archive=$(awk -v platform="$platform" '$1 == platform {print $3}' "$bundle/ocr-packages.sha256")
+if [ -z "$checksum" ] || [ -z "$archive" ]; then
+  printf 'filens setup-ocr: unsupported package architecture\n' >&2
+  exit 1
+fi
+cache_base=${FILENS_CACHE_DIR:-${XDG_CACHE_HOME:-${HOME:?HOME or FILENS_CACHE_DIR is required}/.cache}/filens}
+parent=$cache_base/zimaos-ocr/$version
+destination=$parent/$platform
+mkdir -p "$parent"
+work=$(mktemp -d "$parent/.setup.XXXXXX")
+trap 'rm -rf "$work"' EXIT
+verified=false
+for registry in https://registry.npmmirror.com https://registry.npmjs.org; do
+  url=$registry/filens-ocr-$platform/-/$archive
+  printf 'Downloading compatible OCR from %s\n' "$registry" >&2
+  if ! curl --fail --location --silent --show-error --connect-timeout 10 --max-time 300 --retry 2 --output "$work/ocr.tgz" "$url"; then
+    continue
+  fi
+  if command -v sha256sum >/dev/null 2>&1; then
+    actual=$(sha256sum "$work/ocr.tgz" | awk '{print $1}')
+  else
+    actual=$(shasum -a 256 "$work/ocr.tgz" | awk '{print $1}')
+  fi
+  if [ "$actual" = "$checksum" ]; then
+    verified=true
+    break
+  fi
+  printf 'OCR package checksum mismatch; trying the next registry.\n' >&2
+done
+if [ "$verified" != true ]; then
+  printf 'filens setup-ocr: all downloads failed verification; existing OCR is unchanged.\n' >&2
+  exit 1
+fi
+tar -xzf "$work/ocr.tgz" -C "$work" package/native package/models package/LICENSE package/THIRD-PARTY-NOTICES.md
+if ! printf '{"operation":"health"}\n' | FILENS_OCR_LIBRARY="$work/package/native/libzima_ncnn_runtime_v7.so" \
+  FILENS_OCR_MODEL_DIR="$work/package/models/rapidocr-ncnn" "$bundle/$platform/filens" --ocr-worker >/dev/null; then
+  printf 'filens setup-ocr: downloaded runtime failed its health check; existing OCR is unchanged.\n' >&2
+  exit 1
+fi
+if [ -e "$destination" ]; then
+  mv "$destination" "$work/previous"
+fi
+if ! mv "$work/package" "$destination"; then
+  if [ -d "$work/previous" ]; then mv "$work/previous" "$destination"; fi
+  exit 1
+fi
+printf 'OCR installed at %s\nRun filens capacity --json to verify.\n' "$destination"

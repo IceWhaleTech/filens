@@ -1,163 +1,102 @@
 <div align="center">
   <img src="apps/demo/public/brand/filens-icon.svg" alt="探微标志" width="72" height="72" />
   <h1>探微 · filens</h1>
-  <p><strong>文件的精彩，打开就看见。</strong></p>
-  <p>面向 Agent 与浏览器的本地文件工具：读取、搜索、OCR 与多格式预览。文件无需上传。</p>
-
-<!-- agent-cli-size:zh:start -->
-  <p><strong>CLI 2.10 MiB · Lite 7.85 MiB · Full 31.05 MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v0.3.0 · macOS arm64 · 包安装体积，Full 含 OCR 模型；<a href="docs/agent-cli-npm-release.json">各平台完整数据</a></sub></p>
-<!-- agent-cli-size:zh:end -->
-  <p><a href="README.md">English</a> · 简体中文</p>
-  <p>
-    <a href="#让-agent-读取和理解文档">Agent CLI</a> ·
-    <a href="#演示">浏览器预览</a> ·
-    <a href="#快速开始">本地体验</a> ·
-    <a href="docs/support-matrix.zh-CN.md">支持格式</a>
-  </p>
+  <p><strong>给 Agent 的 CLI，也是一套纯前端复杂格式预览工具。</strong></p>
+  <p>本地读取、搜索、OCR、转换与预览，文件无需上传。</p>
+  <p><a href="README.md">English</a> · 简体中文 · <a href="LICENSE">MIT</a></p>
 </div>
 
-![中文 CLI：逐字输入、OCR 坐标、关键摘录、文档搜索、重复文件与相似图片](docs/assets/agent-cli/terminal-demo.zh-CN.gif)
+| | Agent CLI | 纯前端预览 |
+| --- | --- | --- |
+| 用来做什么 | 向 Agent 提供文档原文、搜索结果、OCR 与可定位证据，也可打开浏览器预览。 | 在应用中预览 Office、iWork、PDF、CAD / 3D、RAW、全景、压缩包等大量复杂格式。 |
+| 大概多大 | **可执行文件约 2 MB → Lite 约 8 MB → Full 约 30 多 MB**，完整版含 OCR 模型。 | **压缩后单个分包几 KB 到几百 KB**，共享依赖、Worker、WASM 另计；也提供 **all-in-one 单 JS 文件**。 |
+| 从这里开始 | [安装与使用 CLI](#agent-cli) | [预览与接入](#纯前端预览) |
 
-<p align="center">源码版真实 CLI 输出 · 打字与响应时间经剪辑 · <a href="docs/assets/agent-cli/terminal-demo.gif">English GIF</a></p>
+两边体积分别计量：CLI 是 v0.4.0 的安装体积，随平台变化，不含 Node.js 和可选预览资源；前端分包说的是压缩产物。完整独立预览运行时按分包合计约 **2.7 MB Brotli**，单文件版约 **3.2 MB Brotli / 4.3 MB gzip / 14 MB 原始体积**，已包含 Vue、样式、Worker 与 WASM。[CLI 各平台实测](docs/agent-cli-npm-release.json) · [独立预览构建实测](docs/preview-build-sizes.json)。
 
-<p align="center"><strong>本地运行 · 文档、扫描件与图片 · 向 Agent 交付可定位原文</strong></p>
+## Agent CLI
 
-<p align="center">
-  <a href="https://www.zimaspace.com/zh/zimaos?utm_source=github&amp;utm_medium=referral&amp;utm_campaign=filens_zimaos&amp;utm_content=readme_banner_zh"><img src="docs/assets/readme/zimaos-banner.zh-CN.png" alt="ZimaOS，个人云更简单。ZimaOS 深度使用了 FiLens 项目，支持文件管理、RAW / 全景、备份和 800+ 应用。了解更多。" width="640" /></a>
-</p>
-
----
-
-## 让 Agent 读取和理解文档
-
-一个本地入口读取或搜索 PDF、Office、表格、扫描件与图片，向 Agent 交付原文及可用的页码坐标、标题与表格结构。用中英文描述意图，输出 text、JSON、Markdown、HTML、YAML、XML、CSV 或 TSV。0.3.0 的 `summarize` / `prune` 可无 LLM 地选取关键原文，保留出处与省略标记。这些能力复用共享文档核心，改写总结、翻译和问答由上层 Agent 完成。
-
-[输出格式、布局信息与动图复现](docs/agent-cli-formats-and-layout.zh-CN.md) · 使用真实 CLI 输出节选，剪辑了打字与响应时间。
-
-先看[68 条实测案例与自然语言边界](docs/agent-cli-examples.zh-CN.md)：包括图片识别效果、成功问法，以及分页、问答等请求的实际限制。
+本地读取 PDF、Office、表格、扫描件和图片；搜索目录与嵌套压缩包、提取关键原文、查找重复文件与相似图片。输出 text、JSON、Markdown、HTML、YAML、XML、CSV 或 TSV，保留可用的页码坐标与文档结构。改写总结、翻译和问答由调用它的 Agent 完成。
 
 ```sh
-# 完整版：CLI、WASM 和原生 OCR
+# 完整版：自带原生 RapidOCR 与中英文模型，无需 Python
 npm install -g filens-cli
-filens '理解 "report.pdf"，以 JSON 输出'
-filens '你能做什么？以 JSON 输出'
-filens 'read "report.docx" as markdown'
-filens '获取 "invoice.png" 的布局，以 YAML 输出'
+filens '读取 "report.pdf"，以 JSON 输出'
+filens '在 "./documents" 中搜索 "预算 风险"，以 JSON 输出'
+filens summarize report.pdf --query '预算 风险' --json
 filens convert report.doc report.docx
-filens convert data.csv --to xlsx
 
-# 轻量版；需要 OCR 时再运行 filens setup-ocr
-npm install -g filens-cli-lite
-# 临时调用
+# 轻量版：需要 OCR 时再运行 filens setup-ocr
 npx --yes filens-cli-lite capacity --json
 ```
 
-CLI 使用 Rust，启用 strip、LTO、Windows/Linux 可执行文件的 UPX 压缩，以及 WASM 快速 gzip 压缩。macOS arm64 的可执行格式不受 UPX 支持，因此跳过。
+**用 CLI 打开预览：**`filens preview report.pdf` 打开共享前端预览器；首次运行自动安装独立的 `filens-preview` 包，也可先运行 `filens setup-preview`。`--no-open --json` 返回本地地址，服务保持运行直到退出。可选前端包同时包含两种构建，完整安装约 **26 MB**，与 CLI 体积分开计量。[预览配置与限制](packages/preview/README.md#cli-preview)。
 
-0.3.0 支持[无 LLM 的关键内容提取](docs/agent-cli-pruning.zh-CN.md)：`filens '提取 "report.pdf" 的关键内容，关注预算和风险，以 JSON 输出'`。按密度、BM25 与相似距离裁剪原文，保留出处和省略标记；可用 `capacity` 检查当前安装是否包含 `summarize`。
-
-0.3.0 还提供[跨格式目录搜索](docs/agent-cli-search.zh-CN.md)：`filens '在 "./documents" 中搜索 "预算 风险"，以 JSON 输出'`。直接检索支持的文档正文，扫描页与内嵌图片按需 OCR，无需用户先转成 TXT；结果保留原文片段、偏移和可用布局。支持 BM25、精确文本和文件名模式，当前不含 embedding 语义检索。
-
-[压缩包与嵌套文件](docs/agent-cli-search-archives.zh-CN.md)也可直接搜索：`filens '在 "资料.zip" 中搜索 "预算"，以 JSON 输出'`。自动展开 ZIP、TAR、GZIP 等，包内文档和图片继续使用 OCR 与布局能力；命中后的 `资料.zip!/附件.zip!/合同.pdf` 可直接再次读取或摘录。
-
-[多格式覆盖与证据定位实测](docs/agent-cli-search-formats.zh-CN.md)已通过 12 种扩展名、13 个样例，覆盖真实 CLI 解析、搜索、原文偏移及逻辑结构、PDF/OCR 布局。这是功能检查，通用提取与检索准确性仍需更多样本。搜索不持久保存索引/正文，不计算来源哈希。[检索边界](docs/agent-cli-search-benchmark.zh-CN.md)和[启动成本](docs/agent-cli-search-native.zh-CN.md)单独公开，保留漏检、误报及 rg 线程调优对照。
-
-0.3.0 提供 [Czkawka 风格的重复文件与相似图片扫描](docs/agent-cli-similarity.zh-CN.md)：`filens duplicates ./files --json`、`filens similar-images ./photos --threshold 8 --json`。支持不同尺寸及重新压缩的图片分组，无需 OCR 或模型。使用 `capacity.operations` 检查 `similar`。扫描输出分组供核对。
-
-0.3.0 提供 Windows 10/11 x64、macOS arm64 和 Linux x64/arm64 安装包，见 [Windows 安装、实机测试说明和可复制的 Agent 提示词](docs/agent-cli-windows.zh-CN.md)；Windows/Linux 原生运行仍待验证。
-`convert` 复用前端转换核心，支持的格式对见 `capacity.conversionPairs`。
-可分发的 [Agent Skill](skills/filens/SKILL.md) 带标准 YAML front matter，
-覆盖读取、搜索、重复文件与相似图片扫描、OCR、布局、证据引用和文件转换。
-
-npm 安装入口为 [`filens-cli`](https://www.npmjs.com/package/filens-cli) 和 [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite)，都提供 `filens` 命令。完整包内置原生 RapidOCR NCNN 与模型，**无需 Python 环境**；默认最大边长 **960**、OpenMP 线程 **2**，开启文字方向分类和图片预处理。WASM 支持扫描页及文档内嵌图片的 OCR 回调。0.3.0 在 macOS arm64 上的安装体积：Lite **7.85 MiB**，Full **31.05 MiB**，原生主程序 **2.10 MiB**，详见[各平台实测体积](docs/agent-cli-npm-release.json)。模型支持 HF / ModelScope / HF Mirror 三源或四路并发测速下载和哈希校验，详见[安装、打包与输出协议](docs/agent-cli.zh-CN.md)。
-
-FiLens 自有代码使用 [MIT 协议](LICENSE)，随包组件保留各自的许可证，见[第三方声明](packaging/agent-third-party.md)。
-
-## 浏览器里，也能看见这些
-
-| 前端项目 | iWork | 全景照片 / 视频 | RAW 预览 | 原生 PPTX | CAD / 3D |
-| --- | --- | --- | --- | --- | --- |
-| **filens** | **✅ 三件套** | **✅** | **◐** | **✅** | **✅** |
-| [SheetJS CE](https://docs.sheetjs.com/docs/miscellany/formats/) | ◐ Numbers | — | — | — | — |
-| [Photo Sphere Viewer](https://github.com/mistic100/Photo-Sphere-Viewer) | — | ✅ | — | — | — |
-| [LibRaw-Wasm](https://github.com/ybouane/LibRaw-Wasm) | — | — | ✅ | — | — |
-| [vue-office](https://github.com/501351981/vue-office) | — | — | — | ✅ | — |
-| [PPTist](https://github.com/pipipi-pikachu/PPTist) | — | — | — | ✅ | — |
-| [Online 3D Viewer](https://github.com/kovacsv/Online3DViewer) | — | — | — | — | ✅ |
-
-<sub>✅ 已提供该路径 · ◐ 部分或有条件支持 · — 未见文档记载内置路径。[格式覆盖与边界](docs/support-matrix.zh-CN.md)。</sub>
-
-**iWork、全景、RAW、Office 与 CAD / 3D，在同一个浏览器本地工作台打开。** 上述项目各有所长，filens 将这些预览能力放在一起。
+![真实 CLI 演示：OCR 坐标、关键摘录、嵌套压缩包搜索与读取、重复文件、相似图片、CSV 转 XLSX、表格和 STEP 预览](docs/assets/agent-cli/terminal-demo.zh-CN.gif)
 
 <details>
-<summary>对比注记与支持边界</summary>
+<summary>CLI 精确体积、能力与更多示例</summary>
 
-- 依据各项目公开文档，比较浏览器本地处理路径，不作项目综合排名。具体支持范围与保真程度因文件而异。
-- **iWork / PPTX：** filens 原生预览 Keynote、Pages 和 Numbers。SheetJS 提取 Numbers 表格数据，需应用接入界面。PPTist 将 PPTX 导入为演示模型；vue-office 的 [PPTX 核心未开源](https://github.com/501351981/pptx-preview#关于授权)。
-- **全景：** filens 与 Photo Sphere Viewer 均可显示照片和视频。filens 还处理受支持的 X5 INSP 原片、Insta360 / DJI 标定与畸变、原片多轨同步及标定 DNG 拼接。相机原片拼接为实验性能力，依赖元数据、配套文件和浏览器编解码器。PSV 的[通用双鱼眼适配器](https://photo-sphere-viewer.js.org/guide/adapters/dual-fisheye.html)不解析 X5 标定。
-- **RAW：** filens 优先提取内嵌 JPEG，再走轻量传感器显影；LibRaw-Wasm 通过 API 提供全尺寸 / 半尺寸解码与显影，需应用接入界面。两者的画质目标不同。
-- **CAD / 3D：** filens 提供 DXF、STEP 与网格预览。Online 3D Viewer 专注模型浏览、检查与导出，包括 STEP / IGES / IFC。filens 的 STEP 预览保留几何与实例位置，不输出原始颜色、名称和装配树。
+<!-- agent-cli-size:zh:start -->
+  <p><strong>CLI 2.15 MiB · Lite 8.04 MiB · Full 31.24 MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v0.4.0 · macOS arm64 · 包安装体积，Full 含 OCR 模型；<a href="docs/agent-cli-npm-release.json">各平台完整数据</a></sub></p>
+<!-- agent-cli-size:zh:end -->
+
+- [安装、协议与打包](docs/agent-cli.md) · [Agent skill](skills/filens/SKILL.md)
+- [输出格式与布局信息](docs/agent-cli-formats-and-layout.zh-CN.md) · [68 条实测案例与自然语言边界](docs/agent-cli-examples.zh-CN.md)
+- [跨格式搜索](docs/agent-cli-search.zh-CN.md)、[嵌套压缩包](docs/agent-cli-search-archives.zh-CN.md)与[无模型关键原文摘录](docs/agent-cli-pruning.zh-CN.md)
+- [重复文件与相似图片](docs/agent-cli-similarity.md) · [Windows 安装与验证状态](docs/agent-cli-windows.zh-CN.md)
+- [搜索覆盖](docs/agent-cli-search-formats.zh-CN.md)、[检索基准](docs/agent-cli-search-benchmark.zh-CN.md)与[启动成本](docs/agent-cli-search-native.zh-CN.md)
+
+CLI 使用 Rust，转换复用前端核心。Full 内置 RapidOCR NCNN（最大边长 960、OpenMP 线程 2），Lite 可用 `filens setup-ocr` 补齐。用 `capacity` 查看当前安装版本的操作与转换组合。自然语言只识别有限意图，尚不支持选择页码、按问题筛选字段。Windows / Linux 原生执行仍待实机验证。
+
+**macOS OCR 对比：**本机图片实测中，Apple Vision 热调用更快，但漏掉极小字，模糊输入也不总是更准；首次启动反而更慢。目前不能全面替代 RapidOCR。[实测、能力差异与复现](docs/macos-ocr-benchmark.zh-CN.md)。
 
 </details>
 
-## iWork、全景与 RAW
+## 纯前端预览
 
-- **iWork，看见文件的样子。** 直接打开 Keynote、Pages 和 Numbers，用幻灯片、页面与工作表画布呈现；版式和对象保真度因文件而异。[看实际预览](apps/demo/public/home/iwork.webp)。
-- **全景，直接探索相机原片。** 拖动环顾 360° 照片与视频；对受支持原片衔接镜头标定、多轨同步与拼接，还原视野。原片拼接为实验性能力。[看实现与相机验证](docs/panorama-rendering-implementation.md)。
-- **RAW，走更快的预览路径。** 按需加载图像 WASM，优先提取内嵌 JPEG，没有预览时轻量显影。[看 RAW 支持](docs/support-matrix.zh-CN.md#相机-raw-转换)。
+**大量复杂格式，在浏览器本地解析和渲染，无需上传或转换服务器。** 直接浏览 Keynote 幻灯片、Pages 页面、Numbers 表格，读取 Office 与 PDF，检查 CAD / 3D 模型，查看 RAW 和 360° 照片、视频。
 
-## 演示
+[![八种真实预览：Office、PDF、iWork、CAD、3D 与全景](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
 
-[![filens 的八种实际预览：演示文稿、文档、表格、PDF、Keynote、CAD、3D 和全景照片](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
+[▶ 观看 30 秒演示](apps/demo/public/home/filens-demo.mp4) · [预览动图](docs/assets/readme/demo.gif) · [完整格式与限制](docs/support-matrix.zh-CN.md)
 
-**[▶ 观看 30 秒实录](apps/demo/public/home/filens-demo.mp4)**：演示文稿、文档、表格、Keynote、CAD、维京牛角头盔 3D 与 360° 全景，在同一个工作台轻松切换。
-
-<details>
-<summary>展开查看动图预览</summary>
-
-![filens 切换不同文件格式的真实预览录屏](docs/assets/readme/demo.gif)
-
-完整视频见上方链接。[中文字幕](apps/demo/public/home/demo-zh.vtt) · [English captions](apps/demo/public/home/demo-en.vtt)
-
-</details>
-
-## 快速开始
-
-需要 Node.js 20+ 和通过 [rustup](https://rustup.rs/) 安装的 Rust。仓库已锁定编译器与 WASI 目标版本。
+### 单文件与按需分包，两种选择
 
 ```sh
-npm ci
-npm run build:wasm
-npm run dev --workspace @filens/demo
+npm install filens-preview
 ```
 
-打开[本地演示](http://localhost:5173/modules/filens/?lang=zh)，选择示例或拖入自己的文件。网站首页支持中英文切换。
+两种构建使用同一 API，均包含 Vue、样式和转换引擎，宿主应用不需要安装 Vue。
 
-发布演示站可直接[将仓库导入 Vercel](docs/deploy-vercel.md)，绑定后推送代码会自动部署；仓库也提供可选的 GitHub Actions 手动发布流程。
+```html
+<div id="preview" style="height: 80vh"></div>
+<script type="module">
+  // 分包版：部署整个 split/ 目录，引擎按需加载。
+  import { createPreview } from 'filens-preview';
+  // 单文件版：只部署 all-in-one/filens.js，已内嵌样式、WASM 与 Worker。
+  // import { createPreview } from 'filens-preview/all-in-one';
 
-## 现在可以打开什么
+  const viewer = createPreview('#preview', { src: './report.pdf', name: 'report.pdf' });
+  // viewer.update({ src: anotherFile, name: anotherFile.name });
+  // viewer.destroy();
+</script>
+```
 
-| 文件 | 你可以做什么 | 当前边界 |
+npm 导入需配合打包器；也可直接部署包内运行时目录，通过 HTTP(S) 导入 `filens.js`。Vue 应用也可直接使用统一的 [`Preview` 组件](packages/vue/README.md)；独立 JS 接入与 CLI 预览见[接入指南](packages/preview/README.md)。单文件版部署简单、首次下载更大，格式能力与分包版一致。
+
+| 文件 | 可以怎样预览 | 主要限制 |
 | --- | --- | --- |
-| PPTX、Keynote / Pages / Numbers | 直接查看幻灯片、页面与工作表。 | 原生解析，版式与对象保真度因文件而异。 |
-| DOCX、XLSX / CSV、PDF | 阅读文档、切换工作表、逐页查看 PDF。 | 只读预览，字体与高级样式可能有差异。 |
-| DOC / XLS / PPT、WPS / ET / DPS | 在本地标准化后预览传统文档。 | 面向预览的转换，宏会移除，不保证完整重建。 |
-| DXF、STEP / STP、3D 模型 | 查看图纸，旋转与缩放实体或网格。 | STEP 独立按需加载；保留几何与实例位置，不输出原始颜色、名称和装配树。 |
-| RAW、PPM、图片与图标 | 查看相机原片、P3 / P6 与 8 / 16 位 PPM。 | RAW 提供内嵌 JPEG 或轻量显影预览，支持情况因相机而异。 |
-| 360° 照片、全景视频 | 拖动环顾；支持部分 Insta360 / DJI 视频实时拼接与标定 DNG 静态拼接。 | 相机拼接为实验性能力，依赖标定元数据、配套文件和浏览器编解码器。 |
-| 压缩包、电子书、代码、思维导图与流程图 | 浏览目录与章节、查看源码和节点关系。 | 各格式的支持子集见支持矩阵。 |
+| PPTX、Keynote / Pages / Numbers | 幻灯片、页面和工作表画布。 | 布局、字体和对象保真度随文件变化。 |
+| DOCX、XLSX / CSV、PDF | 文档、工作表与分页 PDF。 | 只读，复杂样式可能不同。 |
+| DOC / XLS / PPT、WPS / ET / DPS | 本地 WASM 转换后预览。 | 面向预览，移除宏。 |
+| DXF、STEP / STP、网格模型 | 平移图纸、旋转与缩放三维几何。 | STEP 不保留源颜色、名称和装配树。 |
+| RAW、常见图片和图标 | 优先读取内嵌 JPEG，否则轻量显影。 | 相机覆盖和成像质量有差异。 |
+| 360° 照片与视频 | 交互查看及部分相机原片拼接。 | 原片拼接为实验性，依赖标定、伴随文件与浏览器编解码器。 |
+| 压缩包、电子书、代码、思维导图和流程图 | 浏览条目、章节、源码与节点关系。 | 各格式支持范围见格式矩阵。 |
 
-首页提供八种实际预览截图，以及可直接打开的 STEP、RAW、PPM 和传统 Office 样例。RAW / 全景接入方式见 [panorama 包说明](packages/panorama/README.md)。
-
-## 换个角度，看见文件
-
-- **纯前端预览。** 文件在浏览器中解析与渲染，本地预览无需上传，也无需部署转换服务。
-- **WASM 转换，灵活部署。** 转换模块可在浏览器中直接运行，也可通过 [CLI / HTTP 工具](examples/go-wazero-converter)独立使用；文件解析与转换由 WASM 完成，服务端负责请求和文件管理。
-- **按格式加载，减少等待。** 按格式分包、按需加载，配合 Worker 解析与页面虚拟化，减少下载与渲染负担。文档转换 WASM 为 **<!-- bundle-size:converter-core -->318.3<!-- /bundle-size --> KiB Brotli**，预览界面、共享依赖与其他模块另计，详见[体积实测报告](docs/bundle-sizes.md)。
-
-原生预览 PPTX 与 iWork，也能查看文档、表格、CAD、3D、RAW、全景、压缩包和电子书。不同格式的支持范围与保真程度有所区别，详见[格式支持矩阵](docs/support-matrix.zh-CN.md)。
-
-## 小核心，按格式分包
+<details>
+<summary>展开查看分包精确体积与加载成本</summary>
 
 <!-- bundle-sizes:zh:start -->
 | 分包 / 核心 | 原始 | gzip | Brotli |
@@ -197,9 +136,67 @@ npm run dev --workspace @filens/demo
 数据来自实际演示站构建。压缩列是产物体积，实际传输取决于托管配置。[完整报告与复现方式](docs/bundle-sizes.md)。
 <!-- bundle-sizes:zh:end -->
 
-Rust STEP 已接入默认浏览器预览；独立 `filens-step@0.1.0-rc.1` 候选包的 WASM 为 **254.53 KiB Brotli**，JS 加载器与 WASI 宿主另计 **4.48 KiB Brotli**，npm tarball 为 **354.65 KiB**。上述 STEP Rust 行来自 2026-10-30 独立包实测，其他演示站分包行保留原构建快照。44 个含实体样例中 43 个通过几何筛查；保留显式 OCCT 入口。修复已提交 [上游 PR #141](https://github.com/ricosjp/truck/pull/141)，详见[接入、体积和发布候选记录](docs/rust-step-browser.zh-CN.md)。**按要求等待其他改动，尚未发布 npm**；这些数据与 CLI 安装体积分别计量。
+上表为已记录的演示站构建快照；新增独立构建的[完整实测](docs/preview-build-sizes.json)另外计量，已包含内嵌依赖。单个分包不代表该格式全部下载成本。
 
-## 性能实测
+</details>
+
+<details>
+<summary>与其他前端项目的能力对比</summary>
+
+| 前端项目 | iWork | 全景照片 / 视频 | RAW 预览 | 原生 PPTX | CAD / 3D |
+| --- | --- | --- | --- | --- | --- |
+| **filens** | **✅ 三件套** | **✅** | **◐** | **✅** | **✅** |
+| [SheetJS CE](https://docs.sheetjs.com/docs/miscellany/formats/) | ◐ Numbers | — | — | — | — |
+| [Photo Sphere Viewer](https://github.com/mistic100/Photo-Sphere-Viewer) | — | ✅ | — | — | — |
+| [LibRaw-Wasm](https://github.com/ybouane/LibRaw-Wasm) | — | — | ✅ | — | — |
+| [vue-office](https://github.com/501351981/vue-office) | — | — | — | ✅ | — |
+| [PPTist](https://github.com/pipipi-pikachu/PPTist) | — | — | — | ✅ | — |
+| [Online 3D Viewer](https://github.com/kovacsv/Online3DViewer) | — | — | — | — | ✅ |
+
+<sub>✅ 已提供该路径 · ◐ 部分或有条件支持 · — 未见文档记载内置路径。[格式覆盖与边界](docs/support-matrix.zh-CN.md)。</sub>
+
+**iWork、全景、RAW、Office 与 CAD / 3D，在同一个浏览器本地工作台打开。** 上述项目各有所长，filens 将这些预览能力放在一起。
+
+<details>
+<summary>对比注记与支持边界</summary>
+
+- 依据各项目公开文档，比较浏览器本地处理路径，不作项目综合排名。具体支持范围与保真程度因文件而异。
+- **iWork / PPTX：** filens 原生预览 Keynote、Pages 和 Numbers。SheetJS 提取 Numbers 表格数据，需应用接入界面。PPTist 将 PPTX 导入为演示模型；vue-office 的 [PPTX 核心未开源](https://github.com/501351981/pptx-preview#关于授权)。
+- **全景：** filens 与 Photo Sphere Viewer 均可显示照片和视频。filens 还处理受支持的 X5 INSP 原片、Insta360 / DJI 标定与畸变、原片多轨同步及标定 DNG 拼接。相机原片拼接为实验性能力，依赖元数据、配套文件和浏览器编解码器。PSV 的[通用双鱼眼适配器](https://photo-sphere-viewer.js.org/guide/adapters/dual-fisheye.html)不解析 X5 标定。
+- **RAW：** filens 优先提取内嵌 JPEG，再走轻量传感器显影；LibRaw-Wasm 通过 API 提供全尺寸 / 半尺寸解码与显影，需应用接入界面。两者的画质目标不同。
+- **CAD / 3D：** filens 提供 DXF、STEP 与网格预览。Online 3D Viewer 专注模型浏览、检查与导出，包括 STEP / IGES / IFC。filens 的 STEP 预览保留几何与实例位置，不输出原始颜色、名称和装配树。
+
+</details>
+
+</details>
+
+## 本地运行演示站
+
+需要 Node.js 20+ 与 [Rust / rustup](https://rustup.rs/)，仓库固定 Rust 编译器和 WASI target。
+
+```sh
+npm ci
+npm run build:wasm
+npm run dev --workspace @filens/demo
+```
+
+打开[本地演示站](http://localhost:5173/modules/filens/?lang=zh)，选择样例或拖入文件。部署见 [Vercel 指南](docs/deploy-vercel.md)。
+
+## 在 ZimaOS 上安装
+
+<p align="center"><a href="https://www.zimaspace.com/zh/zimaos?utm_source=github&amp;utm_medium=referral&amp;utm_campaign=filens_zimaos&amp;utm_content=readme_banner_zh"><img src="docs/assets/readme/zimaos-banner.zh-CN.png" alt="ZimaOS：深度集成 FiLens 的个人云系统" width="640" /></a></p>
+
+从官方 Mod Store 安装 FiLens，在 ZimaOS 终端或通过 SSH 执行：
+
+```sh
+sudo zpkg install filens
+```
+
+安装包包含 Linux x64 / arm64 原生 CLI 和共享 WASM 引擎，无需 Node.js。安装后运行 `filens capacity --json` 检查能力，再用 `filens read report.pdf --json` 读取文件。OCR 自动复用 Photos 已安装的 NCNN v7 运行库与 RapidOCR 模型；缺少组件或版本不兼容时，运行 `filens setup-ocr` 安装 FiLens 私有的兼容组件，不改动 Photos。文档读取和转换也可在没有 OCR 时使用。
+
+如果提示找不到模块，先执行 `sudo zpkg update` 刷新商店索引，再重试安装。构建、发布及更新方法见 [ZimaOS 打包说明](packaging/zimaos/README.md)。
+
+## 性能与文档
 
 <details>
 <summary>展开查看 SOTA 实测对比</summary>
@@ -230,22 +227,20 @@ Rust STEP 已接入默认浏览器预览；独立 `filens-step@0.1.0-rc.1` 候�
 
 </details>
 
-## 接入你的应用
-
-| 想了解… | 从这里开始 |
+| 想了解什么 | 从这里开始 |
 | --- | --- |
-| Vue 预览组件 | [Vue 接入说明](packages/vue/README.md) |
-| 格式覆盖与限制 | [格式支持矩阵](docs/support-matrix.zh-CN.md) |
-| 架构、方案对比和性能说明 | [项目详细介绍](docs/project-overview.zh-CN.md) |
-| 前端性能、领先项与完整原始数据 | [同类项目性能实测](docs/performance-comparison.zh-CN.md) |
-| Agent 文档读取 / capacity / 本地 OCR | [Agent CLI](docs/agent-cli.zh-CN.md) |
-| CLI / 后端接入 | [Go + wazero 示例](examples/go-wazero-converter/README.md) |
-| 部署 | [Vercel 部署指南](docs/deploy-vercel.md) |
+| 独立单文件 / 分包构建、CLI 预览 | [预览接入指南](packages/preview/README.md) |
+| Vue 接入 | [Vue 组件](packages/vue/README.md) |
+| 格式支持范围 | [格式矩阵](docs/support-matrix.zh-CN.md) |
+| 架构与 WASM 边界 | [项目概览](docs/project-overview.zh-CN.md) |
+| 前端基准与原始数据 | [性能对比](docs/performance-comparison.zh-CN.md) |
+| macOS 原生 OCR 与 RapidOCR | [实测对比](docs/macos-ocr-benchmark.zh-CN.md) |
+| CLI 与后端接入 | [Agent CLI](docs/agent-cli.md) · [Go + wazero 薄壳](examples/go-wazero-converter/README.md) |
 
-欢迎用日常工作文件试一试，[反馈可复现的问题](https://github.com/IceWhaleTech/filens/issues/new/choose)。后续计划见[路线图](docs/roadmap.md)。
+欢迎用日常文件测试并[提交可复现问题](https://github.com/IceWhaleTech/filens/issues/new/choose)。[路线图](docs/roadmap.md) · [MIT 许可](LICENSE) · [第三方声明](packaging/agent-third-party.md)。
 
-<sub>预览截图均来自 filens。照片：Carsten / CC BY 2.0（裁剪及淡蓝调色）、Greg Zaal / Poly Haven / CC0；预览拼图、演示视频和动图采用 CC BY-SA 4.0。<a href="docs/assets/readme/SOURCES.md">素材来源与署名</a>。iWork 研究基础：<a href="https://github.com/dunhamsteve/iwork">dunhamsteve/iwork</a>；CAD 技术来源：<a href="https://github.com/orcastor/cad2x-converter">orcastor/cad2x-converter</a>。</sub>
+<sub>预览截图来自 filens。照片与演示录像保留原许可，见<a href="docs/assets/readme/SOURCES.md">视觉来源与署名</a>。iWork 研究参考 <a href="https://github.com/dunhamsteve/iwork">dunhamsteve/iwork</a>；CAD 参考 <a href="https://github.com/orcastor/cad2x-converter">orcastor/cad2x-converter</a>。</sub>
 
 ## Star 历史
 
-[![Star 历史图表](https://api.star-history.com/svg?repos=IceWhaleTech/filens&type=Date)](https://star-history.com/#IceWhaleTech/filens&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=IceWhaleTech/filens&type=Date)](https://star-history.com/#IceWhaleTech/filens&Date)

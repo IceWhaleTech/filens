@@ -1,163 +1,102 @@
 <div align="center">
   <img src="apps/demo/public/brand/filens-icon.svg" alt="filens logo" width="72" height="72" />
   <h1>filens</h1>
-  <p><strong>Files shine bright. Dreams take flight.</strong></p>
-  <p>Local file tools for Agents and browsers. Read, search, OCR, and preview files without uploading them.</p>
-
-<!-- agent-cli-size:en:start -->
-  <p><strong>CLI 2.10 MiB · Lite 7.85 MiB · Full 31.05 MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v0.3.0 · macOS arm64 · installed packages, Full includes OCR models; <a href="docs/agent-cli-npm-release.json">all platform sizes</a></sub></p>
-<!-- agent-cli-size:en:end -->
-  <p>Chinese name: 探微 · English · <a href="README.zh-CN.md">简体中文</a></p>
-  <p>
-    <a href="#read-documents-with-an-agent">Agent CLI</a> ·
-    <a href="#demo">Browser previews</a> ·
-    <a href="#quick-start">Try it locally</a> ·
-    <a href="docs/support-matrix.md">Supported formats</a>
-  </p>
+  <p><strong>An Agent CLI. A pure frontend viewer for complex file formats.</strong></p>
+  <p>Read, search, OCR, convert and preview local files. Files stay on your device.</p>
+  <p>English · <a href="README.zh-CN.md">简体中文</a> · <a href="LICENSE">MIT</a></p>
 </div>
 
-![English CLI: typed requests, OCR geometry, key excerpts, document search, duplicate files and similar images](docs/assets/agent-cli/terminal-demo.gif)
+| | Agent CLI | Pure frontend previews |
+| --- | --- | --- |
+| Use it for | Give Agents source text, search results, OCR and cited evidence; open a browser preview. | Preview Office, iWork, PDF, CAD / 3D, RAW, panoramas, archives and more in your app. |
+| Approximate size | **2 MB executable → 8 MB Lite → 30+ MB Full**, including OCR models. | **A few KB to hundreds of KB per compressed chunk**; shared dependencies, workers and WASM add to the total. An **all-in-one JS file** is also available. |
+| Start here | [Install and use the CLI](#agent-cli) | [Preview and integrate](#pure-frontend-previews) |
 
-<p align="center">Source-build CLI results · Edited typing and response timing · <a href="docs/assets/agent-cli/terminal-demo.zh-CN.gif">中文动图</a></p>
+Sizes describe different things: CLI figures are installed v0.4.0 packages (platform-dependent, excluding Node.js and optional preview assets). Frontend chunk figures describe compressed build artifacts. The full standalone runtime is about **2.7 MB Brotli** across split files, or **3.2 MB Brotli / 4.3 MB gzip / 14 MB raw** as one JS file, including Vue, styles, workers and WASM. [CLI measurements](docs/agent-cli-npm-release.json) · [Standalone measurements](docs/preview-build-sizes.json).
 
-<p align="center"><strong>Local first · Documents, scans and images · Original evidence for Agents</strong></p>
+## Agent CLI
 
-<p align="center">
-  <a href="https://www.zimaspace.com/en/zimaos?utm_source=github&amp;utm_medium=referral&amp;utm_campaign=filens_zimaos&amp;utm_content=readme_banner_en"><img src="docs/assets/readme/zimaos-banner.en.png" alt="ZimaOS. Your personal cloud, made simple. Deep FiLens integration, file management, RAW / 360° viewing, backup, and 800+ apps. Explore ZimaOS." width="640" /></a>
-</p>
-
----
-
-## Read documents with an Agent
-
-Use one local entry point to read or search PDFs, Office documents, spreadsheets, scans and images, then give the calling Agent original evidence with available page coordinates, headings and table structure. Describe the request in Chinese or English and receive text, JSON, Markdown, HTML, YAML, XML, CSV or TSV. Version 0.3.0 provides model-free `summarize` / `prune` with original excerpts and explicit omissions. These operations reuse the shared document core; paraphrasing, translation and question answering belong to the caller.
-
-[Output formats, layouts and reproducible demo](docs/agent-cli-formats-and-layout.zh-CN.md) · Actual CLI excerpts; typing/response timing edited.
-
-Explore [68 observed examples and natural-language limits](docs/agent-cli-examples.zh-CN.md) (Chinese), including OCR quality, working requests and unsupported page selection or questions.
+Read PDFs, Office documents, spreadsheets, scans and images locally. Search directories and nested archives; extract key original passages; find duplicate files and similar images. Outputs include text, JSON, Markdown, HTML, YAML, XML, CSV and TSV, with available page coordinates and document structure. Paraphrasing, translation and question answering belong to the calling Agent.
 
 ```sh
-# Full: CLI, WASM and native OCR
+# Full: native RapidOCR and Chinese/English models; no Python
 npm install -g filens-cli
 filens 'read "report.pdf" as json'
-filens 'what can you do as json'
-filens 'read "report.docx" as markdown'
-filens '获取 "invoice.png" 的布局，以 YAML 输出'
+filens 'search "./documents" for "budget risk" as json'
+filens summarize report.pdf --query 'budget risk' --json
 filens convert report.doc report.docx
-filens convert data.csv --to xlsx
 
-# Lite alternative; native OCR can be added with filens setup-ocr
-npm install -g filens-cli-lite
-# Temporary invocation
+# Lite: add OCR later with filens setup-ocr
 npx --yes filens-cli-lite capacity --json
 ```
 
-The CLI is Rust, with strip, LTO, UPX compression for Windows/Linux executables and fast gzip-compressed WASM resources. macOS arm64 executables skip UPX because that format is unsupported.
+**Browser preview from the CLI:** `filens preview report.pdf` opens the shared frontend viewer. The first use installs the separate `filens-preview` package; `filens setup-preview` prepares it in advance. `--no-open --json` prints a local URL and keeps the server running until stopped. The optional frontend package includes both builds (about **26 MB installed**), measured separately from CLI sizes. [Preview setup and limits](packages/preview/README.md#cli-preview).
 
-Version 0.3.0 supports [model-free key excerpts](docs/agent-cli-pruning.zh-CN.md): `filens summarize report.pdf --query 'budget risk' --json`. Density, BM25 and cosine-diversity pruning select original text with provenance and explicit omissions. Check `capacity` for `summarize` in your installed build.
-
-Version 0.3.0 also provides [cross-format directory search](docs/agent-cli-search.zh-CN.md): `filens 'search "./documents" for "budget risk" as json'`. Search supported document bodies without preparing text files yourself; scanned pages and embedded images can use OCR. Results retain original excerpts and available layout. BM25, literal and filename modes are lexical retrieval; embedding retrieval is not included.
-
-[Archives and nested members](docs/agent-cli-search-archives.zh-CN.md) are searchable too: `filens 'search "documents.zip" for "budget" as json'`. ZIP, TAR and GZIP containers expand through the shared core; documents and images retain OCR and layout support. Read or summarize a matching path such as `documents.zip!/attachments.zip!/contract.pdf` directly.
-
-[Mixed-format coverage and evidence checks](docs/agent-cli-search-formats.zh-CN.md) passed on 13 fixtures across 12 extensions, covering real CLI parsing, retrieval, source offsets and logical/PDF/OCR layout. These are functional checks; broader extraction and retrieval accuracy need more samples. Search keeps no persistent index/body cache or source hashes. [Retrieval boundaries](docs/agent-cli-search-benchmark.zh-CN.md) and [startup costs](docs/agent-cli-search-native.zh-CN.md) are reported separately, including misses and tuned rg baselines.
-
-Version 0.3.0 includes [Czkawka-style duplicate-file and similar-image scans](docs/agent-cli-similarity.md): `filens duplicates ./files --json` and `filens similar-images ./photos --threshold 8 --json`. Image groups can include resized and recompressed versions, without OCR or models. Check `capacity.operations` for `similar`. Scans report groups for review.
-
-Version 0.3.0 includes Windows 10/11 x64 packages alongside macOS arm64 and Linux x64/arm64. See [Windows installation, native testing and a ready-to-copy agent prompt](docs/agent-cli-windows.zh-CN.md); Windows/Linux native execution remains pending validation.
-`convert` uses the frontend conversion engines; inspect `capacity.conversionPairs`
-for supported targets. A distributable [agent skill](skills/filens/SKILL.md)
-covers reading, search, duplicate/image scans, OCR, layout, evidence and conversion, with standard YAML front matter.
-
-The npm entry packages are [`filens-cli`](https://www.npmjs.com/package/filens-cli) and [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite); both expose the `filens` command. Full includes native RapidOCR NCNN and models, with **no Python environment**; defaults are max side **960**, OpenMP threads **2**, orientation classification and image preprocessing. WASM supports OCR callbacks for scanned pages and embedded document images. Version 0.3.0 on macOS arm64 uses **7.85 MiB** (Lite) or **31.05 MiB** (Full) installed; the native executable is **2.10 MiB**. See [measured sizes for every platform](docs/agent-cli-npm-release.json). Model downloads support concurrent speed probes across HF / ModelScope / HF Mirror and an optional fourth route, with hash verification. See [installation, packaging and protocol](docs/agent-cli.md).
-
-FiLens code is licensed under [MIT](LICENSE). Bundled components retain their own licenses; see [third-party notices](packaging/agent-third-party.md).
-
-## See more, right in your browser
-
-| Frontend project | iWork | 360° photos / video | RAW preview | Native PPTX | CAD / 3D |
-| --- | --- | --- | --- | --- | --- |
-| **filens** | **✅ All three** | **✅** | **◐** | **✅** | **✅** |
-| [SheetJS CE](https://docs.sheetjs.com/docs/miscellany/formats/) | ◐ Numbers | — | — | — | — |
-| [Photo Sphere Viewer](https://github.com/mistic100/Photo-Sphere-Viewer) | — | ✅ | — | — | — |
-| [LibRaw-Wasm](https://github.com/ybouane/LibRaw-Wasm) | — | — | ✅ | — | — |
-| [vue-office](https://github.com/501351981/vue-office) | — | — | — | ✅ | — |
-| [PPTist](https://github.com/pipipi-pikachu/PPTist) | — | — | — | ✅ | — |
-| [Online 3D Viewer](https://github.com/kovacsv/Online3DViewer) | — | — | — | — | ✅ |
-
-<sub>✅ Available path · ◐ Partial or conditional support · — No built-in path documented. [Format coverage and limits](docs/support-matrix.md).</sub>
-
-**iWork, panoramas, RAW, Office, and CAD / 3D in one browser-local workspace.** The projects above specialize in different areas; filens brings these previews together.
+![Actual CLI results: OCR geometry, key excerpts, nested archive search and reading, duplicate files, similar images, CSV-to-XLSX conversion, workbook and STEP previews](docs/assets/agent-cli/terminal-demo.gif)
 
 <details>
-<summary>Comparison notes and support boundaries</summary>
+<summary>CLI sizes, capabilities and further examples</summary>
 
-- Entries follow public documentation and browser-local processing paths, rather than overall project rankings. Support and fidelity vary by file.
-- **iWork / PPTX:** filens previews Keynote, Pages, and Numbers natively. SheetJS extracts Numbers table data and needs an application UI. PPTist imports PPTX into its presentation model; vue-office's [PPTX core is not open source](https://github.com/501351981/pptx-preview#关于授权).
-- **Panoramas:** both filens and Photo Sphere Viewer display photos and video. filens also handles supported X5 INSP originals, Insta360 / DJI calibration and distortion, original-track synchronization, and calibrated DNG stitching. Camera-original stitching is experimental and depends on metadata, companion files, and browser codecs. PSV's [generic dual-fisheye adapter](https://photo-sphere-viewer.js.org/guide/adapters/dual-fisheye.html) does not parse X5 calibration.
-- **RAW:** filens prioritizes embedded JPEGs, then lightweight sensor development. LibRaw-Wasm offers full / half-size decoding and development through an API that needs an application UI. These paths have different image-quality goals.
-- **CAD / 3D:** filens covers DXF, STEP, and mesh previews. Online 3D Viewer specializes in model viewing, inspection, and export, including STEP / IGES / IFC. filens STEP previews retain geometry and instance placement, but omit source colors, names, and the assembly tree.
+<!-- agent-cli-size:en:start -->
+  <p><strong>CLI 2.15 MiB · Lite 8.04 MiB · Full 31.24 MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v0.4.0 · macOS arm64 · installed packages, Full includes OCR models; <a href="docs/agent-cli-npm-release.json">all platform sizes</a></sub></p>
+<!-- agent-cli-size:en:end -->
+
+- [Installation, protocol and packaging](docs/agent-cli.md) · [Agent skill](skills/filens/SKILL.md)
+- [Output formats and layouts](docs/agent-cli-formats-and-layout.zh-CN.md) · [68 observed examples and limits](docs/agent-cli-examples.zh-CN.md)
+- [Search](docs/agent-cli-search.zh-CN.md), [nested archives](docs/agent-cli-search-archives.zh-CN.md) and [model-free key excerpts](docs/agent-cli-pruning.zh-CN.md)
+- [Duplicates and similar images](docs/agent-cli-similarity.md) · [Windows setup and validation status](docs/agent-cli-windows.zh-CN.md)
+- [Search coverage](docs/agent-cli-search-formats.zh-CN.md), [retrieval benchmarks](docs/agent-cli-search-benchmark.zh-CN.md) and [startup costs](docs/agent-cli-search-native.zh-CN.md)
+
+The CLI uses Rust and the same frontend conversion core. Full bundles RapidOCR NCNN (max side 960, two OpenMP threads); Lite adds it with `filens setup-ocr`. Inspect `capacity` for the installed build's operations and conversion pairs. Natural-language requests recognize a bounded set of intents; page selection and field-specific questions are not implemented. Windows/Linux native execution remains pending validation.
+
+**macOS OCR comparison:** Apple Vision is faster on the tested warm image calls, but loses tiny text and can be less accurate on blurred input; fresh-process latency is also higher. It cannot yet replace RapidOCR across this project's requirements. [Measurements, capability gaps and reproduction](docs/macos-ocr-benchmark.zh-CN.md).
 
 </details>
 
-## iWork, panoramas, and RAW
+## Pure frontend previews
 
-- **iWork, with a view for each format.** Open Keynote, Pages, and Numbers directly on slide, page, and sheet canvases. Layout and object fidelity vary by file. [See an actual preview](apps/demo/public/home/iwork.webp).
-- **Camera-original panoramas.** Look around 360° photos and video; supported originals use lens calibration, track synchronization, and stitching to reconstruct the view. Original stitching is experimental. [Implementation and camera validation](docs/panorama-rendering-implementation.md).
-- **RAW, with a faster path to a preview.** Load the image WASM on demand, extract an embedded JPEG first, and use lightweight sensor development when no preview is available. [RAW coverage](docs/support-matrix.md#camera-raw-conversion).
+**Complex formats, processed in the browser with no upload or conversion server.** Browse Keynote slides, Pages pages and Numbers sheets; read Office and PDF documents; inspect CAD and 3D models; view RAW photos and 360° photos or video.
 
-## Demo
+[![Eight actual previews: Office, PDF, iWork, CAD, 3D and panoramas](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
 
-[![Eight actual filens previews: presentations, documents, spreadsheets, PDF, Keynote, CAD, 3D, and panoramas](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
+[▶ Watch the 30-second walkthrough](apps/demo/public/home/filens-demo.mp4) · [Animated preview](docs/assets/readme/demo.gif) · [Format coverage and limits](docs/support-matrix.md)
 
-**[▶ Watch the 30-second walkthrough](apps/demo/public/home/filens-demo.mp4)** — presentations, documents, spreadsheets, Keynote, CAD, a Viking helmet in 3D, and a 360° view, in one workspace.
-
-<details>
-<summary>Show an animated preview</summary>
-
-![A short recording of filens switching between real file previews](docs/assets/readme/demo.gif)
-
-The full recording is linked above. [Chinese captions](apps/demo/public/home/demo-zh.vtt) · [English captions](apps/demo/public/home/demo-en.vtt)
-
-</details>
-
-## Quick start
-
-Requires Node.js 20+ and [Rust via rustup](https://rustup.rs/). The repository pins the Rust compiler and WASI target.
+### Single file or split modules
 
 ```sh
-npm ci
-npm run build:wasm
-npm run dev --workspace @filens/demo
+npm install filens-preview
 ```
 
-Open [the local demo](http://localhost:5173/modules/filens/?lang=en), then choose a sample or drop in your own file. The website has Chinese and English homepages.
+The same API is available in both builds. Vue, styles and the conversion engines are included; your app needs no Vue installation.
 
-To publish the demo, [import the repository into Vercel](docs/deploy-vercel.md). Git integration deploys pushes automatically; an optional manual GitHub Actions workflow is also included.
+```html
+<div id="preview" style="height: 80vh"></div>
+<script type="module">
+  // Split build: deploy the entire split/ directory; engines load as needed.
+  import { createPreview } from 'filens-preview';
+  // Single-file alternative: deploy all-in-one/filens.js (styles, WASM and workers included).
+  // import { createPreview } from 'filens-preview/all-in-one';
 
-## What you can open today
+  const viewer = createPreview('#preview', { src: './report.pdf', name: 'report.pdf' });
+  // viewer.update({ src: anotherFile, name: anotherFile.name });
+  // viewer.destroy();
+</script>
+```
 
-| Files | What you can do | Current limits |
+Use a bundler for npm imports, or deploy the package runtime directory and import its `filens.js` over HTTP(S). For a Vue app, use the shared [`Preview` component](packages/vue/README.md); for direct JavaScript integration and CLI previews, see the [standalone guide](packages/preview/README.md). Single-file packaging trades a larger initial download for simpler deployment; it has the same format limits as the split build.
+
+| Files | Preview | Main limits |
 | --- | --- | --- |
-| PPTX, Keynote / Pages / Numbers | Browse slides, pages, and worksheets directly. | Native parsing; layout and object fidelity vary by file. |
-| DOCX, XLSX / CSV, PDF | Read documents, switch worksheets, and browse PDF pages. | Read-only previews; fonts and advanced styles may differ. |
-| DOC / XLS / PPT, WPS / ET / DPS | Normalize legacy documents locally for preview. | Preview-focused conversion strips macros and does not promise full reconstruction. |
-| DXF, STEP / STP, 3D models | Explore drawings, orbit solids, and zoom into meshes. | STEP loads separately on demand; geometry and instance placement are retained, while source colors, names, and the assembly tree are omitted. |
-| RAW, PPM, images, and icons | View camera originals and P3 / P6, 8 / 16-bit PPM files. | RAW uses embedded JPEGs or lightweight sensor development; camera support varies. |
-| 360° photos and video | Look around; stitch supported Insta360 / DJI videos in real time and calibrated DNG photos at load. | Camera stitching is experimental and depends on calibration metadata, companion files, and browser codecs. |
-| Archives, ebooks, code, mind maps, and diagrams | Browse folders and chapters, read source, and explore node relationships. | See the support matrix for each format's supported subset. |
+| PPTX, Keynote / Pages / Numbers | Slide, page and worksheet canvases. | Fidelity varies by layout, fonts and objects. |
+| DOCX, XLSX / CSV, PDF | Documents, sheets and paged PDFs. | Read-only; advanced styling may differ. |
+| DOC / XLS / PPT, WPS / ET / DPS | Local WASM conversion for preview. | Preview-focused; macros are stripped. |
+| DXF, STEP / STP, mesh models | Pan drawings and orbit 3D geometry. | STEP omits source colors, names and assembly trees. |
+| RAW, common images and icons | Embedded JPEG first, lightweight RAW development as fallback. | Camera coverage and image quality vary. |
+| 360° photos and video | Interactive viewing and supported camera-original stitching. | Stitching is experimental; metadata, sidecars and browser codecs matter. |
+| Archives, ebooks, code, mind maps and diagrams | Browse entries, chapters, source and node relationships. | Each format supports a documented subset. |
 
-The homepage has eight actual preview captures and directly accessible STEP, RAW, PPM, and legacy Office samples. See the [panorama package](packages/panorama/README.md) for RAW and panorama integration.
-
-## A closer look at your files
-
-- **Pure frontend preview.** Parse and render files in the browser. Local previews require neither uploads nor a conversion server.
-- **WASM conversion, flexible deployment.** Run the conversion module directly in the browser or use it independently through [CLI / HTTP tools](examples/go-wazero-converter). WASM handles file parsing and conversion; the server manages requests and files.
-- **Load by format, spend less time waiting.** Format-based bundles, lazy loading, worker parsing, and page virtualization reduce download and rendering work. The document conversion WASM is **<!-- bundle-size:converter-core -->318.3<!-- /bundle-size --> KiB Brotli**; UI, shared dependencies, and other modules are measured separately in the [bundle report](docs/bundle-sizes.md).
-
-Native PPTX and iWork previews sit alongside documents, spreadsheets, CAD, 3D, RAW, panoramas, archives, and ebooks. Coverage and fidelity vary by format. See the [support matrix](docs/support-matrix.md) for current capabilities and limitations.
-
-## Small pieces, shared capabilities
+<details>
+<summary>Detailed bundle sizes and loading costs</summary>
 
 <!-- bundle-sizes:en:start -->
 | Module / core | Raw | gzip | Brotli |
@@ -197,9 +136,67 @@ Entry, preloaded JS, and CSS total **499.0 KiB Brotli** (2131.8 KiB raw / 596.6 
 Measured from the demo build. Compression columns describe artifacts; actual transfer depends on hosting. [Full report and reproduction](docs/bundle-sizes.md).
 <!-- bundle-sizes:en:end -->
 
-Rust STEP now powers the default browser preview. The standalone `filens-step@0.1.0-rc.1` candidate contains **254.53 KiB Brotli WASM**, plus **4.48 KiB Brotli JS/WASI host**; its npm tarball is **354.65 KiB**. The Rust STEP row is measured from this package on 2026-10-30; other demo rows retain their earlier build snapshot. Geometry screening remains 43/44, with OCCT available explicitly. Fixes are submitted in [upstream PR #141](https://github.com/ricosjp/truck/pull/141); see [integration, sizes and release evidence](docs/rust-step-browser.zh-CN.md). **npm publication is deferred while other changes finish.** These figures are separate from CLI installation sizes.
+The table above is the recorded demo-build snapshot. The new standalone builds have their own [complete measurements](docs/preview-build-sizes.json), including embedded dependencies. Individual chunks are not independent per-format download totals.
 
-## Measured performance
+</details>
+
+<details>
+<summary>Frontend project comparisons</summary>
+
+| Frontend project | iWork | 360° photos / video | RAW preview | Native PPTX | CAD / 3D |
+| --- | --- | --- | --- | --- | --- |
+| **filens** | **✅ All three** | **✅** | **◐** | **✅** | **✅** |
+| [SheetJS CE](https://docs.sheetjs.com/docs/miscellany/formats/) | ◐ Numbers | — | — | — | — |
+| [Photo Sphere Viewer](https://github.com/mistic100/Photo-Sphere-Viewer) | — | ✅ | — | — | — |
+| [LibRaw-Wasm](https://github.com/ybouane/LibRaw-Wasm) | — | — | ✅ | — | — |
+| [vue-office](https://github.com/501351981/vue-office) | — | — | — | ✅ | — |
+| [PPTist](https://github.com/pipipi-pikachu/PPTist) | — | — | — | ✅ | — |
+| [Online 3D Viewer](https://github.com/kovacsv/Online3DViewer) | — | — | — | — | ✅ |
+
+<sub>✅ Available path · ◐ Partial or conditional support · — No built-in path documented. [Format coverage and limits](docs/support-matrix.md).</sub>
+
+**iWork, panoramas, RAW, Office, and CAD / 3D in one browser-local workspace.** The projects above specialize in different areas; filens brings these previews together.
+
+<details>
+<summary>Comparison notes and support boundaries</summary>
+
+- Entries follow public documentation and browser-local processing paths, rather than overall project rankings. Support and fidelity vary by file.
+- **iWork / PPTX:** filens previews Keynote, Pages, and Numbers natively. SheetJS extracts Numbers table data and needs an application UI. PPTist imports PPTX into its presentation model; vue-office's [PPTX core is not open source](https://github.com/501351981/pptx-preview#关于授权).
+- **Panoramas:** both filens and Photo Sphere Viewer display photos and video. filens also handles supported X5 INSP originals, Insta360 / DJI calibration and distortion, original-track synchronization, and calibrated DNG stitching. Camera-original stitching is experimental and depends on metadata, companion files, and browser codecs. PSV's [generic dual-fisheye adapter](https://photo-sphere-viewer.js.org/guide/adapters/dual-fisheye.html) does not parse X5 calibration.
+- **RAW:** filens prioritizes embedded JPEGs, then lightweight sensor development. LibRaw-Wasm offers full / half-size decoding and development through an API that needs an application UI. These paths have different image-quality goals.
+- **CAD / 3D:** filens covers DXF, STEP, and mesh previews. Online 3D Viewer specializes in model viewing, inspection, and export, including STEP / IGES / IFC. filens STEP previews retain geometry and instance placement, but omit source colors, names, and the assembly tree.
+
+</details>
+
+</details>
+
+## Run the demo locally
+
+Requires Node.js 20+ and [Rust via rustup](https://rustup.rs/). The repository pins the Rust compiler and WASI target.
+
+```sh
+npm ci
+npm run build:wasm
+npm run dev --workspace @filens/demo
+```
+
+Open [the local demo](http://localhost:5173/modules/filens/?lang=en), choose a sample or drop in a file. For hosting, see the [Vercel guide](docs/deploy-vercel.md).
+
+## Install on ZimaOS
+
+<p align="center"><a href="https://www.zimaspace.com/en/zimaos?utm_source=github&amp;utm_medium=referral&amp;utm_campaign=filens_zimaos&amp;utm_content=readme_banner_en"><img src="docs/assets/readme/zimaos-banner.en.png" alt="ZimaOS: a personal cloud with FiLens integration" width="640" /></a></p>
+
+Install FiLens from the official Mod Store. In the ZimaOS terminal or over SSH, run:
+
+```sh
+sudo zpkg install filens
+```
+
+This installs the native CLI and shared WASM engines for Linux x64/arm64, with no Node.js dependency. Run `filens capacity --json`, then `filens read report.pdf --json`. OCR reuses Photos' installed NCNN v7 runtime and RapidOCR models. If they are absent or incompatible, `filens setup-ocr` installs a compatible private copy; document reading and conversion work without OCR.
+
+If the module is not found, run `sudo zpkg update` to refresh the store index, then retry. See the [ZimaOS packaging guide](packaging/zimaos/README.md) for building, publishing and updating the package.
+
+## Performance and documentation
 
 <details>
 <summary>Show SOTA benchmark results</summary>
@@ -230,22 +227,19 @@ Rust STEP now powers the default browser preview. The standalone `filens-step@0.
 
 </details>
 
-## Build with filens
-
 | Looking for… | Start here |
 | --- | --- |
-| Vue preview components | [Vue integration](packages/vue/README.md) |
-| Format coverage and limits | [Support matrix](docs/support-matrix.md) |
-| Architecture, comparisons, and performance notes | [Project overview](docs/project-overview.md) |
-| Frontend timings, scoped leads, and raw data | [Frontend performance comparison](docs/performance-comparison.md) |
-| Full-text extraction / injectable OCR | [Optional Go host and text WASM](converter/README.md) |
-| Agent document reading / capacity / local OCR | [Agent CLI](docs/agent-cli.md) |
-| CLI / backend integration | [Go + wazero example](examples/go-wazero-converter/README.md) |
-| Deployment | [Vercel guide](docs/deploy-vercel.md) |
+| Standalone single-file / split builds and CLI preview | [Preview guide](packages/preview/README.md) |
+| Vue integration | [Vue components](packages/vue/README.md) |
+| Supported formats | [Support matrix](docs/support-matrix.md) |
+| Architecture and WASM boundaries | [Project overview](docs/project-overview.md) |
+| Frontend benchmarks and raw data | [Performance comparison](docs/performance-comparison.md) |
+| macOS native OCR vs RapidOCR | [Measured comparison](docs/macos-ocr-benchmark.zh-CN.md) |
+| CLI and backend integration | [Agent CLI](docs/agent-cli.md) · [Go + wazero host](examples/go-wazero-converter/README.md) |
 
-Try your everyday files and [report a reproducible issue](https://github.com/IceWhaleTech/filens/issues/new/choose). Upcoming work is tracked in the [roadmap](docs/roadmap.md).
+Try your files and [report a reproducible issue](https://github.com/IceWhaleTech/filens/issues/new/choose). [Roadmap](docs/roadmap.md) · [MIT license](LICENSE) · [Third-party notices](packaging/agent-third-party.md).
 
-<sub>Preview images come from filens itself. Photos: Carsten / CC BY 2.0 (cropped and pale-blue graded) and Greg Zaal / Poly Haven / CC0. The overview, walkthrough, and animated preview are CC BY-SA 4.0. <a href="docs/assets/readme/SOURCES.md">Visual sources and credits</a>. iWork research: <a href="https://github.com/dunhamsteve/iwork">dunhamsteve/iwork</a>; CAD lineage: <a href="https://github.com/orcastor/cad2x-converter">orcastor/cad2x-converter</a>.</sub>
+<sub>Preview captures come from filens. Photos and demo recordings retain their original licenses; see <a href="docs/assets/readme/SOURCES.md">visual sources and credits</a>. iWork research: <a href="https://github.com/dunhamsteve/iwork">dunhamsteve/iwork</a>; CAD lineage: <a href="https://github.com/orcastor/cad2x-converter">orcastor/cad2x-converter</a>.</sub>
 
 ## Star History
 

@@ -1,4 +1,5 @@
 // Run after capture-homepage-demo.mjs. Requires Playwright Chromium and FFmpeg.
+// Add --overview-only to preserve the existing animated preview (no FFmpeg needed).
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
@@ -8,6 +9,7 @@ import { chromium } from 'playwright';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const input = path.join(root, 'apps/demo/public/home');
 const output = path.join(root, 'docs/assets/readme');
+const overviewOnly = process.argv.includes('--overview-only');
 await mkdir(output, { recursive: true });
 const previews = [
   ['PPTX', 'presentation', '#db6946', 'P'],
@@ -17,7 +19,11 @@ const previews = [
   ['KEYNOTE', 'iwork', '#478dca', 'K'],
   ['CAD', 'cad', '#9173b8', 'D'],
   ['3D', 'model', '#8572b6', '3'],
-  ['360°', 'panorama', '#ba8850', '°']
+  ['360°', 'panorama', '#ba8850', '°'],
+  ['VIDEO', 'video', '#438575', '▶'],
+  ['MUSIC', 'music', '#b46f89', '♪'],
+  ['ARCHIVE', 'archive', '#ab8546', 'Z'],
+  ['EBOOK', 'ebook', '#5b7ea7', 'E']
 ];
 const assets = await Promise.all(previews.map(async ([label, file, color, icon]) => ({
   label, color, icon,
@@ -30,7 +36,7 @@ try {
   const overview = await page.evaluate(async (assets) => {
     const canvas = document.createElement('canvas');
     canvas.width = 1680;
-    canvas.height = 656;
+    canvas.height = 24 + Math.ceil(assets.length / 4) * 316;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#f4f3ed';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -77,10 +83,12 @@ try {
 
 // Speed up the actual recording for a small inline preview. The original MP4
 // remains available for full-speed playback and captions.
-execFileSync('ffmpeg', [
-  '-hide_banner', '-loglevel', 'error', '-y',
-  '-i', path.join(input, 'filens-demo.mp4'),
-  '-filter_complex', '[0:v]setpts=0.45*PTS,fps=5,scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3',
-  '-loop', '0', path.join(output, 'demo.gif')
-], { stdio: 'inherit' });
-console.log('Generated README overview and animated preview.');
+if (!overviewOnly) {
+  execFileSync('ffmpeg', [
+    '-hide_banner', '-loglevel', 'error', '-y',
+    '-i', path.join(input, 'filens-demo.mp4'),
+    '-filter_complex', '[0:v]setpts=0.45*PTS,fps=5,scale=720:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3',
+    '-loop', '0', path.join(output, 'demo.gif')
+  ], { stdio: 'inherit' });
+}
+console.log(overviewOnly ? 'Generated README overview.' : 'Generated README overview and animated preview.');

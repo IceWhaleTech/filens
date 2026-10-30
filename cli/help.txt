@@ -16,9 +16,13 @@ filens — local document reading and conversion for agents
   filens convert report.doc --output report.docx --json
   filens convert data.csv result.xlsx
   filens convert photo.dng --to jpg
+  filens preview report.pdf
+  filens preview drawing.step --no-open --json
 
 Optional commands: capacity (capabilities), read, extract, understand, layout,
-                   summarize (prune), search, similar, duplicates, similar-images, convert.
+                   summarize (prune), search, similar, duplicates, similar-images, convert, preview.
+Preview: FILE [--port 0] [--no-open] [--json] [--assets DIR]. Browser-local UI;
+         requires built preview assets (npm run build:preview / FILENS_PREVIEW_DIR).
 Optional flags: --json, --format text|json|markdown|html|yaml|xml|csv|tsv,
                 --layout, --input PATH, --max-bytes N,
                 --timeout 2m, --wasm PATH, --no-ocr, --help.

@@ -1,0 +1,24 @@
+{
+  "name": "filens-preview",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Browser-local Office, iWork, PDF, CAD, 3D, RAW and panorama previews, as split modules or one JavaScript file.",
+  "main": "./dist/split/filens.js",
+  "module": "./dist/split/filens.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/split/filens.js" },
+    "./all-in-one": { "types": "./dist/index.d.ts", "import": "./dist/all-in-one/filens.js" },
+    "./split/*": "./dist/split/*",
+    "./all-in-one/*": "./dist/all-in-one/*",
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "sideEffects": true,
+  "repository": { "type": "git", "url": "git+https://github.com/IceWhaleTech/filens.git", "directory": "packages/preview" },
+  "homepage": "https://github.com/IceWhaleTech/filens/tree/main/packages/preview",
+  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" },
+  "keywords": ["preview", "viewer", "office", "pdf", "iwork", "cad", "wasm", "browser"],
+  "scripts": { "build": "node ../../scripts/build-preview.mjs" }
+}

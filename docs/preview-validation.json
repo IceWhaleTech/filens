@@ -1,0 +1,202 @@
+{
+  "date": "2026-10-30",
+  "platform": "darwin-arm64",
+  "browser": "147.0.7727.15",
+  "scope": "Actual CLI loopback server and real shared engines. External network requests blocked. Render readiness and source text checked; no pixel-fidelity claim.",
+  "httpChecks": [
+    "GET",
+    "HEAD",
+    "byte ranges",
+    "invalid ranges",
+    "unscoped paths",
+    "directory traversal",
+    "Host",
+    "Origin",
+    "Sec-Fetch-Site",
+    "unsupported method"
+  ],
+  "observations": [
+    {
+      "mode": "split",
+      "file": "中文 preview.txt",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 13
+    },
+    {
+      "mode": "split",
+      "file": "filens-aurora-guide.docx",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 13
+    },
+    {
+      "mode": "split",
+      "file": "filens-cosmic-atlas.pdf",
+      "state": "ready",
+      "canvases": 2,
+      "runtimeRequests": 15
+    },
+    {
+      "mode": "split",
+      "file": "a.pages",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 14
+    },
+    {
+      "mode": "split",
+      "file": "filens-weekend.key",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 14
+    },
+    {
+      "mode": "split",
+      "file": "filens-observatory.xlsx",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 13
+    },
+    {
+      "mode": "split",
+      "file": "legacy-project-workflow.doc",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 14
+    },
+    {
+      "mode": "split",
+      "file": "filens-field-notes.pptx",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 13
+    },
+    {
+      "mode": "split",
+      "file": "a.numbers",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 14
+    },
+    {
+      "mode": "split",
+      "file": "pentax-k-r.dng",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 15
+    },
+    {
+      "mode": "split",
+      "file": "milky-way-360.jpg",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 13
+    },
+    {
+      "mode": "split",
+      "file": "sample-nested-archives.zip",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 13
+    },
+    {
+      "mode": "split",
+      "file": "cube.stp",
+      "state": "ready",
+      "canvases": 1,
+      "runtimeRequests": 14
+    },
+    {
+      "mode": "all-in-one",
+      "file": "中文 preview.txt",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "filens-aurora-guide.docx",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "filens-cosmic-atlas.pdf",
+      "state": "ready",
+      "canvases": 2,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "a.pages",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "filens-weekend.key",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "filens-observatory.xlsx",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "legacy-project-workflow.doc",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "filens-field-notes.pptx",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "a.numbers",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "pentax-k-r.dng",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "milky-way-360.jpg",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "sample-nested-archives.zip",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "cube.stp",
+      "state": "ready",
+      "canvases": 1,
+      "runtimeRequests": 1
+    }
+  ]
+}

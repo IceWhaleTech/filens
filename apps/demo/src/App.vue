@@ -1101,10 +1101,9 @@ const staticSamples: DemoSource[] = [
   {
     kind: 'epub',
     label: 'EPUB',
-    name: 'fixture-book.epub',
-    source: new Uint8Array(),
-    contentType: 'application/epub+zip',
-    mode: 'generated'
+    name: 'pepper-carrot.epub',
+    source: '/samples/pepper-carrot.epub',
+    contentType: 'application/epub+zip'
   },
   {
     kind: 'cbz',
@@ -2068,7 +2067,7 @@ async function materializeSample(sample: DemoSource): Promise<DemoSource> {
       mode: 'generated'
     };
   }
-  if (sample.kind === 'epub') {
+  if (sample.kind === 'epub' && sample.mode === 'generated') {
     return {
       ...sample,
       source: await createEpubFixture(),

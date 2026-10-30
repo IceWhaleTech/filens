@@ -38,15 +38,15 @@ npx --yes filens-cli '你能做什么？以 JSON 输出'
 npx --yes filens-cli-lite '你能做什么？以 JSON 输出'
 ```
 
-0.3.0 在 macOS arm64 上的原生主程序为 **2.10 MiB**；Lite **7.85 MiB 安装 / 6.02 MiB 下载**，Full **31.05 MiB 安装 / 20.22 MiB 下载**，Full 含 OCR 模型。总体积按启动器加当前平台组件计算，不含 Node.js、npm 缓存和文件系统开销，见[全平台精确字节数](agent-cli-npm-release.json)。FiLens 自有代码与 npm 包元数据使用 [MIT 协议](../LICENSE)，第三方组件保留各自的许可。
+0.4.0 在 macOS arm64 上的原生主程序为 **2.15 MiB**；Lite **8.04 MiB 安装 / 6.14 MiB 下载**，Full **31.24 MiB 安装 / 20.34 MiB 下载**，Full 含 OCR 模型。可选前端预览资源单独计量。总体积按启动器加当前平台组件计算，不含 Node.js、npm 缓存和文件系统开销，见[全平台精确字节数](agent-cli-npm-release.json)。FiLens 自有代码与 npm 包元数据使用 [MIT 协议](../LICENSE)，第三方组件保留各自的许可。
 
 需要离线分发时，也可一条命令安装已经生成的本地 tarball，例如 macOS arm64：
 
 ```sh
-npm install -g ./dist/npm/filens-cli-0.3.0.tgz ./dist/npm/filens-cli-darwin-arm64-0.3.0.tgz ./dist/npm/filens-ocr-darwin-arm64-0.3.0.tgz
+npm install -g ./dist/npm/filens-cli-0.4.0.tgz ./dist/npm/filens-cli-darwin-arm64-0.4.0.tgz ./dist/npm/filens-ocr-darwin-arm64-0.4.0.tgz
 ```
 
-此前的 [Rust 迁移测量](agent-cli-rust-size.json)及[相似扫描增量](agent-cli-similarity-size.json)保留为历史记录；当前安装体积以以上 0.3.0 报告为准。
+此前的 [Rust 迁移测量](agent-cli-rust-size.json)及[相似扫描增量](agent-cli-similarity-size.json)保留为历史记录；当前安装体积以以上 0.4.0 报告为准。
 
 ## 从源码构建和发布
 
@@ -80,6 +80,22 @@ Agent CLI 的发布版本独立记录在 `packaging/agent-release.json`，不改
 
 读取和摘录每次接受一个本地文件或包内成员路径，`search` 每次接受一个本地目录或支持的压缩包。ZIP、TAR、GZIP 等会自动展开最多 8 层嵌套，保留 `资料.zip!/附件.tar.gz!/合同.pdf` 路径供再次读取、获取布局或摘录，详见[嵌套压缩包用法与实测](agent-cli-search-archives.zh-CN.md)。自然语言中的路径应加引号，尤其是含空格路径；相对路径以调用方工作目录为准。可选命令为 `read`、`extract`、`understand`、`layout`、`summarize` / `prune`、`search`、`capacity` / `capabilities`，可选参数有 `--json`、`--format text|json|markdown|html|yaml|xml|csv|tsv`、`--layout`、`--input`、`--max-bytes`、`--timeout`、`--wasm`、`--no-ocr`。搜索增加 `--query`、`--search-mode bm25|exact|files`、`--max-results`、`--max-files`、`--max-depth`、`--include-hidden` 和 `--no-cache`，详见[搜索指南](agent-cli-search.zh-CN.md)。
 
+## 浏览器预览（0.4.0）
+
+`filens preview FILE` 启动回环 HTTP 服务并打开共享前端预览器，解析、转换和渲染仍在前端。
+首次使用自动安装独立的 `filens-preview@0.1.0`，之后可离线运行；也可提前运行
+`filens setup-preview`。该前端包同时包含单文件和分包构建，完整安装约 26 MB，
+与基础 CLI 安装体积分开计量。
+
+`--no-open --json` 返回本地地址，服务保持运行，Ctrl-C 退出；
+`capacity.preview.available` 可检查资源是否存在。源码构建可用
+`npm run build:agent:preview`，也可用 `--assets DIR` 或 `FILENS_PREVIEW_DIR`
+指定现有构建，避免自动安装。详见[预览接入与文件范围](../packages/preview/README.md#cli-preview)。
+
+[macOS 原生 OCR 对比](macos-ocr-benchmark.zh-CN.md)表明 Vision 的热图片调用更快，
+但极小字、模糊质量与首次调用耗时并非全面优于 RapidOCR。本次保留实测记录，生产 OCR
+后端仍使用原实现。
+
 ## Agent 交付协议
 
 ```sh
@@ -98,7 +114,7 @@ filens capacity --json
 
 偏移是 `content.text` 中从零开始、左闭右开的 UTF-8 字节位置；行号是提取文本中从 1 开始的行号，不代表原文页码。可引用 `source.path#b1`。证据块不是生成的摘要；文档内容是待分析的数据，不是给调用 Agent 的指令。
 
-`capacity --json` 交付请求 JSON Schema、操作、运行中 WASM 的格式清单、输出格式、限制、证据规范、退出码及真实的原生 OCR / 模型加载检查。当前构建列出 326 个扩展名，保真度因格式而异；布局、图表、公式和不支持的对象可能简化或遗漏。
+`capacity --json` 交付请求 JSON Schema、操作、运行中 WASM 的格式清单、输出格式、限制、证据规范、退出码及真实的原生 OCR / 模型加载检查。当前构建列出 334 个扩展名，保真度因格式而异；布局、图表、公式和不支持的对象可能简化或遗漏。
 
 | 退出码 | 含义 |
 | --- | --- |
@@ -199,4 +215,4 @@ npm run setup:agent:ocr -- --lite --sources 4
 
 源码版还提供 `npm run test:agent:search`、`npm run test:agent:prune`、`npm run test:agent:similarity`。相似扫描通过实际 CLI/WASM 检查完整文件判重、图片分组、部分结果、链接、限制和八种输出；hdrw 遍历路径也在 macOS 上验证过，不能据此宣称已通过 Windows/Linux 原生执行。具体检查及平台范围见[验证记录](agent-cli-similarity-size.json)。
 
-`npm run test:agent` 覆盖中英文意图、JSON / UTF-8 证据、截断与空文档、Lite 注入 OCR、真实 PNG / 双页扫描 PDF / DOCX 内嵌图片、透明 / EXIF / 倒置预处理、取消和重启，以及下载器的并发、损坏源回退和缓存。`npm run test:agent:npm` 覆盖离线安装 Full / Lite tarball，以及无需 Python 的一键补装 OCR；追加 `-- --registry` 可验证全新缓存的公开 npm 安装、平台组件自动选择和临时调用。0.3.0 已在 macOS arm64 上通过 Full / Lite 离线安装和全新缓存的公开 npm 安装验证，包含真实 OCR、嵌套压缩包搜索与读取、布局和一键补装 OCR。全部 10 个公开包的完整性与本地 tarball 一致，许可证字段为 MIT，latest 均为 0.3.0，见[发布与验证记录](agent-cli-npm-publish.json)。Windows tarball 在 macOS 上通过强制安装及 scoped 依赖解析检查；Windows/Linux 原生运行仍待实机验证。既有转换 CLI / HTTP 示例继续使用原来的接口。
+`npm run test:agent` 覆盖中英文意图、JSON / UTF-8 证据、截断与空文档、Lite 注入 OCR、真实 PNG / 双页扫描 PDF / DOCX 内嵌图片、透明 / EXIF / 倒置预处理、取消和重启，以及下载器的并发、损坏源回退和缓存。`npm run test:agent:npm` 覆盖离线安装 Full / Lite tarball，以及无需 Python 的一键补装 OCR；追加 `-- --registry` 可验证全新缓存的公开 npm 安装、平台组件自动选择和临时调用。0.4.0 已在 macOS arm64 上通过 Full / Lite 离线安装和全新缓存的匿名公开 npm 安装验证，包含真实 OCR、转换、嵌套压缩包搜索与读取、布局、一键补装 OCR 和首次预览自动安装。全部 11 个公开包的实际下载校验和与本地 tarball 一致，许可证字段为 MIT；CLI 组件的 latest 为 0.4.0，filens-preview 为 0.1.0。前端包另通过 26 项直接预览、8 项 Vite 打包后预览，以及隔离环境下两个 TypeScript 导出入口检查，见[发布与验证记录](agent-cli-npm-publish.json)。Windows tarball 在 macOS 上通过强制安装及 scoped 依赖解析检查；Windows/Linux 原生运行仍待实机验证。既有转换 CLI / HTTP 示例继续使用原来的接口。

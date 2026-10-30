@@ -1,0 +1,2174 @@
+{
+  "date": "2026-10-30",
+  "machine": {
+    "chip": "Apple M4 Pro",
+    "macOS": "26.6.2",
+    "arch": "arm64"
+  },
+  "method": {
+    "rounds": 7,
+    "coldRounds": 5,
+    "cold": "Fresh process, first recognition; OS/framework file caches are not flushed.",
+    "warm": "One excluded warmup per fixture; alternating engine order, persistent workers. Wall time includes image decoding, inference, JSON and IPC; excludes Swift compilation and document parsing.",
+    "quality": "NFKC, case-folded, whitespace/punctuation/symbol-stripped Levenshtein CER. Synthetic fixtures only; punctuation and case errors are hidden by this metric.",
+    "transparency": "Prepared variant uses the same white-compositing rule as the WASM core; generation is outside timing."
+  },
+  "binaries": {
+    "vision": {
+      "bytes": 95704,
+      "sha256": "1eec540b42054cdfd9c8ec9888800b1416516ada662edba999c228fc559b8ec0"
+    },
+    "rapidocr": {
+      "sha256": "05f39f7b98ddb75da989fee65d8c585d21d06fa62e25f12b8b8a93bf937f20f3"
+    }
+  },
+  "health": {
+    "vision": {
+      "languages": [
+        "en-US",
+        "fr-FR",
+        "it-IT",
+        "de-DE",
+        "es-ES",
+        "pt-BR",
+        "zh-Hans",
+        "zh-Hant",
+        "yue-Hans",
+        "yue-Hant",
+        "ko-KR",
+        "ja-JP",
+        "ru-RU",
+        "uk-UA",
+        "th-TH",
+        "vi-VT",
+        "ar-SA",
+        "ars-SA",
+        "tr-TR",
+        "id-ID",
+        "cs-CZ",
+        "da-DK",
+        "nl-NL",
+        "no-NO",
+        "nn-NO",
+        "nb-NO",
+        "ms-MY",
+        "pl-PL",
+        "ro-RO",
+        "sv-SE"
+      ],
+      "provider": "apple-vision",
+      "revision": 3
+    },
+    "rapidocr": {
+      "maxSideLen": 960,
+      "openmpThreads": 2,
+      "provider": "rapidocr-ncnn"
+    }
+  },
+  "cold": {
+    "vision": [
+      916.123916999999,
+      334.2455000000009,
+      300.93445900000006,
+      320.57174999999916,
+      328.4777499999982
+    ],
+    "rapidocr": [
+      293.8665829999991,
+      235.8259999999991,
+      237.42641600000024,
+      243.6518329999999,
+      237.27037500000006
+    ]
+  },
+  "results": [
+    {
+      "name": "invoice-zh",
+      "input": "docs/assets/agent-cli/invoice-zh.png",
+      "sha256": "1cf45dbe429595ee24b83c1439e1dafbeacc29909a01f1931429602e21b92a04",
+      "expected": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "vision": {
+        "medianMs": 124.48624999999811,
+        "samplesMs": [
+          145.98508299999958,
+          124.48624999999811,
+          120.4432089999973,
+          127.76625000000058,
+          123.26579100000163,
+          168.5353329999998,
+          116.82329200000095
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "blocks": [
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.604648061580235,
+                  83.68200919903235
+                ],
+                [
+                  299.3023256738849,
+                  83.68200919903235
+                ],
+                [
+                  299.3023256738849,
+                  121.33891151226473
+                ],
+                [
+                  58.604648061580235,
+                  121.33891151226473
+                ]
+              ],
+              "text": "星河科技采购单"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.60464781874546,
+                  154.81171475090338
+                ],
+                [
+                  406.0465118324173,
+                  154.81171475090338
+                ],
+                [
+                  406.0465118324173,
+                  195.00000057854007
+                ],
+                [
+                  58.60464781874546,
+                  195.00000057854007
+                ]
+              ],
+              "text": "订单编号 FILENS2026"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.60465369451768,
+                  227.99999967729545
+                ],
+                [
+                  433.2558072589708,
+                  227.99999967729545
+                ],
+                [
+                  433.2558072589708,
+                  265.99999967729536
+                ],
+                [
+                  58.60465369451768,
+                  265.99999967729536
+                ]
+              ],
+              "text": "客户名称：上海示例公司"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.604663812623244,
+                  298.99999921806966
+                ],
+                [
+                  537.9069709415295,
+                  298.99999921806966
+                ],
+                [
+                  537.9069709415295,
+                  336.99999921806966
+                ],
+                [
+                  58.604663812623244,
+                  336.99999921806966
+                ]
+              ],
+              "text": "项目名称：本地文档读取与识别"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  60.69767227325582,
+                  370.00000041683955
+                ],
+                [
+                  420.6976722732558,
+                  370.00000041683955
+                ],
+                [
+                  420.6976722732558,
+                  412.133890568817
+                ],
+                [
+                  60.69767227325582,
+                  412.133890568817
+                ]
+              ],
+              "text": "应付金额：12345.67元"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  60.69766923588094,
+                  443.5146451903422
+                ],
+                [
+                  485.58139726322474,
+                  443.5146451903422
+                ],
+                [
+                  485.58139726322474,
+                  481.17154750357463
+                ],
+                [
+                  60.69766923588094,
+                  481.17154750357463
+                ]
+              ],
+              "text": "交付日期：2026年10月29日"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  58.60467339893706,
+                  514.644352681895
+                ],
+                [
+                  768.1395244731558,
+                  514.644352681895
+                ],
+                [
+                  768.1395244731558,
+                  559.0000007226665
+                ],
+                [
+                  58.60467339893706,
+                  559.0000007226665
+                ]
+              ],
+              "text": "备注：无需 Python，离线识别中文和 English。"
+            }
+          ],
+          "height": 1000,
+          "inferenceMs": 116.184708,
+          "provider": "apple-vision",
+          "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。",
+          "width": 1440
+        }
+      },
+      "rapidocr": {
+        "medianMs": 215.21099999999933,
+        "samplesMs": [
+          213.01841699999932,
+          217.98587500000212,
+          214.37995800000135,
+          215.21099999999933,
+          213.59599999999773,
+          216.83245799999713,
+          216.74387500000012
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "星河科技采购单",
+              "订单编号 FILENS2026",
+              "客户名称：上海示例公司",
+              "项目名称：本地文档读取与识别",
+              "应付金额：12345.67元",
+              "交付日期：2026年10月29日",
+              "备注：无需 Python，离线识别中文和 English。"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。",
+            "ok": true,
+            "raw_output": "ImageSize(1440,1000)\nTextBox[0](+padding)[score(0.952737),[x: 109, y: 131], [x: 350, y: 131], [x: 350, y: 172], [x: 109, y: 172]]\ntextLine[0](星河科技采购单)\nTextBox[1](+padding)[score(0.958011),[x: 107, y: 204], [x: 455, y: 204], [x: 455, y: 245], [x: 107, y: 245]]\ntextLine[1](订单编号 FILENS2026)\nTextBox[2](+padding)[score(0.977636),[x: 108, y: 276], [x: 485, y: 276], [x: 485, y: 314], [x: 108, y: 314]]\ntextLine[2](客户名称：上海示例公司)\nTextBox[3](+padding)[score(0.961608),[x: 107, y: 345], [x: 588, y: 347], [x: 588, y: 389], [x: 106, y: 387]]\ntextLine[3](项目名称：本地文档读取与识别)\nTextBox[4](+padding)[score(0.963303),[x: 107, y: 419], [x: 473, y: 419], [x: 473, y: 460], [x: 107, y: 460]]\ntextLine[4](应付金额：12345.67元)\nTextBox[5](+padding)[score(0.956813),[x: 107, y: 491], [x: 538, y: 491], [x: 538, y: 532], [x: 107, y: 532]]\ntextLine[5](交付日期：2026年10月29日)\nTextBox[6](+padding)[score(0.945791),[x: 106, y: 560], [x: 815, y: 563], [x: 815, y: 608], [x: 105, y: 605]]\ntextLine[6](备注：无需 Python，离线识别中文和 English。)",
+            "result_text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。",
+            "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。"
+        }
+      }
+    },
+    {
+      "name": "invoice-blur",
+      "input": "docs/assets/agent-cli/invoice-blur.png",
+      "sha256": "9d3d55e17e34020157aafa87e50867213c3bbb5dae00c917a7eed245d4cfc36e",
+      "expected": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "vision": {
+        "medianMs": 130.26458300000013,
+        "samplesMs": [
+          142.23179200000232,
+          133.81233399999837,
+          115.78258300000016,
+          124.42316700000083,
+          130.42179199999737,
+          130.26458300000013,
+          129.34858299999905
+        ],
+        "cer": 0.010526315789473684,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "blocks": [
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.68601091876866,
+                  79.05251281450576
+                ],
+                [
+                  301.4752260066593,
+                  79.94359748552627
+                ],
+                [
+                  301.31398638263585,
+                  123.87635772417372
+                ],
+                [
+                  58.52477129474522,
+                  122.98527305315321
+                ]
+              ],
+              "text": "星河科技采购单"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.604653975031795,
+                  154.81171575963492
+                ],
+                [
+                  408.13953556682867,
+                  154.81171575963492
+                ],
+                [
+                  408.13953556682867,
+                  196.99999967992298
+                ],
+                [
+                  58.604653975031795,
+                  196.99999967992298
+                ]
+              ],
+              "text": "订单编号 FILENS2026"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.60464765187899,
+                  223.84937153814465
+                ],
+                [
+                  437.4418668901602,
+                  223.84937153814465
+                ],
+                [
+                  437.4418668901602,
+                  268.0000005817238
+                ],
+                [
+                  58.60464765187899,
+                  268.0000005817238
+                ]
+              ],
+              "text": "客户名称：上海示例公司"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.604655853967756,
+                  294.97907863209673
+                ],
+                [
+                  544.1860462348271,
+                  294.97907863209673
+                ],
+                [
+                  544.1860462348271,
+                  339.00000033925005
+                ],
+                [
+                  58.604655853967756,
+                  339.00000033925005
+                ]
+              ],
+              "text": "项目名称：本地文档读取与识别"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  58.60465784513078,
+                  368.0000001159183
+                ],
+                [
+                  422.79069300138076,
+                  368.0000001159183
+                ],
+                [
+                  422.79069300138076,
+                  412.1338902678958
+                ],
+                [
+                  58.60465784513078,
+                  412.1338902678958
+                ]
+              ],
+              "text": "应付金额：12345.67元"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.60465417093769,
+                  438.99999977740055
+                ],
+                [
+                  489.76743493265644,
+                  438.99999977740055
+                ],
+                [
+                  489.76743493265644,
+                  483.26359917315244
+                ],
+                [
+                  58.60465417093769,
+                  483.26359917315244
+                ]
+              ],
+              "text": "交付日期：2026年10月29日"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  58.60466395959435,
+                  514.6443518330885
+                ],
+                [
+                  766.0464974556879,
+                  514.6443518330885
+                ],
+                [
+                  766.0464974556879,
+                  560.99999987386
+                ],
+                [
+                  58.60466395959435,
+                  560.99999987386
+                ]
+              ],
+              "text": "备注：无需 Python，高线识别中文和 English."
+            }
+          ],
+          "height": 1000,
+          "inferenceMs": 128.782292,
+          "provider": "apple-vision",
+          "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，高线识别中文和 English.",
+          "width": 1440
+        }
+      },
+      "rapidocr": {
+        "medianMs": 205.1309590000019,
+        "samplesMs": [
+          206.9683330000007,
+          206.73400000000038,
+          203.1207919999979,
+          205.1309590000019,
+          204.03512499999852,
+          204.7977920000012,
+          209.2114999999976
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "星河科技采购单",
+              "订单编号FILENS2026",
+              "客户名称：上海示例公司",
+              "项目名称：本地文档读取与识别",
+              "应付金额：12345.67元",
+              "交付日期：2026年10月29日",
+              "备注：无需Python，离线识别中文和English。"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和English。",
+            "ok": true,
+            "raw_output": "ImageSize(1440,1000)\nTextBox[0](+padding)[score(0.954749),[x: 107, y: 129], [x: 351, y: 129], [x: 351, y: 181], [x: 107, y: 181]]\ntextLine[0](星河科技采购单)\nTextBox[1](+padding)[score(0.940620),[x: 106, y: 203], [x: 457, y: 203], [x: 457, y: 252], [x: 106, y: 252]]\ntextLine[1](订单编号FILENS2026)\nTextBox[2](+padding)[score(0.945988),[x: 106, y: 276], [x: 486, y: 276], [x: 486, y: 325], [x: 106, y: 325]]\ntextLine[2](客户名称：上海示例公司)\nTextBox[3](+padding)[score(0.954405),[x: 105, y: 346], [x: 589, y: 346], [x: 589, y: 396], [x: 105, y: 396]]\ntextLine[3](项目名称：本地文档读取与识别)\nTextBox[4](+padding)[score(0.970237),[x: 104, y: 416], [x: 474, y: 418], [x: 474, y: 470], [x: 104, y: 468]]\ntextLine[4](应付金额：12345.67元)\nTextBox[5](+padding)[score(0.939362),[x: 105, y: 491], [x: 539, y: 491], [x: 539, y: 540], [x: 105, y: 540]]\ntextLine[5](交付日期：2026年10月29日)\nTextBox[6](+padding)[score(0.948670),[x: 105, y: 562], [x: 816, y: 562], [x: 816, y: 615], [x: 105, y: 615]]\ntextLine[6](备注：无需Python，离线识别中文和English。)",
+            "result_text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和English。",
+            "text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和English。"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和English。"
+        }
+      }
+    },
+    {
+      "name": "invoice-small",
+      "input": "docs/assets/agent-cli/invoice-small.png",
+      "sha256": "b70bd9e319e78ddbebc867c0e2959b02d750520f30392446a62aa53c258f02a1",
+      "expected": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "vision": {
+        "medianMs": 115.20350000000326,
+        "samplesMs": [
+          112.65191699999923,
+          111.14545799999905,
+          116.40458399999989,
+          115.20350000000326,
+          120.50266700000066,
+          113.90608300000167,
+          115.82466600000043
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "blocks": [
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.60465084474521,
+                  77.00000014576658
+                ],
+                [
+                  150.69767605226474,
+                  77.00000014576658
+                ],
+                [
+                  150.69767605226474,
+                  94.1422587898706
+                ],
+                [
+                  58.60465084474521,
+                  94.1422587898706
+                ]
+              ],
+              "text": "星河科技采购单"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  60.69767467360097,
+                  114.99999982136366
+                ],
+                [
+                  194.65116588453847,
+                  114.99999982136366
+                ],
+                [
+                  194.65116588453847,
+                  129.99999982136367
+                ],
+                [
+                  60.69767467360097,
+                  129.99999982136367
+                ]
+              ],
+              "text": "订单编号 FILENS2026"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.60464988229012,
+                  150.62761549285509
+                ],
+                [
+                  203.02325950143074,
+                  150.62761549285509
+                ],
+                [
+                  203.02325950143074,
+                  167.36401609710305
+                ],
+                [
+                  58.60464988229012,
+                  167.36401609710305
+                ]
+              ],
+              "text": "客户名称：上海示例公司"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  58.60464931573628,
+                  185.99999956658942
+                ],
+                [
+                  242.79069973077537,
+                  185.99999956658942
+                ],
+                [
+                  242.79069973077537,
+                  202.99999956658942
+                ],
+                [
+                  58.60464931573628,
+                  202.99999956658942
+                ]
+              ],
+              "text": "项目名称：本地文档读取与识别"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  58.60465203283292,
+                  221.7573226267462
+                ],
+                [
+                  198.83721123693448,
+                  221.7573226267462
+                ],
+                [
+                  198.83721123693448,
+                  238.49372323099428
+                ],
+                [
+                  58.60465203283292,
+                  238.49372323099428
+                ]
+              ],
+              "text": "应付金额：12345.67元"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  60.69767622859055,
+                  256.99999987744127
+                ],
+                [
+                  223.95348982722336,
+                  256.99999987744127
+                ],
+                [
+                  223.95348982722336,
+                  271.99999987744127
+                ],
+                [
+                  60.69767622859055,
+                  271.99999987744127
+                ]
+              ],
+              "text": "交付日期：2026年10月29日"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  60.697677118604595,
+                  294.979079990763
+                ],
+                [
+                  330.6976771186046,
+                  294.979079990763
+                ],
+                [
+                  330.6976771186046,
+                  311.9999997905677
+                ],
+                [
+                  60.697677118604595,
+                  311.9999997905677
+                ]
+              ],
+              "text": "备注：无需 Python，离线识别中文和 English。"
+            }
+          ],
+          "height": 1000,
+          "inferenceMs": 115.308125,
+          "provider": "apple-vision",
+          "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。",
+          "width": 1440
+        }
+      },
+      "rapidocr": {
+        "medianMs": 191.6870409999974,
+        "samplesMs": [
+          191.67379100000107,
+          191.289249999998,
+          192.96920799999862,
+          191.6870409999974,
+          190.64604099999997,
+          193.22562499999913,
+          191.7135419999977
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "星河科技采购单",
+              "订单编号FILENS2026",
+              "客户名称：上海示例公司",
+              "项目名称：本地文档读取与识别",
+              "应付金额：12345.67元",
+              "交付日期：2026年10月29日",
+              "备注：无需Python，离线识别中文和English。"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和English。",
+            "ok": true,
+            "raw_output": "ImageSize(1440,1000)\nTextBox[0](+padding)[score(0.953237),[x: 107, y: 125], [x: 204, y: 125], [x: 204, y: 146], [x: 107, y: 146]]\ntextLine[0](星河科技采购单)\nTextBox[1](+padding)[score(0.975503),[x: 107, y: 160], [x: 244, y: 160], [x: 244, y: 183], [x: 107, y: 183]]\ntextLine[1](订单编号FILENS2026)\nTextBox[2](+padding)[score(0.933809),[x: 107, y: 196], [x: 255, y: 196], [x: 255, y: 218], [x: 107, y: 218]]\ntextLine[2](客户名称：上海示例公司)\nTextBox[3](+padding)[score(0.927265),[x: 107, y: 232], [x: 295, y: 232], [x: 295, y: 254], [x: 107, y: 254]]\ntextLine[3](项目名称：本地文档读取与识别)\nTextBox[4](+padding)[score(0.912963),[x: 107, y: 268], [x: 251, y: 268], [x: 251, y: 290], [x: 107, y: 290]]\ntextLine[4](应付金额：12345.67元)\nTextBox[5](+padding)[score(0.960868),[x: 107, y: 304], [x: 276, y: 304], [x: 276, y: 326], [x: 107, y: 326]]\ntextLine[5](交付日期：2026年10月29日)\nTextBox[6](+padding)[score(0.972045),[x: 108, y: 343], [x: 380, y: 343], [x: 380, y: 363], [x: 108, y: 363]]\ntextLine[6](备注：无需Python，离线识别中文和English。)",
+            "result_text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和English。",
+            "text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和English。"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和English。"
+        }
+      }
+    },
+    {
+      "name": "invoice-tiny",
+      "input": "docs/assets/agent-cli/invoice-tiny.png",
+      "sha256": "58a13fc0a68f5188ad6073a4d15a75a92633608876e9e377582131de82951425",
+      "expected": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "vision": {
+        "medianMs": 36.486916000001656,
+        "samplesMs": [
+          38.460916,
+          39.45379099999991,
+          36.486916000001656,
+          38.30199999999968,
+          33.68133300000045,
+          32.70483299999978,
+          31.461167000001296
+        ],
+        "cer": 1,
+        "invoiceNumberCorrect": false,
+        "amountCorrect": false,
+        "response": {
+          "blocks": [],
+          "height": 1000,
+          "inferenceMs": 30.972833,
+          "provider": "apple-vision",
+          "text": "",
+          "width": 1440
+        }
+      },
+      "rapidocr": {
+        "medianMs": 180.19566699999996,
+        "samplesMs": [
+          178.76270799999838,
+          179.42820800000118,
+          180.19566699999996,
+          180.27804200000173,
+          180.3123749999977,
+          179.17887500000143,
+          181.25295800000094
+        ],
+        "cer": 0.2631578947368421,
+        "invoiceNumberCorrect": false,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "显风科胰采购单",
+              "客产名称：上海示例公司",
+              "项目名称：本地文格读取与识8）",
+              "险付全额：12345.67元",
+              "交付日期：2026年10月29日",
+              "备注：无需Python，高缓织别中文和 English，"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "显风科胰采购单\n客产名称：上海示例公司\n项目名称：本地文格读取与识8）\n险付全额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，高缓织别中文和 English，",
+            "ok": true,
+            "raw_output": "ImageSize(1440,1000)\nTextBox[0](+padding)[score(0.937591),[x: 107, y: 120], [x: 161, y: 120], [x: 161, y: 138], [x: 107, y: 138]]\ntextLine[0](显风科胰采购单)\nTextBox[1](+padding)[score(0.905938),[x: 106, y: 148], [x: 183, y: 148], [x: 183, y: 162], [x: 106, y: 162]]\ntextLine[1]()\nTextBox[2](+padding)[score(0.824096),[x: 105, y: 172], [x: 190, y: 172], [x: 190, y: 190], [x: 105, y: 190]]\ntextLine[2](客产名称：上海示例公司)\nTextBox[3](+padding)[score(0.916957),[x: 106, y: 200], [x: 210, y: 200], [x: 210, y: 215], [x: 106, y: 215]]\ntextLine[3](项目名称：本地文格读取与识8）)\nTextBox[4](+padding)[score(0.919970),[x: 105, y: 224], [x: 189, y: 224], [x: 189, y: 243], [x: 105, y: 243]]\ntextLine[4](险付全额：12345.67元)\nTextBox[5](+padding)[score(0.914634),[x: 104, y: 249], [x: 202, y: 247], [x: 202, y: 267], [x: 105, y: 269]]\ntextLine[5](交付日期：2026年10月29日)\nTextBox[6](+padding)[score(0.833124),[x: 107, y: 276], [x: 256, y: 276], [x: 256, y: 291], [x: 107, y: 291]]\ntextLine[6](备注：无需Python，高缓织别中文和 English，)",
+            "result_text": "显风科胰采购单\n客产名称：上海示例公司\n项目名称：本地文格读取与识8）\n险付全额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，高缓织别中文和 English，",
+            "text": "显风科胰采购单\n客产名称：上海示例公司\n项目名称：本地文格读取与识8）\n险付全额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，高缓织别中文和 English，"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "显风科胰采购单\n客产名称：上海示例公司\n项目名称：本地文格读取与识8）\n险付全额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，高缓织别中文和 English，"
+        }
+      }
+    },
+    {
+      "name": "invoice-heavy-blur",
+      "input": "docs/assets/agent-cli/invoice-heavy-blur.png",
+      "sha256": "ace5a5fa5316ee516f5709a58f4ae2b14e6ff91658b9c48424edde0b32af80a0",
+      "expected": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "vision": {
+        "medianMs": 25.635749999997643,
+        "samplesMs": [
+          26.05329200000051,
+          25.635749999997643,
+          23.76774999999907,
+          21.552292000000307,
+          35.06212500000038,
+          31.662000000000262,
+          22.465792000002693
+        ],
+        "cer": 1,
+        "invoiceNumberCorrect": false,
+        "amountCorrect": false,
+        "response": {
+          "blocks": [],
+          "height": 1000,
+          "inferenceMs": 22.000584,
+          "provider": "apple-vision",
+          "text": "",
+          "width": 1440
+        }
+      },
+      "rapidocr": {
+        "medianMs": 362.7681250000023,
+        "samplesMs": [
+          375.07824999999866,
+          375.43429099999776,
+          357.7797079999982,
+          360.6657919999998,
+          389.2117499999986,
+          359.33450000000084,
+          362.7681250000023
+        ],
+        "cer": 0.9368421052631579,
+        "invoiceNumberCorrect": false,
+        "amountCorrect": false,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "ssi",
+              "Ces号 FLDG",
+              "无P生E"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "ssi\nCes号 FLDG\n无P生E",
+            "ok": true,
+            "raw_output": "ImageSize(1440,1000)\nTextBox[0](+padding)[score(0.730298),[x: 132, y: 137], [x: 346, y: 134], [x: 346, y: 177], [x: 133, y: 181]]\ntextLine[0](ssi)\nTextBox[1](+padding)[score(0.739930),[x: 106, y: 175], [x: 496, y: 199], [x: 490, y: 304], [x: 100, y: 280]]\ntextLine[1](Ces号 FLDG)\nTextBox[2](+padding)[score(0.448717),[x: 735, y: 189], [x: 941, y: 358], [x: 792, y: 549], [x: 585, y: 380]]\ntextLine[2]()\nTextBox[3](+padding)[score(0.770247),[x: 88, y: 243], [x: 528, y: 229], [x: 533, y: 388], [x: 92, y: 402]]\ntextLine[3]()\nTextBox[4](+padding)[score(0.355823),[x: 721, y: 245], [x: 747, y: 245], [x: 747, y: 253], [x: 721, y: 253]]\ntextLine[4]()\nTextBox[5](+padding)[score(0.369880),[x: 715, y: 251], [x: 753, y: 251], [x: 753, y: 259], [x: 715, y: 259]]\ntextLine[5]()\nTextBox[6](+padding)[score(0.380541),[x: 709, y: 257], [x: 753, y: 257], [x: 753, y: 265], [x: 709, y: 265]]\ntextLine[6]()\nTextBox[7](+padding)[score(0.379443),[x: 750, y: 258], [x: 763, y: 258], [x: 763, y: 264], [x: 750, y: 264]]\ntextLine[7]()\nTextBox[8](+padding)[score(0.385970),[x: 709, y: 263], [x: 764, y: 263], [x: 764, y: 271], [x: 709, y: 271]]\ntextLine[8]()\nTextBox[9](+padding)[score(0.323417),[x: 453, y: 270], [x: 463, y: 270], [x: 463, y: 276], [x: 453, y: 276]]\ntextLine[9]()\nTextBox[10](+padding)[score(0.390233),[x: 709, y: 269], [x: 764, y: 269], [x: 764, y: 277], [x: 709, y: 277]]\ntextLine[10]()\nTextBox[11](+padding)[score(0.386607),[x: 709, y: 275], [x: 764, y: 275], [x: 764, y: 283], [x: 709, y: 283]]\ntextLine[11]()\nTextBox[12](+padding)[score(0.434374),[x: 483, y: 277], [x: 535, y: 277], [x: 535, y: 335], [x: 483, y: 335]]\ntextLine[12]()\nTextBox[13](+padding)[score(0.396961),[x: 714, y: 279], [x: 771, y: 279], [x: 771, y: 290], [x: 714, y: 290]]\ntextLine[13]()\nTextBox[14](+padding)[score(0.396326),[x: 710, y: 281], [x: 793, y: 281], [x: 793, y: 306], [x: 710, y: 306]]\ntextLine[14]()\nTextBox[15](+padding)[score(0.395442),[x: 714, y: 297], [x: 789, y: 297], [x: 789, y: 308], [x: 714, y: 308]]\ntextLine[15]()\nTextBox[16](+padding)[score(0.804116),[x: 103, y: 303], [x: 619, y: 303], [x: 619, y: 457], [x: 103, y: 457]]\ntextLine[16]( )\nTextBox[17](+padding)[score(0.356527),[x: 480, y: 314], [x: 489, y: 314], [x: 489, y: 324], [x: 480, y: 324]]\ntextLine[17]()\nTextBox[18](+padding)[score(0.388590),[x: 488, y: 315], [x: 494, y: 315], [x: 494, y: 324], [x: 488, y: 324]]\ntextLine[18]()\nTextBox[19](+padding)[score(0.799578),[x: 74, y: 342], [x: 653, y: 342], [x: 653, y: 629], [x: 74, y: 629]]\ntextLine[19]()\nTextBox[20](+padding)[score(0.318049),[x: 692, y: 380], [x: 707, y: 380], [x: 707, y: 387], [x: 692, y: 387]]\ntextLine[20]()\nTextBox[21](+padding)[score(0.326123),[x: 753, y: 431], [x: 759, y: 434], [x: 755, y: 442], [x: 749, y: 439]]\ntextLine[21]()\nTextBox[22](+padding)[score(0.396798),[x: 445, y: 477], [x: 453, y: 477], [x: 453, y: 486], [x: 445, y: 486]]\ntextLine[22]()\nTextBox[23](+padding)[score(0.398465),[x: 564, y: 491], [x: 576, y: 491], [x: 576, y: 497], [x: 564, y: 497]]\ntextLine[23]()\nTextBox[24](+padding)[score(0.410319),[x: 564, y: 497], [x: 571, y: 497], [x: 571, y: 505], [x: 564, y: 505]]\ntextLine[24]()\nTextBox[25](+padding)[score(0.380964),[x: 558, y: 503], [x: 564, y: 503], [x: 564, y: 514], [x: 558, y: 514]]\ntextLine[25]()\nTextBox[26](+padding)[score(0.342407),[x: 564, y: 503], [x: 570, y: 503], [x: 570, y: 514], [x: 564, y: 514]]\ntextLine[26]()\nTextBox[27](+padding)[score(0.390361),[x: 288, y: 548], [x: 338, y: 548], [x: 338, y: 559], [x: 288, y: 559]]\ntextLine[27]()\nTextBox[28](+padding)[score(0.384858),[x: 333, y: 548], [x: 373, y: 548], [x: 373, y: 559], [x: 333, y: 559]]\ntextLine[28]()\nTextBox[29](+padding)[score(0.508456),[x: 135, y: 550], [x: 730, y: 553], [x: 730, y: 617], [x: 135, y: 614]]\ntextLine[29](无P生E)\nTextBox[30](+padding)[score(0.425543),[x: 728, y: 575], [x: 792, y: 575], [x: 792, y: 606], [x: 728, y: 606]]\ntextLine[30]()\nTextBox[31](+padding)[score(0.331462),[x: 709, y: 588], [x: 719, y: 588], [x: 719, y: 596], [x: 709, y: 596]]\ntextLine[31]()\nTextBox[32](+padding)[score(0.318197),[x: 715, y: 588], [x: 725, y: 588], [x: 725, y: 596], [x: 715, y: 596]]\ntextLine[32]()",
+            "result_text": "ssi\nCes号 FLDG\n无P生E",
+            "text": "ssi\nCes号 FLDG\n无P生E"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "ssi\nCes号 FLDG\n无P生E"
+        }
+      }
+    },
+    {
+      "name": "scan",
+      "input": "converter/rapidocr/testdata/scan.png",
+      "sha256": "3e9b19594dbde87c12d1e17f141f0a91bfeec8de9d452a3eb6d8b7e2ba341905",
+      "expected": "Invoice ID FILENS2026\nTotal 12345.67",
+      "vision": {
+        "medianMs": 59.906167000001005,
+        "samplesMs": [
+          63.88708400000178,
+          59.137957999999344,
+          55.45012500000303,
+          62.013167000000976,
+          61.11262500000157,
+          59.906167000001005,
+          59.60925000000134
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "blocks": [
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  75.83966789467024,
+                  101.83333431819025
+                ],
+                [
+                  899.2415843985765,
+                  101.83333431819025
+                ],
+                [
+                  899.2415843985765,
+                  165.0000003490741
+                ],
+                [
+                  75.83966789467024,
+                  165.0000003490741
+                ]
+              ],
+              "text": "Invoice ID FILENS2026"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  80.1733395714657,
+                  260.0000017319825
+                ],
+                [
+                  619.718322481622,
+                  260.0000017319825
+                ],
+                [
+                  619.718322481622,
+                  334.0000017319825
+                ],
+                [
+                  80.1733395714657,
+                  334.0000017319825
+                ]
+              ],
+              "text": "Total 12345.67"
+            }
+          ],
+          "height": 520,
+          "inferenceMs": 59.153584,
+          "provider": "apple-vision",
+          "text": "Invoice ID FILENS2026\nTotal 12345.67",
+          "width": 2000
+        }
+      },
+      "rapidocr": {
+        "medianMs": 77.89641599999959,
+        "samplesMs": [
+          81.221292000002,
+          78.01162499999919,
+          77.22470799999792,
+          77.65033300000141,
+          78.90708399999858,
+          77.76987499999814,
+          77.89641599999959
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "Invoice ID FILENS2026",
+              "Total 12345.67"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "Invoice ID FILENS2026\nTotal 12345.67",
+            "ok": true,
+            "raw_output": "ImageSize(2000,520)\nTextBox[0](+padding)[score(0.945929),[x: 128, y: 141], [x: 951, y: 141], [x: 951, y: 228], [x: 128, y: 228]]\ntextLine[0](Invoice ID FILENS2026)\nTextBox[1](+padding)[score(0.956444),[x: 124, y: 297], [x: 672, y: 294], [x: 673, y: 390], [x: 124, y: 393]]\ntextLine[1](Total 12345.67)",
+            "result_text": "Invoice ID FILENS2026\nTotal 12345.67",
+            "text": "Invoice ID FILENS2026\nTotal 12345.67"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "Invoice ID FILENS2026\nTotal 12345.67"
+        }
+      }
+    },
+    {
+      "name": "scan-rotated",
+      "input": "converter/rapidocr/testdata/scan-rotated.png",
+      "sha256": "494110c692f98b873a80db000e990f905deab80c9c5c6aec896021baeb3e2220",
+      "expected": "Invoice ID FILENS2026\nTotal 12345.67",
+      "vision": {
+        "medianMs": 57.08045800000036,
+        "samplesMs": [
+          58.505583000001934,
+          54.231917000000976,
+          60.19683400000213,
+          51.08891700000095,
+          57.08045800000036,
+          55.465459000006376,
+          60.95458299999882
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "blocks": [
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  1916.6666629524739,
+                  429.2064255026777
+                ],
+                [
+                  1083.3333499641926,
+                  429.2063492087324
+                ],
+                [
+                  1083.3333499641926,
+                  346.66659243383003
+                ],
+                [
+                  1916.6666629524739,
+                  346.66666872777535
+                ]
+              ],
+              "text": "Invoice ID FILENS2026"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  1917.6598019845428,
+                  260.000045379145
+                ],
+                [
+                  1380.281689191574,
+                  259.9999996027778
+                ],
+                [
+                  1380.281689191574,
+                  188.4999538264106
+                ],
+                [
+                  1917.6598019845428,
+                  188.49999960277776
+                ]
+              ],
+              "text": "Total 12345.67"
+            }
+          ],
+          "height": 520,
+          "inferenceMs": 60.347667,
+          "provider": "apple-vision",
+          "text": "Invoice ID FILENS2026\nTotal 12345.67",
+          "width": 2000
+        }
+      },
+      "rapidocr": {
+        "medianMs": 77.01120800000353,
+        "samplesMs": [
+          76.23929100000169,
+          77.11437500000102,
+          76.69687500000146,
+          76.62091700000019,
+          77.17562499999985,
+          77.10383299999376,
+          77.01120800000353
+        ],
+        "cer": 0.7741935483870968,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "Total 12345.67",
+              "Invoice ID FILENS2026"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "Total 12345.67\nInvoice ID FILENS2026",
+            "ok": true,
+            "raw_output": "ImageSize(2000,520)\nTextBox[0](+padding)[score(0.946033),[x: 1431, y: 240], [x: 1971, y: 237], [x: 1971, y: 325], [x: 1431, y: 328]]\ntextLine[0](Total 12345.67)\nTextBox[1](+padding)[score(0.952898),[x: 1145, y: 397], [x: 1972, y: 394], [x: 1972, y: 486], [x: 1145, y: 489]]\ntextLine[1](Invoice ID FILENS2026)",
+            "result_text": "Total 12345.67\nInvoice ID FILENS2026",
+            "text": "Total 12345.67\nInvoice ID FILENS2026"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "Total 12345.67\nInvoice ID FILENS2026"
+        }
+      }
+    },
+    {
+      "name": "scan-exif",
+      "input": "converter/rapidocr/testdata/scan-exif.jpg",
+      "sha256": "5fa19fe3c09c63a9d3fba7ee81f1307f772848e91b26cc40384583df0dec8997",
+      "expected": "Invoice ID FILENS2026\nTotal 12345.67",
+      "vision": {
+        "medianMs": 63.27491700000246,
+        "samplesMs": [
+          66.41883300000336,
+          63.27491700000246,
+          59.858666000000085,
+          65.24725000000035,
+          64.35341699999844,
+          55.6452500000014,
+          61.58316699999705
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "blocks": [
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  75.83966758770015,
+                  101.83333436182456
+                ],
+                [
+                  899.2415840916065,
+                  101.83333436182456
+                ],
+                [
+                  899.2415840916065,
+                  165.00000039270833
+                ],
+                [
+                  75.83966758770015,
+                  165.00000039270833
+                ]
+              ],
+              "text": "Invoice ID FILENS2026"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  80.1733361722242,
+                  259.9999996027778
+                ],
+                [
+                  619.7183190823805,
+                  259.9999996027778
+                ],
+                [
+                  619.7183190823805,
+                  331.4999996027778
+                ],
+                [
+                  80.1733361722242,
+                  331.4999996027778
+                ]
+              ],
+              "text": "Total 12345.67"
+            }
+          ],
+          "height": 520,
+          "inferenceMs": 61.12975,
+          "provider": "apple-vision",
+          "text": "Invoice ID FILENS2026\nTotal 12345.67",
+          "width": 2000
+        }
+      },
+      "rapidocr": {
+        "medianMs": 77.54958299999998,
+        "samplesMs": [
+          76.52070799999638,
+          77.81062499999825,
+          77.84616599999572,
+          77.63462499999878,
+          77.42937499999971,
+          77.54958299999998,
+          76.72704199999862
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "Invoice ID FILENS2026",
+              "Total 12345.67"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "Invoice ID FILENS2026\nTotal 12345.67",
+            "ok": true,
+            "raw_output": "ImageSize(2000,520)\nTextBox[0](+padding)[score(0.947489),[x: 128, y: 141], [x: 951, y: 141], [x: 951, y: 228], [x: 128, y: 228]]\ntextLine[0](Invoice ID FILENS2026)\nTextBox[1](+padding)[score(0.955201),[x: 124, y: 296], [x: 672, y: 294], [x: 673, y: 390], [x: 124, y: 393]]\ntextLine[1](Total 12345.67)",
+            "result_text": "Invoice ID FILENS2026\nTotal 12345.67",
+            "text": "Invoice ID FILENS2026\nTotal 12345.67"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "Invoice ID FILENS2026\nTotal 12345.67"
+        }
+      }
+    },
+    {
+      "name": "transparent-prepared",
+      "input": "dist/macos-ocr/transparent-prepared.png",
+      "sha256": "b06d383f8c0c5235181f8259da9cbaa02acaaba6dea8226d8b34f06432714eee",
+      "expected": "Invoice ID FILENS2026\nTotal 12345.67",
+      "vision": {
+        "medianMs": 65.04579200000444,
+        "samplesMs": [
+          53.98554200000217,
+          63.707541999996465,
+          69.34404200000426,
+          64.80449999999837,
+          69.97787499999686,
+          67.48062499999651,
+          65.04579200000444
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "blocks": [
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  75.83966789467024,
+                  101.83333431819025
+                ],
+                [
+                  899.2415843985765,
+                  101.83333431819025
+                ],
+                [
+                  899.2415843985765,
+                  165.0000003490741
+                ],
+                [
+                  75.83966789467024,
+                  165.0000003490741
+                ]
+              ],
+              "text": "Invoice ID FILENS2026"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  80.1733395714657,
+                  260.0000017319825
+                ],
+                [
+                  619.718322481622,
+                  260.0000017319825
+                ],
+                [
+                  619.718322481622,
+                  334.0000017319825
+                ],
+                [
+                  80.1733395714657,
+                  334.0000017319825
+                ]
+              ],
+              "text": "Total 12345.67"
+            }
+          ],
+          "height": 520,
+          "inferenceMs": 64.555833,
+          "provider": "apple-vision",
+          "text": "Invoice ID FILENS2026\nTotal 12345.67",
+          "width": 2000
+        }
+      },
+      "rapidocr": {
+        "medianMs": 75.22025000000576,
+        "samplesMs": [
+          74.98445899999933,
+          74.54279200000019,
+          74.22712499999761,
+          87.23412500000268,
+          76.3683330000058,
+          75.7947920000006,
+          75.22025000000576
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "Invoice ID FILENS2026",
+              "Total 12345.67"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "Invoice ID FILENS2026\nTotal 12345.67",
+            "ok": true,
+            "raw_output": "ImageSize(2000,520)\nTextBox[0](+padding)[score(0.945929),[x: 128, y: 141], [x: 951, y: 141], [x: 951, y: 228], [x: 128, y: 228]]\ntextLine[0](Invoice ID FILENS2026)\nTextBox[1](+padding)[score(0.956444),[x: 124, y: 297], [x: 672, y: 294], [x: 673, y: 390], [x: 124, y: 393]]\ntextLine[1](Total 12345.67)",
+            "result_text": "Invoice ID FILENS2026\nTotal 12345.67",
+            "text": "Invoice ID FILENS2026\nTotal 12345.67"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "Invoice ID FILENS2026\nTotal 12345.67"
+        }
+      }
+    },
+    {
+      "name": "zh-90",
+      "input": "dist/macos-ocr/zh-90.png",
+      "sha256": "3887c6d4326f1b2b51778660390dd6730eab4b3d339744e45c94eb769af765c9",
+      "expected": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "vision": {
+        "medianMs": 116.1293749999968,
+        "samplesMs": [
+          108.93024999999761,
+          112.77083400000265,
+          125.99066699999821,
+          116.21974999999657,
+          116.1293749999968,
+          120.13875000000553,
+          113.6761669999978
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "blocks": [
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  914.2259520507978,
+                  60.69767110248554
+                ],
+                [
+                  914.225940606706,
+                  301.39534871479015
+                ],
+                [
+                  876.5690268493818,
+                  301.39534871479015
+                ],
+                [
+                  876.5690382934736,
+                  60.69767110248554
+                ]
+              ],
+              "text": "星河科技采购单"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  843.0962487375809,
+                  60.69767373549695
+                ],
+                [
+                  843.0962334787919,
+                  410.2325553272938
+                ],
+                [
+                  805.4393159067704,
+                  410.2325553272938
+                ],
+                [
+                  805.4393311655595,
+                  60.69767373549695
+                ]
+              ],
+              "text": "订单编号 FILENS2026"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  769.8744933343764,
+                  60.697676950331584
+                ],
+                [
+                  769.8744780755874,
+                  435.3488305147847
+                ],
+                [
+                  732.2175566888686,
+                  435.3488305147847
+                ],
+                [
+                  732.2175719476577,
+                  60.697676950331584
+                ]
+              ],
+              "text": "客户名称：上海示例公司"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  700.8368402127651,
+                  60.69767841995825
+                ],
+                [
+                  700.8368211392788,
+                  537.9069679707396
+                ],
+                [
+                  663.1798959378627,
+                  537.9069679707396
+                ],
+                [
+                  663.1799150113491,
+                  60.69767841995825
+                ]
+              ],
+              "text": "项目名称：本地文档读取与识别"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  627.6150783379647,
+                  60.697675245821294
+                ],
+                [
+                  627.6150630791757,
+                  422.7906928239462
+                ],
+                [
+                  587.8660930474374,
+                  422.7906928239462
+                ],
+                [
+                  587.8661083062265,
+                  60.697675245821294
+                ]
+              ],
+              "text": "应付金额：12345.67元"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  556.485375798539,
+                  60.69767440238909
+                ],
+                [
+                  556.4853567250527,
+                  489.7674375859828
+                ],
+                [
+                  518.8284334309853,
+                  489.7674375859828
+                ],
+                [
+                  518.8284525044717,
+                  60.69767440238909
+                ]
+              ],
+              "text": "交付日期：2026年10月29日"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  485.3556789295583,
+                  60.697687194286075
+                ],
+                [
+                  485.35564841198016,
+                  770.2325382685049
+                ],
+                [
+                  439.33051337169695,
+                  770.2325382685049
+                ],
+                [
+                  439.3305438892751,
+                  60.697687194286075
+                ]
+              ],
+              "text": "备注：无需 Python，离线识别中文和 English。"
+            }
+          ],
+          "height": 1440,
+          "inferenceMs": 113.13575,
+          "provider": "apple-vision",
+          "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。",
+          "width": 1000
+        }
+      },
+      "rapidocr": {
+        "medianMs": 209.5249580000018,
+        "samplesMs": [
+          209.5249580000018,
+          210.3084170000002,
+          210.8753330000036,
+          209.09787499999948,
+          208.8663749999978,
+          233.89099999999598,
+          209.21508399999584
+        ],
+        "cer": 0.9263157894736842,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "备注：无需 Python，离线识别中文和 English。",
+              "交付日期：2026年10月29日",
+              "应付金额：12345.67元",
+              "项目名称：本地文档读取与识别",
+              "客户名称：上海示例公司",
+              "订单编号 FILENS2026",
+              "星河科技采购单"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "备注：无需 Python，离线识别中文和 English。\n交付日期：2026年10月29日\n应付金额：12345.67元\n项目名称：本地文档读取与识别\n客户名称：上海示例公司\n订单编号 FILENS2026\n星河科技采购单",
+            "ok": true,
+            "raw_output": "ImageSize(1000,1440)\nTextBox[0](+padding)[score(0.959532),[x: 492, y: 105], [x: 538, y: 105], [x: 538, y: 825], [x: 492, y: 825]]\ntextLine[0](备注：无需 Python，离线识别中文和 English。)\nTextBox[1](+padding)[score(0.949674),[x: 566, y: 106], [x: 611, y: 106], [x: 611, y: 541], [x: 566, y: 541]]\ntextLine[1](交付日期：2026年10月29日)\nTextBox[2](+padding)[score(0.956153),[x: 637, y: 106], [x: 683, y: 106], [x: 683, y: 475], [x: 637, y: 475]]\ntextLine[2](应付金额：12345.67元)\nTextBox[3](+padding)[score(0.965699),[x: 709, y: 106], [x: 755, y: 106], [x: 755, y: 590], [x: 709, y: 590]]\ntextLine[3](项目名称：本地文档读取与识别)\nTextBox[4](+padding)[score(0.967330),[x: 781, y: 106], [x: 826, y: 106], [x: 826, y: 485], [x: 781, y: 485]]\ntextLine[4](客户名称：上海示例公司)\nTextBox[5](+padding)[score(0.968448),[x: 853, y: 106], [x: 898, y: 106], [x: 898, y: 459], [x: 853, y: 459]]\ntextLine[5](订单编号 FILENS2026)\nTextBox[6](+padding)[score(0.976844),[x: 924, y: 108], [x: 969, y: 107], [x: 971, y: 351], [x: 926, y: 351]]\ntextLine[6](星河科技采购单)",
+            "result_text": "备注：无需 Python，离线识别中文和 English。\n交付日期：2026年10月29日\n应付金额：12345.67元\n项目名称：本地文档读取与识别\n客户名称：上海示例公司\n订单编号 FILENS2026\n星河科技采购单",
+            "text": "备注：无需 Python，离线识别中文和 English。\n交付日期：2026年10月29日\n应付金额：12345.67元\n项目名称：本地文档读取与识别\n客户名称：上海示例公司\n订单编号 FILENS2026\n星河科技采购单"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "备注：无需 Python，离线识别中文和 English。\n交付日期：2026年10月29日\n应付金额：12345.67元\n项目名称：本地文档读取与识别\n客户名称：上海示例公司\n订单编号 FILENS2026\n星河科技采购单"
+        }
+      }
+    },
+    {
+      "name": "zh-180",
+      "input": "dist/macos-ocr/zh-180.png",
+      "sha256": "0e9fccfb86534f95c12f001f772ea8148649246640ddf36150e926bd157831e1",
+      "expected": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "vision": {
+        "medianMs": 123.92099999999482,
+        "samplesMs": [
+          134.6860000000015,
+          115.12183299999742,
+          122.87870900000416,
+          126.86512499999662,
+          127.92499999999563,
+          122.39091599999665,
+          123.92099999999482
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "blocks": [
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  1379.3023288975146,
+                  916.318013674208
+                ],
+                [
+                  1138.60465128521,
+                  916.3179907860244
+                ],
+                [
+                  1138.60465128521,
+                  878.6610655846084
+                ],
+                [
+                  1379.3023288975146,
+                  878.661088472792
+                ]
+              ],
+              "text": "星河科技采购单"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  1379.3023263556993,
+                  845.1883145791555
+                ],
+                [
+                  1029.7674447639024,
+                  845.1882840615774
+                ],
+                [
+                  1029.7674447639024,
+                  807.5313512307669
+                ],
+                [
+                  1379.3023263556993,
+                  807.531381748345
+                ]
+              ],
+              "text": "订单编号 FILENS2026"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  1379.3023230164458,
+                  774.0586105137324
+                ],
+                [
+                  1004.6511694519927,
+                  774.058576181457
+                ],
+                [
+                  1004.6511694519927,
+                  734.3095908909297
+                ],
+                [
+                  1379.3023230164458,
+                  734.3096252232051
+                ]
+              ],
+              "text": "客户名称：上海示例公司"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  1379.3023188800419,
+                  700.8368610837674
+                ],
+                [
+                  902.0930293292606,
+                  700.8368191220975
+                ],
+                [
+                  902.0930293292606,
+                  663.1798748471952
+                ],
+                [
+                  1379.3023188800419,
+                  663.1799168088651
+                ]
+              ],
+              "text": "项目名称：本地文档读取与识别"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  1379.3023273813953,
+                  629.7071445648066
+                ],
+                [
+                  1019.3023273813953,
+                  629.7071140472285
+                ],
+                [
+                  1019.3023273813953,
+                  592.0501774017207
+                ],
+                [
+                  1379.3023273813953,
+                  592.0502079192988
+                ]
+              ],
+              "text": "应付金额：12345.67元"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  1379.3023258359829,
+                  558.5774431622593
+                ],
+                [
+                  950.2325626523891,
+                  558.5774050152867
+                ],
+                [
+                  950.2325626523891,
+                  520.9204645550816
+                ],
+                [
+                  1379.3023258359829,
+                  520.9205027020543
+                ]
+              ],
+              "text": "交付日期：2026年10月29日"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  1379.3023127845918,
+                  487.4477594112727
+                ],
+                [
+                  671.860479288498,
+                  487.4476983761165
+                ],
+                [
+                  671.860479288498,
+                  441.42253281825515
+                ],
+                [
+                  1379.3023127845918,
+                  441.4225938534114
+                ]
+              ],
+              "text": "备注：无需 Python，离线识别中文和 English。"
+            }
+          ],
+          "height": 1000,
+          "inferenceMs": 123.422834,
+          "provider": "apple-vision",
+          "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。",
+          "width": 1440
+        }
+      },
+      "rapidocr": {
+        "medianMs": 208.33225000000675,
+        "samplesMs": [
+          207.75187500000175,
+          210.3022920000003,
+          207.93745800000033,
+          208.33225000000675,
+          209.612000000001,
+          208.9962499999965,
+          207.93812500000058
+        ],
+        "cer": 0.9263157894736842,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "备注：无需 Python，离线识别中文和 English。",
+              "交付日期：2026年10月29日",
+              "应付金额：12345.67元",
+              "项目名称：本地文档读取与识别",
+              "客户名称：上海示例公司",
+              "订单编号 FILENS2026",
+              "星河科技采购单"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "备注：无需 Python，离线识别中文和 English。\n交付日期：2026年10月29日\n应付金额：12345.67元\n项目名称：本地文档读取与识别\n客户名称：上海示例公司\n订单编号 FILENS2026\n星河科技采购单",
+            "ok": true,
+            "raw_output": "ImageSize(1440,1000)\nTextBox[0](+padding)[score(0.951080),[x: 724, y: 492], [x: 1432, y: 494], [x: 1432, y: 540], [x: 724, y: 538]]\ntextLine[0](备注：无需 Python，离线识别中文和 English。)\nTextBox[1](+padding)[score(0.928470),[x: 1001, y: 568], [x: 1432, y: 568], [x: 1432, y: 610], [x: 1001, y: 610]]\ntextLine[1](交付日期：2026年10月29日)\nTextBox[2](+padding)[score(0.922888),[x: 1068, y: 640], [x: 1432, y: 640], [x: 1432, y: 682], [x: 1068, y: 682]]\ntextLine[2](应付金额：12345.67元)\nTextBox[3](+padding)[score(0.944990),[x: 951, y: 712], [x: 1432, y: 712], [x: 1432, y: 754], [x: 951, y: 754]]\ntextLine[3](项目名称：本地文档读取与识别)\nTextBox[4](+padding)[score(0.961573),[x: 1055, y: 784], [x: 1431, y: 784], [x: 1431, y: 825], [x: 1055, y: 825]]\ntextLine[4](客户名称：上海示例公司)\nTextBox[5](+padding)[score(0.963107),[x: 1082, y: 855], [x: 1432, y: 855], [x: 1432, y: 897], [x: 1082, y: 897]]\ntextLine[5](订单编号 FILENS2026)\nTextBox[6](+padding)[score(0.940490),[x: 1188, y: 926], [x: 1431, y: 926], [x: 1431, y: 971], [x: 1188, y: 971]]\ntextLine[6](星河科技采购单)",
+            "result_text": "备注：无需 Python，离线识别中文和 English。\n交付日期：2026年10月29日\n应付金额：12345.67元\n项目名称：本地文档读取与识别\n客户名称：上海示例公司\n订单编号 FILENS2026\n星河科技采购单",
+            "text": "备注：无需 Python，离线识别中文和 English。\n交付日期：2026年10月29日\n应付金额：12345.67元\n项目名称：本地文档读取与识别\n客户名称：上海示例公司\n订单编号 FILENS2026\n星河科技采购单"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "备注：无需 Python，离线识别中文和 English。\n交付日期：2026年10月29日\n应付金额：12345.67元\n项目名称：本地文档读取与识别\n客户名称：上海示例公司\n订单编号 FILENS2026\n星河科技采购单"
+        }
+      }
+    },
+    {
+      "name": "zh-skew-8",
+      "input": "dist/macos-ocr/zh-skew-8.png",
+      "sha256": "a492bd4aafa1a5a9453bb86c361d1f9b6b8c4d1a66f4f7fcd1b06a2a513b02c6",
+      "expected": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。\n",
+      "vision": {
+        "medianMs": 135.62729099999706,
+        "samplesMs": [
+          138.9195000000036,
+          156.26516699999775,
+          137.1611669999984,
+          118.87462499999674,
+          121.83716699999786,
+          135.62729099999706,
+          118.64266599999974
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "blocks": [
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  184.08267879007187,
+                  89.24688083780875
+                ],
+                [
+                  424.940647272702,
+                  122.44225413174614
+                ],
+                [
+                  419.0656476039912,
+                  165.05279211957364
+                ],
+                [
+                  178.20767912136102,
+                  131.85741882563624
+                ]
+              ],
+              "text": "星河科技采购单"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  174.28204356889194,
+                  162.16912939441877
+                ],
+                [
+                  522.6467418498208,
+                  208.58082618926787
+                ],
+                [
+                  517.1898557531929,
+                  249.52367081455532
+                ],
+                [
+                  168.825157472264,
+                  203.11197401970608
+                ]
+              ],
+              "text": "订单编号 FILENS2026"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  163.6613143133416,
+                  230.45518847941952
+                ],
+                [
+                  538.4485822881561,
+                  284.38164946678904
+                ],
+                [
+                  532.245682399142,
+                  327.4743180053147
+                ],
+                [
+                  157.45841442432737,
+                  273.54785892369364
+                ]
+              ],
+              "text": "客户名称：上海示例公司"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  154.22475508886814,
+                  302.7032847440719
+                ],
+                [
+                  631.5463899295594,
+                  368.48840256067695
+                ],
+                [
+                  625.6501788388869,
+                  411.2527759031398
+                ],
+                [
+                  148.3285439981956,
+                  345.46765808653475
+                ]
+              ],
+              "text": "项目名称：本地文档读取与识别"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  144.8007298574813,
+                  373.6183848603676
+                ],
+                [
+                  504.98548158977286,
+                  425.03244279921205
+                ],
+                [
+                  498.760043611859,
+                  468.6277196325928
+                ],
+                [
+                  138.57529187956746,
+                  417.2136635994967
+                ]
+              ],
+              "text": "应付金额：12345.67元"
+            },
+            {
+              "confidence": 1,
+              "polygon": [
+                [
+                  134.0817294879619,
+                  445.7846696590269
+                ],
+                [
+                  561.6780271113636,
+                  504.71657576791523
+                ],
+                [
+                  555.9620902337975,
+                  546.1734026715914
+                ],
+                [
+                  128.3657926103958,
+                  487.24149656270293
+                ]
+              ],
+              "text": "交付日期：2026年10月29日"
+            },
+            {
+              "confidence": 0.5,
+              "polygon": [
+                [
+                  124.32002852073192,
+                  516.6024548781902
+                ],
+                [
+                  830.92626219792,
+                  614.9857001287129
+                ],
+                [
+                  824.2846930238074,
+                  662.667520178895
+                ],
+                [
+                  117.67845934661943,
+                  564.2842787398693
+                ]
+              ],
+              "text": "备注：无需 Python，离线识别中文和 English。"
+            }
+          ],
+          "height": 1191,
+          "inferenceMs": 118.135667,
+          "provider": "apple-vision",
+          "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。",
+          "width": 1565
+        }
+      },
+      "rapidocr": {
+        "medianMs": 215.4785419999971,
+        "samplesMs": [
+          218.6976250000007,
+          215.97845799999777,
+          215.4785419999971,
+          212.46020800000406,
+          218.19120800000383,
+          213.73045899999852,
+          214.2226659999942
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": true,
+        "amountCorrect": true,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": true,
+            "lines": [
+              "星河科技采购单",
+              "订单编号FILENS2026",
+              "客户名称：上海示例公司",
+              "项目名称：本地文档读取与识别",
+              "应付金额：12345.67元",
+              "交付日期：2026年10月29日",
+              "备注：无需Python，离线识别中文和 English。"
+            ],
+            "model_class": "ocr",
+            "ocr_text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和 English。",
+            "ok": true,
+            "raw_output": "ImageSize(1565,1191)\nTextBox[0](+padding)[score(0.952833),[x: 234, y: 136], [x: 477, y: 169], [x: 471, y: 215], [x: 228, y: 182]]\ntextLine[0](星河科技采购单)\nTextBox[1](+padding)[score(0.948306),[x: 222, y: 207], [x: 573, y: 256], [x: 567, y: 302], [x: 215, y: 253]]\ntextLine[1](订单编号FILENS2026)\nTextBox[2](+padding)[score(0.954168),[x: 212, y: 278], [x: 591, y: 332], [x: 585, y: 378], [x: 206, y: 324]]\ntextLine[2](客户名称：上海示例公司)\nTextBox[3](+padding)[score(0.952556),[x: 201, y: 348], [x: 682, y: 417], [x: 676, y: 462], [x: 195, y: 394]]\ntextLine[3](项目名称：本地文档读取与识别)\nTextBox[4](+padding)[score(0.950543),[x: 193, y: 420], [x: 557, y: 472], [x: 550, y: 518], [x: 187, y: 466]]\ntextLine[4](应付金额：12345.67元)\nTextBox[5](+padding)[score(0.951855),[x: 182, y: 490], [x: 613, y: 553], [x: 606, y: 599], [x: 175, y: 537]]\ntextLine[5](交付日期：2026年10月29日)\nTextBox[6](+padding)[score(0.951223),[x: 173, y: 562], [x: 876, y: 663], [x: 869, y: 710], [x: 166, y: 609]]\ntextLine[6](备注：无需Python，离线识别中文和 English。)",
+            "result_text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和 English。",
+            "text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和 English。"
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": "星河科技采购单\n订单编号FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需Python，离线识别中文和 English。"
+        }
+      }
+    },
+    {
+      "name": "blank",
+      "input": "dist/macos-ocr/blank.png",
+      "sha256": "b7f6925c66f094f7e8988b02a53111dfb81bcde94bab0b3a0311ddb6a6a7ec47",
+      "expected": "",
+      "vision": {
+        "medianMs": 15.77245799999946,
+        "samplesMs": [
+          13.196749999995518,
+          16.94004199999472,
+          15.96112500000163,
+          15.77245799999946,
+          15.225791000004392,
+          12.06808400000591,
+          16.209875000000466
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": null,
+        "amountCorrect": null,
+        "response": {
+          "blocks": [],
+          "height": 400,
+          "inferenceMs": 15.793708,
+          "provider": "apple-vision",
+          "text": "",
+          "width": 800
+        }
+      },
+      "rapidocr": {
+        "medianMs": 64.2063330000019,
+        "samplesMs": [
+          64.44983300000604,
+          65.5992499999993,
+          64.046875,
+          63.13279099999636,
+          64.87858300000516,
+          63.800750000002154,
+          64.2063330000019
+        ],
+        "cer": 0,
+        "invoiceNumberCorrect": null,
+        "amountCorrect": null,
+        "response": {
+          "detail": {
+            "bundle_id": "rapidocr-ncnn",
+            "details_only": false,
+            "detection_complete": true,
+            "has_text": false,
+            "lines": null,
+            "model_class": "ocr",
+            "ocr_text": "",
+            "ok": true,
+            "raw_output": "ImageSize(800,400)",
+            "result_text": "",
+            "text": ""
+          },
+          "maxSideLen": 960,
+          "openmpThreads": 2,
+          "provider": "rapidocr-ncnn",
+          "text": ""
+        }
+      }
+    }
+  ],
+  "diagnostics": {
+    "zh-90": [
+      {
+        "orientation": 1,
+        "ms": 106.4808750000011,
+        "cer": 0,
+        "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。"
+      },
+      {
+        "orientation": 3,
+        "ms": 118.80075000000215,
+        "cer": 0,
+        "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。"
+      },
+      {
+        "orientation": 6,
+        "ms": 118.51133400000253,
+        "cer": 0,
+        "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。"
+      },
+      {
+        "orientation": 8,
+        "ms": 125.08029199999874,
+        "cer": 0,
+        "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。"
+      }
+    ],
+    "zh-180": [
+      {
+        "orientation": 1,
+        "ms": 127.29379200000403,
+        "cer": 0,
+        "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。"
+      },
+      {
+        "orientation": 3,
+        "ms": 126.56325000000652,
+        "cer": 0,
+        "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。"
+      },
+      {
+        "orientation": 6,
+        "ms": 111.09029200000077,
+        "cer": 0,
+        "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67 元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。"
+      },
+      {
+        "orientation": 8,
+        "ms": 134.06874999999854,
+        "cer": 0,
+        "text": "星河科技采购单\n订单编号 FILENS2026\n客户名称：上海示例公司\n项目名称：本地文档读取与识别\n应付金额：12345.67元\n交付日期：2026年10月29日\n备注：无需 Python，离线识别中文和 English。"
+      }
+    ],
+    "scan-rotated": [
+      {
+        "orientation": 1,
+        "ms": 74.14575000000332,
+        "cer": 0,
+        "text": "Invoice ID FILENS2026\nTotal 12345.67"
+      },
+      {
+        "orientation": 3,
+        "ms": 83.3116250000021,
+        "cer": 0,
+        "text": "Invoice ID FILENS2026\nTotal 12345.67"
+      },
+      {
+        "orientation": 6,
+        "ms": 71.54966599999898,
+        "cer": 0,
+        "text": "Invoice ID FILENS2026\nTotal 12345.67"
+      },
+      {
+        "orientation": 8,
+        "ms": 64.21691699999792,
+        "cer": 0,
+        "text": "Invoice ID FILENS2026\nTotal 12345.67"
+      }
+    ],
+    "errors": {
+      "vision": {
+        "error": "Cannot decode image"
+      },
+      "rapidocr": {
+        "error": "native OCR failed: \"open image <repo>/dist/macos-ocr/does-not-exist.png: open <repo>/dist/macos-ocr/does-not-exist.png: no such file or directory\""
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@ mod native_search;
 mod ocr;
 mod output;
 mod pdf;
+mod preview;
 mod request;
 mod runtime;
 mod search;
@@ -56,6 +57,16 @@ fn run() -> Result<i32> {
     if args == ["--ocr-worker"] {
         ocr::worker()?;
         return Ok(0);
+    }
+    if args.first().is_some_and(|arg| arg == "preview") {
+        return match preview::run(&args[1..]) {
+            Err(error) if args.iter().any(|arg| arg == "--json") => {
+                let mut value = json!({"version":"filens-agent-v1","operation":"preview","ok":false});
+                failure(&mut value, "preview_failed", error);
+                Ok(finish("json", &value, 1))
+            }
+            result => result,
+        };
     }
     if args.is_empty() && !std::io::stdin().is_terminal() {
         args.push("-".into());
@@ -304,6 +315,7 @@ fn execute(
         metadata["profile"] = json!(profile);
         metadata["formats"] = capacity;
         metadata["ocr"] = engine.ocr_capacity();
+        metadata["preview"] = preview::capacity(bundle);
         metadata["search"]["discovery"] = walk::capacity();
         metadata["similarity"]["discovery"] = walk::capacity();
         let conversion = convert::capabilities(&mut engine)?;

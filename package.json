@@ -83,8 +83,9 @@
     "run:real-samples-e2e": "node ./scripts/run-real-samples-e2e.mjs",
     "proto:iwork": "node ./scripts/generate-iwork-proto.mjs",
     "test:demo": "npm run build:demo",
-    "package:zimaos:filens": "npm run build --workspace @filens/demo && ./scripts/package-zimaos-filens.sh",
-    "package:agent:npm": "npm run build:agent && node ./scripts/package-agent-npm.mjs --all",
+    "package:zimaos:filens": "bash ./scripts/package-zimaos-filens.sh",
+    "test:zimaos:filens": "node ./scripts/test-zimaos-package.mjs",
+    "package:agent:npm": "npm run build:agent && node ./scripts/package-agent-npm.mjs --all --preview-package",
     "publish:agent:npm": "node ./scripts/publish-agent-npm.mjs",
     "test:agent:npm": "node ./scripts/test-agent-npm.mjs",
     "evaluate:agent": "node ./scripts/evaluate-agent-cli.mjs",
@@ -97,7 +98,13 @@
     "test:agent:search": "node ./scripts/test-agent-search.mjs",
     "test:agent:archives": "node ./scripts/test-agent-search-archives.mjs --ocr",
     "benchmark:agent:search": "node --test scripts/search-benchmark-metrics.test.mjs && node ./scripts/benchmark-agent-search.mjs && node ./scripts/write-search-benchmark-docs.mjs",
-    "test:agent:similarity": "node ./scripts/test-agent-similarity.mjs"
+    "test:agent:similarity": "node ./scripts/test-agent-similarity.mjs",
+    "build:preview": "node ./scripts/build-preview.mjs",
+    "build:agent:preview": "node ./scripts/build-agent-cli.mjs --with-preview",
+    "benchmark:ocr:macos": "node ./scripts/benchmark-macos-ocr.mjs",
+    "test:preview": "node ./scripts/test-preview.mjs",
+    "package:preview:npm": "node ./scripts/package-preview-npm.mjs",
+    "test:preview:npm": "node ./scripts/test-preview-npm.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.53.0",

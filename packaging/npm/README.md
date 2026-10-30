@@ -1,16 +1,16 @@
 # filens Agent CLI
 
 <!-- agent-cli-size:npm:start -->
-**v0.3.0 · MIT · CLI 2.10 MiB · Lite 7.85 MiB · Full 31.05 MiB** (macOS arm64, installed; Full includes OCR models).
+**v0.4.0 · MIT · CLI 2.15 MiB · Lite 8.04 MiB · Full 31.24 MiB** (macOS arm64, installed; Full includes OCR models).
 
 | Platform | CLI executable | Lite installed / download | Full installed / download |
 | --- | ---: | ---: | ---: |
-| darwin-arm64 | 2.10 MiB | 7.85 / 6.02 MiB | 31.05 / 20.22 MiB |
-| linux-x64 | 1.88 MiB | 7.62 / 6.74 MiB | 36.57 / 22.72 MiB |
-| linux-arm64 | 1.77 MiB | 7.52 / 6.63 MiB | 30.94 / 20.42 MiB |
-| win32-x64 | 1.80 MiB | 7.54 / 6.66 MiB | 36.32 / 22.89 MiB |
+| darwin-arm64 | 2.15 MiB | 8.04 / 6.14 MiB | 31.24 / 20.34 MiB |
+| linux-x64 | 1.89 MiB | 7.78 / 6.86 MiB | 36.74 / 22.84 MiB |
+| linux-arm64 | 1.79 MiB | 7.68 / 6.75 MiB | 31.10 / 20.54 MiB |
+| win32-x64 | 1.81 MiB | 7.71 / 6.78 MiB | 36.48 / 23.01 MiB |
 
-Totals add the launcher and selected platform packages from npm pack. Node.js, npm caches and filesystem overhead are excluded. Bundled dependencies retain their own licenses; see THIRD-PARTY-NOTICES.md in the platform packages.
+Totals add the launcher and selected platform packages from npm pack. Node.js, npm caches, filesystem overhead and the optional frontend preview package are excluded. Bundled dependencies retain their own licenses; see THIRD-PARTY-NOTICES.md in the platform packages.
 <!-- agent-cli-size:npm:end -->
 
 Read local documents and provide text and cited evidence for agents. Supports
@@ -48,6 +48,12 @@ and agent guidance for evidence, partial results, OCR and coordinate units.
 Copy `skills/filens/` to your agent's skills directory to enable discovery.
 
 ## More examples
+
+Version 0.4.0 adds `filens preview FILE` using the same browser-local engines.
+The first preview installs the separate `filens-preview` package; run
+`filens setup-preview` to prepare it in advance. Subsequent previews work offline.
+Frontend assets are measured separately from the CLI installation. See the [preview guide](https://github.com/IceWhaleTech/filens/blob/main/packages/preview/README.md#cli-preview)
+for building the single-file/split runtime and packaging it with `--with-preview`.
 
 ```sh
 filens '支持哪些格式？用 JSON 返回'
@@ -190,4 +196,4 @@ one profile at a time. Platform packages are implementation components.
 [Protocol, limitations and source build](https://github.com/IceWhaleTech/filens/blob/main/docs/agent-cli.md)
 
 Locally built release tarballs can also be installed with
-`npm install -g /path/to/filens-cli-0.3.0.tgz /path/to/filens-cli-PLATFORM-0.3.0.tgz /path/to/filens-ocr-PLATFORM-0.3.0.tgz`.
+`npm install -g /path/to/filens-cli-0.4.0.tgz /path/to/filens-cli-PLATFORM-0.4.0.tgz /path/to/filens-ocr-PLATFORM-0.4.0.tgz`.

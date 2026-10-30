@@ -3,6 +3,8 @@
 // preserving the other preview captures and their authored sample documents.
 // Add --reuse-samples to refresh all captures without regenerating sample files.
 // Add --media-only to refresh video/music captures and the full walkthrough.
+// Add --readme-only to refresh video, music, archive, and ebook captures only.
+// Add --ebook-only to refresh only the ebook capture.
 // Uses the actual filens previewers; no third-party product screenshots are copied.
 import { readFile, writeFile, mkdir, mkdtemp } from 'node:fs/promises';
 import path from 'node:path';
@@ -19,11 +21,13 @@ const temp = await mkdtemp(path.join(os.tmpdir(), 'filens-home-'));
 const origin = process.env.FILENS_DEMO_URL ?? 'http://127.0.0.1:4173/modules/filens/';
 const modelOnly = process.argv.includes('--model-only');
 const mediaOnly = process.argv.includes('--media-only');
+const readmeOnly = process.argv.includes('--readme-only');
+const ebookOnly = process.argv.includes('--ebook-only');
 const reuseSamples = process.argv.includes('--reuse-samples');
 await mkdir(output, { recursive: true });
 
 // Keep the captured previews and downloadable showcase files in sync.
-if (!reuseSamples && !mediaOnly) {
+if (!reuseSamples && !mediaOnly && !readmeOnly && !ebookOnly) {
   await import('./generate-showcase-helmet.mjs');
   if (!modelOnly) await import('./generate-showcase-documents.mjs');
 }
@@ -31,7 +35,7 @@ if (!reuseSamples && !mediaOnly) {
 const ffmpeg = (args) =>
   execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', ...args], { stdio: 'inherit' });
 const browser = await chromium.launch();
-try {
+async function captureHomepageDemo() {
   const imagePage = await browser.newPage();
   async function webp(input, target, width, height) {
     const data = await imagePage.evaluate(
@@ -63,7 +67,7 @@ try {
     );
     await writeFile(target, Buffer.from(data, 'base64'));
   }
-  if (!modelOnly && !mediaOnly) await webp(path.join(publicDir, 'samples/showcase/aurora.jpg'), path.join(output, 'landscape.webp'), 900);
+  if (!modelOnly && !mediaOnly && !readmeOnly && !ebookOnly) await webp(path.join(publicDir, 'samples/showcase/aurora.jpg'), path.join(output, 'landscape.webp'), 900);
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     reducedMotion: 'reduce',
@@ -80,11 +84,15 @@ try {
     ['panorama', 'pano'],
     ['model', 'obj'],
     ['video', 'mp4'],
-    ['music', 'wav']
+    ['music', 'wav'],
+    ['archive', 'zip'],
+    ['ebook', 'epub']
   ];
   for (const [name, format] of captures) {
     if (modelOnly && name !== 'model') continue;
     if (mediaOnly && name !== 'video' && name !== 'music') continue;
+    if (readmeOnly && !['video', 'music', 'archive', 'ebook'].includes(name)) continue;
+    if (ebookOnly && name !== 'ebook') continue;
     // Give the music card enough height to include its native playback controls.
     await page.setViewportSize(name === 'music'
       ? { width: 1600, height: 1050 }
@@ -92,6 +100,14 @@ try {
     await page.goto(`${origin}?view=preview&format=${format}`);
     await page.locator('.pptxv-shell').first().waitFor();
     await page.locator('.wb-runtime-timings').waitFor({ timeout: 30000 });
+    if (name === 'ebook') {
+      await page.frameLocator('.ebookv-frame').locator('.cover-art image').evaluate(async element => {
+        const image = new Image();
+        image.src = element.getAttribute('href');
+        await image.decode();
+        await element.ownerDocument.fonts.ready;
+      });
+    }
     if (name === 'iwork' || name === 'cad') {
       await page.locator('.pptxv-shell').first().press('0');
       await page.locator('.pptxv-shell').first().evaluate(element => element.blur());
@@ -122,6 +138,7 @@ try {
     console.log(`Captured ${name}.`);
   }
   await context.close();
+  if (readmeOnly || ebookOnly) return;
 
   const videoContext = await browser.newContext({
     viewport: { width: 1440, height: 810 },
@@ -267,6 +284,9 @@ try {
   await writeFile(path.join(root, 'apps/demo/src/home-media.json'), `${JSON.stringify({ version }, null, 2)}\n`);
   console.log(`Recording version: ${version}`);
   console.log(`Recorded ${duration.toFixed(1)} seconds. Assets: ${output}`);
+}
+try {
+  await captureHomepageDemo();
 } finally {
   await browser.close();
 }

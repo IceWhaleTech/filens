@@ -1,6 +1,26 @@
 # @filens/vue
 
-Vue 3 wrapper package for the workspace previewers. It currently exposes `PptxPreview` and `IworkPreview`.
+Vue 3 components for the shared preview engines: `Preview` is the all-format entry;
+`PptxPreview` and `IworkPreview` provide specialized viewers. For a ready-to-deploy
+single JS file or split modules including Vue, see the [standalone builds](../preview/README.md).
+
+## All-format entry
+
+```vue
+<script setup lang="ts">
+import { Preview } from '@filens/vue';
+import '@filens/vue/style.css';
+</script>
+
+<template>
+  <Preview src="/report.pdf" name="report.pdf" />
+</template>
+```
+
+`src` also accepts a `File`, `Blob` or byte array; provide `name` or `extension`
+when the source has no filename. Legacy Office and RAW previews need a
+`converter` configured with `createWasmConverterClient({ wasm, imageWasm })`
+from `@filens/converter-client`. See the demo for complete WASM asset wiring.
 
 ## Install
 

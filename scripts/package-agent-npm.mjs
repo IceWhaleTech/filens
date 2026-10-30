@@ -23,6 +23,18 @@ const binaryCompression = [];
 const rustLicenses = path.join(root,'dist/agent-rust-licenses');
 await writeRustLicenses(rustLicenses);
 const common = { version, license:'MIT', repository:{ type:'git', url:'git+https://github.com/IceWhaleTech/filens.git' }, homepage:'https://github.com/IceWhaleTech/filens#readme' };
+const withPreview = args.includes('--with-preview');
+const previewPackage = args.includes('--preview-package');
+if (withPreview || previewPackage) {
+  await run(process.execPath, [path.join(root, 'scripts/build-converter-wasm.mjs')]);
+  await run(process.execPath, [path.join(root, 'scripts/build-preview.mjs')]);
+}
+if (previewPackage) {
+  await run(process.execPath, [path.join(root, 'scripts/package-preview-npm.mjs'), '--no-build']);
+  const preview = JSON.parse(await readFile(path.join(root,'dist/preview-npm/release.json'),'utf8'));
+  await copyFile(path.join(root,'dist/preview-npm',preview.file),path.join(output,preview.file));
+  packages.push({name:preview.name,version:preview.version,file:preview.file,bytes:preview.bytes,unpackedBytes:preview.unpackedBytes,sha256:preview.sha256});
+}
 const wasm = path.join(root, 'dist/converter-text.wasm');
 await readFile(wasm); // Build the WASM core first; never publish a placeholder.
 await preparePDFium(path.join(root,'dist'));
@@ -31,7 +43,8 @@ for (const platform of targets) {
   const [os, arch] = platform.split('-');
   const coreName = platformPackageName('cli', platform);
   const binary = executableName(platform);
-  const core = await prepare(coreName, { os:[os], cpu:[arch], ...(os === 'linux' ? { libc:['glibc'] } : {}), description:'Rust filens document reading and conversion CLI with shared WASM engines', files:[binary,'converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz','README.md','licenses','THIRD-PARTY-NOTICES.md'] });
+  const core = await prepare(coreName, { os:[os], cpu:[arch], ...(os === 'linux' ? { libc:['glibc'] } : {}), description:'Rust filens document reading and conversion CLI with shared WASM engines', files:[binary,'converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz','README.md','licenses','THIRD-PARTY-NOTICES.md',...(withPreview ? ['preview'] : [])] });
+  if (withPreview) await cp(path.join(root, 'dist/preview'), path.join(core, 'preview'), {recursive:true});
   for (const name of ['converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz']) await copyFile(path.join(root,'dist',name),path.join(core,name));
   binaryCompression.push(await buildAgentBinary(path.join(core,binary),{lite:true,platform,upx:!args.includes('--no-upx')}));
   await chmod(path.join(core,binary), 0o755);
@@ -68,7 +81,7 @@ for (const name of ['filens-cli','filens-cli-lite']) {
     optionalDependencies[platformPackageName('cli', platform)] = version;
     if (!lite) optionalDependencies[platformPackageName('ocr', platform)] = version;
   }
-  const directory = await prepare(name, { type:'module', engines:{node:'>=20.11'}, bin:{filens:'cli.mjs'}, description:`Local document reading for agents (${!lite ? 'native RapidOCR included' : 'lite; OCR optional'})`, optionalDependencies, files:['cli.mjs','scripts','converter','skills','README.md'] });
+  const directory = await prepare(name, { type:'module', engines:{node:'>=20.11'}, bin:{filens:'cli.mjs'}, filensPreviewVersion:'0.1.0', description:`Local document reading for agents (${!lite ? 'native RapidOCR included' : 'lite; OCR optional'})`, optionalDependencies, files:['cli.mjs','scripts','converter','skills','README.md'] });
   await cp(path.join(root,'skills/filens'),path.join(directory,'skills/filens'),{recursive:true});
   await copyFile(path.join(root,'packaging/npm/cli.mjs'),path.join(directory,'cli.mjs'));
   await chmod(path.join(directory,'cli.mjs'),0o755);
@@ -87,7 +100,7 @@ if (obsolete.length) {
   for (const name of obsolete) await rename(path.join(output,name),path.join(quarantine,name));
   console.log(`Moved ${obsolete.length} obsolete tarballs into the ignored local quarantine.`);
 }
-await writeFile(path.join(output,'release.json'),JSON.stringify({version,targets,privacyChecked:true,binaryCompression,packages},null,2)+'\n');
+await writeFile(path.join(output,'release.json'),JSON.stringify({version,targets,privacyChecked:true,previewIncluded:withPreview,binaryCompression,packages},null,2)+'\n');
 console.log(`Prepared ${packages.length} npm tarballs in dist/npm. No registry publication performed.`);
 
 async function prepare(name, metadata) {
@@ -104,7 +117,7 @@ async function pack(directory) {
   const result = JSON.parse(await run('npm',['pack','--json','--ignore-scripts','--pack-destination',output],process.env,directory))[0];
   const file = path.join(output,result.filename);
   assertReleaseArchive(file);
-  packages.push({ name:result.name, file:result.filename, bytes:result.size, unpackedBytes:result.unpackedSize, sha256:createHash('sha256').update(await readFile(file)).digest('hex') });
+  packages.push({ name:result.name, version:result.version, file:result.filename, bytes:result.size, unpackedBytes:result.unpackedSize, sha256:createHash('sha256').update(await readFile(file)).digest('hex') });
   console.log(`${result.filename}: ${(result.size/1048576).toFixed(2)} MiB compressed, ${(result.unpackedSize/1048576).toFixed(2)} MiB installed`);
 }
 function run(command, argv, env = process.env, cwd = root) {

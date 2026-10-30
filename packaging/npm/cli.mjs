@@ -9,7 +9,7 @@ import { downloadOCRModels, requestedSourceCount } from './scripts/download-agen
 import { supportedPlatforms, platformPackageName, executableName, ocrLibraryName, npmInvocation } from './scripts/agent-platforms.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
-const { version, name } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+const { version, name, filensPreviewVersion = '0.1.0' } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
 const profile = name.endsWith('-lite') ? 'lite' : 'full';
 const platform = `${process.platform}-${process.arch}`;
 const supported = supportedPlatforms;
@@ -29,7 +29,28 @@ function packageRoot(require, dependency) {
   catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; return undefined; }
 }
 function findOCR() { return packageRoot(cachedRequire, ocrName) || packageRoot(localRequire, ocrName); }
+function findPreview() { return packageRoot(cachedRequire, 'filens-preview') || packageRoot(localRequire, 'filens-preview'); }
 const args = process.argv.slice(2);
+if (args[0] === 'setup-preview' && args.length !== 1) throw new Error('Usage: filens setup-preview');
+const previewRequested = args[0] === 'preview' && args.length > 1 &&
+  !args.includes('--help') && !args.includes('-h') && !args.includes('--assets') && !process.env.FILENS_PREVIEW_DIR;
+if (args[0] === 'setup-preview' || previewRequested) {
+  if (!findPreview()) {
+    console.error(`Installing filens-preview@${filensPreviewVersion} for browser previews (one-time download).`);
+    await mkdir(cache, {recursive:true});
+    const npm = npmInvocation(['install','--prefix',cache,'--ignore-scripts','--no-audit','--no-fund','--save-exact',
+      process.env.FILENS_PREVIEW_PACKAGE || `filens-preview@${filensPreviewVersion}`]);
+    const code = await run(npm.command, npm.args, process.env, true);
+    if (code !== 0) throw new Error(`Preview installation failed (${code})`);
+  }
+  const preview = findPreview();
+  if (!preview) throw new Error('Preview package installation did not produce the expected package');
+  await access(path.join(preview,'dist/split/index.html'));
+  if (args[0] === 'setup-preview') {
+    console.error('Browser previews are ready; use filens preview FILE.');
+    process.exit(0);
+  }
+}
 if (args[0] === 'setup-ocr') {
   // Validate arguments before installing or writing anything.
   const options = args.slice(1);
@@ -76,6 +97,8 @@ if (!core) {
   process.exit(1);
 }
 const env = { ...process.env, FILENS_PROFILE: profile };
+const preview = findPreview();
+if (preview) env.FILENS_PREVIEW_DIR ||= path.join(preview,'dist/split');
 const ocr = findOCR();
 if (ocr) {
   env.FILENS_OCR_LIBRARY ||= path.join(ocr, 'native', libraryName);
@@ -86,9 +109,9 @@ if (ocr) {
 }
 process.exitCode = await run(path.join(core, binaryName), args, env);
 
-function run(command, argv, env = process.env) {
+function run(command, argv, env = process.env, setup = false) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, argv, { env, stdio: 'inherit' });
+    const child = spawn(command, argv, { env, stdio: setup ? ['ignore',2,2] : 'inherit' });
     const signals = ['SIGINT', 'SIGTERM'];
     const handlers = signals.map(signal => { const handler = () => child.kill(signal); process.on(signal, handler); return handler; });
     child.once('error', reject);
