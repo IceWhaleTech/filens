@@ -24,6 +24,8 @@ Sizes describe different things: CLI figures are installed v0.4.1 packages (plat
 
 Read PDFs, Office documents, spreadsheets, scans and images locally. Search directories and nested archives; extract key original passages; find duplicate files and similar images. Outputs include text, JSON, Markdown, HTML, YAML, XML, CSV and TSV, with available page coordinates and document structure. Paraphrasing, translation and question answering belong to the calling Agent.
 
+**Install the Agent Skill:** `npx --yes skills add IceWhaleTech/filens --skill filens --global --yes` · [Skill guide](skills/filens/SKILL.md)
+
 ```sh
 # Full: native RapidOCR and Chinese/English models; no Python
 npm install -g filens-cli

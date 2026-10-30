@@ -24,6 +24,8 @@
 
 本地读取 PDF、Office、表格、扫描件和图片；搜索目录与嵌套压缩包、提取关键原文、查找重复文件与相似图片。输出 text、JSON、Markdown、HTML、YAML、XML、CSV 或 TSV，保留可用的页码坐标与文档结构。改写总结、翻译和问答由调用它的 Agent 完成。
 
+**一键安装 Agent Skill：** `npx --yes skills add IceWhaleTech/filens --skill filens --global --yes` · [使用说明](skills/filens/SKILL.md)
+
 ```sh
 # 完整版：自带原生 RapidOCR 与中英文模型，无需 Python
 npm install -g filens-cli

@@ -66,6 +66,24 @@
 .landing .scroll-cue { display: inline-flex; flex-direction: column; gap: 8px; margin-top: 43px; font-size: 10px; color: #888780; letter-spacing: .1em; }
 .landing .scroll-cue span { font-size: 19px; color: #c3c0b8; }
 
+.landing .skill-install-section {
+  display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); align-items: center; gap: 44px;
+  margin-block: 14px 30px; padding: 32px; border: 1px solid var(--home-line); border-radius: 12px; background: #ffffff03;
+}
+.landing .skill-install-copy .eyebrow { margin-bottom: 12px; }
+.landing .skill-install-copy h2 { font-size: clamp(22px, 2.5vw, 28px); font-weight: 500; letter-spacing: -.035em; }
+.landing .skill-install-copy > p:not(.eyebrow) { margin-top: 12px; color: var(--home-muted); font-size: 12px; }
+.landing .skill-install-copy .text-link { margin-top: 16px; font-size: 11px; }
+.landing .skill-install-terminal { min-width: 0; }
+.landing .skill-install-terminal-heading { display: flex; align-items: center; gap: 9px; color: #aaa79f; font-size: 10px; }
+.landing .skill-install-terminal-heading .wb-icon { width: 15px; height: 15px; color: var(--home-accent); }
+.landing .skill-install-command { display: flex; align-items: center; gap: 16px; margin-top: 13px; padding: 15px; border: 1px solid var(--home-line); border-radius: 8px; background: #090909; }
+.landing .skill-install-command code { min-width: 0; color: #d3d6c6; font: 11px/1.9 'SFMono-Regular', Consolas, monospace; overflow-wrap: anywhere; user-select: all; }
+.landing .skill-install-command button { flex-shrink: 0; gap: 8px; }
+.landing .skill-install-command .wb-icon { width: 14px; height: 14px; }
+.landing .skill-install-note { min-height: 32px; margin-top: 10px; color: var(--home-muted); font-size: 10px; }
+.landing .skill-install-note.is-error { color: #e6a28f; }
+
 /* A file entering a lens is the product story. All artwork is native CSS / SVG. */
 .landing .file-story { width: min(680px, 100%); margin: 0 auto; position: relative; }
 .landing .story-scene { height: 296px; position: relative; isolation: isolate; }
@@ -270,6 +288,7 @@
   .landing .site-header { padding: 24px 28px; }
   .landing .site-nav { padding-left: 0; gap: 20px; }
   .landing .nav-actions { gap: 16px; }
+  .landing .skill-install-section { grid-template-columns: 1fr; gap: 24px; }
   .landing .hero h1 br { display: initial; }
   .landing .hero h1 { font-size: 59px; }
   .landing .preview-section { padding-block: 65px 80px; }
@@ -329,6 +348,10 @@
   .landing .hero-actions .button { min-height: 44px; padding: 10px 16px; font-size: 12px; gap: 10px; }
   .landing .hero-footnote { font-size: 7px; letter-spacing: .02em; margin-top: 15px; }
   .landing .scroll-cue { margin-top: 29px; font-size: 9px; }
+  .landing .skill-install-section { grid-template-columns: 1fr; gap: 24px; padding: 23px 20px; margin-block: 0 14px; }
+  .landing .skill-install-copy h2 { font-size: 24px; }
+  .landing .skill-install-command { align-items: stretch; flex-direction: column; gap: 13px; }
+  .landing .skill-install-command button { align-self: flex-start; }
   .landing .chapter-heading { margin-bottom: 28px; }
   .landing .chapter-heading h2 { font-size: 29px; }
   .landing .chapter-heading > p:last-child { font-size: 12px; margin-top: 17px; }

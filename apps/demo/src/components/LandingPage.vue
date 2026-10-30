@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import FileFormatIcon from './FileFormatIcon.vue';
 import FileStory from './FileStory.vue';
+import WorkbenchIcon from './WorkbenchIcon.vue';
 import demoMedia from '../home-media.json';
 import './landing.css';
 
@@ -26,6 +27,20 @@ const t = (zh: string, en: string) => (isEnglish.value ? en : zh);
 const asset = (path: string) => `${import.meta.env.BASE_URL}${path}`;
 const demoAsset = (file: string) => `${asset(`home/${file}`)}?v=${demoMedia.version}`;
 const repo = 'https://github.com/IceWhaleTech/filens';
+const skillInstallCommand = 'npx --yes skills add IceWhaleTech/filens --skill filens --global --yes';
+const skillCopyState = ref<'idle' | 'copied' | 'error'>('idle');
+let skillCopyTimer: ReturnType<typeof setTimeout> | undefined;
+async function copySkillInstall(): Promise<void> {
+  clearTimeout(skillCopyTimer);
+  skillCopyState.value = 'idle';
+  try {
+    await navigator.clipboard.writeText(skillInstallCommand);
+    skillCopyState.value = 'copied';
+    skillCopyTimer = setTimeout(() => { skillCopyState.value = 'idle'; }, 5000);
+  } catch {
+    skillCopyState.value = 'error';
+  }
+}
 const supportMatrixUrl = computed(
   () => `${repo}/blob/main/docs/support-matrix${isEnglish.value ? '' : '.zh-CN'}.md`
 );
@@ -304,11 +319,12 @@ onMounted(() => {
       void animation.finished.then(() => revealAnimations.delete(animation), () => revealAnimations.delete(animation));
     }
   }, { threshold: 0.12 });
-  landing.value?.querySelectorAll('.chapter-heading, .hero-stage, .principle, .formats-heading, .zimaos-section, .demo-copy, .demo-media, .closing-section').forEach(
+  landing.value?.querySelectorAll('.chapter-heading, .hero-stage, .principle, .formats-heading, .skill-install-section, .zimaos-section, .demo-copy, .demo-media, .closing-section').forEach(
     (element) => revealObserver?.observe(element)
   );
 });
 onUnmounted(() => {
+  clearTimeout(skillCopyTimer);
   revealObserver?.disconnect();
   for (const animation of revealAnimations) animation.cancel();
   revealAnimations.clear();
@@ -349,6 +365,7 @@ async function playDemo(): Promise<void> {
         <a href="#formats">{{ t('预览效果', 'Previews') }}</a>
         <a href="#more-formats">{{ t('常见格式', 'Formats') }}</a>
         <a href="#demo">{{ t('视频演示', 'Watch demo') }}</a>
+        <a href="#skill">Skill</a>
       </nav>
       <div class="nav-actions">
         <a class="landing-agent-link" :href="`${asset('')}?view=agent`" @click.prevent="emit('agent')">Agent</a>
@@ -406,6 +423,34 @@ async function playDemo(): Promise<void> {
         </div>
         <p class="hero-footnote"><span class="live-dot"></span>{{ t('开源 · 浏览器内运行 · 即开即看', 'OPEN SOURCE · IN YOUR BROWSER · READY TO EXPLORE') }}</p>
         <a class="scroll-cue" href="#formats">{{ t('往下，看见更多', 'There’s more below') }}<span aria-hidden="true">↓</span></a>
+      </section>
+
+      <section id="skill" class="skill-install-section section-width" aria-labelledby="skill-install-title">
+        <div class="skill-install-copy">
+          <p class="eyebrow">FILENS FOR AGENTS</p>
+          <h2 id="skill-install-title">{{ t('一键安装 FiLens Skill', 'Install the FiLens Skill') }}</h2>
+          <p>{{ t('让 Agent 在本地读取、搜索、OCR 与转换你的文件。', 'Give your agent local file reading, search, OCR, and conversion.') }}</p>
+          <a class="text-link" :href="`${asset('')}?view=agent`" @click.prevent="emit('agent')">
+            {{ t('查看能力与安装选项', 'Explore capabilities and setup') }} <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+        <div class="skill-install-terminal">
+          <div class="skill-install-terminal-heading"><WorkbenchIcon name="terminal" /><span>Codex · Claude Code · Cursor · OpenCode</span></div>
+          <div class="skill-install-command">
+            <code>{{ skillInstallCommand }}</code>
+            <button class="button button-dark button-small" type="button" @click="copySkillInstall">
+              <WorkbenchIcon :name="skillCopyState === 'copied' ? 'check' : 'copy'" />
+              {{ skillCopyState === 'copied' ? t('已复制', 'Copied') : t('复制安装命令', 'Copy install command') }}
+            </button>
+          </div>
+          <p class="skill-install-note" :class="{ 'is-error': skillCopyState === 'error' }" role="status">
+            {{ skillCopyState === 'error'
+              ? t('复制失败，请手动复制上方命令。', 'Could not copy. Select and copy the command above.')
+              : skillCopyState === 'copied'
+                ? t('已复制，在本机终端粘贴运行即可。', 'Copied. Paste and run it in your terminal.')
+                : t('在本机终端运行，自动识别已安装的 Agent。', 'Run in your terminal to detect your installed agents.') }}
+          </p>
+        </div>
       </section>
 
       <section id="formats" class="preview-section section-width" aria-labelledby="preview-title">
