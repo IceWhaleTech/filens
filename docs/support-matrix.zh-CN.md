@@ -425,7 +425,8 @@ Vue 预览同时配置 `converter` 和 `panoramaProcessor` 时启用全景 DNG �
 | 原生 CAD | DWG、DGN、FreeCAD 项目、IGES/BREP | 没有原生预览路由；STEP/STP 与 DXF 见上文。 |
 | BIM | Revit、IFC | 没有原生预览路由。 |
 | ECAD / 制造 | Gerber/Excellon、分层 KiCad PCB | 没有原生预览路由。 |
-| 其他图片 | TIFF、HEIC/HEIF、PSD | 没有默认独立路由。演示中的衍生文件不代表通用格式支持。 |
+| HEIC/HEIF | 优先原生显示，使用专用本地 WASM 解码器兜底。 | 仅显示主图，HDR 和序列保真度存在差异。 |
+| 其他图片 | TIFF、PSD | 没有默认独立路由。演示中的衍生文件不代表通用格式支持。 |
 | 其他 Netpbm 扩展名 | `pbm`, `pgm`, `pnm`, `pam`, `pfm` | 这些扩展名没有默认预览或转换路由。PPM 仅覆盖 P3/P6 RGB。 |
 | 其他压缩包 | RAR、7z | 没有默认独立路由。 |
 | Office 加载项 | 加载项与嵌入式应用行为 | 不在默认转换策略范围内。 |

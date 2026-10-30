@@ -1,6 +1,6 @@
 {
   "name": "filens-preview",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "license": "MIT",
   "type": "module",
   "description": "Browser-local Office, iWork, PDF, CAD, 3D, RAW and panorama previews, as split modules or one JavaScript file.",

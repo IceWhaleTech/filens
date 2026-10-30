@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertReleaseArchive } from './agent-release-privacy.mjs';
 import { supportedPlatforms, npmInvocation } from './agent-platforms.mjs';
+import { checkAgentReleaseLimits } from './agent-release-limits.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const directory=path.join(root,'dist/npm');
 const release=JSON.parse(await readFile(path.join(directory,'release.json'),'utf8'));
@@ -17,7 +18,9 @@ for(const pkg of release.packages){
  integrities.set(pkg.name,`sha512-${createHash('sha512').update(bytes).digest('base64')}`);
 }
 const dry=process.argv.includes('--dry-run');
+console.log('Release size budgets passed:', JSON.stringify(checkAgentReleaseLimits(release,directory)));
 const versionOf=pkg=>pkg.version??release.version;
+const keyOf=pkg=>`${pkg.name}@${versionOf(pkg)}`;
 const tagOf=pkg=>versionOf(pkg).includes('-')?'next':'latest';
 const entryNames=['filens-cli','filens-cli-lite'];
 const existing=new Set();
@@ -25,8 +28,10 @@ const receiptFile=path.join(directory,`publication-state-${release.version}.json
 let receipt={version:release.version,accepted:[]};
 try{receipt=JSON.parse(await readFile(receiptFile,'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;}
 if(receipt.version!==release.version)throw new Error('Publication receipt version mismatch');
-const accepted=new Map(receipt.accepted.map(pkg=>[pkg.name,pkg]));
+const accepted=new Map(receipt.accepted.map(pkg=>[keyOf(pkg),pkg]));
 for(const pkg of receipt.accepted){
+ const target=release.packages.find(target=>keyOf(target)===keyOf(pkg));
+ if(!target)continue; // Retain receipts for superseded preview versions.
  if(integrities.get(pkg.name)!==pkg.integrity)throw new Error(`Previously accepted ${pkg.name}@${versionOf(pkg)} differs from the local tarball`);
 }
 let receiptWrites=Promise.resolve();
@@ -37,7 +42,7 @@ if(!dry){
  const results=await Promise.allSettled(release.packages.map(async pkg=>{
   const response=await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg.name)}/${versionOf(pkg)}`,{signal:AbortSignal.timeout(20000)});
   if(response.status===404){
-   if(accepted.has(pkg.name))return;
+   if(accepted.has(keyOf(pkg)))return;
    // npm may accept a new package but expose only a temporary stub while its
    // first release is reviewed. Do not mistake that state for an unpublished
    // package and submit the same immutable version again.
@@ -86,13 +91,13 @@ for(const pkg of release.packages.filter(p=>entryNames.includes(p.name))){
 }
 async function publish(pkg){
  if(existing.has(pkg.name)){console.log(`Verified existing ${pkg.name}@${versionOf(pkg)}`);return;}
- if(accepted.has(pkg.name)){console.log(`Previously accepted ${pkg.name}@${versionOf(pkg)}; awaiting public verification`);return;}
+ if(accepted.has(keyOf(pkg))){console.log(`Previously accepted ${pkg.name}@${versionOf(pkg)}; awaiting public verification`);return;}
  console.log(`${dry?'Dry run':'Publishing'} ${pkg.name}@${versionOf(pkg)}`);
  await run(['publish',path.join(directory,pkg.file),'--access','public','--tag',tagOf(pkg),'--registry=https://registry.npmjs.org/',...(dry?['--dry-run']:[])]);
  if(!dry){
   // HTTP 202 is a successful npm upload, but the immutable version may still be
   // under review. Persist the receipt so a retry never submits it again.
-  accepted.set(pkg.name,{name:pkg.name,version:versionOf(pkg),integrity:integrities.get(pkg.name),acceptedAt:new Date().toISOString()});
+  accepted.set(keyOf(pkg),{name:pkg.name,version:versionOf(pkg),integrity:integrities.get(pkg.name),acceptedAt:new Date().toISOString()});
   const data=JSON.stringify({version:release.version,accepted:[...accepted.values()]},null,2)+'\n';
   receiptWrites=receiptWrites.then(()=>writeFile(receiptFile,data));
   await receiptWrites;

@@ -1,14 +1,13 @@
 import type { ConverterClient } from '@filens/core';
 import { sourceToBytes, throwIfAborted, waitForConversion } from './source';
 
-/** Browser-local HEIF decoding and QuickTime transcoding through WASM workers. */
+/** Small browser-local HEIF decoder; video playback uses browser codecs. */
 export function createMediaConverterClient(): ConverterClient {
   return {
     async convert(request, context) {
       const sourceFormat = request.sourceFormat.replace(/^\./, '').toLowerCase();
       const targetFormat = request.targetFormat.replace(/^\./, '').toLowerCase();
-      if (!(['heic', 'heif'].includes(sourceFormat) && targetFormat === 'png') &&
-          !(sourceFormat === 'mov' && targetFormat === 'mp4')) {
+      if (!(['heic', 'heif'].includes(sourceFormat) && targetFormat === 'png')) {
         throw new Error(`Unsupported media conversion: ${sourceFormat} -> ${targetFormat}.`);
       }
       throwIfAborted(context.signal);

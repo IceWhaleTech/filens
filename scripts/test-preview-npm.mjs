@@ -53,6 +53,8 @@ single(document.body, {src: {source: new Blob(['test']), name:'sample.txt'}}).de
   run(process.execPath,[path.join(root,'node_modules/typescript/bin/tsc'),'--project',path.join(work,'tsconfig.json')]);
   run(process.execPath,[path.join(root,'scripts/test-preview.mjs')],{cwd:root,
     env:{...env,FILENS_PREVIEW_TEST_DIR:path.join(installed,'dist')}});
+  run(process.execPath,[path.join(root,'scripts/test-media-preview.mjs')],{cwd:root,
+    env:{...env,FILENS_PREVIEW_TEST_DIR:path.join(installed,'dist')}});
   // npm users also re-bundle the ESM exports. Check workers and WASM URLs after
   // a production Vite build, rather than relying only on direct static hosting.
   const browser = await chromium.launch({headless:true});
@@ -89,14 +91,15 @@ document.querySelector('#file').onchange = event => {
       try {
         await page.goto(`http://127.0.0.1:${server.address().port}/`);
         for (const file of ['apps/demo/public/samples/filens-cosmic-atlas.pdf','apps/demo/public/samples/a.pages',
-          'apps/demo/public/samples/raw/pentax-k-r.dng','packages/model3d/test/fixtures/occt/cube.stp']) {
+          'apps/demo/public/samples/raw/pentax-k-r.dng','packages/model3d/test/fixtures/occt/cube.stp',
+          'apps/demo/public/samples/live-photo/apple-iphone-15-live-photo.HEIC']) {
           await page.locator('#file').setInputFiles(path.join(root,file));
           await page.waitForFunction(()=>['ready','error'].includes(document.body.dataset.state),null,{timeout:30000});
           const result = await page.evaluate(()=>({state:document.body.dataset.state,error:document.body.dataset.error}));
           assert.equal(result.state,'ready',`${entry}: ${file}: ${result.error}`);
           assert.deepEqual(errors,[],`${entry}: ${file}`);
         }
-        console.log(`${entry}: PDF/iWork/RAW/STEP rendered after production Vite bundling.`);
+        console.log(`${entry}: PDF/iWork/RAW/STEP/HEIF rendered after production Vite bundling.`);
       } finally {await page.close();await new Promise(resolve=>server.close(resolve));}
     }
   } finally {await browser.close();}
@@ -106,7 +109,9 @@ document.querySelector('#file').onchange = event => {
     passed:true,checks:['Standalone installation without runtime dependencies','MIT license and third-party notices',
       'TypeScript consumer imports of split and all-in-one exports',`${browserReport.observations.length} real browser previews from installed assets`,
       'No external runtime requests','Single JavaScript runtime request for all-in-one','CLI loopback HTTP restrictions',
-      '8 PDF/iWork/RAW/STEP previews after Vite production bundling of npm exports'],
+      'Native WAV audio, HEIF decoding and native MOV playback or explicit codec errors without FFmpeg',
+      '10 PDF/iWork/RAW/STEP/HEIF previews after Vite production bundling of npm exports'],
+    mediaBrowser:process.env.FILENS_MEDIA_TEST_BROWSER || 'chromium',
     browserReport:'preview-validation.json'};
   await writeFile(path.join(root,'docs/preview-npm-validation.json'),JSON.stringify(report,null,2)+'\n');
   console.log(`${release.name}@${release.version}: isolated installation, public types and both browser builds passed.`);

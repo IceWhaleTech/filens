@@ -7,7 +7,7 @@ const sessions: PreviewSession[] = [];
 const context = (name: string, signal?: AbortSignal) => ({
   descriptor: { source: new Uint8Array([1]), name, extension: name.split('.').pop()!.toLowerCase() }, signal
 });
-const setup = (converter: ConverterClient, image = false) => {
+const setup = (converter?: ConverterClient, image = false) => {
   const host = document.createElement('div');
   const session = createCodecPreviewDrivers(converter)[image ? 0 : 1].createSession(host);
   sessions.push(session);
@@ -17,11 +17,12 @@ const setup = (converter: ConverterClient, image = false) => {
 beforeEach(() => {
   vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {});
   vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
+  vi.spyOn(HTMLVideoElement.prototype, 'videoWidth', 'get').mockReturnValue(1920);
   vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:preview'), revokeObjectURL: vi.fn() }));
 });
 afterEach(() => { sessions.splice(0).forEach(session => session.destroy()); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-describe('WASM media previews', () => {
+describe('native media with optional HEIF decoding', () => {
   it('routes uppercase HEIC, HEIF and MIME-only images and exposes their accept types', () => {
     const routes = createMediaPreviewRoutes();
     for (const descriptor of [{ name: 'iPhone.HEIC' }, { name: 'photo.heif' }, { contentType: 'image/heic' }, { contentType: 'image/heif' }]) {
@@ -36,12 +37,57 @@ describe('WASM media previews', () => {
     const { host, session } = setup({ convert }, true);
     const load = context('iPhone.HEIC');
     await session.load(load.descriptor.source, load);
+    expect(convert).not.toHaveBeenCalled();
+    host.querySelector('img')!.dispatchEvent(new Event('error'));
+    await vi.waitFor(() => expect(convert).toHaveBeenCalledOnce());
     expect(convert.mock.calls[0]).toMatchObject([{ sourceFormat: 'heic', targetFormat: 'png' }, { signal: expect.any(AbortSignal) }]);
     const image = host.querySelector('img')!;
     image.dispatchEvent(new Event('load'));
     expect(session.getState()).toMatchObject({ family: 'image', loading: false, error: null, title: 'iPhone.HEIC' });
     session.rotate?.();
     expect(session.getState()).toMatchObject({ rotation: 90 });
+  });
+
+  it('uses native HEIF support without starting the WASM decoder', async () => {
+    const convert = vi.fn();
+    const { host, session } = setup({ convert }, true);
+    const load = context('native.heic');
+    await session.load(load.descriptor.source, load);
+    host.querySelector('img')!.dispatchEvent(new Event('load'));
+    expect(session.getState()).toMatchObject({ loading: false, error: null });
+    expect(convert).not.toHaveBeenCalled();
+  });
+
+  it('reports unsupported native video without bundling a transcoder', async () => {
+    const { host, session } = setup();
+    const errors = vi.fn(); session.on('error', errors);
+    const load = context('unsupported.mov');
+    await session.load(load.descriptor.source, load);
+    host.querySelector('source')!.dispatchEvent(new Event('error'));
+    expect(session.getState()).toMatchObject({ loading: false, error: expect.stringContaining('codec') });
+    expect(errors).toHaveBeenCalledOnce();
+  });
+
+  it('rejects audio-only playback of a video instead of reporting success', async () => {
+    vi.spyOn(HTMLVideoElement.prototype, 'videoWidth', 'get').mockReturnValue(0);
+    const { host, session } = setup();
+    const rendered = vi.fn(); session.on('rendered', rendered);
+    const load = context('audio-only.mov');
+    await session.load(load.descriptor.source, load);
+    host.querySelector('video')!.dispatchEvent(new Event('loadedmetadata'));
+    expect(rendered).not.toHaveBeenCalled();
+    expect(session.getState()).toMatchObject({ loading: false, error: expect.stringContaining('video codec') });
+    expect(host.querySelector('video')).toBeNull();
+  });
+
+  it('preserves native audio playback without applying the video-only codec check', async () => {
+    const { host, session } = setup();
+    const rendered = vi.fn(); session.on('rendered', rendered);
+    const load = context('recording.wav');
+    await session.load(load.descriptor.source, load);
+    host.querySelector('audio')!.dispatchEvent(new Event('loadedmetadata'));
+    expect(rendered).toHaveBeenCalledOnce();
+    expect(session.getState()).toMatchObject({ family: 'audio', loading: false, error: null });
   });
 
   it('keeps native MOV playback when supported and transcodes only after an error', async () => {
@@ -69,9 +115,14 @@ describe('WASM media previews', () => {
     const { host, session } = setup({ convert }, true);
     const first = context('first.heic');
     const pending = session.load(first.descriptor.source, first);
+    await pending;
+    host.querySelector('img')!.dispatchEvent(new Event('error'));
+    await vi.waitFor(() => expect(convert).toHaveBeenCalledOnce());
     const signal = (convert.mock.calls[0] as unknown as [unknown, { signal: AbortSignal }])[1].signal;
     const second = context('second.heif');
     await session.load(second.descriptor.source, second);
+    host.querySelector('img')!.dispatchEvent(new Event('error'));
+    await vi.waitFor(() => expect(convert).toHaveBeenCalledTimes(2));
     expect(signal.aborted).toBe(true);
     complete({ source: new Uint8Array([1]), format: 'png' });
     await pending;
@@ -89,6 +140,9 @@ describe('WASM media previews', () => {
     const errors = vi.fn(); session.on('error', errors);
     const load = context('cancel.heic', controller.signal);
     const pending = session.load(load.descriptor.source, load);
+    await pending;
+    host.querySelector('img')!.dispatchEvent(new Event('error'));
+    await vi.waitFor(() => expect(convert).toHaveBeenCalledOnce());
     controller.abort();
     await pending;
     expect(host.children).toHaveLength(0);

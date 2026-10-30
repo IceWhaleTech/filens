@@ -12,6 +12,7 @@ export interface BrowserPreviewOptions extends PreviewOptions {
   extension?: string;
   toolbar?: boolean;
   converter?: ConverterClient;
+  mediaConverter?: ConverterClient;
   panoramaProcessor?: PanoramaProcessor;
   onRendered?: (state: unknown) => void;
   onError?: (error: Error) => void;

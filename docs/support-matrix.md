@@ -426,7 +426,8 @@ Gaps below apply to shipped preview paths. Hosts can supply custom drivers or co
 | Native CAD | DWG, DGN, FreeCAD projects, IGES/BREP | No native preview route; STEP/STP and DXF are covered above. |
 | BIM | Revit, IFC | No native preview route. |
 | ECAD / fabrication | Gerber/Excellon, layered KiCad PCB | No native preview route. |
-| Other images | TIFF, HEIC/HEIF, PSD | No default standalone route. Demo-derived assets do not establish general support. |
+| HEIC/HEIF | Native image decoding, with a dedicated local WASM fallback. | Primary image only; HDR and sequence fidelity vary. |
+| Other images | TIFF, PSD | No default standalone route. Demo-derived assets do not establish general support. |
 | Other Netpbm extensions | `pbm`, `pgm`, `pnm`, `pam`, `pfm` | No default preview/conversion routes for these extensions. PPM support covers P3/P6 RGB only. |
 | Other archives | RAR, 7z | No default standalone route. |
 | Office add-ins | Add-ins and embedded application behavior | Outside the default conversion policy. |

@@ -1,5 +1,5 @@
 {
-  "observedAt": "2026-10-30T11:01:27.737Z",
+  "observedAt": "2026-10-30T11:26:16.661Z",
   "version": "0.4.1",
   "license": "MIT",
   "scope": "Actual npm pack artifacts; sum launcher and current platform packages. Full includes OCR runtime and models. Excludes Node.js, npm caches, filesystem overhead and optional frontend assets. CLI executable and frontend package are separately measured.",
@@ -11,11 +11,11 @@
       "binaryBytes": 2253664,
       "lite": {
         "installedBytes": 8431774,
-        "downloadBytes": 6439408
+        "downloadBytes": 6439409
       },
       "full": {
         "installedBytes": 32762809,
-        "downloadBytes": 21332422
+        "downloadBytes": 21332423
       }
     },
     {
@@ -23,11 +23,11 @@
       "binaryBytes": 1983320,
       "lite": {
         "installedBytes": 8161453,
-        "downloadBytes": 7193222
+        "downloadBytes": 7193223
       },
       "full": {
         "installedBytes": 38520923,
-        "downloadBytes": 23948542
+        "downloadBytes": 23948543
       }
     },
     {
@@ -35,11 +35,11 @@
       "binaryBytes": 1870856,
       "lite": {
         "installedBytes": 8048993,
-        "downloadBytes": 7080668
+        "downloadBytes": 7080669
       },
       "full": {
         "installedBytes": 32613519,
-        "downloadBytes": 21533057
+        "downloadBytes": 21533058
       }
     },
     {
@@ -47,30 +47,30 @@
       "binaryBytes": 1902592,
       "lite": {
         "installedBytes": 8080712,
-        "downloadBytes": 7110642
+        "downloadBytes": 7110643
       },
       "full": {
         "installedBytes": 38253947,
-        "downloadBytes": 24131947
+        "downloadBytes": 24131948
       }
     }
   ],
   "preview": {
     "name": "filens-preview",
-    "version": "0.1.1",
-    "file": "filens-preview-0.1.1.tgz",
-    "bytes": 34692772,
-    "unpackedBytes": 107983601,
-    "sha256": "bc815b07a5c473140ab8be2a905466abdecc34c4bee4ebd41aa17cb09656fbef"
+    "version": "0.1.3",
+    "file": "filens-preview-0.1.3.tgz",
+    "bytes": 9462457,
+    "unpackedBytes": 30794606,
+    "sha256": "efa70e1a44bcee4561da2b2c3c488b61d0b235f5909f49a279dfe70922e165a7"
   },
   "packages": [
     {
       "name": "filens-preview",
-      "version": "0.1.1",
-      "file": "filens-preview-0.1.1.tgz",
-      "bytes": 34692772,
-      "unpackedBytes": 107983601,
-      "sha256": "bc815b07a5c473140ab8be2a905466abdecc34c4bee4ebd41aa17cb09656fbef"
+      "version": "0.1.3",
+      "file": "filens-preview-0.1.3.tgz",
+      "bytes": 9462457,
+      "unpackedBytes": 30794606,
+      "sha256": "efa70e1a44bcee4561da2b2c3c488b61d0b235f5909f49a279dfe70922e165a7"
     },
     {
       "name": "filens-cli-darwin-arm64",
@@ -140,17 +140,17 @@
       "name": "filens-cli",
       "version": "0.4.1",
       "file": "filens-cli-0.4.1.tgz",
-      "bytes": 18240,
+      "bytes": 18241,
       "unpackedBytes": 50996,
-      "sha256": "d28afb91843d07e254ff02244a35075ec6e9879879073d290c83102642b0a7d9"
+      "sha256": "29477e772d7fc9b6a1263a839099125fbd40865606376a4396303d8349088ae5"
     },
     {
       "name": "filens-cli-lite",
       "version": "0.4.1",
       "file": "filens-cli-lite-0.4.1.tgz",
-      "bytes": 18219,
+      "bytes": 18220,
       "unpackedBytes": 50830,
-      "sha256": "d41400187abc8b39f1e7be457551c2c77965510db657c0d83383388dba90168e"
+      "sha256": "14e93585d7222192b55f6ab8440129c92447b61c4ff157e172b09aabfdd24d51"
     }
   ],
   "binaryCompression": [
@@ -204,5 +204,28 @@
       "bytes": 1902592,
       "sha256": "697a064c5894e04528691a2c5f7ae9650593e80a37d1423383ccf6c0c28e2cc0"
     }
-  ]
+  ],
+  "sizeLimits": {
+    "cliExecutableLimitBytes": 2306867,
+    "binaries": [
+      {
+        "platform": "darwin-arm64",
+        "bytes": 2253664
+      },
+      {
+        "platform": "linux-x64",
+        "bytes": 1983320
+      },
+      {
+        "platform": "linux-arm64",
+        "bytes": 1870856
+      },
+      {
+        "platform": "win32-x64",
+        "bytes": 1902592
+      }
+    ],
+    "previewInstalledLimitBytes": 41943040,
+    "previewInstalledBytes": 30794606
+  }
 }

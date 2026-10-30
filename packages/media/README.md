@@ -2,16 +2,23 @@
 
 Audio, video, image and panorama preview drivers for Filens.
 
-HEIC/HEIF photos are decoded locally by libheif WASM into PNG previews. QuickTime
-MOV videos first use the browser player; if playback fails, FFmpeg WASM produces
-an H.264/AAC MP4 preview, limited to 1280 pixels per side. These optional engines
-load on demand and run in workers that stop when the source changes or the
-preview is destroyed. No upload or cross-origin isolation is required. Conversion
-can take longer for large videos. HEIF sequence previews show the primary image.
+HEIC/HEIF photos first use native browser decoding. When unavailable, a dedicated
+libheif WASM decoder supplies a PNG preview. Its 1.46 MB WASM (486 KB gzip) loads
+only after native decoding fails in the split build. Decoding runs in a worker
+that stops when the source changes or the preview is destroyed. HEIF sequences
+show the primary image. No upload or cross-origin isolation is required.
 
-The media engines are distributed with `@filens/converter-client` (libheif-js,
-LGPL-3.0, and @ffmpeg/core, GPL-2.0-or-later); applications must serve the emitted
-WASM asset alongside its JavaScript. The standalone preview bundles include it.
+MOV videos use browser codecs without a bundled FFmpeg engine. Codec support
+depends on the browser, operating system and hardware; unsupported video reports
+an error, including containers whose audio plays but video cannot be decoded.
+Applications that need transcoding can supply an optional `mediaConverter` to
+`createMediaPreviewDrivers`, the Vue `Preview` component or `createPreview`.
+The converter must return browser-playable media for MOV-to-MP4 requests and
+handle HEIC/HEIF-to-PNG requests if used for image fallback too.
+
+The dedicated decoder is distributed with `@filens/converter-client` (libheif-js,
+LGPL-3.0). Applications must serve `libheif.wasm` alongside its JavaScript; the
+standalone single-file build embeds it. Dependencies retain their own licenses.
 
 Audio previews include artwork, track information, synchronized LRC lyrics, click-to-seek,
 lyric timing adjustment, repeat and playback speed alongside the native audio controls.

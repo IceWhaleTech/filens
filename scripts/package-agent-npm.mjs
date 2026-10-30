@@ -11,6 +11,7 @@ import { assertReleaseArchive, assertReleaseDirectory } from './agent-release-pr
 import { buildAgentBinary, compressAgentWASM, preparePDFium } from './agent-rust-build.mjs';
 import { writeRustLicenses } from './agent-rust-licenses.mjs';
 import { executableName, releaseTargets, platformPackageName, npmInvocation } from './agent-platforms.mjs';
+import { checkAgentReleaseLimits } from './agent-release-limits.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -101,7 +102,9 @@ if (obsolete.length) {
   for (const name of obsolete) await rename(path.join(output,name),path.join(quarantine,name));
   console.log(`Moved ${obsolete.length} obsolete tarballs into the ignored local quarantine.`);
 }
-await writeFile(path.join(output,'release.json'),JSON.stringify({version,targets,privacyChecked:true,previewIncluded:withPreview,binaryCompression,packages},null,2)+'\n');
+const release = {version,targets,privacyChecked:true,previewIncluded:withPreview,binaryCompression,packages};
+release.sizeLimits = checkAgentReleaseLimits(release, output);
+await writeFile(path.join(output,'release.json'),JSON.stringify(release,null,2)+'\n');
 console.log(`Prepared ${packages.length} npm tarballs in dist/npm. No registry publication performed.`);
 
 async function prepare(name, metadata) {

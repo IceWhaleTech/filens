@@ -11,10 +11,10 @@ export const HEIF_PREVIEW_ROUTES: FormatDefinition[] = [{
   contentTypes: ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence'], group: 'image'
 }];
 
-export function createCodecPreviewDrivers(converter: ConverterClient = createMediaConverterClient()): PreviewDriver[] {
+export function createCodecPreviewDrivers(converter?: ConverterClient): PreviewDriver[] {
   return [{
     id: 'heif-image', family: 'image', supports: format => ['heic', 'heif'].includes(format.replace(/^\./, '').toLowerCase()),
-    createSession: (host, options) => new CodecPreviewSession(host, options ?? {}, converter, true)
+    createSession: (host, options) => new CodecPreviewSession(host, options ?? {}, converter ?? createMediaConverterClient(), true)
   }, {
     ...createMediaPreviewDriver(),
     createSession: (host, options) => new CodecPreviewSession(host, options ?? {}, converter, false)
@@ -30,7 +30,7 @@ class CodecPreviewSession implements PreviewSession {
   private listeners = new Map<PreviewEventName, Set<(payload: never) => void>>();
   private state: PreviewItemState;
 
-  constructor(private host: HTMLElement, private options: PreviewOptions, private converter: ConverterClient, private image: boolean) {
+  constructor(private host: HTMLElement, private options: PreviewOptions, private converter: ConverterClient | undefined, private image: boolean) {
     this.state = { family: image ? 'image' : 'video', loading: false, error: null, warnings: [], capabilities: {} };
   }
 
@@ -53,9 +53,8 @@ class CodecPreviewSession implements PreviewSession {
     if (context.signal?.aborted) controller.abort();
     if (signal.aborted) return;
     const loadContext = { ...context, signal };
-    if (this.image) await this.convert(source, loadContext, controller);
-    else await this.open(source, loadContext, controller,
-      (context.route?.sourceFormat ?? context.descriptor.extension)?.toLowerCase() === 'mov'
+    await this.open(source, loadContext, controller,
+      this.image || (this.converter && (context.route?.sourceFormat ?? context.descriptor.extension)?.toLowerCase() === 'mov')
         ? () => { void this.convert(source, loadContext, controller); } : undefined);
   }
 
@@ -66,6 +65,7 @@ class CodecPreviewSession implements PreviewSession {
     this.emit('loading', this.state);
     this.emit('statechange', this.state);
     try {
+      if (!this.converter) throw new Error('No optional media converter is configured.');
       const result = await this.converter.convert({ source,
         sourceFormat: context.route?.sourceFormat ?? context.descriptor.extension ?? (this.image ? 'heic' : 'mov'),
         targetFormat: this.image ? 'png' : 'mp4', name: context.descriptor.name }, context);
@@ -86,6 +86,16 @@ class CodecPreviewSession implements PreviewSession {
       this.childListeners.push(child.on(event, payload => {
         if (!active()) return;
         if (event === 'error' && fallback) { fallback(); return; }
+        // Some browsers accept a MOV's audio while silently dropping its video.
+        // A progressing time line alone must not be reported as a video preview.
+        if (event === 'rendered' && (payload as PreviewItemState).family === 'video' && !this.host.querySelector('video')?.videoWidth) {
+          if (fallback) fallback();
+          else {
+            this.releaseChild();
+            this.fail(new Error('The browser cannot decode this video codec. Use a compatible browser or an optional media converter.'), controller);
+          }
+          return;
+        }
         if (event === 'loading' || event === 'rendered' || event === 'statechange') {
           this.state = payload as PreviewItemState;
           this.emit(event, this.state);

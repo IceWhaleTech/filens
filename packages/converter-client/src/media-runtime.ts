@@ -1,6 +1,6 @@
 import type { ConversionResult } from '@filens/core';
 import MediaWorker from './media-worker?worker&inline';
-import ffmpegWasmUrl from '@ffmpeg/core/wasm?url';
+import heifWasmUrl from 'libheif-js/libheif-wasm/libheif.wasm?url';
 import { throwIfAborted } from './source';
 
 export function convertMedia(input: Uint8Array, format: string, signal?: AbortSignal): Promise<ConversionResult> {
@@ -25,7 +25,7 @@ export function convertMedia(input: Uint8Array, format: string, signal?: AbortSi
     };
     // Resolve asset URLs in the document, before passing them into a Blob worker.
     try {
-      worker.postMessage({ input, format, wasmUrl: new URL(ffmpegWasmUrl, import.meta.url).href }, [input.buffer as ArrayBuffer]);
+      worker.postMessage({ input, format, wasmUrl: new URL(heifWasmUrl, import.meta.url).href }, [input.buffer as ArrayBuffer]);
     } catch (error) { cleanup(); reject(error); }
   });
 }

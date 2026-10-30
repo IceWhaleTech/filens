@@ -98,6 +98,7 @@ const props = withDefaults(
     drivers?: PreviewDriver[];
     routes?: FormatDefinition[];
     converter?: ConverterClient;
+    mediaConverter?: ConverterClient;
     fontResolver?: PreviewFontResolver;
     fontLoading?: boolean | PreviewFontLoadingOptions;
     resourceResolver?: PreviewResourceResolver;
@@ -112,6 +113,7 @@ const props = withDefaults(
     drivers: undefined,
     routes: undefined,
     converter: undefined,
+    mediaConverter: undefined,
     fontResolver: undefined,
     fontLoading: undefined,
     resourceResolver: undefined,
@@ -540,7 +542,7 @@ async function recreatePreviewer(): Promise<void> {
     return;
   }
 
-  const drivers = props.drivers ?? createVueDefaultPreviewDrivers(props.panoramaProcessor, props.converter);
+  const drivers = props.drivers ?? createVueDefaultPreviewDrivers(props.panoramaProcessor, props.converter, props.mediaConverter);
   const routes = props.routes ?? createVueDefaultPreviewRoutes({ rawPreview: Boolean(props.panoramaProcessor && props.converter) });
   const createNestedPreviewer = (host: HTMLElement, childOptions: PreviewOptions = {}) => createPreviewer(host, {
     fit: childOptions.fit ?? props.fit,
@@ -1182,6 +1184,7 @@ watch(
     props.drivers,
     props.routes,
     props.converter,
+    props.mediaConverter,
     props.fontResolver,
     props.fontLoading,
     props.resourceResolver,
@@ -1214,11 +1217,11 @@ onUnmounted(() => {
   previewer.value?.destroy();
 });
 
-function createVueDefaultPreviewDrivers(panoramaProcessor?: MediaPreviewDriverOptions['panoramaProcessor'], converter?: MediaPreviewDriverOptions['converter']): PreviewDriver[] {
+function createVueDefaultPreviewDrivers(panoramaProcessor?: MediaPreviewDriverOptions['panoramaProcessor'], converter?: MediaPreviewDriverOptions['converter'], mediaConverter?: MediaPreviewDriverOptions['mediaConverter']): PreviewDriver[] {
   return [
     ...createOfficePreviewDrivers(),
     ...createDesignPreviewDrivers(),
-    ...createMediaPreviewDrivers({ panoramaProcessor, converter }),
+    ...createMediaPreviewDrivers({ panoramaProcessor, converter, mediaConverter }),
     createArchivePreviewDriver(),
     ...createTextPreviewDrivers()
   ];

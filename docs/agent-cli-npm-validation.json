@@ -5,7 +5,7 @@
       "command": "node scripts/test-agent-npm.mjs",
       "platform": "darwin-arm64",
       "passed": true,
-      "observedAt": "2026-10-30T11:02:01.221Z",
+      "observedAt": "2026-10-30T11:25:04.052Z",
       "freshNpmCache": false,
       "preview": true
     },
@@ -15,6 +15,14 @@
       "method": "Forced offline npm installation of Windows tarballs and scoped dependency resolution; no Windows binary executed",
       "scope": "Packaging check only; Windows native execution remains unverified.",
       "date": "2026-10-30"
+    },
+    "registry": {
+      "command": "node scripts/test-agent-npm.mjs --registry",
+      "platform": "darwin-arm64",
+      "passed": true,
+      "observedAt": "2026-10-30T11:56:18.098Z",
+      "freshNpmCache": true,
+      "preview": true
     }
   }
 }

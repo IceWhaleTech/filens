@@ -946,7 +946,9 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
         const sourceElement = document.createElement('source');
         sourceElement.addEventListener('error', fail, { signal });
         sourceElement.src = mediaUrl;
-        sourceElement.type = contentType;
+        // Chrome can play QuickTime codecs even when canPlayType rejects the
+        // container's MIME type. Let it inspect the resource instead of skipping it.
+        if (contentType !== 'video/quicktime') sourceElement.type = contentType;
         media.appendChild(sourceElement);
       } else {
         media.src = mediaUrl;

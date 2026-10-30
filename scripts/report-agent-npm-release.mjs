@@ -43,12 +43,12 @@ async function update(){
   ]){
     const text=await readFile(path.join(root,file),'utf8');
     const body=language==='zh'
-      ? `  <p><strong>CLI ${mib(mac.binaryBytes)} MiB · Lite ${mib(mac.lite.installedBytes)} MiB · Full ${mib(mac.full.installedBytes)} MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v${release.version} · macOS arm64 · 包安装体积，Full 含 OCR 模型；<a href="docs/agent-cli-npm-release.json">各平台完整数据</a></sub></p>`
-      : `  <p><strong>CLI ${mib(mac.binaryBytes)} MiB · Lite ${mib(mac.lite.installedBytes)} MiB · Full ${mib(mac.full.installedBytes)} MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v${release.version} · macOS arm64 · installed packages, Full includes OCR models; <a href="docs/agent-cli-npm-release.json">all platform sizes</a></sub></p>`;
+      ? `  <p><strong>CLI 可执行文件 ${mib(mac.binaryBytes)} MiB · Lite ${mib(mac.lite.installedBytes)} MiB · Full ${mib(mac.full.installedBytes)} MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v${release.version} · macOS arm64 · Lite/Full 为包安装体积，Full 含 OCR 模型；<a href="docs/agent-cli-npm-release.json">各平台完整数据</a></sub></p>`
+      : `  <p><strong>CLI executable ${mib(mac.binaryBytes)} MiB · Lite ${mib(mac.lite.installedBytes)} MiB · Full ${mib(mac.full.installedBytes)} MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v${release.version} · macOS arm64 · Lite/Full installed packages, Full includes OCR models; <a href="docs/agent-cli-npm-release.json">all platform sizes</a></sub></p>`;
     await writeFile(path.join(root,file),block(text,`agent-cli-size:${language}`,body,anchor));
   }
   const table='| Platform | CLI executable | Lite installed / download | Full installed / download |\n| --- | ---: | ---: | ---: |\n'+rows.map(r=>`| ${r.platform} | ${mib(r.binaryBytes)} MiB | ${mib(r.lite.installedBytes)} / ${mib(r.lite.downloadBytes)} MiB | ${mib(r.full.installedBytes)} / ${mib(r.full.downloadBytes)} MiB |`).join('\n');
-  const body=`**v${release.version} · MIT · CLI ${mib(mac.binaryBytes)} MiB · Lite ${mib(mac.lite.installedBytes)} MiB · Full ${mib(mac.full.installedBytes)} MiB** (macOS arm64, installed; Full includes OCR models).\n\n${table}\n\nTotals add the launcher and selected platform packages from npm pack. Node.js, npm caches, filesystem overhead and the optional frontend preview package are excluded. Bundled dependencies retain their own licenses; see THIRD-PARTY-NOTICES.md in the platform packages.`;
+  const body=`**v${release.version} · MIT · CLI executable ${mib(mac.binaryBytes)} MiB · Lite ${mib(mac.lite.installedBytes)} MiB · Full ${mib(mac.full.installedBytes)} MiB** (macOS arm64; Lite/Full installed sizes; Full includes OCR models).\n\n${table}\n\nTotals add the launcher and selected platform packages from npm pack. Node.js, npm caches, filesystem overhead and the optional frontend preview package are excluded. Bundled dependencies retain their own licenses; see THIRD-PARTY-NOTICES.md in the platform packages.`;
   const readme=path.join(root,'packaging/npm/README.md');
   const next=block(await readFile(readme,'utf8'),'agent-cli-size:npm',body,'# filens Agent CLI')
     .replace(/(filens-(?:cli|ocr)[\w-]*)-\d+\.\d+\.\d+\.tgz/g,`$1-${release.version}.tgz`);
@@ -96,7 +96,7 @@ const report={observedAt:new Date().toISOString(),version:release.version,licens
   sourceState:'Locally built release artifacts. Registry publication is recorded separately.',
   componentReadmes:'Accepted component archives retain their original README snapshot; final totals include the current launcher and are recorded here.',
   targets:state.rows,preview:release.packages.find(p=>p.name==='filens-preview')??null,
-  packages:release.packages,binaryCompression:release.binaryCompression};
+  packages:release.packages,binaryCompression:release.binaryCompression,sizeLimits:release.sizeLimits};
 const data=Buffer.from(JSON.stringify(report,null,2)+'\n');assert.deepEqual(privacyIssues(data),[]);
 await writeFile(path.join(root,'docs/agent-cli-npm-release.json'),data);
 console.log(JSON.stringify({version:release.version,license:'MIT',targets:state.rows},null,2));

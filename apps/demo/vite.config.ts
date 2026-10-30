@@ -5,7 +5,6 @@ import path from 'node:path';
 import vue from '@vitejs/plugin-vue';
 import { occtWasmAsset } from '../../scripts/occt-wasm-plugin';
 import { stepWasmAsset } from '../../scripts/step-wasm-plugin';
-import { mediaWorkerAssets } from '../../scripts/media-wasm-plugin';
 import { agentSkillAsset } from './agent-assets';
 
 const compressibleAssets = /\.(?:css|html|js|json|mjs|wasm)$/;
@@ -256,8 +255,7 @@ export default defineConfig({
   base: process.env.VITE_BASE_PATH || '/modules/filens/',
   plugins: [vue(), occtWasmAsset(), stepWasmAsset(), externalConverterWasms(), agentSkillAsset(), precompressAssets()],
   // Discover lazy worker dependencies at startup so first use does not reload an uploaded file.
-  optimizeDeps: { include: ['@ffmpeg/core', 'libheif-js/libheif-wasm/libheif-bundle.mjs'] },
-  worker: { plugins: () => [mediaWorkerAssets()] },
+  optimizeDeps: { include: ['libheif-js/libheif-wasm/libheif.js'] },
   server: { proxy: externalSampleProxy },
   preview: { proxy: externalSampleProxy },
   resolve: {

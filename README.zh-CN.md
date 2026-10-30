@@ -18,7 +18,7 @@
 | 大概多大 | **可执行文件约 2 MB → Lite 约 8 MB → Full 约 30 多 MB**，完整版含 OCR 模型。 | **压缩后单个分包几 KB 到几百 KB**，共享依赖、Worker、WASM 另计；也提供 **all-in-one 单 JS 文件**。 |
 | 从这里开始 | [安装与使用 CLI](#agent-cli) | [预览与接入](#纯前端预览) |
 
-两边体积分别计量：CLI 是 v0.4.1 的安装体积，随平台变化，不含 Node.js 和可选预览资源；前端分包说的是压缩产物。完整独立预览运行时按分包合计约 **10.9 MB Brotli**，单文件版约 **14.2 MB Brotli / 19.6 MB gzip / 60 MB 原始体积**，已包含 Vue、样式、Worker 与 WASM。0.1.1 新增 HEIC/HEIF 解码和视频引擎，分包版按需加载视频引擎。[CLI 各平台实测](docs/agent-cli-npm-release.json) · [独立预览构建实测](docs/preview-build-sizes.json)。
+约 2 MB 指原生可执行文件；Lite 和 Full 指包含文档 WASM 的 v0.4.1 包安装体积，随平台变化，不含 Node.js 和可选预览资源。前端分包说的是压缩产物。完整独立预览运行时按分包合计约 **3.3 MB Brotli**，单文件版约 **3.9 MB Brotli / 5.2 MB gzip / 16.3 MB 原始体积**，已包含 Vue、样式、Worker 与 WASM。0.1.3 优先使用原生媒体支持，HEIC/HEIF 使用小型解码器兜底，默认包不含完整 FFmpeg。[CLI 各平台实测](docs/agent-cli-npm-release.json) · [独立预览构建实测](docs/preview-build-sizes.json)。
 
 ## Agent CLI
 
@@ -38,13 +38,13 @@ filens convert report.doc report.docx
 npx --yes filens-cli-lite capacity --json
 ```
 
-**用 CLI 打开预览：**`filens preview report.pdf` 打开共享前端预览器；首次运行自动安装独立的 `filens-preview` 包，也可先运行 `filens setup-preview`。`--no-open --json` 返回本地地址，服务保持运行直到退出。可选前端包同时包含两种构建，完整安装约 **108 MB**，与 CLI 体积分开计量。[预览配置与限制](packages/preview/README.md#cli-preview)。
+**用 CLI 打开预览：**`filens preview report.pdf` 打开共享前端预览器；首次运行自动安装独立的 `filens-preview` 包，也可先运行 `filens setup-preview`。`--no-open --json` 返回本地地址，服务保持运行直到退出。可选前端包同时包含两种构建，完整安装约 **31 MB**，与 CLI 体积分开计量。[预览配置与限制](packages/preview/README.md#cli-preview)。
 
 <details>
 <summary>CLI 精确体积、能力与更多示例</summary>
 
 <!-- agent-cli-size:zh:start -->
-  <p><strong>CLI 2.15 MiB · Lite 8.04 MiB · Full 31.25 MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v0.4.1 · macOS arm64 · 包安装体积，Full 含 OCR 模型；<a href="docs/agent-cli-npm-release.json">各平台完整数据</a></sub></p>
+  <p><strong>CLI 可执行文件 2.15 MiB · Lite 8.04 MiB · Full 31.25 MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v0.4.1 · macOS arm64 · Lite/Full 为包安装体积，Full 含 OCR 模型；<a href="docs/agent-cli-npm-release.json">各平台完整数据</a></sub></p>
 <!-- agent-cli-size:zh:end -->
 
 - [安装、协议与打包](docs/agent-cli.md) · [Agent skill](skills/filens/SKILL.md)

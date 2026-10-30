@@ -31,8 +31,16 @@ describe('browser media converter ownership', () => {
       return new Response(new Uint8Array([1]));
     });
     vi.stubGlobal('fetch', fetch);
-    await expect(createMediaConverterClient().convert({ source: 'https://example.com/clip.mov', sourceFormat: 'mov', targetFormat: 'mp4' },
+    await expect(createMediaConverterClient().convert({ source: 'https://example.com/photo.heic', sourceFormat: 'heic', targetFormat: 'png' },
       { ...context, signal: controller.signal })).rejects.toMatchObject({ name: 'AbortError' });
+    expect(convertMedia).not.toHaveBeenCalled();
+  });
+
+  it('rejects video transcoding without downloading or starting a decoder', async () => {
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    await expect(createMediaConverterClient().convert({ source: 'https://example.com/clip.mov', sourceFormat: 'mov', targetFormat: 'mp4' }, context))
+      .rejects.toThrow('Unsupported media conversion');
+    expect(fetch).not.toHaveBeenCalled();
     expect(convertMedia).not.toHaveBeenCalled();
   });
 });
