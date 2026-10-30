@@ -1,3 +1,5 @@
+import type { PreviewSource } from '@filens/core';
+
 export function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw abortError();
 }
@@ -74,4 +76,39 @@ function hexDigit(value: number): number {
   if (value >= 48 && value <= 57) return value - 48;
   const lower = value | 32;
   return lower >= 97 && lower <= 102 ? lower - 87 : -1;
+}
+
+export async function sourceToBytes(source: PreviewSource, fetchImpl = globalThis.fetch, signal?: AbortSignal): Promise<Uint8Array> {
+  if (isBlobLikeSource(source)) {
+    return new Uint8Array(await waitForConversion(source.arrayBuffer(), signal));
+  }
+  if (source instanceof ArrayBuffer) {
+    return new Uint8Array(source);
+  }
+  if (ArrayBuffer.isView(source)) {
+    return new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
+  }
+  if (typeof source === 'string') {
+    if (isDataUrl(source)) {
+      return readDataUrl(source).bytes;
+    }
+    if (isConversionSourceUrl(source)) {
+      if (!fetchImpl) throw new Error('A fetch implementation is required to load a conversion source URL.');
+      const response = await waitForConversion(fetchImpl(source, { signal }), signal);
+      throwIfAborted(signal);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch conversion source: ${response.status} ${response.statusText}`.trim());
+      }
+      return new Uint8Array(await waitForConversion(response.arrayBuffer(), signal));
+    }
+    return new TextEncoder().encode(source);
+  }
+  throw new Error('Unsupported conversion source type.');
+}
+
+function isBlobLikeSource(source: PreviewSource): source is Blob | File {
+  return typeof source === 'object'
+    && source !== null
+    && 'arrayBuffer' in source
+    && typeof source.arrayBuffer === 'function';
 }

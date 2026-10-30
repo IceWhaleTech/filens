@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { mediaWorkerAssets } from '../../scripts/media-wasm-plugin';
 
 const root = path.resolve(__dirname, '../..');
 const single = process.env.FILENS_PREVIEW_BUILD === 'all-in-one';
@@ -46,7 +47,8 @@ function embeddedAssets() {
         'packages/model3d/vendor/occt-import-js/license.occt.txt',
         'packages/model3d/vendor/occt-import-js/license.occt-import-js.txt'];
       const texts = await Promise.all(notices.map(file => readFile(path.join(root, file), 'utf8')));
-      const dependencyRoots = new Set<string>();
+      // Worker-only dependencies are absent from the main Rollup module graph.
+      const dependencyRoots = new Set<string>(['@ffmpeg/core', 'libheif-js'].map(name => path.join(root, 'node_modules', name)));
       for (const id of this.getModuleIds()) {
         const offset = id.lastIndexOf('/node_modules/');
         if (offset < 0 || id.startsWith('\0')) continue;
@@ -81,6 +83,7 @@ function embeddedStyles() {
 export default defineConfig({
   base: './',
   plugins: [embeddedAssets(), vue(), embeddedStyles()],
+  worker: { plugins: () => [mediaWorkerAssets()] },
   resolve: { alias, preserveSymlinks: true },
   define: { 'process.env.NODE_ENV': '"production"' },
   build: {

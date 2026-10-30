@@ -21,9 +21,12 @@
   ],
   "scripts": {
     "build": "vite build",
-    "dev": "vite build --watch"
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run"
   },
   "dependencies": {
+    "@filens/converter-client": "^0.1.0",
     "@filens/panorama": "^0.1.0"
   },
   "peerDependencies": {

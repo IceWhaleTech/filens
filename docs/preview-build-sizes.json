@@ -91,9 +91,9 @@
         },
         {
           "file": "converter-core.wasm",
-          "raw": 1150015,
-          "gzip": 509719,
-          "brotli": 405043
+          "raw": 1150080,
+          "gzip": 509793,
+          "brotli": 405336
         },
         {
           "file": "converter-image.wasm",
@@ -127,24 +127,24 @@
         }
       ],
       "total": {
-        "raw": 11954563,
-        "gzip": 3633090,
-        "brotli": 2873422
+        "raw": 11954628,
+        "gzip": 3633164,
+        "brotli": 2873715
       }
     },
     "all-in-one": {
       "files": [
         {
           "file": "filens.js",
-          "raw": 14237551,
-          "gzip": 4469097,
-          "brotli": 3384455
+          "raw": 14237635,
+          "gzip": 4469126,
+          "brotli": 3391155
         }
       ],
       "total": {
-        "raw": 14237551,
-        "gzip": 4469097,
-        "brotli": 3384455
+        "raw": 14237635,
+        "gzip": 4469126,
+        "brotli": 3391155
       }
     }
   }

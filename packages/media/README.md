@@ -2,6 +2,17 @@
 
 Audio, video, image and panorama preview drivers for Filens.
 
+HEIC/HEIF photos are decoded locally by libheif WASM into PNG previews. QuickTime
+MOV videos first use the browser player; if playback fails, FFmpeg WASM produces
+an H.264/AAC MP4 preview, limited to 1280 pixels per side. These optional engines
+load on demand and run in workers that stop when the source changes or the
+preview is destroyed. No upload or cross-origin isolation is required. Conversion
+can take longer for large videos. HEIF sequence previews show the primary image.
+
+The media engines are distributed with `@filens/converter-client` (libheif-js,
+LGPL-3.0, and @ffmpeg/core, GPL-2.0-or-later); applications must serve the emitted
+WASM asset alongside its JavaScript. The standalone preview bundles include it.
+
 Audio previews include artwork, track information, synchronized LRC lyrics, click-to-seek,
 lyric timing adjustment, repeat and playback speed alongside the native audio controls.
 The player adapts to narrow containers and uses Chinese or English labels according to

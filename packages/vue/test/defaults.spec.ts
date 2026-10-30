@@ -36,7 +36,6 @@ describe('createVueDefaultPreviewRoutes', () => {
       'drawing.graffle',
       'movie.mkv',
       'bundle.rar',
-      'iphone.heic',
       'a.pages',
       'a.key',
       'a.numbers',
@@ -61,6 +60,9 @@ describe('createVueDefaultPreviewRoutes', () => {
     expect(resolveFormatRoute({ name: 'photo.avif' }, { routes })).toMatchObject({ driverId: 'image', targetFormat: 'avif' });
     expect(resolveFormatRoute({ name: 'photo.apng' }, { routes })).toMatchObject({ driverId: 'image', targetFormat: 'apng' });
     expect(resolveFormatRoute({ name: 'photo.ico' }, { routes })).toMatchObject({ driverId: 'image', targetFormat: 'ico' });
+    for (const descriptor of [{ name: 'iPhone.HEIC' }, { name: 'photo.heif' }, { contentType: 'image/heic' }, { contentType: 'image/heif' }]) {
+      expect(resolveFormatRoute(descriptor, { routes })).toMatchObject({ driverId: 'heif-image', family: 'image' });
+    }
     expect(resolveFormatRoute({ name: 'photo.icns' }, { routes })).toMatchObject({ driverId: 'image', targetFormat: 'png', conversion: { required: true } });
     expect(resolveFormatRoute({ name: 'drawing.svg' }, { routes })).toMatchObject({ driverId: 'image', targetFormat: 'svg' });
 

@@ -8,6 +8,7 @@ import type {
 import { base64ToBytes, isConversionSourceUrl, isDataUrl, readDataUrl, throwIfAborted, waitForConversion } from './source';
 
 export * from './wasm-client';
+export { createMediaConverterClient } from './media-client';
 
 export interface HttpConverterClientOptions {
   endpoint: string;

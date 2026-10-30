@@ -1,8 +1,10 @@
 import { defineConfig } from 'vitest/config';
 import dts from 'vite-plugin-dts';
+import { mediaWasmAsset, mediaWorkerAssets } from '../../scripts/media-wasm-plugin';
 
 export default defineConfig({
   base: './',
+  worker: { plugins: () => [mediaWorkerAssets()] },
   build: {
     lib: {
       entry: './src/index.ts',
@@ -19,6 +21,7 @@ export default defineConfig({
     globals: true
   },
   plugins: [
+    mediaWasmAsset(),
     dts({
       include: ['src/**/*.ts'],
       outDir: 'dist',

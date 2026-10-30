@@ -14,8 +14,8 @@ assert.deepEqual(ids(createOfficePreviewDrivers()), ['docx', 'iwork', 'pdf', 'pp
 assert.deepEqual(ids(createOfficePreviewRoutes(), 'driverId'), ['docx', 'iwork', 'pdf', 'pptx', 'xlsx']);
 assert.deepEqual(ids(createDesignPreviewDrivers()), ['cad', 'diagram', 'mindmap', 'model3d']);
 assert.deepEqual(ids(createDesignPreviewRoutes(), 'driverId'), ['cad', 'diagram', 'mindmap', 'model3d']);
-assert.deepEqual(ids(createMediaPreviewDrivers()), ['image', 'media', 'panorama']);
-assert.deepEqual(ids(createMediaPreviewRoutes(), 'driverId'), ['image', 'media', 'panorama']);
+assert.deepEqual(ids(createMediaPreviewDrivers()), ['heif-image', 'image', 'media', 'panorama']);
+assert.deepEqual(ids(createMediaPreviewRoutes(), 'driverId'), ['heif-image', 'image', 'media', 'panorama']);
 assert.deepEqual(ids(createTextPreviewDrivers()), ['ebook', 'html', 'text']);
 assert.deepEqual(ids(createTextPreviewRoutes(), 'driverId'), ['ebook', 'html', 'text']);
 assert.deepEqual(ids(createArchiveCategoryPreviewRoutes(), 'driverId'), ['archive']);

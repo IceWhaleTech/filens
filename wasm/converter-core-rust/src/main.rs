@@ -6684,6 +6684,8 @@ fn parse_odf_sheets(content: &str) -> Result<Vec<(String, Vec<Vec<SheetCell>>)>,
     let mut name = String::new();
     let mut rows = Vec::new();
     let mut row = Vec::new();
+    let mut row_index = 0usize;
+    let mut column_index = 0usize;
     let mut cell_type = String::new();
     let mut cell_value = String::new();
     let mut cell_text = String::new();
@@ -6699,11 +6701,13 @@ fn parse_odf_sheets(content: &str) -> Result<Vec<(String, Vec<Vec<SheetCell>>)>,
                         name = attribute(&value, b"name")
                             .unwrap_or_else(|| format!("Sheet{}", sheets.len() + 1));
                         rows.clear();
+                        row_index = 0;
                     }
                     table_depth += 1;
                 }
                 b"table-row" if table_depth == 1 => {
                     row = Vec::new();
+                    column_index = 0;
                     row_repeat = odf_repeat(&value, b"number-rows-repeated", MAX_SHEET_ROWS);
                 }
                 b"table-cell" if table_depth == 1 => {
@@ -6717,12 +6721,12 @@ fn parse_odf_sheets(content: &str) -> Result<Vec<(String, Vec<Vec<SheetCell>>)>,
                     cell_text.clear();
                 }
                 b"covered-table-cell" if table_depth == 1 => {
-                    let repeat = odf_repeat(
-                        &value,
-                        b"number-columns-repeated",
-                        MAX_SHEET_COLUMNS.saturating_sub(row.len()),
+                    append_odf_cells(
+                        &mut row,
+                        &mut column_index,
+                        SheetCell::Empty,
+                        odf_repeat(&value, b"number-columns-repeated", MAX_SHEET_COLUMNS),
                     );
-                    row.extend((0..repeat).map(|_| SheetCell::Empty));
                 }
                 b"tab" if in_cell => cell_text.push('\t'),
                 b"line-break" if in_cell => cell_text.push('\n'),
@@ -6731,20 +6735,20 @@ fn parse_odf_sheets(content: &str) -> Result<Vec<(String, Vec<Vec<SheetCell>>)>,
             Ok(Event::Empty(value)) if table_depth == 1 => {
                 match local_name(value.name().as_ref()) {
                     b"table-cell" | b"covered-table-cell" => {
-                        let repeat = odf_repeat(
-                            &value,
-                            b"number-columns-repeated",
-                            MAX_SHEET_COLUMNS.saturating_sub(row.len()),
+                        append_odf_cells(
+                            &mut row,
+                            &mut column_index,
+                            SheetCell::Empty,
+                            odf_repeat(&value, b"number-columns-repeated", MAX_SHEET_COLUMNS),
                         );
-                        row.extend((0..repeat).map(|_| SheetCell::Empty));
                     }
                     b"table-row" => {
-                        let repeat = odf_repeat(
-                            &value,
-                            b"number-rows-repeated",
-                            MAX_SHEET_ROWS.saturating_sub(rows.len()),
+                        append_odf_rows(
+                            &mut rows,
+                            &mut row_index,
+                            &[],
+                            odf_repeat(&value, b"number-rows-repeated", MAX_SHEET_ROWS),
                         );
-                        rows.extend((0..repeat).map(|_| Vec::new()));
                     }
                     _ => {}
                 }
@@ -6769,15 +6773,11 @@ fn parse_odf_sheets(content: &str) -> Result<Vec<(String, Vec<Vec<SheetCell>>)>,
                         _ if text.is_empty() => SheetCell::Empty,
                         _ => SheetCell::Text(text),
                     };
-                    let repeat = cell_repeat.min(MAX_SHEET_COLUMNS.saturating_sub(row.len()));
-                    row.extend((0..repeat).map(|_| cell.clone()));
+                    append_odf_cells(&mut row, &mut column_index, cell, cell_repeat);
                     in_cell = false;
                 }
                 b"table-row" if table_depth == 1 => {
-                    let repeat = row_repeat.min(MAX_SHEET_ROWS.saturating_sub(rows.len()));
-                    for _ in 0..repeat {
-                        rows.push(row.clone());
-                    }
+                    append_odf_rows(&mut rows, &mut row_index, &row, row_repeat);
                     row.clear();
                 }
                 b"table" if table_depth > 0 => {
@@ -6797,6 +6797,37 @@ fn parse_odf_sheets(content: &str) -> Result<Vec<(String, Vec<Vec<SheetCell>>)>,
         sheets.push(("Sheet1".into(), Vec::new()));
     }
     Ok(sheets)
+}
+
+// ODF producers describe the unused grid with repeated empty cells and rows.
+// Track their positions, materializing gaps only when a later value needs them.
+// The XLSX writer already omits empty rows/cells, so trailing blanks need no storage.
+fn append_odf_cells(
+    row: &mut Vec<SheetCell>,
+    column_index: &mut usize,
+    cell: SheetCell,
+    repeat: usize,
+) {
+    let repeat = repeat.min(MAX_SHEET_COLUMNS.saturating_sub(*column_index));
+    if repeat > 0 && !matches!(cell, SheetCell::Empty) {
+        row.resize(*column_index, SheetCell::Empty);
+        row.extend((0..repeat).map(|_| cell.clone()));
+    }
+    *column_index += repeat;
+}
+
+fn append_odf_rows(
+    rows: &mut Vec<Vec<SheetCell>>,
+    row_index: &mut usize,
+    row: &[SheetCell],
+    repeat: usize,
+) {
+    let repeat = repeat.min(MAX_SHEET_ROWS.saturating_sub(*row_index));
+    if repeat > 0 && !row.is_empty() {
+        rows.resize_with(*row_index, Vec::new);
+        rows.extend((0..repeat).map(|_| row.to_vec()));
+    }
+    *row_index += repeat;
 }
 
 fn odf_repeat(value: &BytesStart<'_>, name: &[u8], limit: usize) -> usize {
@@ -13279,6 +13310,99 @@ mod tests {
         assert!(xml.contains("rIdImage1") && xml.contains("rIdImage2"));
         assert!(relationships.contains("image1-1.jpeg"));
         assert!(relationships.contains("image1-2.png"));
+    }
+
+    #[test]
+    fn odf_sheets_omit_repeated_empty_tails_in_real_spreadsheet() {
+        let input = include_bytes!("../../../apps/demo/public/samples/rich-spreadsheet.ods");
+        let mut archive = ZipArchive::new(std::io::Cursor::new(input)).unwrap();
+        let mut content = String::new();
+        archive
+            .by_name("content.xml")
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
+        let sheets = parse_odf_sheets(&content).unwrap();
+        assert_eq!(
+            sheets
+                .iter()
+                .map(|(name, _)| name.as_str())
+                .collect::<Vec<_>>(),
+            ["First Sheet", "Sheet Number 2", "Sheet3"]
+        );
+        assert_eq!(
+            sheets
+                .iter()
+                .map(|(_, rows)| rows.len())
+                .collect::<Vec<_>>(),
+            [4, 7, 0]
+        );
+        assert_eq!(
+            sheets[0].1.iter().map(Vec::len).collect::<Vec<_>>(),
+            [1, 2, 0, 1]
+        );
+        let first = xlsx_worksheet(&sheets[0].1);
+        assert!(first.contains(r#"<c r="B2" t="inlineStr"><is><t>2nd row 2nd column</t>"#));
+        assert!(first.contains(r#"<c r="A4" t="inlineStr"><is><t>This one is red</t>"#));
+        let second = xlsx_worksheet(&sheets[1].1);
+        assert!(second.contains(r#"<c r="D7"><v>13</v></c>"#));
+    }
+
+    #[test]
+    fn odf_sheets_preserve_internal_gaps_and_repeated_values() {
+        let sheets = parse_odf_sheets(
+            r#"<table name="Gaps">
+              <table-row number-rows-repeated="2"/>
+              <table-row><table-cell number-columns-repeated="16384"/></table-row>
+              <table-row number-rows-repeated="2">
+                <table-cell number-columns-repeated="2"/>
+                <table-cell value-type="float" value="42" number-columns-repeated="2"><p>42</p></table-cell>
+                <covered-table-cell number-columns-repeated="2"/>
+                <table-cell><p>After</p></table-cell>
+                <table-cell number-columns-repeated="16384"></table-cell>
+              </table-row>
+              <table-row number-rows-repeated="1048576"><table-cell number-columns-repeated="16384"/></table-row>
+            </table>"#,
+        )
+        .unwrap();
+        let rows = &sheets[0].1;
+        assert_eq!(rows.len(), 5);
+        assert!(rows[..3].iter().all(Vec::is_empty));
+        let xml = xlsx_worksheet(rows);
+        assert_eq!(xml.matches("<row ").count(), 2);
+        for row in [4, 5] {
+            assert_eq!(rows[row - 1].len(), 7);
+            for column in ["C", "D"] {
+                assert!(xml.contains(&format!(r#"<c r="{column}{row}"><v>42</v></c>"#)));
+            }
+            assert!(xml.contains(&format!(r#"<c r="G{row}" t="inlineStr"><is><t>After</t>"#)));
+        }
+    }
+
+    #[test]
+    fn odf_sheets_count_empty_gaps_toward_grid_limits() {
+        let sheets = parse_odf_sheets(
+            r#"<document>
+              <table name="Rows"><table-row number-rows-repeated="9999"/>
+                <table-row number-rows-repeated="2"><table-cell><p>Last row</p></table-cell></table-row>
+                <table-row><table-cell><p>Beyond row limit</p></table-cell></table-row>
+              </table>
+              <table name="Columns"><table-row>
+                <table-cell number-columns-repeated="16383"/>
+                <table-cell number-columns-repeated="2"><p>Last column</p></table-cell>
+                <table-cell><p>Beyond column limit</p></table-cell>
+              </table-row></table>
+              <table name="Empty"><table-row number-rows-repeated="1048576"><table-cell number-columns-repeated="16384"/></table-row></table>
+            </document>"#,
+        )
+        .unwrap();
+        let rows_xml = xlsx_worksheet(&sheets[0].1);
+        assert!(rows_xml.contains(r#"<c r="A10000" t="inlineStr"><is><t>Last row</t>"#));
+        assert!(!rows_xml.contains("Beyond row limit"));
+        let columns_xml = xlsx_worksheet(&sheets[1].1);
+        assert!(columns_xml.contains(r#"<c r="XFD1" t="inlineStr"><is><t>Last column</t>"#));
+        assert!(!columns_xml.contains("Beyond column limit"));
+        assert!(sheets[2].1.is_empty());
     }
 
     #[test]

@@ -2127,6 +2127,7 @@ function detectKind(name: string): DemoKind | null {
   if (normalized.endsWith('.xlsx')) return 'xlsx';
   if (normalized.endsWith('.csv')) return 'csv';
   if (/\.(png|jpg|jpeg|gif|webp|avif|apng|ico|svg|bmp)$/.test(normalized)) return 'image';
+  if (/\.(heic|heif)$/.test(normalized)) return 'image';
   if (/\.(pano|panorama|360|insp|360v|vr360|insv|osv)$/.test(normalized)) return 'panorama';
   if (/\.(html?|shtml|xhtml)$/.test(normalized)) return 'html';
   if (/\.epub$/.test(normalized)) return 'epub';

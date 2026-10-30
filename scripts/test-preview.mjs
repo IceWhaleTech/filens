@@ -22,6 +22,7 @@ const files = [
   path.join(root, 'apps/demo/public/samples/a.pages'),
   path.join(root, 'apps/demo/public/samples/filens-weekend.key'),
   path.join(root, 'apps/demo/public/samples/filens-observatory.xlsx'),
+  path.join(root, 'apps/demo/public/samples/rich-spreadsheet.ods'),
   path.join(root, 'apps/demo/public/samples/legacy-project-workflow.doc'),
   path.join(root, 'apps/demo/public/samples/filens-field-notes.pptx'),
   path.join(root, 'apps/demo/public/samples/a.numbers'),
@@ -96,6 +97,13 @@ try {
         assert.equal(state.state, 'ready', `${mode}: ${file}: ${JSON.stringify(state)}; ${errors}`);
         assert.deepEqual(errors, [], `${mode}: ${file}`);
         if (file.endsWith('.txt')) assert.match(state.text, /FILENS_PREVIEW_2026/);
+        if (file.endsWith('.ods')) {
+          assert.match(state.text, /Test spreadsheet/);
+          assert.match(state.text, /2nd row 2nd column/);
+          await page.locator('.xlsxv-sheet-tab').filter({ hasText:'Sheet Number 2' }).click();
+          await page.locator('.xlsxv-grid').getByText('13', { exact:true }).waitFor();
+          assert.equal(await page.locator('.xlsxv-sheet-tab').count(), 3);
+        }
         if (mode === 'all-in-one') {
           assert.equal(requests.filter(url => /\.(js|mjs|wasm)(?:\?|$)/.test(url)).length, 1, requests.join('\n'));
         }

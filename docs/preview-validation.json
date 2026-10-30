@@ -60,6 +60,13 @@
     },
     {
       "mode": "split",
+      "file": "rich-spreadsheet.ods",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 14
+    },
+    {
+      "mode": "split",
       "file": "legacy-project-workflow.doc",
       "state": "ready",
       "canvases": 0,
@@ -145,6 +152,13 @@
     {
       "mode": "all-in-one",
       "file": "filens-observatory.xlsx",
+      "state": "ready",
+      "canvases": 0,
+      "runtimeRequests": 1
+    },
+    {
+      "mode": "all-in-one",
+      "file": "rich-spreadsheet.ods",
       "state": "ready",
       "canvases": 0,
       "runtimeRequests": 1

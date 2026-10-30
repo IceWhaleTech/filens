@@ -5,12 +5,11 @@ import type {
   ConversionRequest,
   ConversionResult,
   ConverterClient,
-  PreviewLoadContext,
-  PreviewSource
+  PreviewLoadContext
 } from '@filens/core';
 import conversionManifest from '../../../wasm/converter-core/manifest/conversions.json';
 import imageConversionManifest from '../../../wasm/converter-image/manifest/conversions.json';
-import { isConversionSourceUrl, isDataUrl, readDataUrl, retryableLoader, throwIfAborted, waitForConversion } from './source';
+import { sourceToBytes, retryableLoader, throwIfAborted, waitForConversion } from './source';
 
 interface ConversionManifestEntry {
   sourceFormat: string;
@@ -207,41 +206,6 @@ function validateSupportedConversionPair(sourceFormat: string, targetFormat: str
     errorMessage,
     metrics: {}
   });
-}
-
-async function sourceToBytes(source: PreviewSource, fetchImpl = globalThis.fetch, signal?: AbortSignal): Promise<Uint8Array> {
-  if (isBlobLikeSource(source)) {
-    return new Uint8Array(await waitForConversion(source.arrayBuffer(), signal));
-  }
-  if (source instanceof ArrayBuffer) {
-    return new Uint8Array(source);
-  }
-  if (ArrayBuffer.isView(source)) {
-    return new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
-  }
-  if (typeof source === 'string') {
-    if (isDataUrl(source)) {
-      return readDataUrl(source).bytes;
-    }
-    if (isConversionSourceUrl(source)) {
-      if (!fetchImpl) throw new Error('A fetch implementation is required to load a conversion source URL.');
-      const response = await waitForConversion(fetchImpl(source, { signal }), signal);
-      throwIfAborted(signal);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch conversion source: ${response.status} ${response.statusText}`.trim());
-      }
-      return new Uint8Array(await waitForConversion(response.arrayBuffer(), signal));
-    }
-    return new TextEncoder().encode(source);
-  }
-  throw new Error('Unsupported conversion source type.');
-}
-
-function isBlobLikeSource(source: PreviewSource): source is Blob | File {
-  return typeof source === 'object'
-    && source !== null
-    && 'arrayBuffer' in source
-    && typeof source.arrayBuffer === 'function';
 }
 
 function parseCoreResult(bytes: Uint8Array): WasmCoreResult {

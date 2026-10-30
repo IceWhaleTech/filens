@@ -517,7 +517,6 @@ async function verifyDemoEntrypoints() {
     'xlsb',
     'xltm',
     'xlam',
-    'heic',
     'dwg',
     'graffle',
     'rar'
