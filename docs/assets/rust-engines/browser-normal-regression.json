@@ -1,0 +1,20 @@
+{
+  "fixture": "cax-if/s1-tu-203/headback.stp",
+  "wasmSha256": "a7855d58ed5beadcf5fcaefa17af302aee83fb7ebc2fda4c0fca5f1f8fddd3ed",
+  "before": {
+    "vertices": 43746,
+    "invalidPositionVertices": 0,
+    "invalidNormalVertices": 12
+  },
+  "adapterError": "StepReadError: Nonfinite STEP coordinate.",
+  "fix": "Replace invalid/zero supplied normals with finite geometric triangle normals inside the Rust WASM core.",
+  "after": {
+    "vertices": 43746,
+    "invalidPositionVertices": 0,
+    "invalidNormalVertices": 0,
+    "wasmSha256": "d192785227f33bbb3ab135dabfe80ea936e5e2f18f42b9478271bc51d2ff5aa6"
+  },
+  "trianglePositionsAndWindingUnchanged": true,
+  "geometryHashMethod": "SHA256 of sorted JSON triangle position arrays; preserves exact doubles and per-triangle vertex order/winding, ignores triangle emission order.",
+  "trianglePositionsSha256": "4260ed5602d7f350135b918930779de2c540ce748c883b61237d00ef6038118c"
+}

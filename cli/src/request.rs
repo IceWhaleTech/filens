@@ -212,6 +212,9 @@ pub fn parse(o: &mut Options, args: &[String], stdin: impl Read) -> Result<()> {
                 ensure!(o.request.query.is_empty(), "multiple search queries found");
                 o.request.query = positional[2..].join(" ");
             }
+        } else if positional.len() == 2 && positional.first().is_some_and(|s| ["read", "extract", "understand", "layout", "summarize", "prune", "summary", "summarise"].contains(&s.as_str())) {
+            o.request.operation = positional[0].clone();
+            set_input(&mut o.request, &positional[1])?;
         } else if positional.first().is_some_and(|s| s == "convert") {
             o.request.operation = "convert".into();
             ensure!(
@@ -231,7 +234,8 @@ pub fn parse(o: &mut Options, args: &[String], stdin: impl Read) -> Result<()> {
         } else {
             o.request.intent = positional.join(" ");
             for arg in &positional {
-                if std::fs::metadata(arg).is_ok_and(|m| m.is_file()) {
+                if std::fs::metadata(arg).is_ok_and(|m| m.is_file())
+                    || arg.split_once("!/").is_some_and(|(outer, _)| std::fs::metadata(crate::text_catalog::unescape_archive_path(outer)).is_ok_and(|m|m.is_file())) {
                     set_input(&mut o.request, arg)?;
                 }
             }
@@ -478,7 +482,7 @@ fn resolve(r: &mut Request) -> Result<()> {
         set_input(r, &cap[1])?;
         search = search.replace(&cap[0], "");
     }
-    for found in re(r#"[^\s"'“”‘’，。；：！？,;!?<>]+\.[a-zA-Z0-9]{1,12}"#).find_iter(&search)
+    for found in re(r#"[^\s"'“”‘’，。；：！？,;?<>]+\.[a-zA-Z0-9]{1,12}"#).find_iter(&search)
     {
         let mut path = found.as_str();
         for prefix in ["读取", "提取", "理解", "读一下", "总结", "摘要", "读"] {
@@ -552,6 +556,7 @@ fn resolve_search(r: &mut Request) -> Result<()> {
             && !r.force,
         "search does not accept summary or conversion options"
     );
+    ensure!(r.cache != Some(true), "search uses request-local memory only; persistent cache is unavailable (omit cache or use cache:false)");
     let quoted = re(r#"["'“‘]([^"'”’]+)["'”’]"#);
     let values: Vec<_> = quoted
         .captures_iter(&r.intent)
@@ -559,7 +564,7 @@ fn resolve_search(r: &mut Request) -> Result<()> {
         .collect();
     ensure!(
         values.len() <= 2,
-        "search accepts one directory and one query; quote them separately"
+        "search accepts one directory or archive and one query; quote them separately"
     );
     if let Some(input) = values.first() {
         set_input(r, input)?;
@@ -583,7 +588,7 @@ fn resolve_search(r: &mut Request) -> Result<()> {
     );
     ensure!(
         !r.input.is_empty() && !r.input.contains("://"),
-        "search requires a local directory; quote the directory and query, or use --input and --query"
+        "search requires a local directory or archive; quote the path and query, or use --input and --query"
     );
     ensure!(
         !r.query.trim().is_empty() && r.query.len() <= 4096,
@@ -769,6 +774,14 @@ mod tests {
                 .operation,
             "read"
         );
+    }
+    #[test]
+    fn archive_member_paths_are_single_inputs() {
+        let path = "资料.zip!/附件.tar.gz!/meeting notes.docx";
+        assert_eq!(options(&["read",path,"--layout","--json"],"").unwrap().request.input,path);
+        assert_eq!(options(&["summarize",path,"--query","预算"],"").unwrap().request.operation,"summarize");
+        assert_eq!(options(&["读取 \"资料.zip!/附件.tar.gz!/meeting notes.docx\"，以 JSON 输出"],"").unwrap().request.input,path);
+        assert_eq!(options(&["read bundle.zip!/inner.zip!/note.txt as json"],"").unwrap().request.input,"bundle.zip!/inner.zip!/note.txt");
     }
     #[test]
     fn conversion_request_and_path_validation() {

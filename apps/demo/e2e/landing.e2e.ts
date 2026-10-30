@@ -251,7 +251,7 @@ for (const lang of ['zh', 'en']) {
           )
       )
       .toBe(true);
-    await expect(page.getByRole('tab')).toHaveCount(8);
+    await expect(page.getByRole('tab')).toHaveCount(10);
     await expect(page.locator('.format-family-card')).toHaveCount(16);
     expect(await page.locator('.format-family-card').evaluateAll((cards) => cards.every((card) => {
       const bounds = card.getBoundingClientRect();

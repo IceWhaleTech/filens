@@ -3,6 +3,10 @@
   <h1>探微 · filens</h1>
   <p><strong>文件的精彩，打开就看见。</strong></p>
   <p>面向 Agent 与浏览器的本地文件工具：读取、搜索、OCR 与多格式预览。文件无需上传。</p>
+
+<!-- agent-cli-size:zh:start -->
+  <p><strong>CLI 2.10 MiB · Lite 7.85 MiB · Full 31.05 MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v0.3.0 · macOS arm64 · 包安装体积，Full 含 OCR 模型；<a href="docs/agent-cli-npm-release.json">各平台完整数据</a></sub></p>
+<!-- agent-cli-size:zh:end -->
   <p><a href="README.md">English</a> · 简体中文</p>
   <p>
     <a href="#让-agent-读取和理解文档">Agent CLI</a> ·
@@ -16,7 +20,7 @@
 
 <p align="center">源码版真实 CLI 输出 · 打字与响应时间经剪辑 · <a href="docs/assets/agent-cli/terminal-demo.gif">English GIF</a></p>
 
-<p align="center"><strong>本地运行 · Agent CLI 与浏览器预览 · 共享 WASM 核心</strong></p>
+<p align="center"><strong>本地运行 · 文档、扫描件与图片 · 向 Agent 交付可定位原文</strong></p>
 
 <p align="center">
   <a href="https://www.zimaspace.com/zh/zimaos?utm_source=github&amp;utm_medium=referral&amp;utm_campaign=filens_zimaos&amp;utm_content=readme_banner_zh"><img src="docs/assets/readme/zimaos-banner.zh-CN.png" alt="ZimaOS，个人云更简单。ZimaOS 深度使用了 FiLens 项目，支持文件管理、RAW / 全景、备份和 800+ 应用。了解更多。" width="640" /></a>
@@ -26,7 +30,7 @@
 
 ## 让 Agent 读取和理解文档
 
-用中英文描述读取或总结意图，交付 text、JSON、Markdown、HTML、YAML、XML、CSV 或 TSV，并获取文档结构及 PDF / OCR 坐标。源码版的 `summarize` / `prune` 可无 LLM 地选取关键原文，保留出处与省略标记。解析、布局、摘录与文档导出共用 WASM 核心，改写总结、翻译和问答由上层 Agent 完成。
+一个本地入口读取或搜索 PDF、Office、表格、扫描件与图片，向 Agent 交付原文及可用的页码坐标、标题与表格结构。用中英文描述意图，输出 text、JSON、Markdown、HTML、YAML、XML、CSV 或 TSV。0.3.0 的 `summarize` / `prune` 可无 LLM 地选取关键原文，保留出处与省略标记。这些能力复用共享文档核心，改写总结、翻译和问答由上层 Agent 完成。
 
 [输出格式、布局信息与动图复现](docs/agent-cli-formats-and-layout.zh-CN.md) · 使用真实 CLI 输出节选，剪辑了打字与响应时间。
 
@@ -48,24 +52,26 @@ npm install -g filens-cli-lite
 npx --yes filens-cli-lite capacity --json
 ```
 
-源码 CLI 已改为 Rust，启用 strip、LTO、Windows/Linux 可执行文件的 UPX 压缩，以及 WASM 快速 gzip 压缩。macOS arm64 的可执行格式不受 UPX 支持，因此跳过。
+CLI 使用 Rust，启用 strip、LTO、Windows/Linux 可执行文件的 UPX 压缩，以及 WASM 快速 gzip 压缩。macOS arm64 的可执行格式不受 UPX 支持，因此跳过。
 
-源码版支持[无 LLM 的关键内容提取](docs/agent-cli-pruning.zh-CN.md)：`filens '提取 "report.pdf" 的关键内容，关注预算和风险，以 JSON 输出'`。按密度、BM25 与相似距离裁剪原文，保留出处和省略标记；可用 `capacity` 检查当前安装是否包含 `summarize`。
+0.3.0 支持[无 LLM 的关键内容提取](docs/agent-cli-pruning.zh-CN.md)：`filens '提取 "report.pdf" 的关键内容，关注预算和风险，以 JSON 输出'`。按密度、BM25 与相似距离裁剪原文，保留出处和省略标记；可用 `capacity` 检查当前安装是否包含 `summarize`。
 
-源码版还提供[目录搜索](docs/agent-cli-search.zh-CN.md)：`filens '在 "./documents" 中搜索 "预算 风险"，以 JSON 输出'`。支持 BM25、精确文本和文件名模式，返回原文偏移及可用布局；当前不含 embedding 语义检索。macOS 使用系统 FTS，Windows/Linux 嵌入编译后的私有 hdrw WASM。
+0.3.0 还提供[跨格式目录搜索](docs/agent-cli-search.zh-CN.md)：`filens '在 "./documents" 中搜索 "预算 风险"，以 JSON 输出'`。直接检索支持的文档正文，扫描页与内嵌图片按需 OCR，无需用户先转成 TXT；结果保留原文片段、偏移和可用布局。支持 BM25、精确文本和文件名模式，当前不含 embedding 语义检索。
 
-[搜索速度与准确性实测](docs/agent-cli-search-benchmark.zh-CN.md)对比 FiLens、ripgrep 和 git grep，覆盖固定合成查询、文档提取、缓存更新与 100–2000 文件扫描，同时公开漏检和无答案误报。
+[压缩包与嵌套文件](docs/agent-cli-search-archives.zh-CN.md)也可直接搜索：`filens '在 "资料.zip" 中搜索 "预算"，以 JSON 输出'`。自动展开 ZIP、TAR、GZIP 等，包内文档和图片继续使用 OCR 与布局能力；命中后的 `资料.zip!/附件.zip!/合同.pdf` 可直接再次读取或摘录。
 
-源码版新增 [Czkawka 风格的重复文件与相似图片扫描](docs/agent-cli-similarity.zh-CN.md)：`filens duplicates ./files --json`、`filens similar-images ./photos --threshold 8 --json`。支持不同尺寸及重新压缩的图片分组，无需 OCR 或模型。使用 `capacity.operations` 检查 `similar`；已发布的 npm `0.2.0` 不包含这项能力。扫描输出分组供核对。
+[多格式覆盖与证据定位实测](docs/agent-cli-search-formats.zh-CN.md)已通过 12 种扩展名、13 个样例，覆盖真实 CLI 解析、搜索、原文偏移及逻辑结构、PDF/OCR 布局。这是功能检查，通用提取与检索准确性仍需更多样本。搜索不持久保存索引/正文，不计算来源哈希。[检索边界](docs/agent-cli-search-benchmark.zh-CN.md)和[启动成本](docs/agent-cli-search-native.zh-CN.md)单独公开，保留漏检、误报及 rg 线程调优对照。
 
-`0.3.0-rc.1` 已补充 [Windows x64 候选包、实机测试说明和可复制的 Agent 提示词](docs/agent-cli-windows.zh-CN.md)；稳定版 npm `0.2.0` 尚不包含 Windows。
+0.3.0 提供 [Czkawka 风格的重复文件与相似图片扫描](docs/agent-cli-similarity.zh-CN.md)：`filens duplicates ./files --json`、`filens similar-images ./photos --threshold 8 --json`。支持不同尺寸及重新压缩的图片分组，无需 OCR 或模型。使用 `capacity.operations` 检查 `similar`。扫描输出分组供核对。
+
+0.3.0 提供 Windows 10/11 x64、macOS arm64 和 Linux x64/arm64 安装包，见 [Windows 安装、实机测试说明和可复制的 Agent 提示词](docs/agent-cli-windows.zh-CN.md)；Windows/Linux 原生运行仍待验证。
 `convert` 复用前端转换核心，支持的格式对见 `capacity.conversionPairs`。
 可分发的 [Agent Skill](skills/filens/SKILL.md) 带标准 YAML front matter，
 覆盖读取、搜索、重复文件与相似图片扫描、OCR、布局、证据引用和文件转换。
 
-npm 安装入口为 [`filens-cli`](https://www.npmjs.com/package/filens-cli) 和 [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite)，都提供 `filens` 命令。完整包内置原生 RapidOCR NCNN 与模型，**无需 Python 环境**；默认最大边长 **960**、OpenMP 线程 **2**，开启文字方向分类和图片预处理。WASM 支持扫描页及文档内嵌图片的 OCR 回调。macOS arm64 重建的 Rust 候选包安装体积：Lite 约 **7.25 MiB**，Full 约 **30.45 MiB**。模型支持 HF / ModelScope / HF Mirror 三源或四路并发测速下载和哈希校验，详见[安装、打包与输出协议](docs/agent-cli.zh-CN.md)。
+npm 安装入口为 [`filens-cli`](https://www.npmjs.com/package/filens-cli) 和 [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite)，都提供 `filens` 命令。完整包内置原生 RapidOCR NCNN 与模型，**无需 Python 环境**；默认最大边长 **960**、OpenMP 线程 **2**，开启文字方向分类和图片预处理。WASM 支持扫描页及文档内嵌图片的 OCR 回调。0.3.0 在 macOS arm64 上的安装体积：Lite **7.85 MiB**，Full **31.05 MiB**，原生主程序 **2.10 MiB**，详见[各平台实测体积](docs/agent-cli-npm-release.json)。模型支持 HF / ModelScope / HF Mirror 三源或四路并发测速下载和哈希校验，详见[安装、打包与输出协议](docs/agent-cli.zh-CN.md)。
 
-上述总体积为加入相似扫描之前的 2026-10-29 候选包。后续 macOS arm64 本地构建对比，主程序加 gzip WASM 资源增加约 **278 KiB**，见[实测范围](docs/agent-cli-similarity-size.json)；这不是重新打包后的 Lite/Full 总体积，也不是 npm 下载体积增量。
+FiLens 自有代码使用 [MIT 协议](LICENSE)，随包组件保留各自的许可证，见[第三方声明](packaging/agent-third-party.md)。
 
 ## 浏览器里，也能看见这些
 
@@ -159,7 +165,8 @@ npm run dev --workspace @filens/demo
 | 转换核心 WASM | 872.1 KiB | 395.6 KiB | **318.3 KiB** |
 | 图像 / RAW 核心 WASM | 1072.2 KiB | 293.0 KiB | **210.7 KiB** |
 | 媒体 / 全景预览 | 216.9 KiB | 64.1 KiB | **54.7 KiB** |
-| STEP 可选 WASM | 2625.8 KiB | 1020.2 KiB | **797.0 KiB** |
+| STEP Rust WASM（默认） | 925.0 KiB | 326.3 KiB | **254.5 KiB** |
+| STEP OCCT WASM（显式可选） | 2625.8 KiB | 1020.2 KiB | **797.0 KiB** |
 
 文档、图像 / RAW 与 STEP 的 WASM 模块独立按需加载；媒体预览模块与图像转换核心分别计量。JS 分包已包含对应 CSS，共享依赖和 Worker 单列。
 
@@ -181,7 +188,7 @@ npm run dev --workspace @filens/demo
 | 文本 / 电子书 | 22.9 KiB | 8.2 KiB | **7.3 KiB** |
 | iWork Worker | 894.1 KiB | 186.7 KiB | **156.2 KiB** |
 | PDF Worker | 1053.3 KiB | 291.1 KiB | **233.1 KiB** |
-| STEP 加载器 | 23.0 KiB | 9.5 KiB | **8.7 KiB** |
+| STEP OCCT 加载器（显式可选） | 23.0 KiB | 9.5 KiB | **8.7 KiB** |
 
 本次构建的入口、预加载 JS 与 CSS 合计 **499.0 KiB Brotli**（原始 2131.8 KiB / gzip 596.6 KiB），另计图片、视频和示例文件。模块会共享依赖；上述体积不代表每种格式的独立总下载量。
 
@@ -189,6 +196,8 @@ npm run dev --workspace @filens/demo
 
 数据来自实际演示站构建。压缩列是产物体积，实际传输取决于托管配置。[完整报告与复现方式](docs/bundle-sizes.md)。
 <!-- bundle-sizes:zh:end -->
+
+Rust STEP 已接入默认浏览器预览；独立 `filens-step@0.1.0-rc.1` 候选包的 WASM 为 **254.53 KiB Brotli**，JS 加载器与 WASI 宿主另计 **4.48 KiB Brotli**，npm tarball 为 **354.65 KiB**。上述 STEP Rust 行来自 2026-10-30 独立包实测，其他演示站分包行保留原构建快照。44 个含实体样例中 43 个通过几何筛查；保留显式 OCCT 入口。修复已提交 [上游 PR #141](https://github.com/ricosjp/truck/pull/141)，详见[接入、体积和发布候选记录](docs/rust-step-browser.zh-CN.md)。**按要求等待其他改动，尚未发布 npm**；这些数据与 CLI 安装体积分别计量。
 
 ## 性能实测
 
@@ -203,7 +212,7 @@ npm run dev --workspace @filens/demo
 | 11904×5952 X5 INSP 原片全景首屏 | **369.4 ms** | Photo Sphere Viewer 5.15.1 双鱼眼：414.5 ms | **1.12×** |
 | 无内嵌 JPEG 的 NEF → 预览画布 | **152.7 ms** | LibRaw-Wasm 1.6.0 半尺寸：326.7 ms | **2.14×** |
 | 无内嵌 JPEG 的 DNG → 预览画布 | **167.7 ms** | LibRaw-Wasm 1.6.0 快速半尺寸：314.4 ms | **1.87×** |
-| STEP 几何导入：cube | **46.5 ms** | occt-import-js 0.0.23: 67.6 ms | 1.45× |
+| STEP 几何导入：cube（旧 OCCT 基线） | **46.5 ms** | occt-import-js 0.0.23: 67.6 ms | 1.45× |
 | XLSX 数据读取（80,000 单元格） | **42.3 ms** | SheetJS CE 0.20.3: 109.6 ms | 2.59× |
 | XLS → XLSX 预览转换（6 工作表） | **12.3 ms** | x2t WASM v9.3.2+3: 49.1 ms | 4.00× |
 | 20,000×8 数值 CSV → XLSX | **137.6 ms** | x2t WASM v9.3.2+3: 198.8 ms | 1.44× |

@@ -21,7 +21,7 @@ describe('createVueDefaultPreviewRoutes', () => {
 
     expect(conversionFormats.map((format) => `${format.extension}->${format.targetFormat}`)).toEqual(
       conversionManifest
-        .filter((pair) => pair.sourceFormat !== 'epub')
+        .filter((pair) => pair.sourceFormat !== 'epub' && pair.sourceFormat !== pair.targetFormat)
         .map((pair) => `${pair.sourceFormat}->${pair.targetFormat}`)
     );
     expect(resolveFormatRoute({ name: 'book.epub' }, { routes })).toMatchObject({ driverId: 'ebook', targetFormat: 'epub' });
@@ -39,7 +39,8 @@ describe('createVueDefaultPreviewRoutes', () => {
       'iphone.heic',
       'a.pages',
       'a.key',
-      'a.numbers'
+      'a.numbers',
+      'a.docx', 'a.xlsx', 'a.pptx'
     ]) {
       const route = resolveFormatRoute({ name: testCase }, { routes });
       expect(route?.conversion?.required).not.toBe(true);

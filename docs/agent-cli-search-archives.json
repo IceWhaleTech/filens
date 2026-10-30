@@ -1,0 +1,236 @@
+{
+  "observedAt": "2026-10-29T19:18:26.163Z",
+  "platform": "darwin-arm64",
+  "requests": 53,
+  "ocr": true,
+  "result": "passed",
+  "formats": [
+    "zip",
+    "jar",
+    "tar",
+    "tgz",
+    "tar.gz",
+    "gz"
+  ],
+  "maxVerifiedLayers": 8,
+  "observations": [
+    {
+      "case": "mixed directory with nested archives",
+      "exit": 0
+    },
+    {
+      "case": "read virtual path and verify evidence",
+      "exit": 0
+    },
+    {
+      "case": "read virtual path and verify evidence",
+      "exit": 0
+    },
+    {
+      "case": "read virtual path and verify evidence",
+      "exit": 0
+    },
+    {
+      "case": "read virtual path and verify evidence",
+      "exit": 0
+    },
+    {
+      "case": "read virtual path and verify evidence",
+      "exit": 0
+    },
+    {
+      "case": "read virtual path and verify evidence",
+      "exit": 0
+    },
+    {
+      "case": "read virtual path and verify evidence",
+      "exit": 0
+    },
+    {
+      "case": "read virtual path and verify evidence",
+      "exit": 0
+    },
+    {
+      "case": "read virtual path and verify evidence",
+      "exit": 0
+    },
+    {
+      "case": "read virtual path and verify evidence",
+      "exit": 0
+    },
+    {
+      "case": "standalone ZIP",
+      "exit": 0
+    },
+    {
+      "case": "standalone TAR.GZ",
+      "exit": 0
+    },
+    {
+      "case": "Chinese intent with archive input",
+      "exit": 0
+    },
+    {
+      "case": "English intent with archive input",
+      "exit": 0
+    },
+    {
+      "case": "parallel archive/OCR lane parity",
+      "exit": 0
+    },
+    {
+      "case": "nested filenames without content or OCR",
+      "exit": 0
+    },
+    {
+      "case": "include hidden members",
+      "exit": 0
+    },
+    {
+      "case": "summarize nested DOCX",
+      "exit": 0
+    },
+    {
+      "case": "missing member is explicit",
+      "exit": 3
+    },
+    {
+      "case": "bare virtual member path",
+      "exit": 0
+    },
+    {
+      "case": "Chinese virtual member read",
+      "exit": 0
+    },
+    {
+      "case": "archive search output text",
+      "exit": 0
+    },
+    {
+      "case": "archive search output json",
+      "exit": 0
+    },
+    {
+      "case": "archive search output markdown",
+      "exit": 0
+    },
+    {
+      "case": "archive search output html",
+      "exit": 0
+    },
+    {
+      "case": "archive search output yaml",
+      "exit": 0
+    },
+    {
+      "case": "archive search output xml",
+      "exit": 0
+    },
+    {
+      "case": "archive search output csv",
+      "exit": 0
+    },
+    {
+      "case": "archive search output tsv",
+      "exit": 0
+    },
+    {
+      "case": "eight nested archive layers",
+      "exit": 0
+    },
+    {
+      "case": "read at nesting limit",
+      "exit": 0
+    },
+    {
+      "case": "nesting limit preserves partial evidence",
+      "exit": 3
+    },
+    {
+      "case": "member file count limit",
+      "exit": 3
+    },
+    {
+      "case": "corrupt nested archive",
+      "exit": 3
+    },
+    {
+      "case": "unsafe archive paths are rejected",
+      "exit": 3
+    },
+    {
+      "case": "TAR symlinks are not followed",
+      "exit": 0
+    },
+    {
+      "case": "duplicate TAR member paths",
+      "exit": 3
+    },
+    {
+      "case": "normalized member aliases are duplicates",
+      "exit": 3
+    },
+    {
+      "case": "literal delimiter and percent path characters",
+      "exit": 0
+    },
+    {
+      "case": "escaped virtual member read",
+      "exit": 0
+    },
+    {
+      "case": "bare escaped virtual path",
+      "exit": 0
+    },
+    {
+      "case": "archive path with same-named physical directory",
+      "exit": 0
+    },
+    {
+      "case": "virtual provenance wins over physical decoy",
+      "exit": 0
+    },
+    {
+      "case": "member extraction byte limit",
+      "exit": 3
+    },
+    {
+      "case": "invalid GZIP header",
+      "exit": 3
+    },
+    {
+      "case": "GNU long TAR names",
+      "exit": 0
+    },
+    {
+      "case": "encrypted flag produces password error",
+      "exit": 3
+    },
+    {
+      "case": "encrypted leaf filename remains visible",
+      "exit": 0
+    },
+    {
+      "case": "OCR from nested ZIP and TAR.GZ",
+      "exit": 0
+    },
+    {
+      "case": "read nested OCR member and validate offsets",
+      "exit": 0
+    },
+    {
+      "case": "read nested OCR member and validate offsets",
+      "exit": 0
+    },
+    {
+      "case": "unavailable OCR retains other members",
+      "exit": 3
+    }
+  ],
+  "limitations": [
+    "Small synthetic functional fixtures; not an archive/retrieval accuracy benchmark.",
+    "Encrypted fixture exercises ZIP encryption flags, not successful password decryption.",
+    "Single host; Windows/Linux execution needs CI.",
+    "RAR and 7z are unsupported."
+  ]
+}

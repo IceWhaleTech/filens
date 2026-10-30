@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const expectedConversions = [
+  ['docx', 'docx'],
+  ['xlsx', 'xlsx'],
+  ['pptx', 'pptx'],
   ['ppt', 'pptx'],
   ['pps', 'pptx'],
   ['pot', 'pptx'],

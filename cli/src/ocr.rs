@@ -208,6 +208,15 @@ impl Provider {
             worker: None,
         }
     }
+    pub fn fork_disabled(&self) -> Self {
+        Self {
+            enabled: false,
+            library: self.library.clone(),
+            models: self.models.clone(),
+            pid: self.pid.clone(),
+            worker: None,
+        }
+    }
     pub fn call(&mut self, mut request: Value) -> Result<Value> {
         ensure!(self.enabled, "OCR provider is unavailable");
         if self.worker.is_none() {

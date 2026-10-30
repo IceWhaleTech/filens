@@ -15,6 +15,17 @@ async function execute(commands: number[][], data: Array<[number, string | Uint8
 }
 
 describe('WASI file writes through actual WebAssembly imports', () => {
+  it('captures split UTF-8 stdout/stderr only when requested and resets them per invocation', async () => {
+    const bytes = new TextEncoder().encode('几何已完成');
+    const wasm = await WebAssembly.compile(createWasiProgram({ data: [[4096, bytes], [4200, 'diagnostic']], commands: [
+      iov(4096, 2), call('fd_write', [1, 64, 1, 200]),
+      iov(4098, bytes.length - 2), call('fd_write', [1, 64, 1, 200]),
+      iov(4200, 10), call('fd_write', [2, 64, 1, 200])
+    ] }));
+    const run = createWasmCoreRunner({ wasm });
+    expect(await run({ args: [], files: {} })).not.toHaveProperty('stdout');
+    for (let i = 0; i < 2; i++) expect(await run({ args: [], files: {}, captureStdio: true })).toMatchObject({ stdout: '几何已完成', stderr: 'diagnostic' });
+  });
   it('matches every byte across many growth boundaries', async () => {
     const { wasm, pattern } = createWasiWriteFixture(3 * 1024 * 1024, 3072);
     const result = await createWasmCoreRunner({ wasm })({ args: ['io-check'], files: {}, readFiles: ['/work/output.bin'] });

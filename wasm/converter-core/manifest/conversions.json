@@ -1,4 +1,7 @@
 [
+  { "sourceFormat": "docx", "targetFormat": "docx" },
+  { "sourceFormat": "xlsx", "targetFormat": "xlsx" },
+  { "sourceFormat": "pptx", "targetFormat": "pptx" },
   { "sourceFormat": "ppt", "targetFormat": "pptx" },
   { "sourceFormat": "pps", "targetFormat": "pptx" },
   { "sourceFormat": "pot", "targetFormat": "pptx" },

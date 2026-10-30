@@ -6,17 +6,18 @@ import { fileURLToPath } from 'node:url';
 import { zipSync, strToU8 } from 'fflate';
 import { buildAgentBinary } from './agent-rust-build.mjs';
 import { assertReleaseDirectory, privacyIssues } from './agent-release-privacy.mjs';
+import { platformPackageName } from './agent-platforms.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const version=JSON.parse(await readFile(path.join(root,'packaging/agent-release.json'),'utf8')).version;
-const core=path.join(root,'dist/npm/filens-cli-win32-x64');
-const ocr=path.join(root,'dist/npm/filens-ocr-win32-x64');
+const core=path.join(root,'dist/npm',platformPackageName('cli','win32-x64'));
+const ocr=path.join(root,'dist/npm',platformPackageName('ocr','win32-x64'));
 for(const directory of [core,ocr])if(JSON.parse(await readFile(path.join(directory,'package.json'),'utf8')).version!==version)throw new Error('Build Windows npm candidates first: node scripts/package-agent-npm.mjs --platform win32-x64');
 const outputs=[];
 for(const flavor of ['full','lite']){
   const name=`filens-${version}-win32-x64-${flavor}`;
   const directory=path.join(root,'dist/windows',name);await rm(directory,{recursive:true,force:true});await mkdir(directory,{recursive:true});
-  for(const file of ['converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz','THIRD-PARTY-NOTICES.md'])await copyFile(path.join(core,file),path.join(directory,file));
+  for(const file of ['converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz','THIRD-PARTY-NOTICES.md','LICENSE'])await copyFile(path.join(core,file),path.join(directory,file));
   await cp(path.join(core,'licenses'),path.join(directory,'licenses'),{recursive:true});
   await cp(path.join(root,'skills/filens'),path.join(directory,'skills/filens'),{recursive:true});
   const binaryCompression=await buildAgentBinary(path.join(directory,'filens.exe'),{platform:'win32-x64',lite:flavor==='lite',upx:!process.argv.includes('--no-upx')});

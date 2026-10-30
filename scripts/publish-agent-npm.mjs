@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertReleaseArchive } from './agent-release-privacy.mjs';
@@ -20,6 +20,15 @@ const dry=process.argv.includes('--dry-run');
 const tag=release.version.includes('-')?'next':'latest';
 const entryNames=['filens-cli','filens-cli-lite'];
 const existing=new Set();
+const receiptFile=path.join(directory,`publication-state-${release.version}.json`);
+let receipt={version:release.version,accepted:[]};
+try{receipt=JSON.parse(await readFile(receiptFile,'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;}
+if(receipt.version!==release.version)throw new Error('Publication receipt version mismatch');
+const accepted=new Map(receipt.accepted.map(pkg=>[pkg.name,pkg]));
+for(const pkg of receipt.accepted){
+ if(integrities.get(pkg.name)!==pkg.integrity)throw new Error(`Previously accepted ${pkg.name}@${release.version} differs from the local tarball`);
+}
+let receiptWrites=Promise.resolve();
 if(!dry){
  await run(['whoami','--registry=https://registry.npmjs.org/']);
  // A retry must never attempt to overwrite an immutable version or silently
@@ -27,6 +36,7 @@ if(!dry){
  const results=await Promise.allSettled(release.packages.map(async pkg=>{
   const response=await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg.name)}/${release.version}`,{signal:AbortSignal.timeout(20000)});
   if(response.status===404){
+   if(accepted.has(pkg.name))return;
    // npm may accept a new package but expose only a temporary stub while its
    // first release is reviewed. Do not mistake that state for an unpublished
    // package and submit the same immutable version again.
@@ -55,11 +65,52 @@ for(let i=0;i<components.length;i+=3){
  const errors=results.filter(r=>r.status==='rejected');
  if(errors.length)throw new AggregateError(errors.map(r=>r.reason),'Platform package publication failed; rerun to resume verified packages');
 }
-for(const pkg of release.packages.filter(p=>entryNames.includes(p.name)))await publish(pkg);
+// A successful upload can still be staged for npm review, especially for a new
+// platform package. Keep public entry points unchanged until every dependency
+// is visible with the exact integrity that the entry points will install.
+if(!dry){
+ const results=await Promise.allSettled(components.map(verifyPublic));
+ const errors=results.filter(r=>r.status==='rejected');
+ if(errors.length)throw new AggregateError(errors.map(r=>r.reason),'Platform packages are not publicly available; entry packages were not published');
+}
+for(const pkg of release.packages.filter(p=>entryNames.includes(p.name))){
+ await publish(pkg);
+ if(!dry)await verifyPublic(pkg);
+}
 async function publish(pkg){
  if(existing.has(pkg.name)){console.log(`Verified existing ${pkg.name}@${release.version}`);return;}
+ if(accepted.has(pkg.name)){console.log(`Previously accepted ${pkg.name}@${release.version}; awaiting public verification`);return;}
  console.log(`${dry?'Dry run':'Publishing'} ${pkg.name}@${release.version}`);
  await run(['publish',path.join(directory,pkg.file),'--access','public','--tag',tag,'--registry=https://registry.npmjs.org/',...(dry?['--dry-run']:[])]);
+ if(!dry){
+  // HTTP 202 is a successful npm upload, but the immutable version may still be
+  // under review. Persist the receipt so a retry never submits it again.
+  accepted.set(pkg.name,{name:pkg.name,integrity:integrities.get(pkg.name),acceptedAt:new Date().toISOString()});
+  const data=JSON.stringify({version:release.version,accepted:[...accepted.values()]},null,2)+'\n';
+  receiptWrites=receiptWrites.then(()=>writeFile(receiptFile,data));
+  await receiptWrites;
+ }
+}
+async function verifyPublic(pkg){
+ let lastStatus='not available';
+ for(let attempt=0;attempt<30;attempt++){
+  let response;
+  try{response=await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkg.name)}/${release.version}`,{signal:AbortSignal.timeout(20000)});}
+  catch(error){lastStatus=error.message;}
+  if(response?.ok){
+   const published=await response.json();
+   if(published.dist?.integrity!==integrities.get(pkg.name))throw new Error(`Public ${pkg.name}@${release.version} differs from the local tarball`);
+   if(published.license!=='MIT')throw new Error(`Public ${pkg.name}@${release.version} has an unexpected license`);
+   console.log(`Publicly available ${pkg.name}@${release.version} (MIT, integrity verified)`);
+   return;
+  }
+  if(response){
+   lastStatus=`HTTP ${response.status}`;
+   if(response.status!==404&&response.status!==429&&response.status<500)throw new Error(`Registry verification ${pkg.name}: ${lastStatus}`);
+  }
+  if(attempt<29)await new Promise(resolve=>setTimeout(resolve,Math.min(10000,2000*(attempt+1))));
+ }
+ throw new Error(`${pkg.name}@${release.version} is not publicly available after upload (${lastStatus}); npm may have staged it for review. Wait for the registry release rather than republishing.`);
 }
 function run(args){return new Promise((resolve,reject)=>{
  const npm=npmInvocation(args);

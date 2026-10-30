@@ -1,7 +1,7 @@
-// Real CLI/WASM retrieval, traversal, provenance and cache checks.
+// Real CLI/WASM retrieval, traversal, offsets and request-local storage checks.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFile, mkdir, rm, symlink, unlink, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { zipSync, strToU8 } from 'fflate';
@@ -15,10 +15,10 @@ const cache = path.join(directory, 'cache');
 await rm(directory, { recursive: true, force: true });
 await mkdir(corpus, { recursive: true });
 const observations = [];
-function run(args, expected = 0, stdin) {
+function run(args, expected = 0, stdin, environment = {}, executable = binary) {
   const start = performance.now();
-  const result = spawnSync(binary, args, { cwd: root, input: stdin, encoding: 'utf8',
-    env: { ...process.env, FILENS_SEARCH_CACHE_DIR: cache }, timeout: 120000, maxBuffer: 32 << 20 });
+  const result = spawnSync(executable, args, { cwd: root, input: stdin, encoding: 'utf8',
+    env: { ...process.env, FILENS_SEARCH_CACHE_DIR: cache, ...environment }, timeout: 120000, maxBuffer: 32 << 20 });
   assert.equal(result.error, undefined);
   assert.equal(result.status, expected, `${args.join(' ')}\n${result.stderr}\n${result.stdout}`);
   observations.push({ args, exit: result.status, ms: Math.round(performance.now() - start) });
@@ -64,14 +64,19 @@ const cold = query('预算');
 assert.equal(cold.search.complete, true);
 assert.equal(cold.search.semantic, false);
 assert.ok(cold.search.results.some(r => r.path.endsWith('budget.txt')));
+assert.deepEqual(cold.search.scope.extensions, cap.capacity.formats.filter(f => f.textExtraction || f.archiveSearch).map(f => f.format));
 const warm = query('预算');
-assert.ok(warm.search.scan.cache.hits >= 5);
+assert.equal(warm.search.scan.cache.enabled, false);
+assert.equal(warm.search.scan.cache.hits, 0);
+assert.equal(warm.search.scan.cache.writes, 0);
+assert.equal(warm.search.scan.integrity, 'assumed');
+await assert.rejects(access(cache), { code: 'ENOENT' });
 assert.equal(warm.search.matchedFiles, cold.search.matchedFiles);
 const precise = query('预算 12345.67');
 assert.equal(precise.search.matchedFiles, 1);
 assert.ok(precise.search.results[0].path.endsWith('budget.txt'));
 for (const hit of precise.search.results) {
-  assert.match(hit.sha256, /^[0-9a-f]{64}$/);
+  assert.equal(hit.sha256, null);
   const full = json(['read', hit.path, '--json', '--no-ocr']).content.text;
   for (const excerpt of hit.excerpts) {
     assert.equal(Buffer.from(full).subarray(excerpt.startByte, excerpt.endByte).toString(), excerpt.text);
@@ -126,7 +131,46 @@ for (const request of [
   { operation: 'search', input: corpus, query: 'budget', maxResults: 0 },
   { operation: 'search', input: corpus, query: 'budget', searchMode: 'semantic' },
   { operation: 'search', input: corpus, query: 'budget', summaryChars: 100 },
+  { operation: 'search', input: corpus, query: 'budget', cache: true },
 ]) assert.equal(json(['-', '--no-ocr'], 2, JSON.stringify(request)).ok, false);
+// Actual pooled-WASM coverage: deterministic results and partial errors must
+// survive multiple workers, independently of the single-file startup path.
+const pooled = path.join(directory, 'parallel');
+await mkdir(pooled, { recursive: true });
+for (let i = 0; i < 80; i++) await writeFile(path.join(pooled, `${String(i).padStart(3, '0')}.txt`), `ordinary field notes ${i}.\nTHREAD2026 approved evidence ${i}.\n`);
+await writeFile(path.join(pooled, 'broken.docx'), 'not a document');
+const pooledArgs = ['search', pooled, '--query', 'THREAD2026', '--no-ocr', '--json'];
+const serial = JSON.parse(run(pooledArgs, 3, undefined, { FILENS_SEARCH_JOBS: '1' }));
+const parallel = JSON.parse(run(pooledArgs, 3, undefined, { FILENS_SEARCH_JOBS: '4' }));
+assert.deepEqual(serial.search.results, parallel.search.results);
+assert.deepEqual(serial.content, parallel.content);
+assert.equal(parallel.search.scan.execution.sharedTextModules, 1);
+assert.equal(parallel.search.scan.execution.workers, 4);
+assert.equal(parallel.search.scan.extractionErrorCount, 1);
+assert.equal(serial.search.matchedFiles, 80);
+await unlink(path.join(pooled, 'broken.docx'));
+const pure = JSON.parse(run(pooledArgs, 0, undefined, { FILENS_SEARCH_JOBS: '4', FILENS_TEXT_WASM: undefined }));
+assert.equal(pure.search.scan.execution.sharedTextModules, 0);
+assert.equal(pure.search.scan.execution.nativeFiles, 80);
+assert.equal(pure.search.scan.execution.ranking, 'native-rust');
+assert.deepEqual(pure.search.results, parallel.search.results);
+const standalone = path.join(directory, 'standalone');
+const encodings = path.join(directory, 'encodings');
+await mkdir(standalone, { recursive: true });
+await mkdir(encodings, { recursive: true });
+const standaloneBinary = path.join(standalone, path.basename(binary));
+await copyFile(binary, standaloneBinary);
+await writeFile(path.join(encodings, 'utf16.txt'), Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from('ENCODE2026 café\r\n', 'utf16le')]));
+await writeFile(path.join(encodings, 'latin.txt'), Buffer.from('ENCODE2026 café\r\n', 'latin1'));
+await writeFile(path.join(encodings, 'utf8.txt'), '\ufeffENCODE2026 café\r\n');
+const standaloneResult = JSON.parse(run(['search', encodings, '--query', 'ENCODE2026', '--json'], 0, undefined, { FILENS_TEXT_WASM: undefined }, standaloneBinary));
+assert.equal(standaloneResult.search.matchedFiles, 3);
+assert.equal(standaloneResult.search.scan.execution.sharedTextModules, 0);
+assert.ok(standaloneResult.search.results.every(hit => hit.excerpts[0].text === 'ENCODE2026 café'));
+const standaloneNames = JSON.parse(run(['search', encodings, '--query', 'latin', '--search-mode', 'files', '--json'], 0, undefined, { FILENS_TEXT_WASM: undefined }, standaloneBinary));
+assert.equal(standaloneNames.search.matchedFiles, 1);
+assert.equal(standaloneNames.search.scan.execution.sharedTextModules, 0);
+await assert.rejects(access(cache), { code: 'ENOENT' });
 if (process.argv.includes('--ocr')) {
   await unlink(path.join(corpus, 'broken.docx'));
   const scan = path.join(corpus, 'scanned.pdf');
@@ -141,4 +185,4 @@ if (process.argv.includes('--ocr')) {
 }
 await writeFile(path.join(directory, 'report.json'), JSON.stringify({ platform: `${process.platform}-${process.arch}`, binary, symlinks, observations,
   coldMs: observations[1].ms, warmMs: observations[2].ms, note: 'Functional checks on synthetic data, not a retrieval-quality benchmark.' }, null, 2) + '\n');
-console.log(`${observations.length} real CLI search checks passed: traversal, Chinese/English, eight outputs, source offsets/layout, limits, cache changes/deletes and partial errors.`);
+console.log(`${observations.length} real CLI search checks passed: traversal, Chinese/English, eight outputs, source offsets/layout, limits, no persistent cache/hashes, changes/deletes and partial errors.`);

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { executableName } from './agent-platforms.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const binary=path.join(root,'dist/agent-lite',executableName(`${process.platform}-${process.arch}`));
+const binary=process.env.FILENS_AGENT_BINARY || path.join(root,'dist/agent-lite',executableName(`${process.platform}-${process.arch}`));
 const work=await mkdtemp(path.join(os.tmpdir(),'filens-prune-'));
 let checks=0;
 function invoke(args,{input='',expected=0,exe=binary}={}){
@@ -42,7 +42,7 @@ try{
   assert.equal(json([`read "${file}" as json`]).operation,'read');checks++;
   const englishFile=path.join(work,'release.txt');await writeFile(englishFile,'Welcome to our docs.\nDecision: deploy on Friday.\nRisk: do not deploy without a database backup.\nThe budget is 42000 dollars.\nCoffee is available in the lobby.\n');
   const englishFocus=json([`summarize "${englishFile}" focus on risk keep 70% at most 100 characters as json`]);assert.match(englishFocus.content.text,/do not deploy without a database backup/);assert.equal(englishFocus.content.summary.query,'risk');checks++;
-  const exe=path.join(root,'dist',executableName(`${process.platform}-${process.arch}`));
+  const exe=process.env.FILENS_AGENT_BINARY || path.join(root,'dist',executableName(`${process.platform}-${process.arch}`));
   const scan=path.join(root,'converter/rapidocr/testdata/scan.pdf');
   const scannedRead=json([scan,'--json'],{exe});
   const scannedSummary=json(['summarize',scan,'--query','FILENS2026 BRIGHT2027','--summary-ratio','1','--layout','--json'],{exe});

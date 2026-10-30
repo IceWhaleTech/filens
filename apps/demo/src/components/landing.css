@@ -37,6 +37,8 @@
 .landing .site-nav a, .landing .site-footer nav a { transition: color .2s; }
 .landing .site-nav a:hover, .landing .site-footer nav a:hover { color: var(--home-ink); }
 .landing .nav-actions { display: flex; align-items: center; gap: 22px; }
+.landing .landing-agent-link { color: var(--home-muted); font-size: 12px; }
+.landing .landing-agent-link:hover { color: var(--home-ink); }
 .landing .language-toggle { display: flex; gap: 7px; align-items: center; padding: 5px 0; border: 0; background: transparent; font-size: 11px; color: #b1b0ac; }
 .landing .language-toggle > span { font-size: 19px; }
 .landing .github-link { display: block; width: 18px; height: 18px; color: #adada8; }
@@ -51,7 +53,7 @@
 .landing .button-dark:hover { background: #fff; }
 .landing .button-outline { border-color: #ffffff24; background: #ffffff03; color: #c2c1bc; }
 .landing .button-outline:hover { border-color: #ffffff50; background: #ffffff09; }
-.landing .button-small { min-height: 34px; padding: 7px 13px; font-size: 11px; border-radius: 6px; gap: 13px; }
+.landing .button-small { min-height: 34px; padding: 7px 13px; font-size: 11px; border-radius: 6px; gap: 13px; white-space: nowrap; }
 .landing .hero { text-align: center; padding-top: 2px; padding-bottom: 50px; }
 .landing .hero h1 { font-size: clamp(42px, 5.1vw, 72px); font-weight: 500; line-height: 1.22; letter-spacing: -.065em; text-wrap: balance; }
 .landing .hero h1 span { color: #afaca5; }
@@ -380,4 +382,9 @@
   .landing .site-footer { padding-top: 32px; gap: 24px; }
   .landing .site-footer nav { width: 100%; justify-content: space-between; gap: 12px; padding-top: 0; font-size: 10px; }
   .landing .image-credits { font-size: 8px; }
+}
+@media (max-width: 375px) {
+  .landing .site-header { gap: 10px; }
+  .landing .nav-actions { gap: 10px; flex-shrink: 0; }
+  .landing .language-toggle > span { display: none; }
 }

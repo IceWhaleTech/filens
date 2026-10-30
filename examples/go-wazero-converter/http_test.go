@@ -323,7 +323,7 @@ func TestHTTPHandlerSurfacesWASIPasswordErrors(t *testing.T) {
 			}
 
 			response := httptest.NewRecorder()
-			handler.ServeHTTP(response, multipartRequest(t, fields, "file", "encrypted.doc", buildEncryptedCompoundFileForTest()))
+			handler.ServeHTTP(response, multipartRequest(t, fields, "file", "encrypted.doc", readEncryptedDocumentForTest(t)))
 
 			if response.Code != http.StatusUnauthorized {
 				t.Fatalf("unexpected status: %d\n%s", response.Code, response.Body.String())

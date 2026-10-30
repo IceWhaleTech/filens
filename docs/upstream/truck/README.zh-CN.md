@@ -1,14 +1,17 @@
 # truck 上游 PR 交付包
 
-目标仓库：https://github.com/ricosjp/truck 。基于 2026-10-30 检查的 HEAD：`1ca3214e537004d466addbd85d6375807147a426`。三份 PR 已发布，均为非草稿，目标分支为 `master`。
+目标仓库：https://github.com/ricosjp/truck 。基于 2026-10-30 检查的 HEAD：`1ca3214e537004d466addbd85d6375807147a426`。四份 PR 已发布，均为非草稿，目标分支为 `master`。
 
-已拆成三份独立 PR。每份补丁均包含独立的合成回归测试，不需要分发第三方 STEP 文件；均检查过可单独应用到上述 HEAD，也检查了组合应用。
+后续曲面修复已提交 [PR #141](https://github.com/ricosjp/truck/pull/141)，几何筛查提升到 **43/44**，原通过项无回退。附 [第 4 份补丁](0004-refine-trimmed-surfaces-and-poles.patch)、[英文说明](pr-4-trimmed-surfaces.md) 和 [验证记录](validation-refined.json)。原压缩包仍对应前三个 PR；新补丁、254.85 KiB Brotli 候选体积与耗时代价见 Filens 工作区的 [曲面修复报告](../../rust-step-refined.zh-CN.md)。
+
+四份补丁均包含独立的合成回归测试，不需要分发第三方 STEP 文件；均检查过可单独应用到上述 HEAD，也检查了组合应用。
 
 | PR | 补丁 | 可直接使用的英文描述 | 目标回归测试 |
 | --- | --- | --- | ---: |
 | [#138 方向比例和坐标系](https://github.com/ricosjp/truck/pull/138) | [0001](0001-normalize-step-placement-directions.patch) | [PR 1](pr-1-directions.md) | 9 |
 | [#139 可省略的装配描述](https://github.com/ricosjp/truck/pull/139) | [0002](0002-honor-optional-assembly-descriptions.patch) | [PR 2](pr-2-descriptions.md) | 5 |
 | [#140 非有限曲线细分保护](https://github.com/ricosjp/truck/pull/140) | [0003](0003-stop-nonfinite-curve-subdivision.patch) | [PR 3](pr-3-subdivision.md) | 6 |
+| [#141 裁剪曲面细化与球面极点](https://github.com/ricosjp/truck/pull/141) | [0004](0004-refine-trimmed-surfaces-and-poles.patch) | [PR 4](pr-4-trimmed-surfaces.md) | 8 |
 
 发布后已核对三个 PR 的目标分支、提交、改动文件和正文；均处于 OPEN 状态且没有合并冲突。检查时 GitHub 未报告 CI 检查结果，不能视为 CI 已通过。发布记录见 [pull-requests.json](pull-requests.json)。
 
@@ -41,6 +44,6 @@ node benchmarks/rust-engines/check-upstream-prs.mjs
 
 该脚本检查独立及组合应用，在临时副本应用兼容依赖，先运行原代码证明测试可捕捉问题，再运行补丁和实验核心测试；不会推送分支或创建远程 PR。需要已准备好评测的 Cargo 依赖缓存，测试使用 --offline。
 
-Filens 的完整 WASM 复测目前为 44/44 含实体文件有网格、40/44 通过几何筛查。这个成绩还依赖实验适配层的单位/容差换算、表示关系遍历、标注/线框筛选和 PCurve 兼容处理，**不代表只合入这三份 PR 就能达到 40/44**。这些适配代码尚未作为通用上游修复提交。
+此前 Filens 的完整 WASM 复测为 44/44 含实体文件有网格、40/44 通过几何筛查；第 4 份本地补丁后为 43/44。这个成绩还依赖实验适配层的单位/容差换算、表示关系遍历、标注/线框筛选和 PCurve 兼容处理，**不代表只合入这些上游补丁就能达到语料成绩**。这些适配代码尚未作为通用上游修复提交。
 
 后续问题及复现证据见 [remaining-issues.md](remaining-issues.md)；完整实验结果见 [复查报告](../../rust-step-pr-review.zh-CN.md)。

@@ -7,6 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const out = path.join(root, 'docs/assets/rust-engines');
 const fixedStep = process.argv.includes('--step-fixed');
 const reviewedStep = process.argv.includes('--step-reviewed');
+const refinedStep = process.argv.includes('--step-refined');
 await mkdir(out, { recursive: true });
 const { chromium } = await import(path.join(root, 'tmp/rust-engines/tools/node_modules/playwright/index.mjs'));
 const html = `<!doctype html><meta charset="utf-8"><style>
@@ -16,24 +17,25 @@ import * as THREE from '/tmp/rust-engines/tools/node_modules/three/build/three.m
 const p=new URLSearchParams(location.search),kind=p.get('kind'),id=p.get('id');
 const fixed=p.has('fixed');
 const reviewed=p.has('reviewed');
+const refined=p.has('refined');
 const titles={ 'demo-cover':'PDF: standard font fallback', 'unicode-missing-font':'PDF: malformed CMap and missing font', 'type3-first':'PDF: Type3 glyphs', 'assembly':'STEP: embedded assembly placements', 'missing-faces':'STEP: HEAD_FRONT before / after fixes', 'rounded':'STEP: rounded cube before / after fixes' };
-document.querySelector('h1').textContent=titles[id];
+document.querySelector('h1').textContent=({foot:'STEP: hollow foot and trimmed cylinder',turbine:'STEP: turbine curved faces'})[id]||titles[id];
 document.querySelector('p').textContent=kind==='pdf'?'Same PDF page at 96 DPI. Columns: pinned C++ reference and two Rust WASM builds.':'Same camera and material. Geometry comes from the actual WASM outputs.';
-const engines=kind==='pdf'?['pdfium','hayro-fonts','hayro-no-fonts']:reviewed?['occt','truck','truck-reviewed']:fixed?['occt','truck','truck-fixed']:['occt','truck'];
+const engines=kind==='pdf'?['pdfium','hayro-fonts','hayro-no-fonts']:refined?['occt','truck-reviewed','truck-refined']:reviewed?['occt','truck','truck-reviewed']:fixed?['occt','truck','truck-fixed']:['occt','truck'];
 let referenceBounds;
 for(const engine of engines){
  const article=document.createElement('article'),h=document.createElement('h2');
- h.textContent=({pdfium:'PDFium', 'hayro-fonts':'hayro: fonts + CMaps', 'hayro-no-fonts':'hayro: no embedded fonts / CMaps',occt:'OCCT (current)',truck:fixed||reviewed?'truck: original baseline':'truck (Rust)','truck-fixed':'truck: after display fixes','truck-reviewed':'truck: after review (mm)'})[engine];
+ h.textContent=({pdfium:'PDFium', 'hayro-fonts':'hayro: fonts + CMaps', 'hayro-no-fonts':'hayro: no embedded fonts / CMaps',occt:'OCCT (current)',truck:fixed||reviewed?'truck: original baseline':'truck (Rust)','truck-fixed':'truck: after display fixes','truck-reviewed':'truck: after review (mm)','truck-refined':'truck: refined curved faces'})[engine];
  article.append(h);document.querySelector('.grid').append(article);
  if(kind==='pdf'){
   const img=document.createElement('img');img.src='/tmp/rust-engines/output/'+id+'-'+engine+'.png';article.append(img);await img.decode();
  }else{
-  const key=id==='assembly'?'cax-if/as1-tu-203.stp':id==='rounded'?'rounded-cube/rounded-cube.step':'cax-if/s1-c5-214/HEAD_FRONT.stp';
+  const key=id==='foot'?'cax-if/s1_pe_214/foot_front_prt.stp':id==='turbine'?'cax-if/s1_pe_214/tail_turbine_prt.stp':id==='assembly'?'cax-if/as1-tu-203.stp':id==='rounded'?'rounded-cube/rounded-cube.step':'cax-if/s1-c5-214/HEAD_FRONT.stp';
   const slug=key.replace(/[^a-zA-Z0-9.-]+/g,'_');
   if(id==='rounded'&&engine==='truck'){const text=document.createElement('p');text.textContent='No mesh: 20 s timeout';text.style='height:460px;display:grid;place-content:center;margin:0';article.append(text);continue;}
-  const folder=engine==='truck-reviewed'?'output-step-reviewed':engine==='truck-fixed'?'output-step-fixed':'output';
+  const folder=engine==='truck-refined'?'output-step-refined':engine==='truck-reviewed'?'output-step-reviewed':engine==='truck-fixed'?'output-step-fixed':'output';
   const data=await(await fetch('/tmp/rust-engines/'+folder+'/'+slug+'-'+(engine.startsWith('truck')?'truck':engine)+'.json')).json();
-  const scale=id==='missing-faces'&&engine!=='occt'&&engine!=='truck-reviewed'?25.4:1;
+  const scale=id==='missing-faces'&&engine!=='occt'&&engine!=='truck-reviewed'&&engine!=='truck-refined'?25.4:1;
   if(scale!==1)h.textContent+=' ×25.4 (unit diagnostic)';
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(data.positions.flat().map(v=>v*scale),3));
   geometry.setAttribute('normal',new THREE.Float32BufferAttribute(data.normals.flat(),3));geometry.computeBoundingBox();
@@ -67,9 +69,9 @@ const browser = await chromium.launch({ headless: true, args: ['--use-angle=swif
 try {
   const page = await browser.newPage({ viewport: { width: 1500, height: 2400 }, deviceScaleFactor: 1 });
   page.on('pageerror', error => console.error(error));
-  const cases = reviewedStep ? [['step','assembly','step-reviewed-assembly.png'], ['step','missing-faces','step-reviewed-head.png']] : fixedStep ? [['step','missing-faces','step-fixed-missing-faces.png'], ['step','rounded','step-fixed-rounded.png']] : [['pdf','demo-cover','pdf-fonts.png'], ['pdf','unicode-missing-font','pdf-unicode.png'], ['pdf','type3-first','pdf-type3.png'], ['step','assembly','step-assembly.png'], ['step','missing-faces','step-missing-faces.png']];
+  const cases = refinedStep ? [['step','foot','step-refined-foot.png'], ['step','turbine','step-refined-turbine.png']] : reviewedStep ? [['step','assembly','step-reviewed-assembly.png'], ['step','missing-faces','step-reviewed-head.png']] : fixedStep ? [['step','missing-faces','step-fixed-missing-faces.png'], ['step','rounded','step-fixed-rounded.png']] : [['pdf','demo-cover','pdf-fonts.png'], ['pdf','unicode-missing-font','pdf-unicode.png'], ['pdf','type3-first','pdf-type3.png'], ['step','assembly','step-assembly.png'], ['step','missing-faces','step-missing-faces.png']];
   for (const [kind, id, filename] of cases) {
-    await page.goto(`http://127.0.0.1:${server.address().port}/viewer?kind=${kind}&id=${id}${reviewedStep ? '&reviewed=1' : fixedStep ? '&fixed=1' : ''}`);
+    await page.goto(`http://127.0.0.1:${server.address().port}/viewer?kind=${kind}&id=${id}${refinedStep ? '&refined=1' : reviewedStep ? '&reviewed=1' : fixedStep ? '&fixed=1' : ''}`);
     await page.waitForFunction(() => window.ready === true);
     await page.locator('#capture').screenshot({ path: path.join(out, filename) });
     console.log(filename);

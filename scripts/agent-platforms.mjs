@@ -2,6 +2,9 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 export const supportedPlatforms = ['darwin-arm64','linux-x64','linux-arm64','win32-x64'];
+// Public entry points stay unscoped. Windows implementation packages live in
+// the publisher's namespace; npm rejected their unscoped names as spam.
+export const platformPackageName = (kind, platform) => `${platform.startsWith('win32-') ? '@orca.zhang/' : ''}filens-${kind}-${platform}`;
 export const executableName = platform => platform.startsWith('win32-') ? 'filens.exe' : 'filens';
 export const ocrLibraryName = platform => platform.startsWith('win32-') ? 'zima_ncnn_runtime_v7.dll' : platform.startsWith('darwin-') ? 'libzima_ncnn_runtime_v7.dylib' : 'libzima_ncnn_runtime_v7.so';
 

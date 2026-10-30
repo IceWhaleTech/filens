@@ -21,8 +21,10 @@ const labels = {
   text: ['文本 / 电子书', 'Text / ebooks'],
   'iwork-worker': ['iWork Worker', 'iWork worker'],
   'pdf.worker.min': ['PDF Worker', 'PDF worker'],
-  'occt-import-js': ['STEP 可选 WASM', 'Optional STEP WASM'],
-  'occt-runtime': ['STEP 加载器', 'STEP loader']
+  'filens-step': ['STEP Rust WASM（默认）', 'Rust STEP WASM (default)'],
+  'step-runtime': ['STEP Rust 加载器', 'Rust STEP loader'],
+  'occt-import-js': ['STEP OCCT WASM（显式可选）', 'OCCT STEP WASM (explicit option)'],
+  'occt-runtime': ['STEP OCCT 加载器', 'OCCT STEP loader']
 };
 const order = Object.keys(labels);
 const groups = new Map();
@@ -64,7 +66,7 @@ await writeFile(path.join(root, 'docs/assets/bundle-sizes.json'), `${JSON.string
 for (const lang of ['en', 'zh']) {
   const file = path.join(root, lang === 'en' ? 'README.md' : 'README.zh-CN.md');
   const source = updateSizeLabels(await readFile(file, 'utf8'));
-  const highlights = rows.filter(row => ['converter-core', 'converter-image', 'media', 'occt-import-js'].includes(row.name));
+  const highlights = rows.filter(row => ['converter-core', 'converter-image', 'media', 'filens-step'].includes(row.name));
   const rest = rows.filter(row => !highlights.includes(row));
   const section = lang === 'zh'
     ? `${table(highlights, lang)}\n\n文档、图像 / RAW 与 STEP 的 WASM 模块独立按需加载；媒体预览模块与图像转换核心分别计量。JS 分包已包含对应 CSS，共享依赖和 Worker 单列。\n\n<details>\n<summary>展开查看全部分包及首屏成本</summary>\n\n${table(rest, lang)}\n\n本次构建的入口、预加载 JS 与 CSS 合计 **${size(initial.brotli)} Brotli**（原始 ${size(initial.raw)} / gzip ${size(initial.gzip)}），另计图片、视频和示例文件。模块会共享依赖；上述体积不代表每种格式的独立总下载量。\n\n</details>\n\n数据来自实际演示站构建。压缩列是产物体积，实际传输取决于托管配置。[完整报告与复现方式](docs/bundle-sizes.md)。`

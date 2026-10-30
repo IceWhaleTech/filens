@@ -24,6 +24,8 @@ export type PreviewFitMode = 'contain' | 'width' | 'height' | 'none';
 
 export interface SourceDescriptor {
   source: PreviewSource;
+  /** Password to open this document. Kept in memory for this load only. */
+  password?: string;
   name?: string;
   extension?: string;
   contentType?: string;
@@ -185,7 +187,19 @@ export type PreviewResourceResolver = (
 
 export type PreviewerFactory = (host: HTMLElement, options?: PreviewOptions) => PreviewerInstance;
 
+export interface AudioPreviewOptions {
+  title?: string;
+  artist?: string;
+  album?: string;
+  /** Explicit artwork takes precedence over embedded/companion artwork. */
+  cover?: PreviewSource;
+  /** LRC content, including optional ti/ar/al/offset tags. */
+  lyrics?: string;
+}
+
 export interface PreviewOptions {
+  /** Return null to cancel. Called again when the supplied password is incorrect. */
+  requestPassword?: (request: PreviewPasswordRequest) => string | null | Promise<string | null>;
   fit?: PreviewFitMode;
   initialScale?: number;
   minScale?: number;
@@ -195,7 +209,15 @@ export interface PreviewOptions {
   /** Opt-in background webfont loading, adaptive mirror routing and font-ready relayout. */
   fontLoading?: boolean | PreviewFontLoadingOptions;
   resourceResolver?: PreviewResourceResolver;
+  audio?: AudioPreviewOptions;
   previewerFactory?: PreviewerFactory;
+}
+
+export interface PreviewPasswordRequest {
+  name?: string;
+  reason: 'password_required' | 'password_invalid';
+  attempt: number;
+  signal?: AbortSignal;
 }
 
 export interface PreviewCapabilities {

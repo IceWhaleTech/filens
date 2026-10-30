@@ -1,0 +1,99 @@
+{
+  "version": "occt-import-js 0.0.23, official npm dist",
+  "officialWasmSha256": "33391fc9d94ea5c869a6718488bf0a9a464222bac9bdc764dfe1690cef281952",
+  "officialWasmBytes": 7604031,
+  "productWasmSha256": "ceb05eac43111b8c4878db41e7bbdc9dc7ff601aa44852698d0ea63fa39f6982",
+  "parameters": {
+    "linearUnit": "millimeter",
+    "linearDeflectionType": "absolute_value",
+    "linearDeflection": 0.1,
+    "angularDeflection": 0.5
+  },
+  "limitation": "These builds share the OCCT importer; agreement does not independently establish correct trimming or solid orientation.",
+  "rows": [
+    {
+      "id": "cax-if/s1-c5-214/HEAD_BACK.stp",
+      "inputSha256": "fff5821e398c9f61cef4b853955f16b8a7600d0cd553bb839f8bf004afd1e404",
+      "officialGeometry": {
+        "min": [
+          180.00000000004198,
+          -59.98863740896403,
+          -60.000000000014
+        ],
+        "max": [
+          309.997529200842,
+          59.988637408932604,
+          60.000000000014
+        ],
+        "diagonal": 213.76132501238075,
+        "area": 71184.07073321356,
+        "signedVolume": 878559.7221570768,
+        "triangles": 8160
+      },
+      "exactlyMatchesProductOcct": true
+    },
+    {
+      "id": "cax-if/s1-c5-214/TAIL_TURBINE.stp",
+      "inputSha256": "a2595838d717b14e00e6d43f48c2f8a64240d799025ca7b45c883ce353a9b33e",
+      "officialGeometry": {
+        "min": [
+          -240.000000000056,
+          62.00696005277479,
+          -50.000000000053994
+        ],
+        "max": [
+          -119.21549309205031,
+          97.99852573690711,
+          50.000000000053994
+        ],
+        "diagonal": 160.8859531140829,
+        "area": 23029.33585754701,
+        "signedVolume": 82304.52726794104,
+        "triangles": 306
+      },
+      "exactlyMatchesProductOcct": true
+    },
+    {
+      "id": "cax-if/s1_pe_214/foot_front_prt.stp",
+      "inputSha256": "e8e289ba29e830e13560b3d798e9e6d2f81e705f4d4ece0a7a6bce8d1b8c5a0e",
+      "officialGeometry": {
+        "min": [
+          0,
+          -10,
+          -10
+        ],
+        "max": [
+          40,
+          10.5,
+          10
+        ],
+        "diagonal": 49.19603642571219,
+        "area": 4793.455650424893,
+        "signedVolume": 2402.1229653432547,
+        "triangles": 1200
+      },
+      "exactlyMatchesProductOcct": true
+    },
+    {
+      "id": "cax-if/s1_pe_214/tail_turbine_prt.stp",
+      "inputSha256": "a0cd10655ef08ae0bc69cb33a9bdac64fe80210b9fea18cd7b2840fd97eb650a",
+      "officialGeometry": {
+        "min": [
+          -98.51685757164,
+          -50.71796769724,
+          -36
+        ],
+        "max": [
+          40,
+          50.71796769724,
+          36
+        ],
+        "diagonal": 186.17241691742396,
+        "area": 35181.50077599387,
+        "signedVolume": 296289.1639531757,
+        "triangles": 332
+      },
+      "exactlyMatchesProductOcct": true
+    }
+  ]
+}

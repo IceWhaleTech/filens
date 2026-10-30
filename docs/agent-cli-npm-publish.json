@@ -1,0 +1,196 @@
+{
+  "observedAt": "2026-10-29T20:02:32.068Z",
+  "registry": "https://registry.npmjs.org/",
+  "version": "0.3.0",
+  "tag": "latest",
+  "license": "MIT",
+  "packages": [
+    {
+      "name": "filens-cli-darwin-arm64",
+      "version": "0.3.0",
+      "latest": "0.3.0",
+      "license": "MIT",
+      "publishedAt": "2026-10-29T19:39:21.348Z",
+      "tarball": "https://registry.npmjs.org/filens-cli-darwin-arm64/-/filens-cli-darwin-arm64-0.3.0.tgz",
+      "integrity": "sha512-XVrc258ieDEalgdN2VF0/CMJpR2Ea3hTlr5BLNxtGIxgOo/J30REwMe8+MgEVrgvhHDRXv3491EEKJMmbg7ydw==",
+      "sha256": "5a06abd16814c7322315987db0a746f0dc265d4d2fdbbad29a6d6eddbfd18950",
+      "bytes": 6293864,
+      "unpackedBytes": 8178327,
+      "integrityMatches": true
+    },
+    {
+      "name": "filens-ocr-darwin-arm64",
+      "version": "0.3.0",
+      "latest": "0.3.0",
+      "license": "MIT",
+      "publishedAt": "2026-10-29T19:40:18.504Z",
+      "tarball": "https://registry.npmjs.org/filens-ocr-darwin-arm64/-/filens-ocr-darwin-arm64-0.3.0.tgz",
+      "integrity": "sha512-I23VxJzuPt+HUIQR0/I6eVna+eW4QSlT2L2y5tfrW8ifrrxGTLCN9g8NqH6nq478QZYUSVY27svjADEOy6RDdQ==",
+      "sha256": "ccc8fa179c30f10c59eae8ba5400a348ac87735836854a28e351d0fdeb591ef8",
+      "bytes": 14892710,
+      "unpackedBytes": 24330334,
+      "integrityMatches": true
+    },
+    {
+      "name": "filens-cli-linux-x64",
+      "version": "0.3.0",
+      "latest": "0.3.0",
+      "license": "MIT",
+      "publishedAt": "2026-10-29T19:38:47.613Z",
+      "tarball": "https://registry.npmjs.org/filens-cli-linux-x64/-/filens-cli-linux-x64-0.3.0.tgz",
+      "integrity": "sha512-SFIWGGE/e/Dz92TUCwwwRP/Z72fjNLwqZLmkMJiyPm2GO/2Wyk2bpmr8JUpIyWHBrzx52iFpRmOiVq4AGXNUSA==",
+      "sha256": "eb58d5e04ffdd67b89d5f1dd6238222f44dcd8cdf6cdf755242624affc77a2d1",
+      "bytes": 7048804,
+      "unpackedBytes": 7941586,
+      "integrityMatches": true
+    },
+    {
+      "name": "filens-ocr-linux-x64",
+      "version": "0.3.0",
+      "latest": "0.3.0",
+      "license": "MIT",
+      "publishedAt": "2026-10-29T19:47:48.709Z",
+      "tarball": "https://registry.npmjs.org/filens-ocr-linux-x64/-/filens-ocr-linux-x64-0.3.0.tgz",
+      "integrity": "sha512-EA6KCiPviigrx5kL+iH2wH4rVoMe/1JALcrnr5JYs1EiyCkG3g3jYL+M86Jpf/NeaFvz1rDnY+pZ96kU378zXw==",
+      "sha256": "8400a808abd4008696f2280e60cba1202192638aa988f3049af3b10d29511f8c",
+      "bytes": 16755215,
+      "unpackedBytes": 30358769,
+      "integrityMatches": true
+    },
+    {
+      "name": "filens-cli-linux-arm64",
+      "version": "0.3.0",
+      "latest": "0.3.0",
+      "license": "MIT",
+      "publishedAt": "2026-10-29T19:43:52.308Z",
+      "tarball": "https://registry.npmjs.org/filens-cli-linux-arm64/-/filens-cli-linux-arm64-0.3.0.tgz",
+      "integrity": "sha512-ZhnjHaLHrM/cwykw39sJdu0gA9Ps1ivu/DqMqyJ/2KvE+PwzeIfPbNCSksAdnTmgCb+FM8CMn22EgFgqdRwXTw==",
+      "sha256": "9080265475b093d0416ff1cb7864f1a9d02b673becb26af82d4806139491ff2c",
+      "bytes": 6938947,
+      "unpackedBytes": 7831538,
+      "integrityMatches": true
+    },
+    {
+      "name": "filens-ocr-linux-arm64",
+      "version": "0.3.0",
+      "latest": "0.3.0",
+      "license": "MIT",
+      "publishedAt": "2026-10-29T19:49:21.975Z",
+      "tarball": "https://registry.npmjs.org/filens-ocr-linux-arm64/-/filens-ocr-linux-arm64-0.3.0.tgz",
+      "integrity": "sha512-FCdFiSzL34qzN/0PPAayusee81a5amdeOlseKPyQ6O/Mfms7G5Io9gcOHwS+zGLnwNtW1EP6pt79s2Er7MtDKw==",
+      "sha256": "9b06226b7ebb549460fec231c5c4a64180b9f276056966c6fe04f2f88b49aab3",
+      "bytes": 14452110,
+      "unpackedBytes": 24563825,
+      "integrityMatches": true
+    },
+    {
+      "name": "@orca.zhang/filens-cli-win32-x64",
+      "version": "0.3.0",
+      "latest": "0.3.0",
+      "license": "MIT",
+      "publishedAt": "2026-10-29T19:55:52.596Z",
+      "tarball": "https://registry.npmjs.org/@orca.zhang/filens-cli-win32-x64/-/filens-cli-win32-x64-0.3.0.tgz",
+      "integrity": "sha512-scAzjLCCY2PCpXj3yf1R5zUzZVwIYgR6jowr7bAwsuFms0NgpMKouLCn5RnafjOWS462kb4IB3PYEv4yPDYGng==",
+      "sha256": "d4abfce54b6b6101b7800a329681f4f374f92f06a7a33bc3ac35b187c72ad0e8",
+      "bytes": 6966629,
+      "unpackedBytes": 7861537,
+      "integrityMatches": true
+    },
+    {
+      "name": "@orca.zhang/filens-ocr-win32-x64",
+      "version": "0.3.0",
+      "latest": "0.3.0",
+      "license": "MIT",
+      "publishedAt": "2026-10-29T19:57:38.698Z",
+      "tarball": "https://registry.npmjs.org/@orca.zhang/filens-ocr-win32-x64/-/filens-ocr-win32-x64-0.3.0.tgz",
+      "integrity": "sha512-CqGq42LQraPNZY1bgLW7En62keZq4kQHOOTzOgeM/Jdmrc6QFZuRBNkfzIQuLKd4kFDGYjYbuGo83z2DHckWeQ==",
+      "sha256": "ad01ee70efb62d2a3878c76079e03f8133fd434db2f7b073ea68e4f0698f06c0",
+      "bytes": 17021119,
+      "unpackedBytes": 30172534,
+      "integrityMatches": true
+    },
+    {
+      "name": "filens-cli",
+      "version": "0.3.0",
+      "latest": "0.3.0",
+      "license": "MIT",
+      "publishedAt": "2026-10-29T19:59:54.272Z",
+      "tarball": "https://registry.npmjs.org/filens-cli/-/filens-cli-0.3.0.tgz",
+      "integrity": "sha512-deBrm/Lpt0GsxC284Yxnbmhdj9AflLkIc2czy3SVeUsC3vx0/eKw0WT3lpQ0RiJlyzmz320b1+XkcWvOgONJNw==",
+      "sha256": "036e59edc122f1071ed92c3dd329b39bd6949affce1d5ad19f9b557290f93813",
+      "bytes": 17699,
+      "unpackedBytes": 48908,
+      "integrityMatches": true
+    },
+    {
+      "name": "filens-cli-lite",
+      "version": "0.3.0",
+      "latest": "0.3.0",
+      "license": "MIT",
+      "publishedAt": "2026-10-29T20:01:00.820Z",
+      "tarball": "https://registry.npmjs.org/filens-cli-lite/-/filens-cli-lite-0.3.0.tgz",
+      "integrity": "sha512-0HSiW9wTs1pEEKYRwFdwyXEUTMGpBItGJbJIjRhtS01zUIoRylTN4eNOAk87t9BCz/xwV+26IoSnFREnLikG3g==",
+      "sha256": "b3d872afe2b56c27f1debc48111c377a0911a1c3e63491e7e5f5f4ca6d5f7188",
+      "bytes": 17679,
+      "unpackedBytes": 48742,
+      "integrityMatches": true
+    }
+  ],
+  "status": "published-and-verified",
+  "validatedAt": "2026-10-29T20:03:35.679Z",
+  "licenseScope": "FiLens first-party code and npm package metadata are MIT; bundled components retain their own licenses, including proprietary hdrw on Windows/Linux.",
+  "sizeReport": "agent-cli-npm-release.json",
+  "entryPackages": [
+    "filens-cli",
+    "filens-cli-lite"
+  ],
+  "installation": {
+    "full": "npm install -g filens-cli@0.3.0",
+    "lite": "npm install -g filens-cli-lite@0.3.0"
+  },
+  "windowsComponents": {
+    "cli": "@orca.zhang/filens-cli-win32-x64",
+    "ocr": "@orca.zhang/filens-ocr-win32-x64",
+    "selection": "Automatically selected by the unscoped public entry packages."
+  },
+  "tests": {
+    "offline": {
+      "command": "node scripts/test-agent-npm.mjs",
+      "platform": "darwin-arm64",
+      "passed": true,
+      "observedAt": "2026-10-29T19:52:49.362Z"
+    },
+    "registry": {
+      "command": "node scripts/test-agent-npm.mjs --registry",
+      "platform": "darwin-arm64",
+      "passed": true,
+      "freshNpmCache": true,
+      "observedAt": "2026-10-29T20:03:35.620Z"
+    },
+    "windowsPackaging": {
+      "platform": "darwin-arm64",
+      "passed": true,
+      "method": "Forced offline npm installation of Windows tarballs and scoped dependency resolution; no Windows binary executed",
+      "observedAt": "2026-10-29T19:52:49.362Z"
+    }
+  },
+  "exercised": [
+    "Full/Lite installation",
+    "Automatic host platform selection",
+    "Chinese and English intents",
+    "stdin JSON",
+    "Native execution without Python",
+    "PNG and scanned-PDF OCR",
+    "DOCX conversion and reading",
+    "Nested ZIP search, virtual-member reading and OCR",
+    "Layout coordinates and multiple output formats",
+    "Lite one-command OCR installation",
+    "Temporary npm invocation"
+  ],
+  "nativeRuntime": {
+    "darwin-arm64": "passed",
+    "linux-x64": "not executed; cross-built",
+    "linux-arm64": "not executed; cross-built",
+    "win32-x64": "not executed; cross-built, forced npm installation and scoped dependency resolution checked on macOS"
+  }
+}

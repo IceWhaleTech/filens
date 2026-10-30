@@ -33,6 +33,31 @@
   font-family: system-ui, sans-serif;
 }
 
+.pptxv-password-form {
+  display: grid;
+  gap: 12px;
+  width: min(340px, calc(100% - 40px));
+  padding: 24px;
+  box-sizing: border-box;
+  background: var(--pptxv-panel);
+  border: 1px solid var(--pptxv-border);
+  color: var(--pptxv-text);
+  text-align: left;
+}
+.pptxv-password-form h2 { margin: 0; font-size: 20px; }
+.pptxv-password-form p { margin: 0; font-size: 14px; }
+.pptxv-password-form label { font-size: 14px; }
+.pptxv-password-form input {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--pptxv-border-strong);
+  border-radius: 4px;
+  font: inherit;
+}
+.pptxv-password-form input:focus-visible { outline: 2px solid var(--pptxv-accent); outline-offset: 2px; }
+.pptxv-password-error { color: #b91c1c; }
+.pptxv-password-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
 .pptxv-shell:focus-visible {
   outline: 2px solid rgba(37, 99, 235, 0.3);
   outline-offset: 0;

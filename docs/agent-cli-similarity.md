@@ -2,7 +2,7 @@
 
 English · [简体中文](agent-cli-similarity.zh-CN.md)
 
-Source builds provide Czkawka-style directory scans that report groups of duplicate files and similar resized, reformatted or recompressed images. Hashing, image decoding and grouping run in the shared frontend WASM core; the CLI handles directory discovery and invocation. Neither OCR nor a model is required. Check `capacity.operations` for `similar`; published npm `0.2.0` does not include this capability.
+Version 0.3.0 provides Czkawka-style directory scans that report groups of duplicate files and similar resized, reformatted or recompressed images. Hashing, image decoding and grouping run in the shared frontend WASM core; the CLI handles directory discovery and invocation. Neither OCR nor a model is required. Check `capacity.operations` for `similar`; npm `0.2.0` and earlier do not include this capability.
 
 ## Quick start
 

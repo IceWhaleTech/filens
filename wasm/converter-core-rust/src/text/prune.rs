@@ -77,57 +77,8 @@ struct Segment {
 fn cjk(c: char) -> bool {
     matches!(c as u32, 0x3400..=0x4dbf | 0x4e00..=0x9fff | 0xf900..=0xfaff | 0x20000..=0x323af)
 }
-pub(super) fn stop(word: &str) -> bool {
-    matches!(
-        word,
-        "a" | "an"
-            | "and"
-            | "are"
-            | "as"
-            | "at"
-            | "be"
-            | "been"
-            | "by"
-            | "for"
-            | "from"
-            | "has"
-            | "have"
-            | "he"
-            | "her"
-            | "his"
-            | "i"
-            | "in"
-            | "is"
-            | "it"
-            | "its"
-            | "of"
-            | "on"
-            | "or"
-            | "our"
-            | "she"
-            | "that"
-            | "the"
-            | "their"
-            | "them"
-            | "there"
-            | "these"
-            | "they"
-            | "this"
-            | "to"
-            | "was"
-            | "we"
-            | "were"
-            | "which"
-            | "with"
-            | "you"
-            | "your"
-            | "的"
-            | "了"
-            | "在"
-            | "是"
-            | "和"
-    )
-}
+use super::stopwords::stop;
+
 fn tokens(text: &str) -> BTreeMap<String, f64> {
     let mut terms = BTreeMap::new();
     let mut word = String::new();

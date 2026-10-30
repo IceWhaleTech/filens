@@ -6,7 +6,10 @@ use std::{
     io::Read,
     path::{Component, Path, PathBuf},
 };
-use wasmi::{Caller, Engine, Instance, Linker, Module, Store, StoreLimits, StoreLimitsBuilder};
+use wasmi::{
+    Caller, CompilationMode, Config, Engine, Instance, Linker, Module, Store, StoreLimits,
+    StoreLimitsBuilder,
+};
 use wasmi_wasi::{WasiCtx, WasiCtxBuilder};
 
 pub struct State {
@@ -91,14 +94,58 @@ impl State {
 }
 
 pub struct Runtime {
-    engine: Engine,
-    module: Module,
+    engine: Option<Engine>,
+    module: Option<Module>,
+    wasm: PathBuf,
+    mode: CompilationMode,
+    native_search: bool,
     state: Option<State>,
 }
 impl Runtime {
     pub fn new(wasm: &Path, work: &Path, bundle: &Path, ocr: Provider) -> Result<Self> {
-        let engine = Engine::default();
-        let module = Module::new(&engine, &read_wasm(wasm)?[..])?;
+        Self::with_mode(
+            wasm,
+            work,
+            bundle,
+            ocr,
+            CompilationMode::LazyTranslation,
+            false,
+            false,
+        )
+    }
+    pub fn for_search(wasm: &Path, work: &Path, bundle: &Path, ocr: Provider) -> Result<Self> {
+        // Bundled modules are already built and checked. Search validates and
+        // translates function bodies only when called, avoiding unrelated codecs.
+        Self::with_mode(wasm, work, bundle, ocr, CompilationMode::Lazy, false, false)
+    }
+    pub fn native_search(wasm: &Path, work: &Path, bundle: &Path, ocr: Provider) -> Result<Self> {
+        Self::with_mode(wasm, work, bundle, ocr, CompilationMode::Lazy, true, true)
+    }
+    pub fn uses_native_search(&self) -> bool {
+        self.native_search
+    }
+    pub fn loaded_modules(&self) -> usize {
+        usize::from(self.module.is_some())
+    }
+    pub fn ensure_loaded(&mut self) -> Result<()> {
+        if self.module.is_none() {
+            let mut config = Config::default();
+            config.compilation_mode(self.mode);
+            let engine = Engine::new(&config);
+            self.module = Some(Module::new(&engine, &read_wasm(&self.wasm)?[..])?);
+            self.engine = Some(engine);
+        }
+        Ok(())
+    }
+    fn with_mode(
+        wasm: &Path,
+        work: &Path,
+        bundle: &Path,
+        ocr: Provider,
+        mode: CompilationMode,
+        defer: bool,
+        native_search: bool,
+    ) -> Result<Self> {
         let state = State {
             wasi: WasiCtxBuilder::new().build(),
             limits: limits(),
@@ -109,60 +156,46 @@ impl Runtime {
                 .map(PathBuf::from)
                 .unwrap_or_else(|| bundle.join("pdfium.wasm")),
         };
-        Ok(Self {
-            engine,
-            module,
+        let mut runtime = Self {
+            engine: None,
+            module: None,
+            wasm: wasm.into(),
+            mode,
+            native_search,
             state: Some(state),
-        })
+        };
+        if !defer {
+            runtime.ensure_loaded()?;
+        }
+        Ok(runtime)
     }
     pub fn ocr_capacity(&mut self) -> Value {
         self.state.as_mut().unwrap().ocr.capacity()
     }
-    pub fn ocr_cache_identity(&self) -> Result<Value> {
-        use sha2::{Digest, Sha256};
-        let provider = &self.state.as_ref().unwrap().ocr;
-        let file_hash = |path: &Path| -> Result<String> {
-            if !path.is_file() {
-                return Ok("missing".into());
-            }
-            let mut file = std::fs::File::open(path)?;
-            let mut hasher = Sha256::new();
-            let mut buffer = [0; 65536];
-            loop {
-                let n = file.read(&mut buffer)?;
-                if n == 0 {
-                    break;
-                }
-                hasher.update(&buffer[..n]);
-            }
-            Ok(format!("{:x}", hasher.finalize()))
-        };
-        let mut models = vec![];
-        if provider.enabled && provider.models.is_dir() {
-            for entry in std::fs::read_dir(&provider.models)? {
-                let entry = entry?;
-                if entry.file_type()?.is_file()
-                    && ["bin", "param", "txt"].contains(
-                        &entry
-                            .path()
-                            .extension()
-                            .and_then(|s| s.to_str())
-                            .unwrap_or(""),
-                    )
-                {
-                    models.push(json!({"name":entry.file_name().to_string_lossy(),"sha256":file_hash(&entry.path())?}));
-                }
-            }
-            models.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
-        }
-        Ok(
-            json!({"enabled":provider.enabled,"library":if provider.enabled {file_hash(&provider.library)?} else {"disabled".into()},"models":models}),
-        )
+    pub fn fork_without_ocr(&self, work: &Path) -> Result<Self> {
+        let parent = self.state.as_ref().unwrap();
+        Ok(Self {
+            engine: self.engine.clone(),
+            module: self.module.clone(),
+            wasm: self.wasm.clone(),
+            mode: self.mode,
+            native_search: self.native_search,
+            state: Some(State {
+                wasi: WasiCtxBuilder::new().build(),
+                limits: limits(),
+                work: work.into(),
+                ocr: parent.ocr.fork_disabled(),
+                pdf: None,
+                pdf_path: parent.pdf_path.clone(),
+            }),
+        })
     }
     pub fn run(&mut self, args: &[String]) -> Result<Value> {
         self.run_with_directory(args, None)
     }
     pub fn run_with_directory(&mut self, args: &[String], input: Option<&Path>) -> Result<Value> {
+        self.ensure_loaded()?;
+        let engine = self.engine.as_ref().unwrap();
         let work = self.state.as_ref().unwrap().work.clone();
         let directory = wasmi_wasi::Dir::open_ambient_dir(&work, wasmi_wasi::ambient_authority())?;
         let mut builder = WasiCtxBuilder::new();
@@ -179,9 +212,9 @@ impl Runtime {
         let wasi = builder.build();
         let mut state = self.state.take().unwrap();
         state.wasi = wasi;
-        let mut store = Store::new(&self.engine, state);
+        let mut store = Store::new(engine, state);
         store.limiter(|s| &mut s.limits);
-        let mut linker = Linker::<State>::new(&self.engine);
+        let mut linker = Linker::<State>::new(engine);
         wasmi_wasi::add_to_linker(&mut linker, |s| &mut s.wasi)?;
         linker.func_wrap(
             "filens_text",
@@ -229,7 +262,7 @@ impl Runtime {
         let mut status = 0;
         let result = (|| -> Result<Instance> {
             let instance = linker
-                .instantiate(&mut store, &self.module)?
+                .instantiate(&mut store, self.module.as_ref().unwrap())?
                 .start(&mut store)?;
             let start = instance.get_typed_func::<(), ()>(&store, "_start")?;
             if let Err(e) = start.call(&mut store, ()) {

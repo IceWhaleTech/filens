@@ -86,6 +86,59 @@
       ],
       "mergeable": "MERGEABLE",
       "statusCheckRollup": []
+    },
+    {
+      "number": 141,
+      "url": "https://github.com/ricosjp/truck/pull/141",
+      "title": "fix: refine trimmed surface interiors and preserve sphere pole hints",
+      "state": "OPEN",
+      "isDraft": false,
+      "createdAt": "2026-10-29T17:42:26Z",
+      "headOwner": "orca-zhang",
+      "headBranch": "fix/trimmed-surface-refinement",
+      "headCommit": "6f29b7c6895402c25fd12c9af7af3dd741c2481d",
+      "patch": "0004-refine-trimmed-surfaces-and-poles.patch",
+      "files": [
+        {
+          "path": "truck-geometry/src/decorators/processor.rs",
+          "additions": 10,
+          "deletions": 0
+        },
+        {
+          "path": "truck-geometry/src/specifieds/sphere.rs",
+          "additions": 7,
+          "deletions": 2
+        },
+        {
+          "path": "truck-meshalgo/src/tessellation/triangulation.rs",
+          "additions": 74,
+          "deletions": 2
+        },
+        {
+          "path": "truck-meshalgo/tests/degenerate_boundary_points.rs",
+          "additions": 70,
+          "deletions": 0
+        },
+        {
+          "path": "truck-meshalgo/tests/trimmed_surface_sampling.rs",
+          "additions": 92,
+          "deletions": 0
+        },
+        {
+          "path": "truck-stepio/src/in/step_geometry/sphere.rs",
+          "additions": 11,
+          "deletions": 2
+        },
+        {
+          "path": "truck-stepio/tests/import_sphere_hints.rs",
+          "additions": 45,
+          "deletions": 0
+        }
+      ],
+      "mergeable": "MERGEABLE",
+      "statusCheckRollup": [],
+      "verifiedAt": "2026-10-29T17:43:57.073254+00:00"
     }
-  ]
+  ],
+  "updatedAt": "2026-10-29T17:43:57.073254+00:00"
 }

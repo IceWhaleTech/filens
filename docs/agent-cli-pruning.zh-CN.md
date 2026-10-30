@@ -1,6 +1,6 @@
 # 无 LLM 的关键内容提取
 
-源码版新增 `summarize`（别名 `prune`），可在 Full / Lite 中使用。它按密度、词项相关性与相似距离选择原文片段，无需语言模型、向量模型或网络服务。扫描件先经过已有 RapidOCR，文本文件无需 OCR。此前已发布的 npm 0.2.0 和早先 Windows 候选 ZIP 不包含这项新能力；先用最新源码构建，或检查运行版本的 `capacity.operations` 是否包含 `summarize`。
+0.3.0 提供 `summarize`（别名 `prune`），可在 Full / Lite 中使用。它按密度、词项相关性与相似距离选择原文片段，无需语言模型、向量模型或网络服务。扫描件先经过已有 RapidOCR，文本文件无需 OCR。npm 0.2.0 和早先 Windows 候选 ZIP 不包含这项能力；请安装 0.3.0 或用最新源码构建，并检查 `capacity.operations` 是否包含 `summarize`。
 
 ```sh
 npm run build:agent:lite
@@ -57,6 +57,6 @@ Windows 使用对应构建目录中的 `filens.exe`。包含公开合成会议�
 
 这种方法适合压缩 Agent 上下文、查找相关条款、预览重点和去除重复导航。它无法识别所有同义表达、推导跨段结论或保证关键事实全部保留。分数是排序权重；不是置信度。需要解释原因、翻译、回答问题或改写总结时，将摘录和出处交给上层 Agent，必要时再读取完整原文。
 
-摘录以已知文件为输入；需要跨文件查找时使用源码版新增的[词项搜索](agent-cli-search.zh-CN.md)。搜索使用完整提取文本，避免只索引摘录而丢失事实；embedding 语义检索仍待接入，对照方法见[文档搜索与客观评价方案](agent-cli-search-evaluation.zh-CN.md)。
+摘录以已知文件为输入；需要跨文件查找时使用0.3.0 的[词项搜索](agent-cli-search.zh-CN.md)。搜索使用完整提取文本，避免只索引摘录而丢失事实；embedding 语义检索仍待接入，对照方法见[文档搜索与客观评价方案](agent-cli-search-evaluation.zh-CN.md)。
 
 运行 `npm run test:agent:prune` 可验证真实 CLI/WASM 的中英文入口、词面筛选、预算、原文偏移、八种输出、布局与不完整输入处理。

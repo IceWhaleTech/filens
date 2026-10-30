@@ -36,6 +36,7 @@
     "test:unit": "vitest run && node ../../scripts/test-occt-wasm.mjs"
   },
   "dependencies": {
+    "filens-step": "0.1.0-rc.1",
     "jszip": "^3.10.1",
     "three": "^0.176.0"
   },

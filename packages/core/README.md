@@ -60,6 +60,17 @@ Custom drivers must release their own DOM and resources on destruction; work tha
 ignores cancellation may still finish. Rejected loads release their sessions and
 expose the error through `getState()` and the `error` event.
 
+Password-protected PDF and Office documents can be opened through `createPreviewer()`.
+Register the Office drivers and configure the WASM converter for encrypted Office
+packages. Set `requestPassword` to an async callback that receives `{ name, reason,
+attempt, signal }` and returns a password or `null` to cancel. `reason` is
+`password_required` or `password_invalid`; respect the signal when a file is replaced.
+A known password can be supplied per load with
+`previewer.preview(source, { name: 'document.docx', password })`.
+Passwords retain spaces and Unicode, are not included in preview state, and are
+not reused for subsequent documents. Stable `password_cancelled`, `password_required`
+and `password_invalid` errors can be recognized with `previewPasswordErrorCode()`.
+
 PPTX and participating optional drivers also expose `PreviewItemState.fonts`
 through the generic runtime. This includes discovered font references,
 best-effort availability, application mappings, and layout-drift warnings.

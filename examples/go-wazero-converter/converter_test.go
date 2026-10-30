@@ -169,7 +169,7 @@ func TestConvertReturnsStableWASIErrorCodes(t *testing.T) {
 			inputName: "encrypted.doc",
 			writeFile: func(t *testing.T, path string) {
 				t.Helper()
-				if err := os.WriteFile(path, buildEncryptedCompoundFileForTest(), 0o644); err != nil {
+				if err := os.WriteFile(path, readEncryptedDocumentForTest(t), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -180,12 +180,24 @@ func TestConvertReturnsStableWASIErrorCodes(t *testing.T) {
 			inputName: "encrypted.doc",
 			writeFile: func(t *testing.T, path string) {
 				t.Helper()
-				if err := os.WriteFile(path, buildEncryptedCompoundFileForTest(), 0o644); err != nil {
+				if err := os.WriteFile(path, readEncryptedDocumentForTest(t), 0o644); err != nil {
 					t.Fatal(err)
 				}
 			},
 			options:  Options{Password: "secret"},
 			wantCode: ErrorCodePasswordInvalid,
+		},
+		{
+			name:      "damaged encrypted document with password",
+			inputName: "damaged.doc",
+			writeFile: func(t *testing.T, path string) {
+				t.Helper()
+				if err := os.WriteFile(path, buildEncryptedCompoundFileForTest(), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			options:  Options{Password: "secret"},
+			wantCode: ErrorCodeParse,
 		},
 		{
 			name:      "oversized legacy word",
@@ -243,6 +255,15 @@ func findRepoRoot(t *testing.T) string {
 
 func buildEncryptedCompoundFileForTest() []byte {
 	return buildCompoundFileForTest("EncryptionInfo", "EncryptedPackage")
+}
+
+func readEncryptedDocumentForTest(t *testing.T) []byte {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(findRepoRoot(t), "packages", "converter-client", "test", "fixtures", "password", "reference", "rc4cryptoapi_password.doc"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
 }
 
 func buildCompoundFileForTest(streamNames ...string) []byte {

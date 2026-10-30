@@ -1105,7 +1105,7 @@ describe('converter client adapters', () => {
 
       for (const testCase of [
         { password: undefined, errorCode: 'password_required' },
-        { password: 'secret', errorCode: 'password_invalid' }
+        { password: 'secret', errorCode: 'parse_error' }
       ]) {
         await expect(
           client.convert(
@@ -1128,7 +1128,7 @@ describe('converter client adapters', () => {
           result: {
             ok: false,
             errorCode: testCase.errorCode,
-            backend: 'word-binary'
+            backend: 'office-encryption'
           }
         } satisfies Partial<WasmConversionError>);
       }

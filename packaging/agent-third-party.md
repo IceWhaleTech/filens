@@ -55,8 +55,9 @@ in the package license directory as pdf-unicode-rust.txt.
 Legacy Go library hosts retain their existing dependency notices, including
 wazero and go.yaml.in/yaml/v3; the distributed CLI itself is Rust.
 
-This notice describes third-party components and does not grant a new license
-for filens or the Photos application code.
+FiLens first-party code is licensed under MIT; see the package's LICENSE file.
+Bundled dependencies and the Photos application code retain their original
+licenses. This notice does not relicense those components.
 
 ## Private directory discovery component
 

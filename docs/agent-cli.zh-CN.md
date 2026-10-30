@@ -2,15 +2,15 @@
 
 [English](agent-cli.md) · 简体中文
 
-filens 负责读取本地文档，向上层 Agent 交付文本、来源与证据片段。源码版新增不依赖 LLM 的 `summarize` / `prune`，按密度、BM25 和相似距离选取关键原文，详见[关键内容提取与实例](agent-cli-pruning.zh-CN.md)。改写总结、问答等语义推理由调用方完成。支持中英文意图，以及 text、JSON、Markdown、HTML、YAML、XML、CSV、TSV 输出和布局信息，也保留可选命令与参数。文档解析和裁剪统一经过前端 WASM 核心。
+filens 负责读取本地文档，向上层 Agent 交付文本、来源与证据片段。0.3.0 提供不依赖 LLM 的 `summarize` / `prune`，按密度、BM25 和相似距离选取关键原文，详见[关键内容提取与实例](agent-cli-pruning.zh-CN.md)。改写总结、问答等语义推理由调用方完成。支持中英文意图，以及 text、JSON、Markdown、HTML、YAML、XML、CSV、TSV 输出和布局信息，也保留可选命令与参数。文档解析与裁剪复用共享前端核心；常见文本搜索直接编译同一份 Rust 源码，其他格式及布局按需调用 WASM。
 
 [68 条实测案例、OCR 效果与自然语言边界](agent-cli-examples.zh-CN.md)列出实际输出，包括不支持的句式、退化行为和识别错误。
 
 详见[多格式输出、坐标布局与打字机动图](agent-cli-formats-and-layout.zh-CN.md)。
 
-源码版新增[跨文件词项搜索](agent-cli-search.zh-CN.md)：中英文入口、BM25/精确匹配/文件名模式、原文证据和正文缓存；`prune` 继续在已知文件内提取片段。embedding 语义检索尚未实现，公平对照方法见[文档搜索与客观评价方案](agent-cli-search-evaluation.zh-CN.md)。
+0.3.0 提供[跨文件词项搜索](agent-cli-search.zh-CN.md)：中英文入口、BM25/精确匹配/文件名模式、原文证据和请求内存处理；`prune` 继续在已知文件内提取片段。embedding 语义检索尚未实现，公平对照方法见[文档搜索与客观评价方案](agent-cli-search-evaluation.zh-CN.md)。
 
-源码版新增 [Czkawka 风格的重复文件与相似图片扫描](agent-cli-similarity.zh-CN.md)：`filens duplicates ./files --json`、`filens similar-images ./photos --threshold 8 --json`。支持缩放、重新压缩的图片分组，解析和匹配统一在 WASM 核心中，无需 OCR 或模型。使用 `capacity.operations` 检查 `similar`；已发布的 npm `0.2.0` 不包含这些命令。
+0.3.0 提供 [Czkawka 风格的重复文件与相似图片扫描](agent-cli-similarity.zh-CN.md)：`filens duplicates ./files --json`、`filens similar-images ./photos --threshold 8 --json`。支持缩放、重新压缩的图片分组，解析和匹配统一在 WASM 核心中，无需 OCR 或模型。使用 `capacity.operations` 检查 `similar`。
 
 ## 一键安装
 
@@ -28,7 +28,7 @@ filens setup-ocr
 filens '理解 "scan.pdf"，以 JSON 输出'
 ```
 
-两种包都提供 `filens` 命令，同一安装位置选择一种即可。npm 自动选择当前平台的二进制组件。支持 macOS 12+ arm64、Linux glibc 2.17+ x64 / arm64。npm 启动器需要 Node.js 20.11+；也可以直接运行组件包内的原生二进制。已安装的包无需 Python、ONNX Runtime、Homebrew、CMake 或编译器，安装后读取全程离线。
+两种包都提供 `filens` 命令，同一安装位置选择一种即可。npm 自动选择当前平台的二进制组件。支持 macOS 12+ arm64、Linux glibc 2.17+ x64 / arm64、Windows 10/11 x64。npm 启动器需要 Node.js 20.11+；也可以直接运行组件包内的原生二进制。已安装的包无需 Python、ONNX Runtime、Homebrew、CMake 或编译器，安装后读取全程离线。
 
 不做全局安装，也可以临时调用：
 
@@ -38,21 +38,21 @@ npx --yes filens-cli '你能做什么？以 JSON 输出'
 npx --yes filens-cli-lite '你能做什么？以 JSON 输出'
 ```
 
-macOS arm64 重建的 Rust 候选包：轻量版 **7.25 MiB 安装体积 / 5.60 MiB 压缩包**，完整版 **30.45 MiB 安装体积 / 19.80 MiB 压缩包**，包含 OCR 模型。主程序从 **11.05 MiB（Go）降至 1.85 MiB（Rust），缩小 83.3%**。数据为 2026-10-29 尚未发布的本地候选包，不含 npm 缓存，详细字节数和构建参数见[体积报告](agent-cli-rust-size.json)。此前 Go 候选包 Lite / Full 安装体积约 16.7 / 39.8 MiB，旧 Python / ONNX 完整包约 332 MiB。
+0.3.0 在 macOS arm64 上的原生主程序为 **2.10 MiB**；Lite **7.85 MiB 安装 / 6.02 MiB 下载**，Full **31.05 MiB 安装 / 20.22 MiB 下载**，Full 含 OCR 模型。总体积按启动器加当前平台组件计算，不含 Node.js、npm 缓存和文件系统开销，见[全平台精确字节数](agent-cli-npm-release.json)。FiLens 自有代码与 npm 包元数据使用 [MIT 协议](../LICENSE)，第三方组件保留各自的许可。
 
 需要离线分发时，也可一条命令安装已经生成的本地 tarball，例如 macOS arm64：
 
 ```sh
-npm install -g ./dist/npm/filens-cli-0.2.0.tgz ./dist/npm/filens-cli-darwin-arm64-0.2.0.tgz ./dist/npm/filens-ocr-darwin-arm64-0.2.0.tgz
+npm install -g ./dist/npm/filens-cli-0.3.0.tgz ./dist/npm/filens-cli-darwin-arm64-0.3.0.tgz ./dist/npm/filens-ocr-darwin-arm64-0.3.0.tgz
 ```
 
-上述 2026-10-29 包体积测量早于相似扫描。2026-10-30 的 macOS arm64 本地对比中，主程序加 gzip WASM 资源增加约 **278 KiB**，见[体积记录](agent-cli-similarity-size.json)；不含 OCR、许可文本及 npm 打包开销，不代表新版本 Lite/Full 总体积或 npm 下载增量。
+此前的 [Rust 迁移测量](agent-cli-rust-size.json)及[相似扫描增量](agent-cli-similarity-size.json)保留为历史记录；当前安装体积以以上 0.3.0 报告为准。
 
 ## 从源码构建和发布
 
 `cli/` 中的 CLI 已改为 Rust，文档解析仍复用前端 WASM 核心。Release 开启体积优化、LTO、单 codegen unit、panic abort 和符号 strip；Windows/Linux 的 CLI 使用 UPX `--best --lzma`，并通过 `upx --test` 校验。macOS arm64 的可执行格式不受 UPX 支持，因此跳过。文本 WASM 使用 Binaryen `-Oz` 并移除 debug / producers 信息；WASM 引擎使用 gzip level 1 快速压缩，运行时按需在本机解压，无需外部解压工具。构建机器可运行 `node scripts/setup-agent-upx.mjs` 安装经 SHA-256 校验的固定版本 UPX；构建/打包脚本的 `--no-upx` 可生成未压缩对照。
 
-`0.3.0-rc.1` 新增 Windows x64 候选产物；稳定版 npm `0.2.0` 尚不支持 Windows。见 [Windows 测试包、实机检查和可复制的 Agent 提示词](agent-cli-windows.zh-CN.md)，实际 Windows 运行结果仍待补充。
+0.3.0 提供 Windows x64 安装包。见 [Windows 测试包、实机检查和可复制的 Agent 提示词](agent-cli-windows.zh-CN.md)，实际 Windows 运行结果仍待补充。
 
 轻量版源码构建需要 Node.js 20.11+ 和锁定的 Rust 1.93.0 / WASI 工具链，无需 Go 编译器。Linux 和 Windows 构建还需 Zig 0.16.0 与 `cargo-zigbuild` 0.24.0，其中 Linux 保持 glibc 2.17 兼容。完整版仍使用 Go 1.24+ 重编译独立的 Photos 原生 OCR wrapper；首次构建 macOS 完整版还需 CMake 和 Xcode 命令行工具编译 CPU NCNN 库，Windows 则需要 CMake 和 Ninja。npm 用户直接使用预编译库。OCR wrapper 可用 `FILENS_ZIG` 指定 Zig，cargo-zigbuild 使用 PATH 上的 Zig。
 
@@ -78,7 +78,7 @@ npm run publish:agent:npm
 
 Agent CLI 的发布版本独立记录在 `packaging/agent-release.json`，不改动私有工作区版本；准备下一次发布前应先更新它，已发布版本不可覆盖。产物、体积和 SHA-256 记录于 `dist/npm/release.json`。打包采用文件白名单，包含 NCNN / C++ 运行时许可与构建来源，不包含源码构建缓存或旧 Python 环境。发布脚本先校验 tarball 和 npm 身份，再写入注册表。Linux 和 Windows 二进制通过交叉编译生成；本地安装测试验证宿主平台，CI 已配置 macOS arm64、Linux x64 / arm64 和 Windows x64 的原生安装及 Windows 便携包测试，本轮尚未执行 CI。
 
-读取和摘录每次接受一个本地文件，`search` 每次接受一个本地目录。自然语言中的路径应加引号，尤其是含空格路径；相对路径以调用方工作目录为准。可选命令为 `read`、`extract`、`understand`、`layout`、`summarize` / `prune`、`search`、`capacity` / `capabilities`，可选参数有 `--json`、`--format text|json|markdown|html|yaml|xml|csv|tsv`、`--layout`、`--input`、`--max-bytes`、`--timeout`、`--wasm`、`--no-ocr`。搜索增加 `--query`、`--search-mode bm25|exact|files`、`--max-results`、`--max-files`、`--max-depth`、`--include-hidden` 和 `--no-cache`，详见[搜索指南](agent-cli-search.zh-CN.md)。
+读取和摘录每次接受一个本地文件或包内成员路径，`search` 每次接受一个本地目录或支持的压缩包。ZIP、TAR、GZIP 等会自动展开最多 8 层嵌套，保留 `资料.zip!/附件.tar.gz!/合同.pdf` 路径供再次读取、获取布局或摘录，详见[嵌套压缩包用法与实测](agent-cli-search-archives.zh-CN.md)。自然语言中的路径应加引号，尤其是含空格路径；相对路径以调用方工作目录为准。可选命令为 `read`、`extract`、`understand`、`layout`、`summarize` / `prune`、`search`、`capacity` / `capabilities`，可选参数有 `--json`、`--format text|json|markdown|html|yaml|xml|csv|tsv`、`--layout`、`--input`、`--max-bytes`、`--timeout`、`--wasm`、`--no-ocr`。搜索增加 `--query`、`--search-mode bm25|exact|files`、`--max-results`、`--max-files`、`--max-depth`、`--include-hidden` 和 `--no-cache`，详见[搜索指南](agent-cli-search.zh-CN.md)。
 
 ## Agent 交付协议
 
@@ -199,4 +199,4 @@ npm run setup:agent:ocr -- --lite --sources 4
 
 源码版还提供 `npm run test:agent:search`、`npm run test:agent:prune`、`npm run test:agent:similarity`。相似扫描通过实际 CLI/WASM 检查完整文件判重、图片分组、部分结果、链接、限制和八种输出；hdrw 遍历路径也在 macOS 上验证过，不能据此宣称已通过 Windows/Linux 原生执行。具体检查及平台范围见[验证记录](agent-cli-similarity-size.json)。
 
-`npm run test:agent` 覆盖中英文意图、JSON / UTF-8 证据、截断与空文档、Lite 注入 OCR、真实 PNG / 双页扫描 PDF / DOCX 内嵌图片、透明 / EXIF / 倒置预处理、取消和重启，以及下载器的并发、损坏源回退和缓存。`npm run test:agent:npm` 覆盖离线安装 Full / Lite tarball，以及无需 Python 的一键补装 OCR；追加 `-- --registry` 可验证全新缓存的公开 npm 安装、平台组件自动选择和临时调用。0.2.0 于 2026-10-29 已在 macOS arm64 上通过公开安装验证，当时核对的 0.1.0 tarball 与注册表一致；当前重建候选的哈希已变化，详见发布隐私审计。Linux 原生执行仍待上述 CI 验证。既有转换 CLI / HTTP 示例继续使用原来的接口。
+`npm run test:agent` 覆盖中英文意图、JSON / UTF-8 证据、截断与空文档、Lite 注入 OCR、真实 PNG / 双页扫描 PDF / DOCX 内嵌图片、透明 / EXIF / 倒置预处理、取消和重启，以及下载器的并发、损坏源回退和缓存。`npm run test:agent:npm` 覆盖离线安装 Full / Lite tarball，以及无需 Python 的一键补装 OCR；追加 `-- --registry` 可验证全新缓存的公开 npm 安装、平台组件自动选择和临时调用。0.3.0 已在 macOS arm64 上通过 Full / Lite 离线安装和全新缓存的公开 npm 安装验证，包含真实 OCR、嵌套压缩包搜索与读取、布局和一键补装 OCR。全部 10 个公开包的完整性与本地 tarball 一致，许可证字段为 MIT，latest 均为 0.3.0，见[发布与验证记录](agent-cli-npm-publish.json)。Windows tarball 在 macOS 上通过强制安装及 scoped 依赖解析检查；Windows/Linux 原生运行仍待实机验证。既有转换 CLI / HTTP 示例继续使用原来的接口。

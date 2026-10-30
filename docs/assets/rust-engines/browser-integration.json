@@ -1,0 +1,517 @@
+{
+  "date": "2026-10-29T18:34:45.594Z",
+  "host": "Node running the shared browser WASI host; not a full browser geometry-quality screen",
+  "wasmSha256": "d192785227f33bbb3ab135dabfe80ea936e5e2f18f42b9478271bc51d2ff5aa6",
+  "fixtureCount": 55,
+  "displayable": 44,
+  "rejectedExternalOnly": 11,
+  "comparison": "Same triangle/face/instance counts, finite coordinates and normals, Float32 bounds versus results-step-refined.json. The prior independent geometry screen remains 43/44.",
+  "results": [
+    {
+      "id": "cax-if/as1-oc-214.stp",
+      "displayable": true,
+      "triangles": 28716,
+      "faces": 160,
+      "instances": 18,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/as1-oc-214/as1-oc-214.stp",
+      "displayable": true,
+      "triangles": 28716,
+      "faces": 160,
+      "instances": 18,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/as1-tu-203.stp",
+      "displayable": true,
+      "triangles": 28668,
+      "faces": 160,
+      "instances": 18,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/as1_pe_203.stp",
+      "displayable": true,
+      "triangles": 11840,
+      "faces": 160,
+      "instances": 18,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/dm1-id-214.stp",
+      "displayable": true,
+      "triangles": 13842,
+      "faces": 48,
+      "instances": 7,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/dm1-oc-214.stp",
+      "displayable": true,
+      "triangles": 8988,
+      "faces": 61,
+      "instances": 7,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/dm1-pe-214.stp",
+      "displayable": true,
+      "triangles": 4448,
+      "faces": 61,
+      "instances": 7,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/io1-cm-214.stp",
+      "displayable": true,
+      "triangles": 1696,
+      "faces": 29,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/io1-tu-203.stp",
+      "displayable": true,
+      "triangles": 4912,
+      "faces": 29,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-c5-214/FOOT.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "empty_geometry"
+    },
+    {
+      "id": "cax-if/s1-c5-214/FOOT_BACK_000.stp",
+      "displayable": true,
+      "triangles": 2010,
+      "faces": 13,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-c5-214/FOOT_FRONT_000.stp",
+      "displayable": true,
+      "triangles": 2010,
+      "faces": 13,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-c5-214/HEAD.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "empty_geometry"
+    },
+    {
+      "id": "cax-if/s1-c5-214/HEAD_BACK.stp",
+      "displayable": true,
+      "triangles": 9768,
+      "faces": 12,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-c5-214/HEAD_FRONT.stp",
+      "displayable": true,
+      "triangles": 9542,
+      "faces": 5,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-c5-214/MAINBODY.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "empty_geometry"
+    },
+    {
+      "id": "cax-if/s1-c5-214/MAINBODY_BACK.stp",
+      "displayable": true,
+      "triangles": 18452,
+      "faces": 31,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-c5-214/MAINBODY_FRONT.stp",
+      "displayable": true,
+      "triangles": 17650,
+      "faces": 22,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-c5-214/TAIL.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "empty_geometry"
+    },
+    {
+      "id": "cax-if/s1-c5-214/TAIL_MIDDLE_PART.stp",
+      "displayable": true,
+      "triangles": 188,
+      "faces": 20,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-c5-214/TAIL_TURBINE.stp",
+      "displayable": true,
+      "triangles": 1476,
+      "faces": 20,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-c5-214/s1-c5-214.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "invalid_step"
+    },
+    {
+      "id": "cax-if/s1-tu-203/footback.stp",
+      "displayable": true,
+      "triangles": 3832,
+      "faces": 9,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-tu-203/footfront.stp",
+      "displayable": true,
+      "triangles": 3742,
+      "faces": 13,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-tu-203/headback.stp",
+      "displayable": true,
+      "triangles": 14582,
+      "faces": 12,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-tu-203/headfront.stp",
+      "displayable": true,
+      "triangles": 10628,
+      "faces": 5,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-tu-203/mainbodyback.stp",
+      "displayable": true,
+      "triangles": 22680,
+      "faces": 20,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-tu-203/mainbodyfront.stp",
+      "displayable": true,
+      "triangles": 22264,
+      "faces": 37,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-tu-203/s1-tu-203.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "empty_geometry"
+    },
+    {
+      "id": "cax-if/s1-tu-203/tailmiddlepart.stp",
+      "displayable": true,
+      "triangles": 352,
+      "faces": 20,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1-tu-203/tailturbine.stp",
+      "displayable": true,
+      "triangles": 3592,
+      "faces": 21,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1_pe_214/foot_asm.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "empty_geometry"
+    },
+    {
+      "id": "cax-if/s1_pe_214/foot_back_prt.stp",
+      "displayable": true,
+      "triangles": 1818,
+      "faces": 9,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1_pe_214/foot_front_prt.stp",
+      "displayable": true,
+      "triangles": 2441,
+      "faces": 13,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1_pe_214/head_asm.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "empty_geometry"
+    },
+    {
+      "id": "cax-if/s1_pe_214/head_back_prt.stp",
+      "displayable": true,
+      "triangles": 9448,
+      "faces": 12,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1_pe_214/head_front_prt.stp",
+      "displayable": true,
+      "triangles": 9729,
+      "faces": 5,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1_pe_214/main_body_back_prt.stp",
+      "displayable": true,
+      "triangles": 16732,
+      "faces": 20,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1_pe_214/main_body_front_prt.stp",
+      "displayable": true,
+      "triangles": 17540,
+      "faces": 29,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1_pe_214/mainbody_asm.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "empty_geometry"
+    },
+    {
+      "id": "cax-if/s1_pe_214/s1_pe_214.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "empty_geometry"
+    },
+    {
+      "id": "cax-if/s1_pe_214/tail_asm.stp",
+      "displayable": false,
+      "rejected": true,
+      "error": "empty_geometry"
+    },
+    {
+      "id": "cax-if/s1_pe_214/tail_middle_part_prt.stp",
+      "displayable": true,
+      "triangles": 292,
+      "faces": 23,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/s1_pe_214/tail_turbine_prt.stp",
+      "displayable": true,
+      "triangles": 6942,
+      "faces": 20,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cax-if/sg1-c5-214.stp",
+      "displayable": true,
+      "triangles": 40348,
+      "faces": 16,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "conical-surface/conical-surface.step",
+      "displayable": true,
+      "triangles": 320,
+      "faces": 5,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cube-10x10mm/Cube 10x10.stp",
+      "displayable": true,
+      "triangles": 12,
+      "faces": 6,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cube-fcstd/cube.step",
+      "displayable": true,
+      "triangles": 12,
+      "faces": 6,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cube-fcstd/cube2.step",
+      "displayable": true,
+      "triangles": 12,
+      "faces": 6,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cube-fcstd/cube3.step",
+      "displayable": true,
+      "triangles": 12,
+      "faces": 6,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cube-units/cube-in.step",
+      "displayable": true,
+      "triangles": 12,
+      "faces": 6,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cube-units/cube-m.step",
+      "displayable": true,
+      "triangles": 12,
+      "faces": 6,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "cube-units/cube-mm.step",
+      "displayable": true,
+      "triangles": 12,
+      "faces": 6,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "rounded-cube/rounded-cube.step",
+      "displayable": true,
+      "triangles": 28,
+      "faces": 7,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    },
+    {
+      "id": "simple-basic-cube/cube.stp",
+      "displayable": true,
+      "triangles": 12,
+      "faces": 6,
+      "instances": 1,
+      "missingFaces": 0,
+      "finite": true,
+      "boundsMatchWithinFloat32": true
+    }
+  ]
+}

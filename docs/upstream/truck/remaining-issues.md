@@ -1,6 +1,6 @@
 # Follow-up issues and reproductions
 
-These items are not fixed by the three supplied PRs. Fixture paths refer to [occt-import-js 0.0.23 testfiles](https://github.com/kovacsv/occt-import-js/tree/0.0.23/test/testfiles); input hashes and numeric results are in `docs/assets/rust-engines/results-step-reviewed.json` in Filens.
+These items are not fixed by the three published PRs. The fourth patch resolves three of the geometric comparisons below. Fixture paths refer to [occt-import-js 0.0.23 testfiles](https://github.com/kovacsv/occt-import-js/tree/0.0.23/test/testfiles); historical input hashes and numeric results are in `docs/assets/rust-engines/results-step-reviewed.json`, with the follow-up in `results-step-refined.json`, in Filens.
 
 ## Periodic PCurve trimming and branch selection
 
@@ -24,7 +24,22 @@ Mixed representations can also include GEOMETRIC_CURVE_SET or annotations. `io1-
 
 The local solid-preview adapter traverses only untransformed relationships, tracks visited nodes and duplicate solid IDs, and separately counts intentionally omitted annotations/wires. Transformed assembly edges remain on the assembly DAG. This policy is not included in the upstream patches.
 
-## Four remaining geometric mismatches
+## Geometric comparisons after surface refinement
+
+The fourth patch improves the same screen from 40/44 to 43/44 with no previously passing fixture regressing. It adds bounded centroid-error refinement of trimmed surface interiors and corrects sphere hints and degenerate-boundary point mapping. The full-corpus result still requires the existing Filens preview adapters.
+
+| Fixture | Follow-up status |
+| --- | --- |
+| `cax-if/s1-c5-214/TAIL_TURBINE.stp` | Passes. Signed-volume error 0.134%; bidirectional sampled surface P95 0.0862 mm. |
+| `cax-if/s1_pe_214/foot_front_prt.stp` | Passes. Signed-volume error 0.926%; P95 0.0641 mm. Interior cylinder triangles previously cut across long chords despite an accurate boundary. |
+| `cax-if/s1_pe_214/tail_turbine_prt.stp` | Passes. Signed-volume error 0.0311%; P95 0.0848 mm. |
+| `cax-if/s1-c5-214/HEAD_BACK.stp` | Still fails. Bounds error 28.07%; area error 33.11%; signed-volume error 97.31%; P95 46.160 mm. |
+
+For HEAD_BACK, per-face diagnostics show different selected spherical regions on face #314, and multiple face-orientation differences. OCCT extends to x approximately 310 mm while Rust ends at approximately 250 mm. The official untrimmed occt-import-js 0.0.23 build agrees with the product OCCT build, ruling out the product's trimming as the source of this discrepancy. The correct region and closed-shell orientation are not independently established. Do not force the Rust output to match the reference by flipping faces or filling a hemisphere without resolving the topology.
+
+The fourth patch is published as [ricosjp/truck#141](https://github.com/ricosjp/truck/pull/141). See `pr-4-trimmed-surfaces.md`, `validation-refined.json`, and the Filens report `docs/rust-step-refined.zh-CN.md` for tests, limits, and measured performance cost.
+
+### Historical evidence before the fourth patch
 
 After the preview adapter's unit, tolerance, placement, and compatibility fixes, these still fail the same screen:
 
@@ -35,7 +50,7 @@ After the preview adapter's unit, tolerance, placement, and compatibility fixes,
 | `cax-if/s1_pe_214/foot_front_prt.stp` | Surface P95 about 0.143 mm and small area error, but signed-volume error about 47%. Requires investigation of face orientation, trimming, and solid validity; visual similarity is insufficient. |
 | `cax-if/s1_pe_214/tail_turbine_prt.stp` | Surface P95 about 7.98 mm; volume error about 17%. |
 
-These are evidence and investigation leads, not established root causes. The evaluation compares triangle meshes against the current OCCT output; it is not an exact CAD equivalence proof. Do not loosen thresholds to call these repaired.
+The historical measurements remain above for comparison. The evaluation compares triangle meshes against the current OCCT output; it is not an exact CAD equivalence proof. The follow-up retains all original thresholds.
 
 ## Units, malformed topology, and external references
 

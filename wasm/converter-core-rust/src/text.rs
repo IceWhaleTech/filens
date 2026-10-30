@@ -7,6 +7,8 @@ use sha2::{Digest, Sha256};
 use std::cell::RefCell;
 use std::path::{Component, PathBuf};
 
+mod catalog;
+mod archives;
 mod layout;
 mod ocr_image;
 mod odf_sheet;
@@ -14,6 +16,8 @@ mod pdf_unicode;
 mod prune;
 mod raster;
 mod search;
+mod search_wire;
+mod stopwords;
 mod similarity;
 
 pub(super) fn similarity(request: &Request, started: Instant) {
@@ -21,7 +25,7 @@ pub(super) fn similarity(request: &Request, started: Instant) {
 }
 
 pub(super) fn search(request: &Request, started: Instant) {
-    search::execute(request, started);
+    search_wire::execute(request, started);
 }
 
 const MAX_INPUT: u64 = 256 << 20;
@@ -102,30 +106,9 @@ fn document(text: &str) -> Document {
 }
 
 pub(super) fn capabilities(request: &Request, started: Instant) {
-    let mut formats: Vec<Value> =
-        serde_json::from_str::<Value>(include_str!("../../../converter/text-formats.json"))
-            .unwrap()["capabilities"]
-            .as_array()
-            .unwrap()
-            .clone();
-    let pairs: Vec<ConversionPair> = serde_json::from_str(CONVERSIONS).unwrap();
-    for pair in pairs {
-        if formats.iter().any(|f| f["format"] == pair.source_format) {
-            continue;
-        }
-        let (kind, ocr) = match pair.target_format.as_str() {
-            "docx" => ("text", false),
-            "xlsx" => ("spreadsheet", false),
-            "jpg" => ("image", true),
-            _ => continue,
-        };
-        formats
-            .push(json!({"format":pair.source_format,"kind":kind,"textExtraction":true,"ocr":ocr}));
-    }
-    formats.sort_by(|a, b| a["format"].as_str().cmp(&b["format"].as_str()));
     let result = ResultContract {
         ok: true,
-        payload: Some(json!(formats)),
+        payload: Some(json!(catalog::formats())),
         ..Default::default()
     };
     if let Err(error) = write_result(&request.result, result, started.elapsed().as_millis()) {
@@ -353,7 +336,8 @@ pub(super) fn slides(slides: &[OdfSlide]) -> Result<(), ConvertError> {
     Ok(())
 }
 
-pub(super) fn execute(request: &Request, started: Instant) {
+fn extract_outcome(request: &Request) -> Outcome {
+    if request.options_json["archiveMembers"].is_array() { return archives::read_selected(request); }
     let limit = request.options_json["maxBytes"]
         .as_u64()
         .unwrap_or(8 << 20)
@@ -438,6 +422,11 @@ pub(super) fn execute(request: &Request, started: Instant) {
     if request.options_json["includeStructure"].as_bool() == Some(true) {
         result.document = Some(document(&result.text));
     }
+    result
+}
+
+pub(super) fn execute(request: &Request, started: Instant) {
+    let result = extract_outcome(request);
     let input_size = fs::metadata(&request.input).map_or(0, |m| m.len());
     let contract = ResultContract {
         ok: result.complete,
@@ -456,6 +445,90 @@ pub(super) fn execute(request: &Request, started: Instant) {
         ..Default::default()
     };
     if let Err(error) = write_result(&request.result, contract, started.elapsed().as_millis()) {
+        eprintln!("{error}");
+        process::exit(1);
+    }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct BatchInput {
+    id: usize,
+    input: String,
+    source: String,
+    #[serde(default)]
+    copy_input: bool,
+}
+#[derive(Deserialize)]
+struct ExtractionBatch {
+    files: Vec<BatchInput>,
+    options: Value,
+}
+pub(super) fn extract_batch(request: &Request, started: Instant) {
+    let decoded = fs::read(&request.input)
+        .map_err(|e| e.to_string())
+        .and_then(|bytes| {
+            if bytes.len() > 4 << 20 {
+                return Err("extraction batch exceeds 4 MiB".into());
+            }
+            serde_json::from_slice::<ExtractionBatch>(&bytes).map_err(|e| e.to_string())
+        });
+    let wire = match decoded {
+        Ok(batch) if batch.files.len() <= 256 => {
+            let mut files = Vec::new();
+            let mut text_bytes = 0;
+            let mut truncated = false;
+            let mut archives = archives::Session::new(request, &batch.options);
+            for file in batch.files {
+                let mut child = Request {
+                    input: file.input,
+                    output: request.output.clone(),
+                    source: file.source,
+                    operation: "extract-text".into(),
+                    options_json: batch.options.clone(),
+                    ..Default::default()
+                };
+                if catalog::is_archive(&child.source) {
+                    let archive = archives.extract(&child);
+                    truncated |= archive["truncated"] == true;
+                    files.push(json!({"id":file.id,"archive":archive}));
+                    if truncated { break; }
+                    continue;
+                }
+                let staged = file.copy_input.then(|| Path::new(&request.output).parent().unwrap_or(Path::new("/work"))
+                    .join(format!("batch-input.{}", child.source)));
+                let copied = staged.as_ref().map(|path| {
+                    let metadata = fs::metadata(&child.input).map_err(|e| e.to_string())?;
+                    if !metadata.is_file() || metadata.len() > MAX_INPUT { return Err("source exceeds 256 MiB or is not a regular file".to_string()); }
+                    fs::copy(&child.input, path).map_err(|e| e.to_string())?;
+                    child.input = path.to_string_lossy().into_owned();
+                    Ok(())
+                }).transpose();
+                let content = match copied {
+                    Ok(_) => extract_outcome(&child),
+                    Err(message) => Outcome { error_code: "io_error".into(), error_message: message, ..Default::default() },
+                };
+                if let Some(path) = staged { let _ = fs::remove_file(path); }
+                if text_bytes + content.text.len() > 32 << 20 {
+                    truncated = true;
+                    break;
+                }
+                text_bytes += content.text.len();
+                files.push(json!({"id":file.id,"content":content}));
+            }
+            ResultContract {
+                ok: true,
+                payload: Some(json!({"files":files,"truncated":truncated})),
+                ..Default::default()
+            }
+        }
+        result => ResultContract {
+            error_code: "invalid_request".into(),
+            error_message: result.err().unwrap_or_else(|| "extraction batch exceeds 256 files".into()),
+            ..Default::default()
+        },
+    };
+    if let Err(error) = write_result(&request.result, wire, started.elapsed().as_millis()) {
         eprintln!("{error}");
         process::exit(1);
     }
@@ -509,11 +582,13 @@ fn extract(request: &Request) -> Result<(), ConvertError> {
             image(&bytes, "jpg")
         }
         _ => {
-            let pairs: Vec<ConversionPair> = serde_json::from_str(CONVERSIONS).unwrap();
-            if !pairs
-                .iter()
-                .any(|p| p.source_format == source && p.target_format == "docx")
-            {
+            static TEXT_SOURCES: std::sync::OnceLock<HashSet<String>> = std::sync::OnceLock::new();
+            let sources = TEXT_SOURCES.get_or_init(|| {
+                serde_json::from_str::<Vec<ConversionPair>>(CONVERSIONS).unwrap()
+                    .into_iter().filter(|p| p.target_format == "docx")
+                    .map(|p| p.source_format).collect()
+            });
+            if !sources.contains(source) {
                 return Err(ConvertError {
                     code: "unsupported_format",
                     message: format!("no text extraction for {source}"),

@@ -8,7 +8,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const fallbacks = new Map();
 // This old import-library crate omits both license files and Cargo VCS metadata.
 // The pinned winapi 0.3.9 tree contains the same 0.4.0 crate and its MIT/Apache licenses.
-const licenseRevisions = { 'winapi-x86_64-pc-windows-gnu@0.4.0':'796a8e6c2971dc2ff1bcff166e6671284f9b5b6b' };
+const licenseRevisions = {
+  'winapi-x86_64-pc-windows-gnu@0.4.0':'796a8e6c2971dc2ff1bcff166e6671284f9b5b6b',
+  // 0.4.0 declares MIT but omits the text in both its crate and source tree.
+  // Include the same project's later, pinned MIT notice, with its provenance.
+  'convert_case@0.4.0':'fbbca84796dfa288d5a7b8673858ca2867c0414a'
+};
 async function upstreamLicense(dependency, base) {
   const repository = /^https:\/\/github.com\/([^/]+\/[^/]+)/.exec(dependency.repository ?? dependency.homepage ?? '')?.[1];
   const revision = licenseRevisions[`${dependency.name}@${dependency.version}`] ?? JSON.parse(await readFile(path.join(base,'.cargo_vcs_info.json'),'utf8')).git.sha1;
@@ -36,8 +41,8 @@ async function upstreamLicense(dependency, base) {
 
 // Collect the actual locked dependencies' license texts without retaining
 // Cargo's absolute cache paths in distributable metadata.
-export async function writeRustLicenses(directory) {
-  const graphs = [
+export async function writeRustLicenses(directory, options = {}) {
+  const graphs = options.graphs ?? [
     ...['aarch64-apple-darwin','x86_64-unknown-linux-gnu','aarch64-unknown-linux-gnu','x86_64-pc-windows-gnu'].map(target=>({manifest:'cli/Cargo.toml',target})),
     {manifest:'wasm/converter-core-rust/Cargo.toml',target:'wasm32-wasip1',features:'text-extraction'},
     {manifest:'wasm/converter-image-rust/Cargo.toml',target:'wasm32-wasip1'}
@@ -52,7 +57,7 @@ export async function writeRustLicenses(directory) {
   }
   const packages = new Map(metadata.flatMap(graph=>graph.packages).map(p=>[p.id,p]));
   const dependencies = [...packages.values()].filter(p=>(p.source || p.name==='rawloader') && included.has(p.id)).sort((a,b)=>`${a.name}@${a.version}`.localeCompare(`${b.name}@${b.version}`));
-  const sections = ['Rust CLI and shared WASM dependency notices (locked Cargo manifests)\n'];
+  const sections = [options.heading ?? 'Rust CLI and shared WASM dependency notices (locked Cargo manifests)\n'];
   const licenseIds = new Map();
   function recordLicense(text) {
     const hash = createHash('sha256').update(text).digest('hex');
@@ -63,15 +68,19 @@ export async function writeRustLicenses(directory) {
   }
   for (const dependency of dependencies) {
     const base = path.dirname(dependency.manifest_path);
-    const files = (await readdir(base)).filter(name=>/^(?:LICENSE|LICENCE|COPYING|COPYRIGHT|NOTICE)(?:[._-].*)?$/i.test(name));
+    const files = (await readdir(base)).filter(name=>/^(?:LICENSES?|LICENCES?|COPYING|COPYRIGHT|NOTICE)(?:[._-].*)?$/i.test(name));
     if (dependency.license_file && !files.includes(dependency.license_file)) files.push(dependency.license_file);
     sections.push(`\n${dependency.name} ${dependency.version}\nLicense: ${dependency.license ?? 'see included license'}\n${dependency.repository ?? ''}\n`);
     if (!files.length) recordLicense(await upstreamLicense(dependency,base));
-    for (const file of files.sort()) {
-      try { sections.push(`\n--- ${path.basename(file)} ---\n`); recordLicense(await readFile(path.join(base,file),'utf8')); }
-      catch (e) { if (e.code !== 'EISDIR') throw e; }
+    async function include(file) {
+      try { const text = await readFile(path.join(base,file),'utf8'); sections.push(`\n--- ${file} ---\n`); recordLicense(text); }
+      catch (e) {
+        if (e.code !== 'EISDIR') throw e;
+        for (const child of (await readdir(path.join(base,file))).sort()) await include(path.join(file,child));
+      }
     }
+    for (const file of files.sort()) await include(file);
   }
   await mkdir(directory,{recursive:true});
-  await writeFile(path.join(directory,'rust-cli.txt'),sections.join('\n')+'\n');
+  await writeFile(path.join(directory,options.filename ?? 'rust-cli.txt'),sections.join('\n')+'\n');
 }

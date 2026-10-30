@@ -65,7 +65,7 @@ function baseline(tool, directory, query) {
 }
 const tools = ['filens-bm25', 'filens-exact', 'rg-phrase', 'rg-terms', 'git-grep-terms'];
 const docs = [], queries = [];
-const operationalFailures = [];
+const operationalFailures = checkpoint.operationalFailures ?? [];
 if (!resume) await rm(work, { recursive: true, force: true });
 await mkdir(corpus, { recursive: true });
 for (const [index, topic] of topics.entries()) {
@@ -103,27 +103,38 @@ const runMetadata = { date: new Date().toISOString(), platform: `${process.platf
   textWasmSHA256: sha(await readFile(path.join(path.dirname(binary), 'converter-text.wasm'))),
   ripgrep: processRun('rg', ['--version']).stdout.trim(), git: processRun('git', ['--version']).stdout.trim(), corpusSHA256: sha(manifestBytes),
   corpusFiles: docs.length, corpusBytes: docs.reduce((n, d) => n + Buffer.byteLength(d.text), 0), queries: queries.length, relevance: 'Synthetic labels by construction, not human annotations or a held-out external dataset.' };
-if (resume) assert.equal(checkpoint.binarySHA256, runMetadata.binarySHA256, 'Cannot resume a different binary');
+if (resume) {
+  assert.equal(checkpoint.binarySHA256, runMetadata.binarySHA256, 'Cannot resume a different binary');
+  assert.equal(checkpoint.textWasmSHA256, runMetadata.textWasmSHA256, 'Cannot resume without the same shared text WASM; start a fresh benchmark');
+}
 const prep = checkpoint.prep ?? filens(corpus, queries[0].query);
+const persistent = prep.value.search.scan.cache.storage !== 'none';
+runMetadata.searchStorage = persistent ? 'persistent-body-cache' : 'request-local-memory';
 console.log(`Prepared ${docs.length} documents and ${queries.length} frozen queries; initial extraction ${prep.ms.toFixed(0)} ms.`);
 const observations = checkpoint.observations ?? [];
+// Recalculate retrieval metrics using current definitions when loading old observations.
+for (const row of observations) {
+  const query = queries.find(q => q.id === row.queryId);
+  assert.ok(query, `Unknown checkpoint query: ${row.queryId}`);
+  Object.assign(row.metrics, metrics(row.files, query.relevant, row.tool === 'filens-bm25'));
+}
 for (const [index, query] of queries.entries()) {
   if (observations.some(o => o.queryId === query.id)) continue;
   const order = tools.slice(index % tools.length).concat(tools.slice(0, index % tools.length));
   for (const tool of order) {
-    const ranked = tool.startsWith('filens');
-    const r = ranked ? filens(corpus, query.query, tool === 'filens-exact' ? 'exact' : 'bm25') : baseline(tool, corpus, query.query);
-    const m = metrics(r.ids, query.relevant, ranked);
-    if (ranked) {
+    const isFilens = tool.startsWith('filens');
+    const r = isFilens ? filens(corpus, query.query, tool === 'filens-exact' ? 'exact' : 'bm25') : baseline(tool, corpus, query.query);
+    const m = metrics(r.ids, query.relevant, tool === 'filens-bm25');
+    if (isFilens) {
       const hits = r.value.search.results;
       m.offsetsValid = hits.every(hit => {
         const original = docs.find(d => d.id === path.relative(corpus, hit.path));
-        return original && hit.sha256 === original.sha256 && hit.excerpts.every(e => Buffer.from(original.text).subarray(e.startByte, e.endByte).toString() === e.text);
+        return original && (!hit.sha256 || hit.sha256 === original.sha256) && hit.excerpts.every(e => Buffer.from(original.text).subarray(e.startByte, e.endByte).toString() === e.text);
       });
       if (query.relevant.length) m.evidenceHit = hits.slice(0, 5).some(hit => query.relevant.includes(path.relative(corpus, hit.path)) && hit.excerpts.some(e => e.text.includes(query.evidence)));
     }
-    observations.push({ queryId: query.id, family: query.family, category: query.category, tool, elapsedMs: r.ms, exit: r.exit, complete: ranked ? r.value.search.complete : true,
-      files: r.ids, returnedBytes: Buffer.byteLength(r.stdout), cacheHits: ranked ? r.value.search.scan.cache.hits : null, metrics: m });
+    observations.push({ queryId: query.id, family: query.family, category: query.category, tool, elapsedMs: r.ms, exit: r.exit, complete: isFilens ? r.value.search.complete : true,
+      files: r.ids, returnedBytes: Buffer.byteLength(r.stdout), cacheHits: isFilens ? r.value.search.scan.cache.hits : null, metrics: m });
   }
   if (index % 12 === 0) console.log(`Accuracy: ${index + 1}/${queries.length} queries, all five configurations.`);
 }
@@ -133,7 +144,7 @@ const quality = Object.fromEntries(tools.map(tool => {
     latency: timing(rows.map(r => r.elapsedMs)), categories: Object.fromEntries([...new Set(queries.map(q => q.category))].map(category => [category, summarize(rows.filter(r => r.category === category).map(r => r.metrics))])) }];
 }));
 const scales = checkpoint.scales ?? [];
-const saveCheckpoint = async () => writeFile(checkpointFile, JSON.stringify({ manifestSHA256: sha(manifestBytes), binarySHA256: runMetadata.binarySHA256, prep, observations, scales, operationalFailures }));
+const saveCheckpoint = async () => writeFile(checkpointFile, JSON.stringify({ manifestSHA256: sha(manifestBytes), binarySHA256: runMetadata.binarySHA256, textWasmSHA256: runMetadata.textWasmSHA256, prep, observations, scales, operationalFailures }));
 await saveCheckpoint();
 for (const count of [100, 500, 2000]) {
   if (scales.some(s => s.files === count)) continue;
@@ -185,7 +196,7 @@ for (const [name, from] of material) {
   await writeFile(path.join(extracted, name + '.txt'), value.content?.text ?? '');
   extraction.push({ file: name, sha256: sha(await readFile(path.join(originals, name))), elapsedMs: r.ms, complete: value.content?.complete === true, characters: value.content?.text?.length ?? 0 });
 }
-const documentQueries = [{ query: 'BRIGHT2027', relevant: ['scan.pdf'] }, { query: '12345.67', relevant: ['brief.docx', 'invoice.png'] }, { query: 'FILENS2026', relevant: ['invoice.png'] }];
+const documentQueries = [{ query: 'BRIGHT2027', relevant: ['scan.pdf'] }, { query: '12345.67', relevant: ['brief.docx', 'invoice.png', 'scan.pdf'] }, { query: 'FILENS2026', relevant: ['invoice.png', 'scan.pdf'] }];
 const documentResults = [];
 for (const q of documentQueries) {
   const r = filens(originals, q.query, 'bm25', documentCache, ['--layout'], true);
@@ -195,21 +206,22 @@ for (const q of documentQueries) {
     rgWithSharedExtraction: { elapsedMs: b.ms, files: b.ids.map(id => id.replace(/\.txt$/, '')), metrics: metrics(b.ids.map(id => id.replace(/\.txt$/, '')), q.relevant, false) } });
 }
 const result = { metadata: runMetadata, manifest, configurations: {
-  'filens-bm25': 'CLI default BM25 + exact boost, cached full text, maxResults=10; source checked by SHA-256 every query.',
+  'filens-bm25': persistent ? 'CLI default BM25 + exact boost, cached full text, maxResults=10; source checked by SHA-256 every query.' : 'CLI default BM25 + exact boost, request-local full text, maxResults=10; no persistent cache or source hashing.',
   'filens-exact': 'CLI case-sensitive literal mode, maxResults=10; capped result list.',
   'rg-phrase': 'rg -l -0 -F: case-sensitive literal query, all matching files.',
   'rg-terms': 'rg -l -0 -i -F: OR of Unicode word/Han-bigram query terms, all matching files; no relevance ranking.',
   'git-grep-terms': 'git grep --no-index -l -z -i -F: same OR terms, all matching files; no relevance ranking.' },
   measurement: { ordering: 'Five tool configurations rotated per query. Scaling alternates order across 15 repeats. Fresh process per request.',
-    coldMeaning: 'Empty FiLens extraction cache, not a dropped OS page cache. One initial extraction per scale. Cached percentiles use nearest rank, n=15.',
-    scopes: 'Same UTF-8 corpus for retrieval; raw document comparison uses the same FiLens extractor on both sides. Startup, enumeration, hashing/cache verification and ranking are included in CLI latency.',
-    topKForUnranked: 'rg/git candidates are sorted by relative path for a reproducible capped Agent view; MRR and nDCG are not assigned. Candidate recall/precision includes their complete output. This ordering is not semantic ranking.',
+    coldMeaning: persistent ? 'Empty FiLens extraction cache, not a dropped OS page cache. One initial extraction per scale. Cached percentiles use nearest rank, n=15.' : 'Fresh process per request, no application cache; OS page cache uncontrolled. First and repeated queries both extract current sources. Percentiles use nearest rank, n=15.',
+    scopes: 'Same UTF-8 corpus for retrieval; raw document comparison uses the same FiLens extractor on both sides. All work performed by the chosen CLI, including startup, enumeration, extraction and ranking, is included in latency.',
+    topKForUnranked: 'rg/git candidates are sorted by relative path for a reproducible capped Agent view; MRR and nDCG are not assigned. FiLens literal also ties scores and follows path order, so its MRR/nDCG are not assigned either. Candidate recall/precision includes each complete returned list. This ordering is not semantic ranking.',
     noAnswer: 'Any nonempty candidate set on absent-fact or absent-identifier queries is a false positive for this evaluation; retrieval scores do not constitute an answer detector.',
     tuning: 'Corpus and query labels frozen before runs. No query-dependent tuning; default search mode/thresholds used. Repeated documents belong to one topic family.',
     limits: ['Small synthetic developer-labelled corpus, not held-out real-world relevance or an Agent end-to-end benchmark.', 'Source-cache indexing and no embedding model in FiLens; this is not a full semantic-product comparison.', 'Numbers and phrase queries use literal relevance, including matching archives. Natural-language questions explicitly request current instructions.', 'Single macOS machine; no Windows/Linux performance conclusion.', 'Short synthetic documents dominate scaling; PDF/OCR and disk-cache behavior require larger separate studies.'] },
   prep: { elapsedMs: prep.ms, cacheWrites: prep.value.search.scan.cache.writes }, quality, observations,
   pairedHit5: pairedInterval(observations, 'filens-bm25', 'rg-terms'), scales, updates,
-  documents: { extraction, sharedExtractionMs: extraction.reduce((n, r) => n + r.elapsedMs, 0), queries: documentResults }, operationalFailures,
+  documents: { extraction, sharedExtractionMs: extraction.reduce((n, r) => n + r.elapsedMs, 0), queries: documentResults,
+    labelPolicy: 'Amount relevance includes the DOCX value written as 12,345.67: grouping punctuation is a deliberate normalization challenge. Both the invoice and scan PDF contain FILENS2026 and 12345.67.' }, operationalFailures,
   preliminaryAttempt: { completed: false, stage: '2000-file cached query', exit: 1, reason: 'Initial instrumentation aborted on an unexpected exit and did not retain stdout. Standalone replay succeeded; cause remains unconfirmed. Full rerun records failures and never retries them automatically.' },
   notMeasured: [{ tool: 'zvec-grep', commit: '891497fa87d3e03d0c9273fed0ba3e75af62f179', reason: 'Not executed in this run; needs a separate persistent-index/embedding comparison. Its ripgrep + BM25 + vector hybrid is not represented by rg alone; no superiority claim is made.' }] };
 const json = JSON.stringify(result, null, 2) + '\n';

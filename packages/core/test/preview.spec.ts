@@ -480,8 +480,8 @@ describe('preview format routing', () => {
       png: 'image'
     } as const;
 
-    const defaultPairs = conversionManifest.filter((pair, index) =>
-      conversionManifest.findIndex((candidate) => candidate.sourceFormat === pair.sourceFormat) === index
+    const defaultPairs = conversionManifest.filter((pair) => pair.sourceFormat !== pair.targetFormat).filter((pair, index, pairs) =>
+      pairs.findIndex((candidate) => candidate.sourceFormat === pair.sourceFormat) === index
     );
     for (const pair of defaultPairs) {
       expect(resolveFormatRoute({ name: `sample.${pair.sourceFormat}` }, { routes: CONVERSION_FORMAT_ROUTES })).toMatchObject({
@@ -599,7 +599,8 @@ describe('preview format routing', () => {
     const conversionFormats = listPreviewFormats({ includeDirect: false });
     expect(conversionFormats.map((format) => `${format.extension}->${format.targetFormat}`)).toEqual(
       conversionManifest
-        .filter((pair, index) => conversionManifest.findIndex((candidate) => candidate.sourceFormat === pair.sourceFormat) === index)
+        .filter((pair) => pair.sourceFormat !== pair.targetFormat)
+        .filter((pair, index, pairs) => pairs.findIndex((candidate) => candidate.sourceFormat === pair.sourceFormat) === index)
         .map((pair) => `${pair.sourceFormat}->${pair.targetFormat}`)
     );
   });
@@ -1080,7 +1081,8 @@ describe('preview format routing', () => {
 
     expect(conversionPairs).toEqual(
       conversionManifest
-        .filter((pair, index) => conversionManifest.findIndex((candidate) => candidate.sourceFormat === pair.sourceFormat) === index)
+        .filter((pair) => pair.sourceFormat !== pair.targetFormat)
+        .filter((pair, index, pairs) => pairs.findIndex((candidate) => candidate.sourceFormat === pair.sourceFormat) === index)
         .map((pair) => `${pair.sourceFormat}->${pair.targetFormat}`)
     );
     expect(conversionFormats.find((format) => format.extension === 'ppt')).toMatchObject({

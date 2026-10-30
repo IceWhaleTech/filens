@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createPreviewer } from '../src/preview/previewer';
+import { PreviewPasswordError } from '../src/preview/password';
 import type {
-  ConversionResult, PreviewDriver, PreviewEventMap, PreviewEventName,
-  PreviewItemState, PreviewLoadContext, PreviewSession, PreviewerInstance
+  ConversionRequest, ConversionResult, PreviewDriver, PreviewEventMap, PreviewEventName,
+  PreviewItemState, PreviewLoadContext, PreviewPasswordRequest, PreviewSession, PreviewerInstance
 } from '../src/preview/types';
 
 function deferred<T>() {
@@ -57,6 +58,100 @@ const conversionRoutes = [{
 const input = new Uint8Array([1]);
 // A turn boundary tests settlement without waiting for non-cooperative work to finish.
 const nextTurn = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+
+describe('Password-protected preview loads', () => {
+  it('retries converter password errors and keeps whitespace and Unicode passwords intact', async () => {
+    const fixture = setup();
+    const requestPassword = vi.fn().mockResolvedValueOnce('wrong').mockResolvedValueOnce(' 密码🔐 ');
+    const convert = vi.fn(async (request: ConversionRequest) => {
+      if (request.password !== ' 密码🔐 ') throw { result: { errorCode: request.password === undefined ? 'password_required' : 'password_invalid' } };
+      return { source: input, format: 'txt' };
+    });
+    const previewer = createPreviewer(fixture.host, { drivers: [fixture.driver], routes: conversionRoutes, converter: { convert }, requestPassword });
+    const errors = vi.fn(); previewer.on('error', errors);
+    await previewer.preview(input, { name: 'locked.legacy' });
+    expect(convert.mock.calls.map(([request]) => request.password)).toEqual([undefined, 'wrong', ' 密码🔐 ']);
+    expect(requestPassword.mock.calls.map(([request]) => [request.reason, request.attempt])).toEqual([['password_required', 1], ['password_invalid', 2]]);
+    expect(errors).not.toHaveBeenCalled();
+    expect(previewer.getState()).not.toHaveProperty('password');
+    previewer.destroy();
+  });
+
+  it('retries native driver password errors without emitting a terminal error', async () => {
+    const fixture = setup(async (session, context) => {
+      if (context.descriptor.password !== 'secret') {
+        const error = new PreviewPasswordError('password_required');
+        session.emit('error', error);
+        throw error;
+      }
+    });
+    const requestPassword = vi.fn(async () => 'secret');
+    const previewer = createPreviewer(fixture.host, { drivers: [fixture.driver], requestPassword });
+    const errors = vi.fn(); previewer.on('error', errors);
+    await previewer.preview(input, { name: 'locked.txt' });
+    expect(fixture.sessions).toHaveLength(2);
+    expect(fixture.sessions[0].destroy).toHaveBeenCalledTimes(1);
+    expect(errors).not.toHaveBeenCalled();
+    expect(requestPassword).toHaveBeenCalledOnce();
+    previewer.destroy();
+  });
+
+  it.each(['replace', 'destroy'] as const)('cancels a pending password prompt on %s and ignores a late password', async action => {
+    const answer = deferred<string>();
+    const fixture = setup(async (_session, context) => {
+      if (context.descriptor.name === 'locked.txt') throw new PreviewPasswordError('password_required');
+    });
+    const requestPassword = vi.fn((_request: PreviewPasswordRequest) => answer.promise);
+    const previewer = createPreviewer(fixture.host, { drivers: [fixture.driver], requestPassword });
+    const pending = previewer.preview(input, { name: 'locked.txt' });
+    await vi.waitFor(() => expect(requestPassword).toHaveBeenCalledOnce());
+    if (action === 'replace') await previewer.preview(input, { name: 'new.txt' });
+    else previewer.destroy();
+    await pending;
+    expect(requestPassword.mock.calls[0][0].signal?.aborted).toBe(true);
+    answer.resolve('late secret'); await nextTurn();
+    expect(fixture.sessions).toHaveLength(action === 'replace' ? 2 : 1);
+    expect(previewer.getState()).toMatchObject(action === 'replace' ? { title: 'new.txt', error: null } : { family: 'unsupported' });
+    previewer.destroy();
+  });
+
+  it('handles cancellation without retrying and never reuses a supplied password on another document', async () => {
+    const fixture = setup(async (_session, context) => {
+      if (context.descriptor.password !== 'secret') throw new PreviewPasswordError('password_required');
+    });
+    const requestPassword = vi.fn(async () => null);
+    const previewer = createPreviewer(fixture.host, { drivers: [fixture.driver], requestPassword });
+    const errors = vi.fn(); previewer.on('error', errors);
+    await previewer.preview(input, { name: 'one.txt', password: 'secret' });
+    expect(requestPassword).not.toHaveBeenCalled();
+    await previewer.preview(input, { name: 'two.txt' });
+    expect(requestPassword).toHaveBeenCalledOnce();
+    expect(errors).toHaveBeenCalledWith(expect.objectContaining({ code: 'password_cancelled' }));
+    previewer.destroy();
+  });
+
+  it('reads an encrypted remote Office document once across password retries', async () => {
+    const fixture = setup();
+    const source = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, arrayBuffer: async () => source.buffer } as Response);
+    const requestPassword = vi.fn(async () => 'secret');
+    const convert = vi.fn(async (request: ConversionRequest) => {
+      if (!request.password) throw new PreviewPasswordError('password_required');
+      return { source: input, format: 'txt' };
+    });
+    const previewer = createPreviewer(fixture.host, {
+      drivers: [fixture.driver], routes: [{ extensions: ['docx'], family: 'flow', driverId: 'docx' }, ...conversionRoutes],
+      converter: { convert }, requestPassword
+    });
+    try {
+      await previewer.preview('/locked.docx');
+      expect(fetch).toHaveBeenCalledOnce();
+      expect(convert).toHaveBeenCalledTimes(2);
+      expect(convert.mock.calls[1][0]).toMatchObject({ sourceFormat: 'docx', targetFormat: 'docx', password: 'secret' });
+      expect(previewer.getState().error).toBeNull();
+    } finally { previewer.destroy(); fetch.mockRestore(); }
+  });
+});
 
 describe('Previewer load ownership', () => {
   it.each(['replace', 'destroy'] as const)('settles a non-cooperative converter on %s and ignores its late rejection', async action => {

@@ -1,4 +1,5 @@
 import { normalizeExtension } from './formats';
+import { AudioPreviewPlayer } from './audio-player';
 import type {
   ImagePreviewState,
   MediaPreviewState,
@@ -860,7 +861,11 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
     volume: 1
   };
   private media: HTMLMediaElement | null = null;
-  private coverUrl: string | null = null;
+  private audioPlayer: AudioPreviewPlayer | null = null;
+
+  constructor(host: HTMLElement, private readonly options: PreviewOptions = {}) {
+    super(host);
+  }
 
   async load(source: PreviewSource, context: PreviewLoadContext): Promise<void> {
     const family = resolveMediaFamily(context);
@@ -901,11 +906,13 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
         this.emit('rendered', this.state);
         this.emit('statechange', this.state);
       }, { signal });
-      media.addEventListener('timeupdate', () => {
-        if (signal.aborted) return;
-        this.syncMediaState(media);
-        this.emit('statechange', this.state);
-      }, { signal });
+      for (const event of ['timeupdate', 'durationchange', 'seeking', 'seeked', 'ended']) {
+        media.addEventListener(event, () => {
+          if (signal.aborted) return;
+          this.syncMediaState(media);
+          this.emit('statechange', this.state);
+        }, { signal });
+      }
       media.addEventListener('play', () => {
         if (signal.aborted) return;
         this.syncMediaState(media);
@@ -948,20 +955,20 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
       this.root.className = `pptxv-native-preview pptxv-native-preview--${family === 'audio' ? 'audio' : 'video'}`;
       this.root.replaceChildren(media);
       if (family === 'audio') {
+        const player = new AudioPreviewPlayer(media, context, this.options, signal);
+        this.audioPlayer = player;
+        this.root.replaceChildren(player.element);
         // Optional artwork must not delay the player or prevent playback.
-        const cover = await extractAudioCover(source).catch(() => null);
+        const artwork = extractAudioCover(source).then(cover => {
+          if (cover && !signal.aborted) {
+            const blob = new Blob([toBlobPart(cover.bytes)], { type: cover.mimeType });
+            player.setCover(blob);
+          }
+        }).catch(() => {});
+        await Promise.all([artwork, player.loadCompanions()]);
         if (signal.aborted) {
           if (context.signal?.aborted) checkElementAborted(signal);
           return;
-        }
-        if (cover) {
-          const img = document.createElement('img');
-          img.className = 'pptxv-native-audio-cover';
-          img.alt = context.descriptor.name ? `${context.descriptor.name} cover` : 'Audio cover art';
-          const blob = new Blob([toBlobPart(cover.bytes)], { type: cover.mimeType });
-          this.coverUrl = URL.createObjectURL(blob);
-          img.src = this.coverUrl;
-          this.root.prepend(img);
         }
       }
     } catch (error) {
@@ -987,13 +994,6 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
     this.state.error = null;
   }
 
-  private revokeCoverUrl(): void {
-    if (this.coverUrl) {
-      URL.revokeObjectURL(this.coverUrl);
-      this.coverUrl = null;
-    }
-  }
-
   private releaseMedia(): void {
     const media = this.media;
     this.media = null;
@@ -1004,7 +1004,8 @@ export class MediaPreviewSession extends NativePreviewSession<MediaPreviewState>
       media.load();
     }
     this.state.paused = true;
-    this.revokeCoverUrl();
+    this.audioPlayer?.destroy();
+    this.audioPlayer = null;
   }
 }
 
@@ -1031,7 +1032,7 @@ export function createMediaPreviewDriver(): PreviewDriver<MediaPreviewState> {
     id: 'media',
     family: 'video',
     supports: (format) => VIDEO_FORMATS.has(normalizeExtension(format)) || AUDIO_FORMATS.has(normalizeExtension(format)),
-    createSession: (host) => new MediaPreviewSession(host)
+    createSession: (host, options) => new MediaPreviewSession(host, options)
   };
 }
 

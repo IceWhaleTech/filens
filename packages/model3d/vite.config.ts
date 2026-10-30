@@ -18,6 +18,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
         '@filens/core',
+        'filens-step',
         'three'
       ]
     }

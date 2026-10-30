@@ -1,100 +1,139 @@
-//! Search orchestration/cache only. Extraction, chunks, ranking and exports use WASM.
+//! Search orchestration only; no persistent index, cache or source hashing. Extraction, chunks, ranking and exports use WASM.
 use crate::{request::Options, runtime::Runtime, walk};
 use anyhow::{Result, ensure};
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use std::{
-    collections::HashSet,
-    io::{Read, Write},
-    path::{Component, Path, PathBuf},
+    collections::{HashMap, HashSet},
+    path::{Component, Path},
 };
 
-fn hash(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+#[derive(Default)]
+struct Extracted {
+    content: HashMap<usize, Value>,
+    errors: Vec<(usize, String)>,
+    truncated: bool,
+    batches: usize,
+    native_files: usize,
 }
-fn cache_root() -> Option<PathBuf> {
-    if let Some(path) = std::env::var_os("FILENS_SEARCH_CACHE_DIR") {
-        return Some(path.into());
+impl Extracted {
+    fn merge(&mut self, other: Self) {
+        self.content.extend(other.content);
+        self.errors.extend(other.errors);
+        self.truncated |= other.truncated;
+        self.batches += other.batches;
+        self.native_files += other.native_files;
     }
-    if let Some(path) = std::env::var_os("XDG_CACHE_HOME") {
-        return Some(PathBuf::from(path).join("filens/search-v1"));
-    }
-    if cfg!(windows) {
-        return std::env::var_os("LOCALAPPDATA")
-            .map(|p| PathBuf::from(p).join("filens/cache/search-v1"));
-    }
-    std::env::var_os("HOME").map(|p| {
-        PathBuf::from(p).join(if cfg!(target_os = "macos") {
-            "Library/Caches/filens/search-v1"
-        } else {
-            ".cache/filens/search-v1"
-        })
-    })
 }
-fn read_cache(path: &Path, fingerprint: &str) -> Option<Value> {
-    let mut bytes = vec![];
-    std::fs::File::open(path)
-        .ok()?
-        .take((64 << 20) + 1)
-        .read_to_end(&mut bytes)
-        .ok()?;
-    if bytes.len() > 64 << 20 {
-        return None;
+
+fn batches(
+    engine: &mut Runtime,
+    work: &Path,
+    root: &Path,
+    entries: &[walk::Entry],
+    ids: &[usize],
+    ocr_formats: &HashSet<String>,
+    options: &Value,
+) -> Result<Extracted> {
+    let mut result = Extracted::default();
+    for ids in ids.chunks(256) {
+        let mut inputs = Vec::new();
+        for &id in ids {
+            let relative = Path::new(&entries[id].path);
+            let extension = relative
+                .extension()
+                .and_then(|s| s.to_str())
+                .unwrap_or("")
+                .to_lowercase();
+            if engine.uses_native_search()
+                && options["includeLayout"] != true
+                && crate::native_search::supports_plain(&extension)
+            {
+                result.native_files += 1;
+                result.content.insert(
+                    id,
+                    json!({"content":crate::native_search::extract_plain(
+                        &root.join(relative),
+                        options["maxBytes"].as_u64().unwrap_or(8 << 20) as usize,
+                    )}),
+                );
+                continue;
+            }
+            inputs.push(
+                json!({"id":id,"input":format!("/scan/{}", entries[id].path.replace('\\', "/")),
+                "source":extension,"copyInput":ocr_formats.contains(&extension)}),
+            );
+        }
+        if inputs.is_empty() {
+            continue;
+        }
+        std::fs::write(
+            work.join("extract-batch.json"),
+            serde_json::to_vec(&json!({"files":inputs,"options":options}))?,
+        )?;
+        if work.join("result.json").exists() {
+            std::fs::remove_file(work.join("result.json"))?;
+        }
+        result.batches += 1;
+        let wire = engine.run_with_directory(
+            &[
+                "converter-text",
+                "--operation",
+                "extract-batch",
+                "--input",
+                "/work/extract-batch.json",
+                "--output",
+                "/work/text.txt",
+                "--source",
+                "json",
+                "--target",
+                "text",
+                "--result",
+                "/work/result.json",
+            ]
+            .map(String::from),
+            Some(root),
+        );
+        match wire {
+            Ok(wire) if wire["ok"] == true => {
+                result.truncated |= wire["payload"]["truncated"] == true;
+                for file in wire["payload"]["files"]
+                    .as_array()
+                    .ok_or_else(|| anyhow::anyhow!("missing extraction batch outcomes"))?
+                {
+                    let id = file["id"]
+                        .as_u64()
+                        .ok_or_else(|| anyhow::anyhow!("missing extraction batch id"))?
+                        as usize;
+                    ensure!(ids.contains(&id), "unexpected extraction batch id");
+                    result.content.insert(id, file.clone());
+                }
+            }
+            error => {
+                for input in &inputs {
+                    result.errors.push((
+                        input["id"].as_u64().unwrap() as usize,
+                        format!("WASM extraction batch: {error:?}"),
+                    ));
+                }
+            }
+        }
+        if result.truncated {
+            break;
+        }
     }
-    let value: Value = serde_json::from_slice(&bytes).ok()?;
-    (value["fingerprint"] == fingerprint
-        && value["content"]["text"].is_string()
-        && value["content"]["complete"] == true
-        && value["content"]["truncated"] == false)
-        .then(|| value["content"].clone())
+    Ok(result)
 }
-fn write_cache(path: &Path, fingerprint: &str, content: &Value) -> Result<()> {
-    let directory = path.parent().unwrap();
-    std::fs::create_dir_all(directory)?;
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        std::fs::set_permissions(directory, std::fs::Permissions::from_mode(0o700))?;
-    }
-    let mut temporary = tempfile::NamedTempFile::new_in(directory)?;
-    serde_json::to_writer(
-        &mut temporary,
-        &json!({"fingerprint":fingerprint,"content":content}),
-    )?;
-    temporary.flush()?;
-    temporary.persist(path)?;
-    Ok(())
-}
-fn read_source(path: &Path) -> Result<Vec<u8>> {
-    let mut options = std::fs::OpenOptions::new();
-    options.read(true);
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
-    }
-    let mut file = options.open(path)?;
-    let metadata = file.metadata()?;
-    ensure!(
-        metadata.is_file() && metadata.len() <= 256 << 20,
-        "source must be a regular file no larger than 256 MiB"
-    );
-    let mut bytes = Vec::with_capacity((metadata.len() as usize).min(8 << 20));
-    Read::by_ref(&mut file)
-        .take((256 << 20) + 1)
-        .read_to_end(&mut bytes)?;
-    ensure!(bytes.len() <= 256 << 20, "source grew beyond 256 MiB");
-    Ok(bytes)
-}
+
 pub fn execute(
     o: &Options,
     mut response: Value,
     engine: &mut Runtime,
     work: &Path,
     capacity: &Value,
-    wasm: &Path,
 ) -> Result<(Value, i32)> {
-    let root = Path::new(response["source"]["path"].as_str().unwrap());
+    let input = Path::new(response["source"]["path"].as_str().unwrap());
+    let single_archive = input.is_file();
+    let root = if single_archive { input.parent().unwrap() } else { input };
     let extensions: Vec<_> = if o.request.search_mode == "files" {
         vec![json!("*")]
     } else {
@@ -102,7 +141,7 @@ pub fn execute(
             .as_array()
             .unwrap()
             .iter()
-            .filter(|c| c["textExtraction"] == true)
+            .filter(|c| c["textExtraction"] == true || c["archiveSearch"] == true)
             .map(|c| c["format"].clone())
             .collect()
     };
@@ -110,167 +149,277 @@ pub fn execute(
     let config = json!({"extensions":extensions,"maxFiles":max_files,"maxEntries":(max_files*100).min(1000000),
         "maxDepth":o.request.max_depth.unwrap_or(32),"includeHidden":o.request.include_hidden,"exclude":[".git","node_modules","target","dist"]});
     let started = std::time::Instant::now();
-    let mut scan = walk::scan(root, work, &config)?;
+    let mut scan = if single_archive {
+        walk::Scan { backend:"single-archive".into(), visited:1,
+            entries:vec![walk::Entry {path:input.file_name().unwrap().to_string_lossy().into_owned(),bytes:input.metadata()?.len()}],
+            ..Default::default() }
+    } else { walk::scan(root, work, &config)? };
     let discovery_ms = started.elapsed().as_millis();
-    let fingerprint = hash(&serde_json::to_vec(&json!({
-        "engine":hash(&crate::runtime::read_wasm(wasm)?),"ocr":engine.ocr_cache_identity()?,"maxBytes":o.request.max_bytes,"layout":o.request.layout,
-    }))?);
-    let cache = if o.request.cache.unwrap_or(true) && o.request.search_mode != "files" {
-        cache_root().map(|p| p.join(hash(root.to_string_lossy().as_bytes())))
-    } else {
-        None
-    };
-    let mut cache_hits = 0;
-    let mut cache_writes = 0;
-    let mut cache_errors = 0;
-    let mut current_keys = HashSet::new();
     let mut files = Vec::new();
     let mut text_bytes = 0;
     let mut extraction_errors = Vec::new();
     let mut extraction_error_count = 0;
     let mut incomplete_sources = 0;
-    let entries = std::mem::take(&mut scan.entries);
-    for entry in &entries {
-        let relative = Path::new(&entry.path);
-        if relative
+    let mut entries = std::mem::take(&mut scan.entries);
+    entries.retain(|entry| {
+        let valid = Path::new(&entry.path)
             .components()
-            .any(|c| !matches!(c, Component::Normal(_)))
-        {
+            .all(|c| matches!(c, Component::Normal(_)));
+        if !valid {
             scan.issue(entry.path.clone(), "invalid relative discovery path".into());
-            continue;
         }
-        let path = root.join(relative);
-        if o.request.search_mode == "files" {
-            files.push(json!({"path":path,"relativePath":entry.path,"sha256":"","text":"","layout":null,"complete":true}));
-            continue;
-        }
-        let source = match read_source(&path) {
-            Ok(bytes) => bytes,
-            Err(error) => {
-                scan.issue(entry.path.clone(), error.to_string());
-                continue;
+        valid
+    });
+    let configured_jobs = std::env::var("FILENS_SEARCH_JOBS")
+        .ok()
+        .map(|s| s.parse::<usize>())
+        .transpose()?;
+    ensure!(
+        configured_jobs.is_none_or(|n| (1..=8).contains(&n)),
+        "FILENS_SEARCH_JOBS must be between 1 and 8"
+    );
+    let mut jobs = 1;
+    let mut extracted = Extracted::default();
+    if o.request.search_mode != "files" {
+        let ocr_formats: HashSet<String> = capacity
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|c| c["ocr"] == true || c["archiveSearch"] == true)
+            .filter_map(|c| c["format"].as_str().map(String::from))
+            .collect();
+        let options = json!({"maxBytes":if o.request.max_bytes == 0 { 8 << 20 } else { o.request.max_bytes },
+            "maxOCRPages":200,"includeStructure":false,"includeLayout":o.request.layout,"outputFormat":"json",
+            "maxArchiveFiles":max_files,"includeHidden":o.request.include_hidden,"maxDepth":o.request.max_depth.unwrap_or(32)});
+        jobs = configured_jobs.unwrap_or_else(|| {
+            let source_bytes = entries.iter().map(|entry| entry.bytes).sum::<u64>();
+            if source_bytes <= 8 << 20 {
+                1
+            } else {
+                std::thread::available_parallelism().map_or(1, usize::from).min(4)
             }
-        };
-        let source_hash = hash(&source);
-        let key = format!("{}.json", hash(entry.path.as_bytes()));
-        current_keys.insert(key.clone());
-        let cache_file = cache.as_ref().map(|p| p.join(&key));
-        let file_fingerprint = hash(format!("{fingerprint}:{source_hash}").as_bytes());
-        let content = if let Some(content) = cache_file
-            .as_ref()
-            .and_then(|p| read_cache(p, &file_fingerprint))
-        {
-            cache_hits += 1;
-            content
+        });
+        if entries.len() < 32 {
+            jobs = 1;
+        }
+        if jobs == 1 {
+            extracted = batches(
+                engine,
+                work,
+                root,
+                &entries,
+                &(0..entries.len()).collect::<Vec<_>>(),
+                &ocr_formats,
+                &options,
+            )?;
         } else {
-            let extension = path
-                .extension()
-                .and_then(|s| s.to_str())
-                .unwrap_or("")
-                .to_lowercase();
-            std::fs::write(work.join(format!("input.{extension}")), &source)?;
-            let mut options = o.clone();
-            options.request.operation = "read".into();
-            options.request.format = "json".into();
-            options.request.query.clear();
-            let initial = json!({"version":"filens-agent-v1","operation":"read","source":{"path":path,"format":extension,"bytes":source.len()}});
-            let (result, code) =
-                match crate::extract_content(&options, initial, engine, work, capacity, true) {
-                    Ok(value) => value,
-                    Err(error) => {
-                        scan.issue(entry.path.clone(), error.to_string());
-                        continue;
-                    }
-                };
-            if code != 0 {
-                extraction_error_count += 1;
-                if extraction_errors.len() < 64 {
-                    extraction_errors.push(json!({"path":path,"error":result["error"]}));
+            let (ocr_ids, plain_ids): (Vec<_>, Vec<_>) = (0..entries.len()).partition(|&id| {
+                let extension = Path::new(&entries[id].path)
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_lowercase();
+                ocr_formats.contains(&extension)
+            });
+            let plain_workers = jobs
+                .saturating_sub(usize::from(!ocr_ids.is_empty()))
+                .max(1)
+                .min(plain_ids.len());
+            jobs = plain_workers + usize::from(!ocr_ids.is_empty());
+            if entries.iter().any(|entry| {
+                let extension = Path::new(&entry.path)
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_lowercase();
+                !engine.uses_native_search()
+                    || o.request.layout
+                    || !crate::native_search::supports_plain(&extension)
+            }) {
+                engine.ensure_loaded()?;
+            }
+            let mut workers = Vec::new();
+            if plain_workers > 0 {
+                for ids in plain_ids.chunks(plain_ids.len().div_ceil(plain_workers)) {
+                    let directory = tempfile::Builder::new()
+                        .prefix("search-worker-")
+                        .tempdir_in(work)?;
+                    let runtime = engine.fork_without_ocr(directory.path())?;
+                    workers.push((runtime, directory, ids));
                 }
             }
-            let Some(content) = result.get("content") else {
-                continue;
-            };
-            if code == 0
-                && let Some(cache_file) = &cache_file
-            {
-                match write_cache(cache_file, &file_fingerprint, content) {
-                    Ok(()) => cache_writes += 1,
-                    Err(_) => cache_errors += 1,
+            std::thread::scope(|scope| -> Result<()> {
+                let handles: Vec<_> = workers
+                    .into_iter()
+                    .map(|(mut runtime, directory, ids)| {
+                        let entries = &entries;
+                        let options = &options;
+                        let ocr_formats = &ocr_formats;
+                        scope.spawn(move || {
+                            batches(
+                                &mut runtime,
+                                directory.path(),
+                                root,
+                                entries,
+                                ids,
+                                ocr_formats,
+                                options,
+                            )
+                        })
+                    })
+                    .collect();
+                if !ocr_ids.is_empty() {
+                    extracted.merge(batches(
+                        engine,
+                        work,
+                        root,
+                        &entries,
+                        &ocr_ids,
+                        &ocr_formats,
+                        &options,
+                    )?);
                 }
-            }
-            content.clone()
+                for handle in handles {
+                    extracted.merge(
+                        handle
+                            .join()
+                            .map_err(|_| anyhow::anyhow!("search worker failed"))??,
+                    );
+                }
+                Ok(())
+            })?;
+        }
+        scan.truncated |= extracted.truncated;
+        for (id, error) in &extracted.errors {
+            scan.issue(entries[*id].path.clone(), error.clone());
+        }
+    }
+    if o.request.search_mode == "files" {
+        let ids: Vec<_> = entries.iter().enumerate().filter(|(_, entry)| {
+            crate::text_catalog::is_archive(&Path::new(&entry.path).extension().and_then(|s|s.to_str()).unwrap_or("").to_lowercase())
+        }).map(|(id, _)| id).collect();
+        if !ids.is_empty() {
+            extracted = batches(engine, work, root, &entries, &ids, &HashSet::new(), &json!({
+                "archiveNamesOnly":true,"maxArchiveFiles":max_files,"includeHidden":o.request.include_hidden,
+                "maxDepth":o.request.max_depth.unwrap_or(32)
+            }))?;
+            scan.truncated |= extracted.truncated;
+            for (id, error) in &extracted.errors { scan.issue(entries[*id].path.clone(), error.clone()); }
+        }
+    }
+    let extraction_batches = extracted.batches;
+    let native_files = extracted.native_files;
+    let mut archive_files = 0;
+    let mut archive_visited = 0;
+    let mut archive_expanded_bytes = 0;
+    'sources: for (id, entry) in entries.iter().enumerate() {
+        let path = root.join(&entry.path);
+        if o.request.search_mode == "files" {
+            if files.len() >= max_files { scan.truncated = true; break; }
+            files.push(json!({"path":path,"relativePath":entry.path,"sha256":"","text":"","layout":null,"complete":true}));
+        }
+        let Some(outcome) = extracted.content.remove(&id) else {
+            continue;
         };
+        let archive = &outcome["archive"];
+        let members;
+        let outcomes = if archive.is_object() {
+            archive_visited += archive["visited"].as_u64().unwrap_or(0);
+            archive_expanded_bytes += archive["expandedBytes"].as_u64().unwrap_or(0);
+            scan.truncated |= archive["truncated"] == true;
+            extraction_error_count += archive["errorCount"].as_u64().unwrap_or(0) as usize;
+            for error in archive["errors"].as_array().into_iter().flatten() {
+                if extraction_errors.len() < 64 {
+                    let suffix = error["members"].as_array().into_iter().flatten().filter_map(Value::as_str).map(crate::text_catalog::escape_archive_path).collect::<Vec<_>>().join("!/");
+                    extraction_errors.push(json!({"path":if suffix.is_empty(){path.to_string_lossy().into_owned()}else{format!("{}!/{suffix}",crate::text_catalog::escape_archive_path(&path.to_string_lossy()))},"error":{"code":error["code"],"message":error["message"]}}));
+                }
+            }
+            archive["files"].as_array().unwrap().as_slice()
+        } else {
+            members = vec![outcome.clone()];
+            members.as_slice()
+        };
+        for item in outcomes {
+        if files.len() >= max_files { scan.truncated = true; break 'sources; }
+        let content = &item["content"];
+        let virtual_path = item["memberPath"].as_str().map(|s| format!("{}!/{s}",crate::text_catalog::escape_archive_path(&path.to_string_lossy())));
+        let source_path = virtual_path.clone().unwrap_or_else(||path.to_string_lossy().into_owned());
+        if content["complete"] != true || content["truncated"] == true {
+            extraction_error_count += 1;
+            if extraction_errors.len() < 64 {
+                extraction_errors.push(json!({"path":source_path,"error":{"code":content["errorCode"],"message":content["errorMessage"]}}));
+            }
+        }
         let text = content["text"].as_str().unwrap_or("");
         if text_bytes + text.len() > 32 << 20 {
             scan.truncated = true;
-            break;
+            break 'sources;
         }
         text_bytes += text.len();
         let source_complete = content["complete"] == true && content["truncated"] != true;
         if !source_complete {
             incomplete_sources += 1;
         }
-        files.push(json!({"path":path,"relativePath":entry.path,"sha256":source_hash,"text":text,"layout":content["layout"],"complete":source_complete}));
-    }
-    if !scan.truncated
-        && scan.error_count == 0
-        && let Some(cache) = &cache
-    {
-        if let Ok(entries) = std::fs::read_dir(cache) {
-            for entry in entries.flatten() {
-                let name = entry.file_name().to_string_lossy().into_owned();
-                if name.len() == 69
-                    && name.ends_with(".json")
-                    && name[..64].bytes().all(|b| b.is_ascii_hexdigit())
-                    && !current_keys.contains(&name)
-                {
-                    let _ = std::fs::remove_file(entry.path());
-                }
-            }
+        let mut source = json!({"path":source_path,"relativePath":virtual_path.as_ref().map_or_else(||entry.path.clone(),|_|format!("{}!/{}",entry.path,item["members"].as_array().unwrap().iter().filter_map(Value::as_str).collect::<Vec<_>>().join("!/"))),"sha256":"","text":text,"layout":content["layout"],"complete":source_complete});
+        if virtual_path.is_some() {
+            archive_files += 1;
+            source["archive"] = json!({"path":path,"members":item["members"]});
+        }
+        files.push(source);
         }
     }
     let corpus = json!({"query":o.request.query,"mode":o.request.search_mode,"limit":o.request.max_results.unwrap_or(10),"format":o.request.format,"files":files});
-    std::fs::write(
-        work.join("search-corpus.json"),
-        serde_json::to_vec(&corpus)?,
-    )?;
-    if work.join("result.json").exists() {
-        std::fs::remove_file(work.join("result.json"))?;
-    }
-    let wire = engine.run(
-        &[
-            "converter-text",
-            "--operation",
-            "search-text",
-            "--input",
-            "/work/search-corpus.json",
-            "--output",
-            "/work/search.txt",
-            "--source",
-            "json",
-            "--target",
-            "text",
-            "--result",
-            "/work/result.json",
-        ]
-        .map(String::from),
-    )?;
-    if wire["ok"] != true {
-        crate::failure(
-            &mut response,
-            "search_failed",
-            wire["errorMessage"]
-                .as_str()
-                .unwrap_or("WASM search failed"),
-        );
-        return Ok((response, 2));
-    }
-    response["search"] = wire["payload"]["search"].clone();
-    response["content"] = wire["payload"]["content"].clone();
+    let payload = if engine.uses_native_search() {
+        match crate::native_search::evaluate(corpus) {
+            Ok(value) => value,
+            Err(error) => {
+                crate::failure(&mut response, "search_failed", error);
+                return Ok((response, 2));
+            }
+        }
+    } else {
+        std::fs::write(
+            work.join("search-corpus.json"),
+            serde_json::to_vec(&corpus)?,
+        )?;
+        if work.join("result.json").exists() {
+            std::fs::remove_file(work.join("result.json"))?;
+        }
+        let wire = engine.run(
+            &[
+                "converter-text",
+                "--operation",
+                "search-text",
+                "--input",
+                "/work/search-corpus.json",
+                "--output",
+                "/work/search.txt",
+                "--source",
+                "json",
+                "--target",
+                "text",
+                "--result",
+                "/work/result.json",
+            ]
+            .map(String::from),
+        )?;
+        if wire["ok"] != true {
+            crate::failure(
+                &mut response,
+                "search_failed",
+                wire["errorMessage"]
+                    .as_str()
+                    .unwrap_or("WASM search failed"),
+            );
+            return Ok((response, 2));
+        }
+        wire["payload"].clone()
+    };
+    response["search"] = payload["search"].clone();
+    response["content"] = payload["content"].clone();
     response["search"]["scan"] = json!({"backend":scan.backend,"visited":scan.visited,"discoveredFiles":entries.len(),"skipped":scan.skipped,"truncated":scan.truncated,
         "discoveryMs":discovery_ms,"errors":scan.errors,"errorCount":scan.error_count,"extractionErrors":extraction_errors,"extractionErrorCount":extraction_error_count,
-        "incompleteSources":incomplete_sources,"textBytes":text_bytes,"cache":{"enabled":cache.is_some(),"hits":cache_hits,"writes":cache_writes,"errors":cache_errors}});
+        "incompleteSources":incomplete_sources,"textBytes":text_bytes,"archives":{"files":archive_files,"visited":archive_visited,"expandedBytes":archive_expanded_bytes,"maxDepth":8,"maxExpandedBytesPerBatch":268435456},"cache":{"enabled":false,"storage":"none","hits":0,"writes":0,"errors":0},"integrity":"assumed","execution":{"workers":jobs,"sharedTextModules":engine.loaded_modules(),"nativeFiles":native_files,"ranking":if engine.uses_native_search(){"native-rust"}else{"wasm"},"extractionBatches":extraction_batches,"batchSize":256}});
     response["search"]["scope"] = config;
     let complete = response["search"]["complete"] == true
         && !scan.truncated

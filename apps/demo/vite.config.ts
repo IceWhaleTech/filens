@@ -4,6 +4,8 @@ import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 import path from 'node:path';
 import vue from '@vitejs/plugin-vue';
 import { occtWasmAsset } from '../../scripts/occt-wasm-plugin';
+import { stepWasmAsset } from '../../scripts/step-wasm-plugin';
+import { agentSkillAsset } from './agent-assets';
 
 const compressibleAssets = /\.(?:css|html|js|json|mjs|wasm)$/;
 
@@ -171,6 +173,7 @@ async function writeBuildInfo(outputDir: string): Promise<void> {
 function manualChunkForModule(id: string): string | undefined {
   const normalized = id.replaceAll(path.sep, '/');
   if (normalized === '\0filens:occt-wasm-url' || normalized.includes('/packages/model3d/vendor/occt-import-js/')) return 'occt-runtime';
+  if (normalized === '\0filens:step-wasm-url' || normalized.includes('/packages/step/') || normalized.endsWith('/packages/model3d/src/rust-step-importer.ts')) return 'step-runtime';
   if (normalized.includes('/node_modules/pdfjs-dist/')) return 'pdf-runtime';
   if (normalized.includes('/node_modules/')) return 'vendor';
   if (normalized.includes('/packages/iwork/')) return 'iwork';
@@ -250,12 +253,13 @@ const externalSampleProxy = {
 
 export default defineConfig({
   base: process.env.VITE_BASE_PATH || '/modules/filens/',
-  plugins: [vue(), occtWasmAsset(), externalConverterWasms(), precompressAssets()],
+  plugins: [vue(), occtWasmAsset(), stepWasmAsset(), externalConverterWasms(), agentSkillAsset(), precompressAssets()],
   server: { proxy: externalSampleProxy },
   preview: { proxy: externalSampleProxy },
   resolve: {
     preserveSymlinks: true,
     alias: {
+      'filens-step': path.resolve(__dirname, '../../packages/step/src/index.ts'),
       '@filens/archive/style.css': path.resolve(__dirname, '../../packages/archive/src/styles/index.css'),
       '@filens/archive': path.resolve(__dirname, '../../packages/archive/src/index.ts'),
       '@filens/cad/style.css': path.resolve(__dirname, '../../packages/cad/src/styles/index.css'),

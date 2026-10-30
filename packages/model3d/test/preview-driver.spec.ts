@@ -91,6 +91,7 @@ vi.mock('three', async () => {
 vi.mock('../vendor/occt-import-js/occt-import-js.js', () => ({
   default: occtFactoryMock
 }));
+vi.mock('../src/rust-step-importer', () => ({ createRustStepImporter: occtFactoryMock }));
 
 vi.mock('../vendor/occt-import-js/occt-import-js.wasm?url', () => ({
   default: '/assets/occt-import-js.wasm'
@@ -621,7 +622,7 @@ describe('model3d preview driver', () => {
     expect(result.warnings).toContain('3MF material resource "9" is not a supported color palette; fallback vertex colors were used.');
   });
 
-  it('loads flat STEP preview geometry through the OpenCascade WASM importer', async () => {
+  it.each(['rust', 'occt'] as const)('loads flat STEP preview geometry through the %s WASM importer', async stepEngine => {
     occtReadStepFileMock.mockReturnValue({
       success: true,
       root: { meshes: [0] },
@@ -634,14 +635,16 @@ describe('model3d preview driver', () => {
       }]
     });
 
-    const object = await loadStepObject(new Uint8Array([1, 2, 3]).buffer);
+    const object = await loadStepObject(new Uint8Array([1, 2, 3]).buffer, { stepEngine });
     const mesh = object.children[0] as Mesh;
 
     expect(object.children).toHaveLength(1);
     expect((mesh.material as MeshStandardMaterial).color.toArray()).toEqual([0.72, 0.76, 0.82]);
     expect(Array.from(mesh.geometry.getAttribute('position').array)).toEqual([0, 0, 0, 1, 0, 0, 0, 1, 0]);
     expect(mesh.geometry.getIndex()?.array).toEqual(new Uint16Array([0, 1, 2]));
-    expect(occtReadStepFileMock).toHaveBeenCalledWith(expect.any(Uint8Array), { linearUnit: 'millimeter' });
+    expect(object.userData.stepEngine).toBe(stepEngine);
+    if (stepEngine === 'rust') expect(occtReadStepFileMock).toHaveBeenCalledWith(expect.any(Uint8Array), { linearUnit: 'millimeter' }, undefined);
+    else expect(occtReadStepFileMock).toHaveBeenCalledWith(expect.any(Uint8Array), { linearUnit: 'millimeter' });
   });
 
   it('exposes direct STEP/STP/STL/OBJ/PLY/glTF/GLB/3MF/AMF/DAE/FBX/3DS/USDZ/G-code/VRML/PCD/XYZ/VTK/VOX/LDraw/KMZ/MD2/LWO/BVH/PDB/NRRD/NHDR routes and driver support', () => {

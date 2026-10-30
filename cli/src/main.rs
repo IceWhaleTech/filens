@@ -1,4 +1,6 @@
 mod convert;
+#[path = "../../wasm/converter-core-rust/src/text/native_search.rs"]
+mod native_search;
 mod ocr;
 mod output;
 mod pdf;
@@ -6,6 +8,8 @@ mod request;
 mod runtime;
 mod search;
 mod similarity;
+#[path = "../../wasm/converter-core-rust/src/text/catalog.rs"]
+mod text_catalog;
 mod walk;
 
 use anyhow::{Result, ensure};
@@ -74,7 +78,12 @@ fn run() -> Result<i32> {
     }
     let mut value = response(&options);
     if options.request.operation != "capabilities" {
-        let metadata = match std::fs::metadata(&options.request.input) {
+        let parts: Vec<_> = options.request.input.split("!/").collect();
+        let archive_member = parts.len() > 1 && !matches!(options.request.operation.as_str(), "search" | "similar" | "convert")
+            && std::fs::metadata(text_catalog::unescape_archive_path(parts[0])).is_ok_and(|m|m.is_file())
+            && text_catalog::is_archive(&Path::new(parts[0]).extension().and_then(|s|s.to_str()).unwrap_or("").to_lowercase());
+        let physical_input = if archive_member { text_catalog::unescape_archive_path(parts[0]) } else { options.request.input.clone() };
+        let metadata = match std::fs::metadata(&physical_input) {
             Ok(m) => m,
             Err(e) => {
                 failure(&mut value, "io_error", e);
@@ -82,16 +91,18 @@ fn run() -> Result<i32> {
             }
         };
         if matches!(options.request.operation.as_str(), "search" | "similar") {
-            if !metadata.is_dir() {
+            let archive = options.request.operation == "search" && metadata.is_file() && metadata.len() <= 256 << 20
+                && text_catalog::is_archive(&Path::new(&options.request.input).extension().and_then(|s|s.to_str()).unwrap_or("").to_lowercase());
+            if !metadata.is_dir() && !archive {
                 failure(
                     &mut value,
                     "invalid_input",
-                    "search/similar input must be a directory",
+                    "search input must be a directory or supported archive; similar requires a directory",
                 );
                 return Ok(finish(&options.request.format, &value, 2));
             }
             value["source"] =
-                json!({"path":std::fs::canonicalize(&options.request.input)?,"kind":"directory"});
+                json!({"path":std::fs::canonicalize(&options.request.input)?,"kind":if archive {"archive"}else{"directory"}});
         } else if !metadata.is_file() || metadata.len() > 256 << 20 {
             failure(
                 &mut value,
@@ -111,6 +122,12 @@ fn run() -> Result<i32> {
                 format = options.request.source_format.clone();
             }
             value["source"] = json!({"path":path,"format":format,"bytes":metadata.len()});
+            if archive_member {
+                let outer = std::fs::canonicalize(&physical_input)?;
+                value["source"]["path"] = json!(format!("{}!/{}",text_catalog::escape_archive_path(&outer.to_string_lossy()),parts[1..].join("!/")));
+                value["source"]["archive"] = json!({"path":outer,"members":parts[1..].iter().map(|p|text_catalog::unescape_archive_path(p)).collect::<Vec<_>>()});
+                value["source"]["archiveFormat"] = json!(Path::new(&physical_input).extension().unwrap().to_string_lossy().to_lowercase());
+            }
         }
     }
     let work = tempfile::Builder::new().prefix("filens-text-").tempdir()?;
@@ -227,7 +244,17 @@ fn execute(
             .map(PathBuf::from)
             .unwrap_or_else(|| bundle.join("converter-text.wasm"))
     };
-    let mut engine = match runtime::Runtime::new(&wasm, work, bundle, provider) {
+    let bundled_search = o.request.operation == "search"
+        && o.wasm.is_empty()
+        && std::env::var_os("FILENS_TEXT_WASM").is_none();
+    let initialized = if bundled_search {
+        runtime::Runtime::native_search(&wasm, work, bundle, provider)
+    } else if o.request.operation == "search" {
+        runtime::Runtime::for_search(&wasm, work, bundle, provider)
+    } else {
+        runtime::Runtime::new(&wasm, work, bundle, provider)
+    };
+    let mut engine = match initialized {
         Ok(e) => e,
         Err(e) => {
             failure(
@@ -241,26 +268,35 @@ fn execute(
     if o.request.operation == "convert" {
         return convert::execute(o, response, engine, bundle, work, pid);
     }
-    let capacity = match engine.run(
-        &[
-            "converter-text",
-            "--operation",
-            "text-capabilities",
-            "--result",
-            "/work/result.json",
-        ]
-        .map(String::from),
-    ) {
-        Ok(v) if v["ok"] == true && v["payload"].as_array().is_some_and(|a| !a.is_empty()) => {
-            v["payload"].clone()
-        }
-        result => {
-            failure(
-                &mut response,
-                "engine_unavailable",
-                format!("read WASM capabilities: {result:?}"),
-            );
-            return Ok((response, 1));
+    if o.request.operation == "search" && o.request.search_mode == "files" {
+        // Filename search needs neither document capabilities nor extraction/OCR.
+        return search::execute(o, response, &mut engine, work, &json!([]));
+    }
+    let capacity = if bundled_search {
+        // The catalogue comes from the same frontend core, with no WASM start.
+        Value::Array(text_catalog::formats())
+    } else {
+        match engine.run(
+            &[
+                "converter-text",
+                "--operation",
+                "text-capabilities",
+                "--result",
+                "/work/result.json",
+            ]
+            .map(String::from),
+        ) {
+            Ok(v) if v["ok"] == true && v["payload"].as_array().is_some_and(|a| !a.is_empty()) => {
+                v["payload"].clone()
+            }
+            result => {
+                failure(
+                    &mut response,
+                    "engine_unavailable",
+                    format!("read WASM capabilities: {result:?}"),
+                );
+                return Ok((response, 1));
+            }
         }
     };
     if o.request.operation == "capabilities" {
@@ -277,7 +313,7 @@ fn execute(
         return Ok((response, 0));
     }
     if o.request.operation == "search" {
-        return search::execute(o, response, &mut engine, work, &capacity, &wasm);
+        return search::execute(o, response, &mut engine, work, &capacity);
     }
     if o.request.operation == "similar" {
         return similarity::execute(o, response, &mut engine, work);
@@ -294,6 +330,8 @@ fn extract_content(
     prepared: bool,
 ) -> Result<(Value, i32)> {
     let source = response["source"]["format"].as_str().unwrap().to_owned();
+    let archive = response["source"]["archive"].is_object();
+    let input_source = if archive { response["source"]["archiveFormat"].as_str().unwrap() } else { &source };
     if !capacity
         .as_array()
         .unwrap()
@@ -309,9 +347,9 @@ fn extract_content(
     }
     // Bound the copy as well as the initial stat: input can change while read.
     if !prepared {
-        let mut input = std::fs::File::open(response["source"]["path"].as_str().unwrap())?
+        let mut input = std::fs::File::open(if archive {response["source"]["archive"]["path"].as_str().unwrap()} else {response["source"]["path"].as_str().unwrap()})?
             .take((256 << 20) + 1);
-        let mut output = std::fs::File::create(work.join(format!("input.{source}")))?;
+        let mut output = std::fs::File::create(work.join(format!("input.{input_source}")))?;
         let copied = std::io::copy(&mut input, &mut output)?;
         ensure!(
             copied <= 256 << 20,
@@ -321,18 +359,18 @@ fn extract_content(
     let summary = (o.request.operation == "summarize").then(|| json!({
         "query":o.request.query,"maxChars":o.request.summary_chars.unwrap_or(2000),"ratio":o.request.summary_ratio.unwrap_or(0.3)
     }));
-    let options = json!({"maxBytes":if o.request.max_bytes == 0 { 8 << 20 } else { o.request.max_bytes },"maxOCRPages":200,"includeStructure":o.request.format != "text" || o.request.operation == "understand" || o.request.layout,"includeLayout":o.request.layout,"outputFormat":o.request.format,"summary":summary});
+    let options = json!({"maxBytes":if o.request.max_bytes == 0 { 8 << 20 } else { o.request.max_bytes },"maxOCRPages":200,"includeStructure":o.request.format != "text" || o.request.operation == "understand" || o.request.layout,"includeLayout":o.request.layout,"outputFormat":o.request.format,"summary":summary,"archiveMembers":response["source"]["archive"]["members"],"archiveName":response["source"]["archive"]["path"].as_str().and_then(|p|Path::new(p).file_name()).and_then(|p|p.to_str())});
     std::fs::write(work.join("options.json"), serde_json::to_vec(&options)?)?;
     let args = [
         "converter-text",
         "--operation",
         "extract-text",
         "--input",
-        &format!("/work/input.{source}"),
+        &format!("/work/input.{input_source}"),
         "--output",
         "/work/text.txt",
         "--source",
-        &source,
+        input_source,
         "--target",
         "text",
         "--options",

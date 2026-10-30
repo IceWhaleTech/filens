@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { downloadOCRModels, requestedSourceCount } from './scripts/download-agent-models.mjs';
-import { supportedPlatforms, executableName, ocrLibraryName, npmInvocation } from './scripts/agent-platforms.mjs';
+import { supportedPlatforms, platformPackageName, executableName, ocrLibraryName, npmInvocation } from './scripts/agent-platforms.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const { version, name } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
@@ -22,7 +22,8 @@ if (!supported.includes(platform)) {
 const cache = path.resolve(process.env.FILENS_CACHE_DIR || path.join(os.homedir(), '.cache', 'filens'), version, platform);
 const localRequire = createRequire(import.meta.url);
 const cachedRequire = createRequire(path.join(cache, 'package.json'));
-const ocrName = `filens-ocr-${platform}`;
+const ocrName = platformPackageName('ocr', platform);
+const coreName = platformPackageName('cli', platform);
 function packageRoot(require, dependency) {
   try { return path.dirname(require.resolve(`${dependency}/package.json`)); }
   catch (error) { if (error.code !== 'MODULE_NOT_FOUND') throw error; return undefined; }
@@ -46,7 +47,7 @@ if (args[0] === 'setup-ocr') {
   // Explicit refreshes use the pinned downloader and a writable cache;
   // normal reads remain entirely offline.
   if (options.includes('--refresh')) await downloadOCRModels(cache, { sourceCount, force: true });
-  const installedCore = packageRoot(localRequire, `filens-cli-${platform}`);
+  const installedCore = packageRoot(localRequire, coreName);
   if (!installedCore) throw new Error('Platform CLI is missing; reinstall without --omit=optional');
   const installedOCR = findOCR();
   const modelRoot = options.includes('--refresh') ? cache : installedOCR;
@@ -69,7 +70,7 @@ if (args[0] === 'setup-ocr') {
   console.error('RapidOCR NCNN is ready (no Python; max side 960; threads 2).');
   process.exit(0);
 }
-const core = packageRoot(localRequire, `filens-cli-${platform}`);
+const core = packageRoot(localRequire, coreName);
 if (!core) {
   console.error('filens: platform binary is missing. Reinstall without --omit=optional.');
   process.exit(1);

@@ -249,9 +249,11 @@
 }
 
 .pptxv-native-preview--audio {
-  background: #eef2f7;
+  background: radial-gradient(ellipse at 12% 10%, #e3eadd, transparent 65%), #f2f0eb;
   flex-direction: column;
-  gap: 14px;
+  padding: clamp(16px, 4%, 48px);
+  justify-content: safe center;
+  container-type: inline-size;
 }
 
 .pptxv-native-image {
@@ -278,13 +280,188 @@
 
 .pptxv-native-audio-cover {
   display: block;
-  width: min(420px, 100%);
-  max-height: 320px;
-  object-fit: contain;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid #d7dee8;
-  box-shadow: 0 12px 30px rgba(34, 50, 69, 0.12);
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.pptxv-audio-player {
+  --audio-accent: #40634c;
+  box-sizing: border-box;
+  width: min(880px, 100%);
+  flex-shrink: 0;
+  margin: auto;
+  color: #283c32;
+  background: #fffefa;
+  border: 1px solid #d7dbd0;
+  border-radius: 22px;
+  box-shadow: 0 16px 56px #243b2c0c;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+
+.pptxv-audio-player button,
+.pptxv-audio-player select {
+  font: inherit;
+  cursor: pointer;
+  color: inherit;
+}
+
+.pptxv-audio-player button:focus-visible,
+.pptxv-audio-player select:focus-visible,
+.pptxv-audio-lyrics:focus-visible {
+  outline: 2px solid var(--audio-accent);
+  outline-offset: 3px;
+}
+
+.pptxv-audio-body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(24px, 5%, 56px);
+  padding: clamp(24px, 5%, 44px);
+}
+
+.pptxv-audio-album { min-width: 0; }
+
+.pptxv-audio-artwork {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: 280px;
+  margin-bottom: 26px;
+  border-radius: 14px;
+  background: #45644e;
+  box-shadow: 0 10px 24px #223b3026;
+  isolation: isolate;
+}
+
+.pptxv-audio-placeholder {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
+  background: radial-gradient(circle at 25% 15%, #9cab7c, transparent 50%), linear-gradient(145deg, #526c53, #1f3c37);
+}
+
+.pptxv-audio-placeholder span {
+  display: grid;
+  place-items: center;
+  width: 66%;
+  aspect-ratio: 1;
+  border: 1px solid #ffffff30;
+  border-radius: 50%;
+  box-shadow: 0 0 0 15px #ffffff06, 0 0 0 30px #ffffff06;
+  color: #e8e8cd;
+  font-size: 52px;
+}
+
+.pptxv-audio-play {
+  position: absolute;
+  z-index: 2;
+  right: 14px;
+  bottom: 14px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid #ffffffa0;
+  border-radius: 50%;
+  color: #293f32 !important;
+  background: #fffef4ee;
+  box-shadow: 0 4px 16px #0002;
+}
+
+.pptxv-audio-play:hover { background: #fff; transform: scale(1.04); }
+.pptxv-audio-eyebrow { margin: 0 0 10px; color: #697c63; font-size: 10px; letter-spacing: 0.16em; }
+.pptxv-audio-eyebrow::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 7px; border-radius: 50%; background: #a7b19b; }
+.is-playing .pptxv-audio-eyebrow::before { background: #52835b; box-shadow: 0 0 0 4px #52835b18; }
+.pptxv-audio-title { margin: 0 0 8px; font-size: clamp(19px, 2.4cqw, 25px); font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.pptxv-audio-details { margin: 0 0 18px; color: #6c756b; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+
+.pptxv-audio-import {
+  padding: 6px 10px;
+  border: 1px solid #dce0d4;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 11px !important;
+}
+.pptxv-audio-import:hover { border-color: #95a48c; background: #f3f5ed; }
+.pptxv-audio-lyric-panel { min-width: 0; display: flex; flex-direction: column; }
+.pptxv-audio-lyric-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid #e8e9e1; }
+.pptxv-audio-lyric-header h3 { margin: 0; color: #6c756b; font-size: 12px; font-weight: 500; letter-spacing: 0.06em; }
+
+.pptxv-audio-lyrics {
+  position: relative;
+  flex: 1 0 auto;
+  height: 280px;
+  max-height: 340px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd1c3 transparent;
+  margin-top: 12px;
+  padding: 40px 0;
+  box-sizing: border-box;
+}
+.pptxv-audio-lyrics.is-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #7b8375; gap: 12px; }
+.pptxv-audio-empty-icon { font-size: 42px; color: #a0ae93; }
+.pptxv-audio-lyrics.is-empty p { margin: 0; font-size: 14px; }
+.pptxv-audio-lyrics.is-empty small { color: #7b8375; font-size: 11px; line-height: 1.7; }
+.pptxv-audio-lyric {
+  display: block;
+  width: 100%;
+  padding: 12px 10px;
+  margin: 0;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0 6px 6px 0;
+  background: transparent;
+  color: #7c8378 !important;
+  text-align: left;
+  font-size: 14px !important;
+  line-height: 1.8;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  transition: color 180ms, background 180ms;
+}
+.pptxv-audio-lyric:hover { color: #40634c !important; background: #f4f5ee; }
+.pptxv-audio-lyric.is-active { border-left-color: var(--audio-accent); color: #304e39 !important; background: #eff3e9; font-weight: 600; }
+.pptxv-audio-timing { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 12px; color: #6c756b; font-size: 10px; }
+.pptxv-audio-timing[hidden] { display: none; }
+.pptxv-audio-timing button { padding: 4px 7px; border: 1px solid #e0e3d8; border-radius: 4px; background: transparent; }
+.pptxv-audio-timing output { min-width: 38px; text-align: center; font-variant-numeric: tabular-nums; }
+.pptxv-audio-status { margin: 10px 0 0; color: #707969; font-size: 11px; line-height: 1.6; }
+.pptxv-audio-status:empty { display: none; }
+.pptxv-audio-footer { display: flex; align-items: center; gap: 14px; padding: 16px 24px; background: #f3f5ee; border-top: 1px solid #e2e6d9; }
+.pptxv-audio-footer audio { width: 100%; min-width: 0; height: 44px; flex: 1; }
+.pptxv-audio-extras { display: flex; align-items: center; gap: 10px; }
+.pptxv-audio-repeat { width: 30px; height: 30px; border: 1px solid transparent; border-radius: 50%; background: transparent; font-size: 22px !important; }
+.pptxv-audio-repeat[aria-pressed="true"] { color: #355d3e; border-color: #cad7bf; background: #e1ead7; }
+.pptxv-audio-speed { max-width: 68px; padding: 4px; border: 0; border-radius: 4px; background: transparent; font-size: 12px !important; }
+
+@container (max-width: 560px) {
+  .pptxv-audio-body { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 24px; }
+  .pptxv-audio-album { display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 18px; align-content: center; }
+  .pptxv-audio-artwork { width: 112px; grid-row: span 4; margin: 0; }
+  .pptxv-audio-eyebrow { margin-bottom: 6px; font-size: 9px; }
+  .pptxv-audio-title { font-size: 18px; }
+  .pptxv-audio-details { margin-bottom: 10px; font-size: 11px; }
+  .pptxv-audio-play { width: 36px; height: 36px; right: 8px; bottom: 8px; }
+  .pptxv-audio-placeholder span { font-size: 28px; }
+  .pptxv-audio-lyrics { flex: none; height: 230px; }
+  .pptxv-audio-footer { flex-wrap: wrap; gap: 6px; padding: 12px; }
+  .pptxv-audio-footer audio { flex-basis: 100%; }
+  .pptxv-audio-extras { margin-left: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pptxv-audio-player * { transition: none !important; }
 }
 
 .pptxv-native-preview--text {

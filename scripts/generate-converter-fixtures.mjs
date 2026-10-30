@@ -185,6 +185,21 @@ const ODF_FLAT_FIXTURES = [
 
 const OPENXML_PACKAGE_FIXTURES = [
   {
+    relativePath: 'doc/sample.docx', targetFormat: 'docx',
+    mainContentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml',
+    entries: buildOpenXMLDocxFixtureEntries('Fixture DOCX document')
+  },
+  {
+    relativePath: 'xls/sample.xlsx', targetFormat: 'xlsx',
+    mainContentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml',
+    entries: buildOpenXMLXlsxFixtureEntries('Fixture XLSX workbook', '63.5')
+  },
+  {
+    relativePath: 'ppt/sample.pptx', targetFormat: 'pptx',
+    mainContentType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml',
+    entries: buildOpenXMLPptxFixtureEntries('Fixture PPTX presentation slide')
+  },
+  {
     relativePath: 'doc/sample.docm',
     targetFormat: 'docx',
     mainContentType: 'application/vnd.ms-word.document.macroEnabled.main+xml',
@@ -319,6 +334,9 @@ function fixturePathForSource(sourceFormat) {
     return `raw/sample.${sourceFormat}`;
   }
   switch (sourceFormat) {
+    case 'docx': return 'doc/sample.docx';
+    case 'xlsx': return 'xls/sample.xlsx';
+    case 'pptx': return 'ppt/sample.pptx';
     case 'doc':
     case 'docm':
     case 'dot':

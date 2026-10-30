@@ -1,12 +1,25 @@
 # filens Agent CLI
 
+<!-- agent-cli-size:npm:start -->
+**v0.3.0 · MIT · CLI 2.10 MiB · Lite 7.85 MiB · Full 31.05 MiB** (macOS arm64, installed; Full includes OCR models).
+
+| Platform | CLI executable | Lite installed / download | Full installed / download |
+| --- | ---: | ---: | ---: |
+| darwin-arm64 | 2.10 MiB | 7.85 / 6.02 MiB | 31.05 / 20.22 MiB |
+| linux-x64 | 1.88 MiB | 7.62 / 6.74 MiB | 36.57 / 22.72 MiB |
+| linux-arm64 | 1.77 MiB | 7.52 / 6.63 MiB | 30.94 / 20.42 MiB |
+| win32-x64 | 1.80 MiB | 7.54 / 6.66 MiB | 36.32 / 22.89 MiB |
+
+Totals add the launcher and selected platform packages from npm pack. Node.js, npm caches and filesystem overhead are excluded. Bundled dependencies retain their own licenses; see THIRD-PARTY-NOTICES.md in the platform packages.
+<!-- agent-cli-size:npm:end -->
+
 Read local documents and provide text and cited evidence for agents. Supports
 Chinese/English reading intents, text, JSON, Markdown, HTML, YAML, XML, CSV and
 TSV. Source layouts include PDF/OCR coordinates and logical document structure.
-Source builds also provide model-free extractive summaries through
+Version 0.3.0 also provides model-free extractive summaries through
 `summarize` / `prune`, with optional lexical focus and original-text provenance.
-Published npm 0.2.0 does not include this addition; check `capacity.operations`
-for `summarize` in the installed build. Paraphrasing, translation and question
+Check `capacity.operations` when using an older installation.
+Paraphrasing, translation and question
 answering belong to the calling agent. Parsing and pruning use the shared WASM core.
 
 ```sh
@@ -66,28 +79,38 @@ Inspect `content.summary` for original offsets, `sourceComplete`, `omitted`,
 characters, rounded up and capped at 2000 characters. Scores are ranking weights,
 not confidence, and an empty lexical match does not prove the topic is absent.
 
-Source builds also add directory-wide `search` with BM25, case-sensitive literal
-and filename modes, original excerpts, source hashes and optional layout. Check
-`capacity.operations` for `search`; published npm 0.2.0 does not include it.
+Version 0.3.0 includes directory-wide `search` with BM25, case-sensitive literal
+and filename modes, original excerpts and optional layout. Check
+`capacity.operations` for `search` when using an older version.
 
 ```sh
 filens '在 "./documents" 中搜索 "预算 风险"，以 JSON 输出'
 filens 'search "./documents" for "budget risk" as markdown'
 filens search ./documents --query FILENS2026 --search-mode exact --json
+filens 'search "documents.zip" for "budget risk" as json'
+filens read 'documents.zip!/attachments.tar.gz!/report.pdf' --layout --json
 ```
 
 macOS uses native FTS and does not embed hdrw. Windows/Linux embed compiled
 private hdrw WASI for mounted-directory enumeration; no private source or raw
-device access is needed. Full-text extraction is cached and source hashes are
-checked on each scan. `--no-cache` disables this cache. Ranking runs in the shared
-WASM core; embedding-based semantic retrieval is not implemented. See the
+device access is needed. Search keeps its catalog and extracted text in request-local
+memory, with no persistent index/body cache or source hashing. Common text decoding and
+ranking reuse the frontend Rust core directly; document extraction uses WASM.
+Embedding-based semantic retrieval is not implemented. See the
 [search guide](https://github.com/IceWhaleTech/filens/blob/main/docs/agent-cli-search.zh-CN.md)
 for scope, limits, provenance and partial results.
 
+Builds advertising `capacity.search.archives` automatically traverse ZIP,
+TAR and GZIP containers, including nested archives up to eight layers. Search
+results retain virtual member paths and structured container chains; the same
+paths support reading, layouts and summaries, including OCR. Expansion uses
+bounded request-local temporary files. RAR/7z and archive password decryption
+are not currently supported.
+
 ## Duplicate files and similar images
 
-Source builds provide Czkawka-style directory scans. Check `capacity.operations`
-for `similar`; published npm `0.2.0` does not include these commands.
+Version 0.3.0 provides Czkawka-style directory scans. Check `capacity.operations`
+for `similar` when using an older installation.
 
 ```sh
 filens duplicates ./files --json
@@ -149,7 +172,7 @@ sharing. Private evaluation inputs and raw reports are excluded from packages.
 EXIF orientation is applied, while a physically inverted image may still have
 its text lines returned in reversed order.
 
-The 0.3.0 release candidates add Windows 10/11 x64 alongside macOS 12+ arm64 and Linux glibc 2.17+ x64/arm64. Native Windows execution is pending validation; published stable 0.2.0 has no Windows package. Only the current
+Version 0.3.0 provides Windows 10/11 x64, macOS 12+ arm64 and Linux glibc 2.17+ x64/arm64 packages. Windows/Linux native execution remains pending validation. Only the current
 platform is installed. Node.js 20.11+ is required for the npm launcher; native
 binaries also work directly. No Python, Homebrew or compiler is needed at runtime.
 RapidOCR defaults: max side 960, padding 50, orientation classification enabled,
@@ -167,4 +190,4 @@ one profile at a time. Platform packages are implementation components.
 [Protocol, limitations and source build](https://github.com/IceWhaleTech/filens/blob/main/docs/agent-cli.md)
 
 Locally built release tarballs can also be installed with
-`npm install -g /path/to/filens-cli-0.3.0-rc.1.tgz /path/to/filens-cli-PLATFORM-0.3.0-rc.1.tgz /path/to/filens-ocr-PLATFORM-0.3.0-rc.1.tgz`.
+`npm install -g /path/to/filens-cli-0.3.0.tgz /path/to/filens-cli-PLATFORM-0.3.0.tgz /path/to/filens-ocr-PLATFORM-0.3.0.tgz`.

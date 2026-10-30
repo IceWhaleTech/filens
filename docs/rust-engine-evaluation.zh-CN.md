@@ -4,6 +4,8 @@
 
 后续排查：[STEP 不显示问题与修复复测](step-display-diagnosis.zh-CN.md)。本页保留修复前的原始结果。
 
+后续候选已包含曲面修复与缓存优化，并已提交 [上游 PR #141](https://github.com/ricosjp/truck/pull/141)。当前 Rust 浏览器预览又修复了非有限法线：**254.53 KiB Brotli WASM，独立 npm 候选 tarball 354.65 KiB**，几何筛查仍为 **43/44**，发布等待其他改动。见[浏览器接入和当前体积口径](rust-step-browser.zh-CN.md)；本页保留最初实验数据。
+
 **PDF：带标准字体/CMap 的 hayro 压缩体积只减少约 14%，原始体积反而增加；去掉这些资源会导致实际文档缺字。STEP：truck 压缩体积减少约 70%，但当前实验适配器尚不能保留整个现有语料的几何、单位与装配行为。**
 
 ## 体积

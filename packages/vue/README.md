@@ -10,6 +10,19 @@ npm install @filens/vue @filens/core @filens/iwork
 
 `vue` is a peer dependency and must be provided by the host app.
 
+## Password-protected documents
+
+The generic `Preview` component prompts for passwords when opening encrypted PDFs
+and Office documents. Configure its `converter` with `createWasmConverterClient()`
+for Office decryption in the browser. Supported Office encryption includes Agile,
+Office 2007 Standard, legacy RC4 CryptoAPI and XLS XOR obfuscation; rights-managed
+documents and other unsupported encryption methods report a format error.
+
+The password form supports incorrect-password retries, cancellation and reopening.
+It clears the entered password after submission, cancellation or changing files.
+The optional `password` prop supplies a known password; `requestPassword` replaces
+the built-in form with a host callback using `PreviewOptions['requestPassword']`.
+
 ## Usage
 
 ```vue

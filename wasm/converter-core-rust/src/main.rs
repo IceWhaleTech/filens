@@ -14,6 +14,10 @@ use zip::{CompressionMethod, ZipArchive, ZipWriter};
 
 mod panorama;
 mod ppm;
+mod office;
+#[path = "text/plain.rs"]
+mod plain;
+use plain::{decode_text, decode_utf16, windows_1252_char};
 #[cfg(feature = "text-extraction")]
 mod text;
 
@@ -392,6 +396,11 @@ fn main() {
         return;
     }
     #[cfg(feature = "text-extraction")]
+    if request.operation == "extract-batch" && parse_error.is_none() {
+        text::extract_batch(&request, started);
+        return;
+    }
+    #[cfg(feature = "text-extraction")]
     if request.operation == "extract-text" && parse_error.is_none() {
         text::execute(&request, started);
         return;
@@ -501,8 +510,22 @@ fn main() {
         }
     } else if let Err(error) = validate_input(&request, input_size) {
         failure(&request, error.code, error.message, input_size, None)
-    } else if let Some((backend, code, message)) = encrypted_input_failure(&request) {
-        failure(&request, code, message, input_size, Some(backend))
+    } else if let Some(conversion) = office::convert_encrypted(&request) {
+        let warning = if is_openxml_source(&request.source) {
+            OPENXML_WARNING
+        } else if is_word_binary_source(&request.source) {
+            WORD_BINARY_WARNING
+        } else if is_biff_source(&request.source) {
+            BIFF_WARNING
+        } else {
+            PPT_BINARY_WARNING
+        };
+        match conversion.and_then(|()| validate_output(&request.output, &request.target)) {
+            Ok(()) => success(&request, input_size, "office-encryption", warning),
+            Err(error) => failure(
+                &request, error.code, error.message, input_size, Some("office-encryption"),
+            ),
+        }
     } else {
         let (backend, warning, conversion) = if is_openxml_source(&request.source) {
             (
@@ -747,6 +770,7 @@ fn validate_input(request: &Request, input_size: u64) -> Result<(), ConvertError
     Ok(())
 }
 
+#[cfg(feature = "text-extraction")]
 fn encrypted_input_failure(request: &Request) -> Option<(&'static str, &'static str, String)> {
     let backend = if is_word_binary_source(&request.source) {
         WORD_BINARY_BACKEND
@@ -860,7 +884,7 @@ fn write_result(path: &str, mut result: ResultContract, elapsed_ms: u128) -> Res
 fn is_openxml_source(source: &str) -> bool {
     matches!(
         source,
-        "docm"
+        "docx" | "xlsx" | "pptx" | "docm"
             | "dotx"
             | "dotm"
             | "xlsm"
@@ -2082,7 +2106,11 @@ fn append_compound_directory_tree(
 
 fn convert_biff(input: &str, output: &str) -> Result<(), ConvertError> {
     let bytes = fs::read(input).map_err(|error| io_error(format!("read BIFF input: {error}")))?;
-    let workbook = read_biff_workbook(&bytes)?;
+    convert_biff_bytes(&bytes, output)
+}
+
+fn convert_biff_bytes(bytes: &[u8], output: &str) -> Result<(), ConvertError> {
+    let workbook = read_biff_workbook(bytes)?;
     let sheets = parse_biff_sheets(&workbook)?;
     let borrowed = sheets
         .iter()
@@ -2422,7 +2450,11 @@ fn decode_biff_formula_result(input: &[u8]) -> Option<BiffFormulaResult> {
 fn convert_ppt_binary(input: &str, output: &str) -> Result<(), ConvertError> {
     let bytes = fs::read(input)
         .map_err(|error| io_error(format!("read PowerPoint binary input: {error}")))?;
-    let file = CompoundFile::parse(&bytes)?;
+    convert_ppt_binary_bytes(&bytes, output)
+}
+
+fn convert_ppt_binary_bytes(bytes: &[u8], output: &str) -> Result<(), ConvertError> {
+    let file = CompoundFile::parse(bytes)?;
     let mut document = Vec::new();
     let mut current_user = Vec::new();
     let mut picture_stream = Vec::new();
@@ -2908,7 +2940,11 @@ struct WordBinaryChar {
 fn convert_word_binary(input: &str, output: &str) -> Result<(), ConvertError> {
     let bytes =
         fs::read(input).map_err(|error| io_error(format!("read Word binary input: {error}")))?;
-    let file = CompoundFile::parse(&bytes)?;
+    convert_word_binary_bytes(&bytes, output)
+}
+
+fn convert_word_binary_bytes(bytes: &[u8], output: &str) -> Result<(), ConvertError> {
+    let file = CompoundFile::parse(bytes)?;
     let mut streams = WordBinaryStreams {
         document: Vec::new(),
         table0: Vec::new(),
@@ -7949,69 +7985,6 @@ fn spreadsheet_column(mut index: usize) -> String {
     value
 }
 
-fn decode_text(input: &[u8]) -> String {
-    let decoded = if input.starts_with(&[0xff, 0xfe]) {
-        decode_utf16(&input[2..], true)
-    } else if input.starts_with(&[0xfe, 0xff]) {
-        decode_utf16(&input[2..], false)
-    } else if let Ok(text) = std::str::from_utf8(input) {
-        text.to_string()
-    } else {
-        input.iter().map(|byte| windows_1252_char(*byte)).collect()
-    };
-    decoded
-        .trim_start_matches('\u{feff}')
-        .replace("\r\n", "\n")
-        .replace('\r', "\n")
-        .trim_end_matches(char::is_whitespace)
-        .to_string()
-}
-
-fn decode_utf16(input: &[u8], little_endian: bool) -> String {
-    let units = input.chunks_exact(2).map(|pair| {
-        if little_endian {
-            u16::from_le_bytes([pair[0], pair[1]])
-        } else {
-            u16::from_be_bytes([pair[0], pair[1]])
-        }
-    });
-    char::decode_utf16(units)
-        .map(|value| value.unwrap_or(char::REPLACEMENT_CHARACTER))
-        .collect()
-}
-
-fn windows_1252_char(byte: u8) -> char {
-    match byte {
-        0x80 => '\u{20ac}',
-        0x82 => '\u{201a}',
-        0x83 => '\u{0192}',
-        0x84 => '\u{201e}',
-        0x85 => '\u{2026}',
-        0x86 => '\u{2020}',
-        0x87 => '\u{2021}',
-        0x88 => '\u{02c6}',
-        0x89 => '\u{2030}',
-        0x8a => '\u{0160}',
-        0x8b => '\u{2039}',
-        0x8c => '\u{0152}',
-        0x8e => '\u{017d}',
-        0x91 => '\u{2018}',
-        0x92 => '\u{2019}',
-        0x93 => '\u{201c}',
-        0x94 => '\u{201d}',
-        0x95 => '\u{2022}',
-        0x96 => '\u{2013}',
-        0x97 => '\u{2014}',
-        0x98 => '\u{02dc}',
-        0x99 => '\u{2122}',
-        0x9a => '\u{0161}',
-        0x9b => '\u{203a}',
-        0x9c => '\u{0153}',
-        0x9e => '\u{017e}',
-        0x9f => '\u{0178}',
-        _ => char::from_u32(byte as u32).unwrap_or(char::REPLACEMENT_CHARACTER),
-    }
-}
 
 fn extract_text_paragraphs(text: &str) -> Vec<String> {
     let mut paragraphs = Vec::new();
@@ -9459,8 +9432,8 @@ fn markdown_heading(line: &str) -> Option<(usize, &str)> {
 }
 
 fn markdown_list(line: &str) -> Option<(&'static str, &str)> {
-    if line.len() >= 2 && matches!(&line[..2], "- " | "* " | "+ ") {
-        return Some(("bullet", strip_task_marker(line[2..].trim())));
+    if let Some(text) = line.strip_prefix("- ").or_else(|| line.strip_prefix("* ")).or_else(|| line.strip_prefix("+ ")) {
+        return Some(("bullet", strip_task_marker(text.trim())));
     }
     let marker_end = line.find(['.', ')'])?;
     if marker_end > 0
@@ -11007,6 +10980,14 @@ fn word_text_xml(text: &str) -> String {
 fn normalize_package(input: &str, output: &str, target: &str) -> Result<(), ConvertError> {
     let input =
         File::open(input).map_err(|error| parse_error(format!("open OpenXML package: {error}")))?;
+    normalize_package_reader(input, output, target)
+}
+
+fn normalize_package_reader(
+    input: impl Read + std::io::Seek,
+    output: &str,
+    target: &str,
+) -> Result<(), ConvertError> {
     let mut archive = ZipArchive::new(input)
         .map_err(|error| parse_error(format!("open OpenXML package: {error}")))?;
     if let Some(parent) = Path::new(output).parent() {
@@ -12803,6 +12784,19 @@ mod tests {
         );
         assert_eq!(document.matches("<w:tbl>").count(), 2);
         assert_eq!(document.matches("<w:lastRenderedPageBreak/>").count(), 1);
+    }
+
+    #[test]
+    fn markdown_unicode_paragraphs_and_list_prefixes() {
+        let source = "# 项目预算\n\n项目 BUDGET2026：预算需审批。\n\névidence remains readable.\n\n😀 Unicode content.\n\n- [x] 完成审批";
+        let paragraphs = extract_markdown_paragraphs(source);
+        let text = paragraphs.iter().map(|p| p.text.as_str()).collect::<Vec<_>>().join("\n");
+        assert!(text.contains("项目 BUDGET2026：预算需审批。"));
+        assert!(text.contains("évidence remains readable."));
+        assert!(text.contains("😀 Unicode content."));
+        assert!(text.contains("完成审批"));
+        assert_eq!(markdown_list("- [x] 完成审批"), Some(("bullet", "完成审批")));
+        assert_eq!(markdown_list("项目预算"), None);
     }
 
     #[test]

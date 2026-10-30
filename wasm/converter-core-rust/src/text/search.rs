@@ -1,5 +1,7 @@
 //! Cross-document retrieval over complete extracted text; no host-side parsing.
-use super::*;
+use serde::Deserialize;
+use serde_json::{Value, json};
+use std::collections::HashMap;
 use std::collections::{BTreeMap, HashSet};
 use unicode_normalization::UnicodeNormalization;
 
@@ -26,6 +28,8 @@ struct Source {
     relative_path: String,
     #[serde(default)]
     layout: Value,
+    #[serde(default)]
+    archive: Value,
     complete: bool,
 }
 impl Source {
@@ -56,12 +60,12 @@ fn terms(text: &str) -> BTreeMap<String, f64> {
     let mut previous = None;
     fn flush(word: &mut String, result: &mut BTreeMap<String, f64>) {
         let trimmed = word.trim_matches(['.', '-', '_']);
-        if !trimmed.is_empty() && !super::prune::stop(trimmed) {
+        if !trimmed.is_empty() && !super::stopwords::stop(trimmed) {
             *result.entry(trimmed.into()).or_default() += 1.0;
             if !trimmed.chars().any(|c| c.is_ascii_digit()) {
                 for part in trimmed
                     .split(['.', '-', '_'])
-                    .filter(|s| !s.is_empty() && *s != trimmed && !super::prune::stop(s))
+                    .filter(|s| !s.is_empty() && *s != trimmed && !super::stopwords::stop(s))
                 {
                     *result.entry(part.into()).or_default() += 0.5;
                 }
@@ -72,7 +76,7 @@ fn terms(text: &str) -> BTreeMap<String, f64> {
     for c in normalized(text).chars() {
         if matches!(c as u32,0x3400..=0x4dbf|0x4e00..=0x9fff|0xf900..=0xfaff|0x20000..=0x323af) {
             flush(&mut word, &mut result);
-            if !super::prune::stop(&c.to_string()) {
+            if !super::stopwords::stop(&c.to_string()) {
                 *result.entry(c.to_string()).or_default() += 0.25;
             }
             if let Some(p) = previous {
@@ -317,7 +321,9 @@ fn evaluate_with_feature_budget(corpus: Corpus, feature_budget: usize) -> Result
             json!({"id":format!("s{}",j+1),"startByte":span.start,"endByte":span.end,"startLine":start_line,"endLine":end_line,"text":text,"score":score,
                 "layout":{"blocks":layout_blocks,"pages":file.layout["pages"],"images":file.layout["images"]}})
         }).collect();
-        results.push(json!({"path":file.path,"sha256":if file.sha256.is_empty(){Value::Null}else{json!(file.sha256)},"score":selected[&i][0].1,"sourceComplete":file.complete,"excerpts":excerpts}));
+        let mut result = json!({"path":file.path,"sha256":if file.sha256.is_empty(){Value::Null}else{json!(file.sha256)},"score":selected[&i][0].1,"sourceComplete":file.complete,"excerpts":excerpts});
+        if !file.archive.is_null() { result["archive"] = file.archive.clone(); }
+        results.push(result);
     }
     let mut text = String::new();
     for (i, file) in results.iter().enumerate() {
@@ -413,34 +419,10 @@ fn render(search: &Value, text: &str, format: &str) -> String {
     }
 }
 
-pub(super) fn execute(request: &Request, started: Instant) {
-    let result = fs::read(&request.input)
+pub(super) fn evaluate_value(value: Value) -> Result<Value, String> {
+    serde_json::from_value::<Corpus>(value)
         .map_err(|e| e.to_string())
-        .and_then(|bytes| {
-            if bytes.len() > 64 << 20 {
-                return Err("search corpus exceeds 64 MiB".into());
-            }
-            serde_json::from_slice::<Corpus>(&bytes)
-                .map_err(|e| e.to_string())
-                .and_then(evaluate)
-        });
-    let wire = match result {
-        Ok(payload) => ResultContract {
-            ok: true,
-            payload: Some(payload),
-            ..Default::default()
-        },
-        Err(message) => ResultContract {
-            ok: false,
-            error_code: "invalid_search".into(),
-            error_message: message,
-            ..Default::default()
-        },
-    };
-    if let Err(error) = write_result(&request.result, wire, started.elapsed().as_millis()) {
-        eprintln!("{error}");
-        process::exit(1);
-    }
+        .and_then(evaluate)
 }
 
 #[cfg(test)]
@@ -453,6 +435,7 @@ mod tests {
             sha256: "fixture".into(),
             text: text.into(),
             layout: Value::Null,
+            archive: Value::Null,
             complete: true,
         }
     }
@@ -540,10 +523,20 @@ mod tests {
     #[test]
     fn bounded_feature_cache_preserves_scores_and_evidence() {
         let corpus = || Corpus {
-            query: "预算 approval".into(), mode: "bm25".into(), limit: 10, format: "json".into(),
-            files: vec![source("one.txt", "现行预算需要 approval。"), source("two.txt", "approval budget notes"), source("none.txt", "ordinary background")],
+            query: "预算 approval".into(),
+            mode: "bm25".into(),
+            limit: 10,
+            format: "json".into(),
+            files: vec![
+                source("one.txt", "现行预算需要 approval。"),
+                source("two.txt", "approval budget notes"),
+                source("none.txt", "ordinary background"),
+            ],
         };
-        assert_eq!(evaluate_with_feature_budget(corpus(), 0).unwrap(), evaluate(corpus()).unwrap());
+        assert_eq!(
+            evaluate_with_feature_budget(corpus(), 0).unwrap(),
+            evaluate(corpus()).unwrap()
+        );
     }
     #[test]
     fn full_text_tail_and_file_deduplication() {

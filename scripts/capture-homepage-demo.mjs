@@ -2,6 +2,7 @@
 // Add --model-only to refresh the model capture and full walkthrough while
 // preserving the other preview captures and their authored sample documents.
 // Add --reuse-samples to refresh all captures without regenerating sample files.
+// Add --media-only to refresh video/music captures and the full walkthrough.
 // Uses the actual filens previewers; no third-party product screenshots are copied.
 import { readFile, writeFile, mkdir, mkdtemp } from 'node:fs/promises';
 import path from 'node:path';
@@ -17,11 +18,12 @@ const output = path.join(publicDir, 'home');
 const temp = await mkdtemp(path.join(os.tmpdir(), 'filens-home-'));
 const origin = process.env.FILENS_DEMO_URL ?? 'http://127.0.0.1:4173/modules/filens/';
 const modelOnly = process.argv.includes('--model-only');
+const mediaOnly = process.argv.includes('--media-only');
 const reuseSamples = process.argv.includes('--reuse-samples');
 await mkdir(output, { recursive: true });
 
 // Keep the captured previews and downloadable showcase files in sync.
-if (!reuseSamples) {
+if (!reuseSamples && !mediaOnly) {
   await import('./generate-showcase-helmet.mjs');
   if (!modelOnly) await import('./generate-showcase-documents.mjs');
 }
@@ -61,7 +63,7 @@ try {
     );
     await writeFile(target, Buffer.from(data, 'base64'));
   }
-  if (!modelOnly) await webp(path.join(publicDir, 'samples/showcase/aurora.jpg'), path.join(output, 'landscape.webp'), 900);
+  if (!modelOnly && !mediaOnly) await webp(path.join(publicDir, 'samples/showcase/aurora.jpg'), path.join(output, 'landscape.webp'), 900);
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     reducedMotion: 'reduce',
@@ -76,10 +78,17 @@ try {
     ['iwork', 'key'],
     ['cad', 'dxf'],
     ['panorama', 'pano'],
-    ['model', 'obj']
+    ['model', 'obj'],
+    ['video', 'mp4'],
+    ['music', 'wav']
   ];
   for (const [name, format] of captures) {
     if (modelOnly && name !== 'model') continue;
+    if (mediaOnly && name !== 'video' && name !== 'music') continue;
+    // Give the music card enough height to include its native playback controls.
+    await page.setViewportSize(name === 'music'
+      ? { width: 1600, height: 1050 }
+      : { width: 1440, height: 900 });
     await page.goto(`${origin}?view=preview&format=${format}`);
     await page.locator('.pptxv-shell').first().waitFor();
     await page.locator('.wb-runtime-timings').waitFor({ timeout: 30000 });
@@ -93,6 +102,18 @@ try {
       await model.hover();
       for (let i = 0; i < 4; i++) await page.mouse.wheel(0, -100);
       await page.mouse.move(20, 20);
+    }
+    if (name === 'video' || name === 'music') {
+      if (name === 'music') {
+        await page.locator('.pptxv-audio-player img').evaluate(image => image.decode());
+        await page.locator('.pptxv-audio-lyric').first().waitFor();
+      }
+      await page.locator(name === 'video' ? 'video.pptxv-native-media' : 'audio.pptxv-native-media')
+        .evaluate(media => { media.currentTime = 2.5; });
+      await page.waitForFunction(() => {
+        const media = document.querySelector('.pptxv-native-media');
+        return media && !media.seeking && media.readyState >= 2;
+      });
     }
     await page.waitForTimeout(name === 'panorama' || name === 'model' ? 1500 : 700);
     const imagePath = path.join(temp, `${name}.png`);
@@ -184,6 +205,20 @@ try {
     await videoPage.mouse.up();
   }
   await chapter('360° 全景，换个角度看世界', 'Look around. Discover a 360° view.', 4000);
+  await videoPage.getByRole('button', { name: 'MP4', exact: true }).click();
+  const sampleVideo = videoPage.locator('video.pptxv-native-media');
+  await sampleVideo.waitFor();
+  await sampleVideo.evaluate(media => media.play());
+  await chapter('打开视频，即刻播放', 'Open a video. Press play.', 3500);
+  await sampleVideo.evaluate(media => media.pause());
+  await videoPage.getByRole('button', { name: 'WAV', exact: true }).click();
+  const music = videoPage.locator('.pptxv-audio-player');
+  await music.locator('img').evaluate(image => image.decode());
+  await music.getByRole('button', { name: '播放', exact: true }).click();
+  await chapter('封面、旋律与同步歌词，点击一句就能跳转', 'Cover art and synced lyrics. Click a line to seek.', 4500, async () => {
+    await videoPage.waitForTimeout(1600);
+    await music.getByRole('button', { name: '点击任意一句，回到那一刻', exact: true }).click();
+  });
   await videoPage.getByLabel('导入文件', { exact: true }).setInputFiles(path.join(publicDir, 'samples/filens-aurora-guide.docx'));
   await videoPage.locator('.wb-preview-stage').getByText('Chasing the light', { exact: false }).first().waitFor();
   await chapter('导入自己的文件，在浏览器里安心打开', 'Bring your own files. Open them locally in your browser.', 3800);

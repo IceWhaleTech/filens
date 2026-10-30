@@ -3,6 +3,10 @@
   <h1>filens</h1>
   <p><strong>Files shine bright. Dreams take flight.</strong></p>
   <p>Local file tools for Agents and browsers. Read, search, OCR, and preview files without uploading them.</p>
+
+<!-- agent-cli-size:en:start -->
+  <p><strong>CLI 2.10 MiB · Lite 7.85 MiB · Full 31.05 MiB · <a href="LICENSE">MIT</a></strong><br /><sub>v0.3.0 · macOS arm64 · installed packages, Full includes OCR models; <a href="docs/agent-cli-npm-release.json">all platform sizes</a></sub></p>
+<!-- agent-cli-size:en:end -->
   <p>Chinese name: 探微 · English · <a href="README.zh-CN.md">简体中文</a></p>
   <p>
     <a href="#read-documents-with-an-agent">Agent CLI</a> ·
@@ -16,7 +20,7 @@
 
 <p align="center">Source-build CLI results · Edited typing and response timing · <a href="docs/assets/agent-cli/terminal-demo.zh-CN.gif">中文动图</a></p>
 
-<p align="center"><strong>Local first · Agent CLI + browser previews · Shared WASM core</strong></p>
+<p align="center"><strong>Local first · Documents, scans and images · Original evidence for Agents</strong></p>
 
 <p align="center">
   <a href="https://www.zimaspace.com/en/zimaos?utm_source=github&amp;utm_medium=referral&amp;utm_campaign=filens_zimaos&amp;utm_content=readme_banner_en"><img src="docs/assets/readme/zimaos-banner.en.png" alt="ZimaOS. Your personal cloud, made simple. Deep FiLens integration, file management, RAW / 360° viewing, backup, and 800+ apps. Explore ZimaOS." width="640" /></a>
@@ -26,7 +30,7 @@
 
 ## Read documents with an Agent
 
-Describe what to read or summarize in Chinese or English, then receive text, JSON, Markdown, HTML, YAML, XML, CSV or TSV. Get source structure and PDF/OCR coordinates for the calling Agent. Source builds provide model-free `summarize` / `prune` with original excerpts, provenance and explicit omissions. Parsing, layout, pruning and document export share the WASM core; paraphrasing, translation and question answering belong to the caller.
+Use one local entry point to read or search PDFs, Office documents, spreadsheets, scans and images, then give the calling Agent original evidence with available page coordinates, headings and table structure. Describe the request in Chinese or English and receive text, JSON, Markdown, HTML, YAML, XML, CSV or TSV. Version 0.3.0 provides model-free `summarize` / `prune` with original excerpts and explicit omissions. These operations reuse the shared document core; paraphrasing, translation and question answering belong to the caller.
 
 [Output formats, layouts and reproducible demo](docs/agent-cli-formats-and-layout.zh-CN.md) · Actual CLI excerpts; typing/response timing edited.
 
@@ -48,24 +52,26 @@ npm install -g filens-cli-lite
 npx --yes filens-cli-lite capacity --json
 ```
 
-The source CLI is Rust, with strip, LTO, UPX compression for Windows/Linux executables and fast gzip-compressed WASM resources. macOS arm64 executables skip UPX because that format is unsupported.
+The CLI is Rust, with strip, LTO, UPX compression for Windows/Linux executables and fast gzip-compressed WASM resources. macOS arm64 executables skip UPX because that format is unsupported.
 
-Source builds support [model-free key excerpts](docs/agent-cli-pruning.zh-CN.md): `filens summarize report.pdf --query 'budget risk' --json`. Density, BM25 and cosine-diversity pruning select original text with provenance and explicit omissions. Check `capacity` for `summarize` in your installed build.
+Version 0.3.0 supports [model-free key excerpts](docs/agent-cli-pruning.zh-CN.md): `filens summarize report.pdf --query 'budget risk' --json`. Density, BM25 and cosine-diversity pruning select original text with provenance and explicit omissions. Check `capacity` for `summarize` in your installed build.
 
-Source builds also provide [directory search](docs/agent-cli-search.zh-CN.md): `filens 'search "./documents" for "budget risk" as json'`. BM25, literal and filename modes return original evidence and available layout; embedding retrieval is not included. macOS uses native FTS; Windows/Linux embed compiled private hdrw WASM.
+Version 0.3.0 also provides [cross-format directory search](docs/agent-cli-search.zh-CN.md): `filens 'search "./documents" for "budget risk" as json'`. Search supported document bodies without preparing text files yourself; scanned pages and embedded images can use OCR. Results retain original excerpts and available layout. BM25, literal and filename modes are lexical retrieval; embedding retrieval is not included.
 
-[Search speed and accuracy measurements](docs/agent-cli-search-benchmark.zh-CN.md) compare FiLens, ripgrep and git grep on fixed synthetic queries, document extraction, cache updates and 100–2000-file scans, including misses and no-answer false positives.
+[Archives and nested members](docs/agent-cli-search-archives.zh-CN.md) are searchable too: `filens 'search "documents.zip" for "budget" as json'`. ZIP, TAR and GZIP containers expand through the shared core; documents and images retain OCR and layout support. Read or summarize a matching path such as `documents.zip!/attachments.zip!/contract.pdf` directly.
 
-Source builds add [Czkawka-style duplicate-file and similar-image scans](docs/agent-cli-similarity.md): `filens duplicates ./files --json` and `filens similar-images ./photos --threshold 8 --json`. Image groups can include resized and recompressed versions, without OCR or models. Check `capacity.operations` for `similar`; published npm `0.2.0` does not include it. Scans report groups for review.
+[Mixed-format coverage and evidence checks](docs/agent-cli-search-formats.zh-CN.md) passed on 13 fixtures across 12 extensions, covering real CLI parsing, retrieval, source offsets and logical/PDF/OCR layout. These are functional checks; broader extraction and retrieval accuracy need more samples. Search keeps no persistent index/body cache or source hashes. [Retrieval boundaries](docs/agent-cli-search-benchmark.zh-CN.md) and [startup costs](docs/agent-cli-search-native.zh-CN.md) are reported separately, including misses and tuned rg baselines.
 
-[Windows x64 candidates, native testing and a ready-to-copy agent prompt](docs/agent-cli-windows.zh-CN.md) are available for the upcoming `0.3.0-rc.1`; stable npm `0.2.0` does not include Windows.
+Version 0.3.0 includes [Czkawka-style duplicate-file and similar-image scans](docs/agent-cli-similarity.md): `filens duplicates ./files --json` and `filens similar-images ./photos --threshold 8 --json`. Image groups can include resized and recompressed versions, without OCR or models. Check `capacity.operations` for `similar`. Scans report groups for review.
+
+Version 0.3.0 includes Windows 10/11 x64 packages alongside macOS arm64 and Linux x64/arm64. See [Windows installation, native testing and a ready-to-copy agent prompt](docs/agent-cli-windows.zh-CN.md); Windows/Linux native execution remains pending validation.
 `convert` uses the frontend conversion engines; inspect `capacity.conversionPairs`
 for supported targets. A distributable [agent skill](skills/filens/SKILL.md)
 covers reading, search, duplicate/image scans, OCR, layout, evidence and conversion, with standard YAML front matter.
 
-The npm entry packages are [`filens-cli`](https://www.npmjs.com/package/filens-cli) and [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite); both expose the `filens` command. Full includes native RapidOCR NCNN and models, with **no Python environment**; defaults are max side **960**, OpenMP threads **2**, orientation classification and image preprocessing. WASM supports OCR callbacks for scanned pages and embedded document images. Rebuilt Rust candidates on macOS arm64 are about **7.25 MiB** (Lite) and **30.45 MiB** (Full) installed. Model downloads support concurrent speed probes across HF / ModelScope / HF Mirror and an optional fourth route, with hash verification. See [installation, packaging and protocol](docs/agent-cli.md).
+The npm entry packages are [`filens-cli`](https://www.npmjs.com/package/filens-cli) and [`filens-cli-lite`](https://www.npmjs.com/package/filens-cli-lite); both expose the `filens` command. Full includes native RapidOCR NCNN and models, with **no Python environment**; defaults are max side **960**, OpenMP threads **2**, orientation classification and image preprocessing. WASM supports OCR callbacks for scanned pages and embedded document images. Version 0.3.0 on macOS arm64 uses **7.85 MiB** (Lite) or **31.05 MiB** (Full) installed; the native executable is **2.10 MiB**. See [measured sizes for every platform](docs/agent-cli-npm-release.json). Model downloads support concurrent speed probes across HF / ModelScope / HF Mirror and an optional fourth route, with hash verification. See [installation, packaging and protocol](docs/agent-cli.md).
 
-The size totals above are the 2026-10-29 candidates, before similarity scanning. A later macOS arm64 local comparison measured about **278 KiB** more for the executable plus gzip WASM resources; see the [measurement scope](docs/agent-cli-similarity-size.json). This is not a newly packaged Lite/Full total or an npm download-size delta.
+FiLens code is licensed under [MIT](LICENSE). Bundled components retain their own licenses; see [third-party notices](packaging/agent-third-party.md).
 
 ## See more, right in your browser
 
@@ -159,7 +165,8 @@ Native PPTX and iWork previews sit alongside documents, spreadsheets, CAD, 3D, R
 | Conversion core WASM | 872.1 KiB | 395.6 KiB | **318.3 KiB** |
 | Image / RAW core WASM | 1072.2 KiB | 293.0 KiB | **210.7 KiB** |
 | Media / panorama preview | 216.9 KiB | 64.1 KiB | **54.7 KiB** |
-| Optional STEP WASM | 2625.8 KiB | 1020.2 KiB | **797.0 KiB** |
+| Rust STEP WASM (default) | 925.0 KiB | 326.3 KiB | **254.5 KiB** |
+| OCCT STEP WASM (explicit option) | 2625.8 KiB | 1020.2 KiB | **797.0 KiB** |
 
 Document, image / RAW, and STEP WASM modules load independently on demand. Media preview and image conversion are measured separately. JS rows include their CSS; shared dependencies and workers are listed separately.
 
@@ -181,7 +188,7 @@ Document, image / RAW, and STEP WASM modules load independently on demand. Media
 | Text / ebooks | 22.9 KiB | 8.2 KiB | **7.3 KiB** |
 | iWork worker | 894.1 KiB | 186.7 KiB | **156.2 KiB** |
 | PDF worker | 1053.3 KiB | 291.1 KiB | **233.1 KiB** |
-| STEP loader | 23.0 KiB | 9.5 KiB | **8.7 KiB** |
+| OCCT STEP loader (explicit option) | 23.0 KiB | 9.5 KiB | **8.7 KiB** |
 
 Entry, preloaded JS, and CSS total **499.0 KiB Brotli** (2131.8 KiB raw / 596.6 KiB gzip), plus images, video, and samples. Modules share dependencies; these rows are not standalone per-format download totals.
 
@@ -189,6 +196,8 @@ Entry, preloaded JS, and CSS total **499.0 KiB Brotli** (2131.8 KiB raw / 596.6 
 
 Measured from the demo build. Compression columns describe artifacts; actual transfer depends on hosting. [Full report and reproduction](docs/bundle-sizes.md).
 <!-- bundle-sizes:en:end -->
+
+Rust STEP now powers the default browser preview. The standalone `filens-step@0.1.0-rc.1` candidate contains **254.53 KiB Brotli WASM**, plus **4.48 KiB Brotli JS/WASI host**; its npm tarball is **354.65 KiB**. The Rust STEP row is measured from this package on 2026-10-30; other demo rows retain their earlier build snapshot. Geometry screening remains 43/44, with OCCT available explicitly. Fixes are submitted in [upstream PR #141](https://github.com/ricosjp/truck/pull/141); see [integration, sizes and release evidence](docs/rust-step-browser.zh-CN.md). **npm publication is deferred while other changes finish.** These figures are separate from CLI installation sizes.
 
 ## Measured performance
 
@@ -203,7 +212,7 @@ Measured from the demo build. Compression columns describe artifacts; actual tra
 | 11904×5952 original X5 INSP panorama preview | **369.4 ms** | Photo Sphere Viewer 5.15.1 dual fisheye: 414.5 ms | **1.12×** |
 | NEF without embedded JPEG → preview canvas | **152.7 ms** | LibRaw-Wasm 1.6.0 half-size: 326.7 ms | **2.14×** |
 | DNG without embedded JPEG → preview canvas | **167.7 ms** | LibRaw-Wasm 1.6.0 fast half-size: 314.4 ms | **1.87×** |
-| STEP geometry import: cube | **46.5 ms** | occt-import-js 0.0.23: 67.6 ms | 1.45× |
+| STEP geometry import: cube (prior OCCT baseline) | **46.5 ms** | occt-import-js 0.0.23: 67.6 ms | 1.45× |
 | XLSX data read (80,000 cells) | **42.3 ms** | SheetJS CE 0.20.3: 109.6 ms | 2.59× |
 | XLS → XLSX preview conversion (6 sheets) | **12.3 ms** | x2t WASM v9.3.2+3: 49.1 ms | 4.00× |
 | 20,000×8 numeric CSV → XLSX | **137.6 ms** | x2t WASM v9.3.2+3: 198.8 ms | 1.44× |

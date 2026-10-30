@@ -22,6 +22,7 @@ import {
   type PreviewFontLoadingOptions,
   type PreviewItemState,
   type PreviewOptions,
+  type PreviewPasswordRequest,
   type PreviewResourceResolver,
   type PreviewSource,
   type PreviewerInstance,
@@ -33,7 +34,7 @@ import { createDesignPreviewDrivers } from '@filens/design';
 import { createMediaPreviewDrivers, type MediaPreviewDriverOptions } from '@filens/media';
 import { createOfficePreviewDrivers } from '@filens/office';
 import { createTextPreviewDrivers } from '@filens/text';
-import { computed, onMounted, onUnmounted, ref, shallowRef, useId, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, useId, watch } from 'vue';
 import { createVueDefaultPreviewRoutes } from './defaults';
 
 type Model3dControlsPreviewer = PreviewerInstance & {
@@ -87,6 +88,8 @@ const props = withDefaults(
     name?: string;
     extension?: string;
     contentType?: string;
+    password?: string;
+    requestPassword?: PreviewOptions['requestPassword'];
     fit?: PreviewFitMode;
     initialScale?: number;
     minScale?: number;
@@ -98,6 +101,7 @@ const props = withDefaults(
     fontResolver?: PreviewFontResolver;
     fontLoading?: boolean | PreviewFontLoadingOptions;
     resourceResolver?: PreviewResourceResolver;
+    audio?: PreviewOptions['audio'];
     panoramaProcessor?: MediaPreviewDriverOptions['panoramaProcessor'];
   }>(),
   {
@@ -140,6 +144,45 @@ const collapsedModelNodes = ref<Set<string>>(new Set());
 const model3dTreeQuery = ref('');
 const modelToolsExpanded = ref(false);
 const modelToolsId = `pptxv-model-tools-${useId()}`;
+const passwordId = `pptxv-password-${useId()}`;
+const passwordInput = ref('');
+const passwordField = ref<HTMLInputElement | null>(null);
+const passwordRequest = shallowRef<PreviewPasswordRequest | null>(null);
+const passwordCancelled = ref(false);
+let settlePassword: ((password: string | null) => void) | undefined;
+
+function requestDocumentPassword(request: PreviewPasswordRequest): Promise<string | null> {
+  settlePassword?.(null);
+  return new Promise(resolve => {
+    const settle = (password: string | null) => {
+      request.signal?.removeEventListener('abort', abort);
+      if (settlePassword === settle) {
+        settlePassword = undefined;
+        passwordRequest.value = null;
+        passwordInput.value = '';
+      }
+      resolve(password);
+    };
+    const abort = () => settle(null);
+    settlePassword = settle;
+    passwordInput.value = '';
+    passwordRequest.value = request;
+    if (request.signal?.aborted) abort();
+    else {
+      request.signal?.addEventListener('abort', abort, { once: true });
+      void nextTick(() => passwordField.value?.focus());
+    }
+  });
+}
+
+function submitPassword(): void {
+  if (passwordInput.value.length) settlePassword?.(passwordInput.value);
+}
+
+function cancelPassword(): void {
+  passwordCancelled.value = true;
+  settlePassword?.(null);
+}
 
 const isLoading = computed(() => previewState.value.loading);
 const errorMessage = computed(() => previewState.value.error);
@@ -507,6 +550,8 @@ async function recreatePreviewer(): Promise<void> {
     fontResolver: childOptions.fontResolver ?? props.fontResolver,
     fontLoading: childOptions.fontLoading ?? props.fontLoading,
     resourceResolver: childOptions.resourceResolver ?? props.resourceResolver,
+    audio: childOptions.audio ?? props.audio,
+    requestPassword: childOptions.requestPassword ?? props.requestPassword ?? requestDocumentPassword,
     drivers,
     routes,
     converter: props.converter,
@@ -539,10 +584,12 @@ async function loadSource(): Promise<void> {
     return;
   }
 
+  passwordCancelled.value = false;
   const task = previewer.value.preview(props.src, {
     name: props.name,
     extension: props.extension,
-    contentType: props.contentType
+    contentType: props.contentType,
+    ...(props.password !== undefined ? { password: props.password } : {})
   });
   syncState();
   await task;
@@ -1138,6 +1185,8 @@ watch(
     props.fontResolver,
     props.fontLoading,
     props.resourceResolver,
+    props.audio,
+    props.requestPassword,
     props.panoramaProcessor
   ],
   async () => {
@@ -1150,7 +1199,7 @@ watch(
 );
 
 watch(
-  () => [props.name, props.extension, props.contentType],
+  () => [props.name, props.extension, props.contentType, props.password],
   async () => {
     modelToolsExpanded.value = false;
     collapsedModelNodes.value = new Set();
@@ -1160,6 +1209,7 @@ watch(
 );
 
 onUnmounted(() => {
+  settlePassword?.(null);
   unsubs.forEach((unsubscribe) => unsubscribe());
   previewer.value?.destroy();
 });
@@ -1783,8 +1833,24 @@ function createVueDefaultPreviewDrivers(panoramaProcessor?: MediaPreviewDriverOp
               <path :d="modelToolsExpanded ? 'm12.5 7-3 3 3 3' : 'm10.5 7 3 3-3 3'" />
             </svg>
           </button>
-          <div v-if="isLoading" class="pptxv-overlay">Loading preview...</div>
-          <div v-else-if="errorMessage" class="pptxv-overlay is-error">{{ errorMessage }}</div>
+          <div v-if="passwordRequest" class="pptxv-overlay">
+            <form class="pptxv-password-form" :aria-labelledby="passwordId + '-title'" @submit.prevent="submitPassword" @keydown.esc.stop="cancelPassword">
+              <h2 :id="passwordId + '-title'">此文档已加密</h2>
+              <p>请输入密码以打开文档。</p>
+              <p v-if="passwordRequest.reason === 'password_invalid'" :id="passwordId + '-error'" class="pptxv-password-error" role="alert">密码不正确，请重试。</p>
+              <label :for="passwordId">文档密码</label>
+              <input :id="passwordId" ref="passwordField" v-model="passwordInput" type="password" autocomplete="off" :aria-invalid="passwordRequest.reason === 'password_invalid'" :aria-describedby="passwordRequest.reason === 'password_invalid' ? passwordId + '-error' : undefined" />
+              <div class="pptxv-password-actions">
+                <button type="button" class="pptxv-button" @click="cancelPassword">取消</button>
+                <button type="submit" class="pptxv-button" :disabled="!passwordInput.length">打开文档</button>
+              </div>
+            </form>
+          </div>
+          <div v-else-if="isLoading" class="pptxv-overlay">Loading preview...</div>
+          <div v-else-if="errorMessage" class="pptxv-overlay is-error">
+            <div v-if="passwordCancelled" class="pptxv-password-form"><p>已取消打开文档。</p><button type="button" class="pptxv-button" @click="loadSource">重新输入密码</button></div>
+            <template v-else>{{ errorMessage }}</template>
+          </div>
         </div>
       </div>
     </div>

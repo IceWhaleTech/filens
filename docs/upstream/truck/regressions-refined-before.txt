@@ -1,0 +1,99 @@
+   Compiling truck-geometry v0.5.0 (/filens/tmp/rust-engines/truck-refined/truck-geometry)
+   Compiling truck-modeling v0.6.0 (/filens/tmp/rust-engines/truck-refined/truck-modeling)
+   Compiling truck-meshalgo v0.4.0 (/filens/tmp/rust-engines/truck-refined/truck-meshalgo)
+   Compiling truck-stepio v0.3.0 (/filens/tmp/rust-engines/truck-refined/truck-stepio)
+   Compiling filens-truck-refined v0.1.0 (/filens/tmp/rust-engines/refined-core)
+    Finished `test` profile [unoptimized] target(s) in 5.12s
+     Running ../truck-refined/truck-meshalgo/tests/degenerate_boundary_points.rs (tmp/rust-engines/target/debug/deps/degenerate_boundary_points-d76dec6b07f95142)
+
+running 2 tests
+test leaving_a_degenerate_u_boundary_preserves_the_previous_point ... FAILED
+test leaving_a_degenerate_v_boundary_preserves_the_previous_point ... FAILED
+
+failures:
+
+---- leaving_a_degenerate_u_boundary_preserves_the_previous_point stdout ----
+
+thread 'leaving_a_degenerate_u_boundary_preserves_the_previous_point' (18621520) panicked at ../truck-refined/truck-meshalgo/tests/degenerate_boundary_points.rs:40:13:
+pole UV and 3D vertex disagree: p=Point3 [1.1945836920083893e-16, 1.9509032201612824, 9.807852804032304] uv=Vector2 [1.5707963267948966, 0.0], error=1.9603428065912119
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- leaving_a_degenerate_v_boundary_preserves_the_previous_point stdout ----
+
+thread 'leaving_a_degenerate_v_boundary_preserves_the_previous_point' (18621521) panicked at ../truck-refined/truck-meshalgo/tests/degenerate_boundary_points.rs:40:13:
+pole UV and 3D vertex disagree: p=Point3 [1.1945836920083893e-16, 1.9509032201612824, 9.807852804032304] uv=Vector2 [0.0, 1.5707963267948966], error=1.9603428065912119
+
+
+failures:
+    leaving_a_degenerate_u_boundary_preserves_the_previous_point
+    leaving_a_degenerate_v_boundary_preserves_the_previous_point
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+error: test failed, to rerun pass `--test degenerate_boundary_points`
+     Running ../truck-refined/truck-stepio/tests/import_sphere_hints.rs (tmp/rust-engines/target/debug/deps/import_sphere_hints-ac587c6dbfed5870)
+
+running 3 tests
+test inverted_step_sphere_preserves_longitude_hint ... ok
+test nearest_sphere_parameter_is_finite_at_poles ... FAILED
+test step_sphere_preserves_longitude_hint_at_both_poles ... FAILED
+
+failures:
+
+---- nearest_sphere_parameter_is_finite_at_poles stdout ----
+
+thread 'nearest_sphere_parameter_is_finite_at_poles' (18621543) panicked at ../truck-refined/truck-stepio/tests/import_sphere_hints.rs:37:9:
+assertion failed: (found.1 - 1.2).abs() < 1e-12
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- step_sphere_preserves_longitude_hint_at_both_poles stdout ----
+
+thread 'step_sphere_preserves_longitude_hint_at_both_poles' (18621544) panicked at ../truck-refined/truck-stepio/tests/import_sphere_hints.rs:12:9:
+assertion failed: (found.0 - expected.0).abs() < 1e-12
+
+
+failures:
+    nearest_sphere_parameter_is_finite_at_poles
+    step_sphere_preserves_longitude_hint_at_both_poles
+
+test result: FAILED. 1 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test import_sphere_hints`
+     Running ../truck-refined/truck-meshalgo/tests/trimmed_surface_sampling.rs (tmp/rust-engines/target/debug/deps/trimmed_surface_sampling-de757d5e71ea2bd7)
+
+running 3 tests
+test notched_cylinder_retains_surface_curvature ... FAILED
+test inverted_face_retains_curvature_and_orientation ... FAILED
+test small_source_units_retain_surface_curvature ... FAILED
+
+failures:
+
+---- notched_cylinder_retains_surface_curvature stdout ----
+
+thread 'notched_cylinder_retains_surface_curvature' (18621548) panicked at ../truck-refined/truck-meshalgo/tests/trimmed_surface_sampling.rs:57:9:
+triangle crosses the cylinder: 6.39637869035257; vertices=Point3 [9.689124217106448, 2.474039592545229, 15.0]/Point3 [-10.0, 1.2246467991473533e-15, 0.0]/Point3 [-9.959201073181706, 0.9023934751184572, 0.0]; uv=[Vector2 [15.0, 0.24999999999999975], Vector2 [0.0, 3.141592653589793], Vector2 [0.0, 3.05123038316511]]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- inverted_face_retains_curvature_and_orientation stdout ----
+
+thread 'inverted_face_retains_curvature_and_orientation' (18621547) panicked at ../truck-refined/truck-meshalgo/tests/trimmed_surface_sampling.rs:57:9:
+triangle crosses the cylinder: 6.39637869035257; vertices=Point3 [-9.959201073181706, 0.9023934751184572, 0.0]/Point3 [-10.0, 1.2246467991473533e-15, 0.0]/Point3 [9.689124217106448, 2.474039592545229, 15.0]; uv=[Vector2 [0.0, 3.05123038316511], Vector2 [0.0, 3.141592653589793], Vector2 [15.0, 0.24999999999999975]]
+
+---- small_source_units_retain_surface_curvature stdout ----
+
+thread 'small_source_units_retain_surface_curvature' (18621549) panicked at ../truck-refined/truck-meshalgo/tests/trimmed_surface_sampling.rs:57:9:
+triangle crosses the cylinder: 0.00030238394489907894; vertices=Point3 [0.09689124217106448, 0.024740395925452296, 0.15000000000000002]/Point3 [0.09238795325112868, 0.03826834323650898, 0.30000000000000004]/Point3 [0.09086634711909791, 0.041752927576777274, 0.0]; uv=[Vector2 [0.15000000000000002, 0.24999999999999975], Vector2 [0.30000000000000004, 0.3926990816987239], Vector2 [0.0, 0.4307245408493621]]
+
+
+failures:
+    inverted_face_retains_curvature_and_orientation
+    notched_cylinder_retains_surface_curvature
+    small_source_units_retain_surface_curvature
+
+test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `--test trimmed_surface_sampling`
+error: 3 targets failed:
+    `--test degenerate_boundary_points`
+    `--test import_sphere_hints`
+    `--test trimmed_surface_sampling`

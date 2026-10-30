@@ -22,6 +22,7 @@ const reportPath = path.join(work, refinedStep ? 'results-step-refined.json' : r
 let report = { date: '2026-10-29', node: process.version, platform: `${process.platform}-${process.arch}`, rust: '1.93.0', target: 'wasm32-wasip1', optimization: 'opt-level=z, LTO, codegen-units=1, panic=abort, strip; Binaryen 131 -Oz', compression: 'gzip level 9; Brotli quality 11', truckCommit: '78d699b0792b39e27c2bf073b682986701644e91', sizes: [], pdf: [], step: [] };
 try { report = JSON.parse(await readFile(reportPath, 'utf8')); } catch {}
 if (reviewedStep) report.date = '2026-10-30';
+if (refinedStep) report.source = JSON.parse(await readFile(path.join(work, 'wasm/truck-refined.build.json'), 'utf8'));
 const save = () => writeFile(reportPath, JSON.stringify(report, null, 2) + '\n');
 const hash = data => createHash('sha256').update(data).digest('hex');
 const slug = s => s.replace(/[^a-zA-Z0-9.-]+/g, '_');

@@ -1,0 +1,1461 @@
+{
+  "observedAt": "2026-10-29T17:15:39.064Z",
+  "platform": "darwin-arm64",
+  "cpu": "Apple M4 Pro",
+  "binarySHA256": "287a579343c64a47282abe823600b9f277984dec961bf7cc6e081e8079c5e122",
+  "beforeWasmSHA256": "3ca2f7812ace28221cbc7799479890146137dda1c500e82b055306d75d7751b6",
+  "afterWasmSHA256": "c22ac19080eb5cfe3f29ba93138d9eebc6e854920c2ba582bebee49ff165d03e",
+  "change": "Reuse bounded per-chunk query TF/length features instead of tokenizing twice; literal mode skips unused BM25 statistics. Core algorithm, scores, ordering and original evidence are unchanged.",
+  "scope": "Identical CLI, shared corpus, independent prewarmed extraction caches, alternating order, fresh process per request. Nine query types x three repeats; 2000-file query x five. Preparations excluded from timing summary and recorded failures are not retried.",
+  "interpretation": "Small local paired observation, not proof of stable performance or superiority to ripgrep. Includes startup, file validation and cache reads; no inverted index or daemon added.",
+  "summary": {
+    "bm25": {
+      "before": {
+        "successful": 27,
+        "failed": 0,
+        "p50Ms": 598.5927920000004,
+        "minMs": 590.2438750000001,
+        "maxMs": 779.8693750000002
+      },
+      "after": {
+        "successful": 27,
+        "failed": 0,
+        "p50Ms": 381.6814999999988,
+        "minMs": 369.94429200000013,
+        "maxMs": 403.05916699999943
+      },
+      "medianReduction": 0.36236870022317524
+    },
+    "exact": {
+      "before": {
+        "successful": 27,
+        "failed": 0,
+        "p50Ms": 202.33287500000006,
+        "minMs": 200.1146249999947,
+        "maxMs": 207.14770799999678
+      },
+      "after": {
+        "successful": 27,
+        "failed": 0,
+        "p50Ms": 202.01774999999907,
+        "minMs": 199.47354199999972,
+        "maxMs": 207.80750000000262
+      },
+      "medianReduction": 0.0015574582232422696
+    },
+    "bm25-2000": {
+      "before": {
+        "successful": 5,
+        "failed": 0,
+        "p50Ms": 5308.294875000007,
+        "minMs": 5282.592042000004,
+        "maxMs": 5540.404459000005
+      },
+      "after": {
+        "successful": 5,
+        "failed": 0,
+        "p50Ms": 2455.3023749999993,
+        "minMs": 2443.7945829999953,
+        "maxMs": 2548.176833999998
+      },
+      "medianReduction": 0.5374593098504167
+    }
+  },
+  "equalSuccessfulPairs": 59,
+  "equality": [
+    {
+      "mode": "bm25",
+      "queryId": "budget-identifier",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-identifier",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-identifier",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-number",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-number",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-number",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-Chinese-terms",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-Chinese-terms",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-Chinese-terms",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-literal-phrase",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-literal-phrase",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-literal-phrase",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-paraphrase",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-paraphrase",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-paraphrase",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-cross-language",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-cross-language",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-cross-language",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-absent-identifier",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-absent-identifier",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-absent-identifier",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-absent-fact",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-absent-fact",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "budget-absent-fact",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "release-English-terms",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "release-English-terms",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "bm25",
+      "queryId": "release-English-terms",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-identifier",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-identifier",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-identifier",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-number",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-number",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-number",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-Chinese-terms",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-Chinese-terms",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-Chinese-terms",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-literal-phrase",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-literal-phrase",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-literal-phrase",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-paraphrase",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-paraphrase",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-paraphrase",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-cross-language",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-cross-language",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-cross-language",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-absent-identifier",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-absent-identifier",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-absent-identifier",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-absent-fact",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-absent-fact",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "budget-absent-fact",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "release-English-terms",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "release-English-terms",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "exact",
+      "queryId": "release-English-terms",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "bm25-2000",
+      "repeat": 0,
+      "equal": true
+    },
+    {
+      "mode": "bm25-2000",
+      "repeat": 1,
+      "equal": true
+    },
+    {
+      "mode": "bm25-2000",
+      "repeat": 2,
+      "equal": true
+    },
+    {
+      "mode": "bm25-2000",
+      "repeat": 3,
+      "equal": true
+    },
+    {
+      "mode": "bm25-2000",
+      "repeat": 4,
+      "equal": true
+    }
+  ],
+  "failures": [],
+  "observations": [
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 0,
+      "elapsedMs": 602.0530419999998,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 0,
+      "elapsedMs": 378.87233400000014,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 1,
+      "elapsedMs": 375.2184159999997,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 1,
+      "elapsedMs": 595.1348750000002,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 2,
+      "elapsedMs": 591.298166,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 2,
+      "elapsedMs": 373.0664160000006,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 0,
+      "elapsedMs": 593.8495419999999,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 0,
+      "elapsedMs": 373.3959589999995,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 1,
+      "elapsedMs": 373.0879589999995,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 1,
+      "elapsedMs": 592.658375,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 2,
+      "elapsedMs": 592.0809159999999,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 2,
+      "elapsedMs": 371.98825000000033,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 0,
+      "elapsedMs": 598.5927920000004,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 0,
+      "elapsedMs": 380.51679200000035,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 1,
+      "elapsedMs": 380.4275830000006,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 1,
+      "elapsedMs": 648.9486669999987,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 2,
+      "elapsedMs": 729.394459000001,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 2,
+      "elapsedMs": 389.63470899999993,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 0,
+      "elapsedMs": 620.5402090000007,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 0,
+      "elapsedMs": 390.79229099999975,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 1,
+      "elapsedMs": 389.5198330000003,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 1,
+      "elapsedMs": 610.233416000001,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 2,
+      "elapsedMs": 610.8410829999993,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 2,
+      "elapsedMs": 387.5916249999991,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 0,
+      "elapsedMs": 614.3499589999992,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 0,
+      "elapsedMs": 403.05916699999943,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 1,
+      "elapsedMs": 401.81004100000064,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 1,
+      "elapsedMs": 779.8693750000002,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 2,
+      "elapsedMs": 613.5624590000007,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 2,
+      "elapsedMs": 400.70524999999907,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 0,
+      "elapsedMs": 597.4580410000017,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 0,
+      "elapsedMs": 383.61012499999924,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 1,
+      "elapsedMs": 383.6617499999993,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 1,
+      "elapsedMs": 598.8925419999978,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 2,
+      "elapsedMs": 597.6522499999992,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 2,
+      "elapsedMs": 384.6030419999988,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 0,
+      "elapsedMs": 590.4072079999969,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 0,
+      "elapsedMs": 369.9593330000025,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 1,
+      "elapsedMs": 369.94429200000013,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 1,
+      "elapsedMs": 590.2438750000001,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 2,
+      "elapsedMs": 591.7450000000026,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 2,
+      "elapsedMs": 370.36479099999997,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 0,
+      "elapsedMs": 608.9285410000011,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 0,
+      "elapsedMs": 388.9872910000013,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 1,
+      "elapsedMs": 390.01300000000265,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 1,
+      "elapsedMs": 606.2722079999985,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 2,
+      "elapsedMs": 608.4850000000006,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 2,
+      "elapsedMs": 387.4245410000003,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 0,
+      "elapsedMs": 597.8020419999993,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 0,
+      "elapsedMs": 381.16404200000034,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 1,
+      "elapsedMs": 381.6814999999988,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 1,
+      "elapsedMs": 597.5148330000011,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 2,
+      "elapsedMs": 596.6340840000012,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 2,
+      "elapsedMs": 378.80008400000224,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 0,
+      "elapsedMs": 202.33287500000006,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 0,
+      "elapsedMs": 202.2245839999996,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 1,
+      "elapsedMs": 200.88658299999952,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 1,
+      "elapsedMs": 202.89958399999887,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 2,
+      "elapsedMs": 202.5525830000006,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-identifier",
+      "category": "identifier",
+      "repeat": 2,
+      "elapsedMs": 201.3232919999973,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 0,
+      "elapsedMs": 202.76637499999924,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 0,
+      "elapsedMs": 202.44054200000028,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 1,
+      "elapsedMs": 201.80637500000012,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 1,
+      "elapsedMs": 203.54254199999923,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 2,
+      "elapsedMs": 202.0243330000012,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-number",
+      "category": "number",
+      "repeat": 2,
+      "elapsedMs": 202.15966700000354,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 0,
+      "elapsedMs": 201.62575000000288,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 0,
+      "elapsedMs": 201.01579100000163,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 1,
+      "elapsedMs": 200.94858300000124,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 1,
+      "elapsedMs": 201.91962500000227,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 2,
+      "elapsedMs": 200.8865420000002,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-Chinese-terms",
+      "category": "Chinese-terms",
+      "repeat": 2,
+      "elapsedMs": 201.71637499999997,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 0,
+      "elapsedMs": 203.5622919999987,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 0,
+      "elapsedMs": 202.7273329999989,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 1,
+      "elapsedMs": 202.01774999999907,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 1,
+      "elapsedMs": 204.8599170000016,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 2,
+      "elapsedMs": 203.22787500000413,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-literal-phrase",
+      "category": "literal-phrase",
+      "repeat": 2,
+      "elapsedMs": 201.64949999999953,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 0,
+      "elapsedMs": 200.34820899999613,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 0,
+      "elapsedMs": 199.47354199999972,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 1,
+      "elapsedMs": 202.43483399999968,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 1,
+      "elapsedMs": 200.49454100000003,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 2,
+      "elapsedMs": 201.3157080000019,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-paraphrase",
+      "category": "paraphrase",
+      "repeat": 2,
+      "elapsedMs": 200.265333000003,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 0,
+      "elapsedMs": 202.24862500000017,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 0,
+      "elapsedMs": 200.53658300000097,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 1,
+      "elapsedMs": 200.43504199999734,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 1,
+      "elapsedMs": 201.67204199999833,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 2,
+      "elapsedMs": 201.0377079999962,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-cross-language",
+      "category": "cross-language",
+      "repeat": 2,
+      "elapsedMs": 201.2364579999994,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 0,
+      "elapsedMs": 200.6738750000004,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 0,
+      "elapsedMs": 202.76833400000032,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 1,
+      "elapsedMs": 201.3011250000054,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 1,
+      "elapsedMs": 200.1146249999947,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 2,
+      "elapsedMs": 201.25900000000547,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-absent-identifier",
+      "category": "absent-identifier",
+      "repeat": 2,
+      "elapsedMs": 202.16575000000012,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 0,
+      "elapsedMs": 204.48304199999984,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 0,
+      "elapsedMs": 207.80750000000262,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 1,
+      "elapsedMs": 206.45470800000476,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 1,
+      "elapsedMs": 207.14770799999678,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 2,
+      "elapsedMs": 204.6394999999975,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "budget-absent-fact",
+      "category": "absent-fact",
+      "repeat": 2,
+      "elapsedMs": 205.3523339999956,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 0,
+      "elapsedMs": 205.42933300000004,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 0,
+      "elapsedMs": 206.01604200000293,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 1,
+      "elapsedMs": 203.70316699999967,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 1,
+      "elapsedMs": 205.32066699999996,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "exact",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 2,
+      "elapsedMs": 203.60191699999996,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "exact",
+      "queryId": "release-English-terms",
+      "category": "English-terms",
+      "repeat": 2,
+      "elapsedMs": 205.15324999999575,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25-2000",
+      "repeat": 0,
+      "elapsedMs": 5540.404459000005,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25-2000",
+      "repeat": 0,
+      "elapsedMs": 2548.176833999998,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25-2000",
+      "repeat": 1,
+      "elapsedMs": 2506.0520419999957,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25-2000",
+      "repeat": 1,
+      "elapsedMs": 5413.446124999988,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25-2000",
+      "repeat": 2,
+      "elapsedMs": 5308.159916999997,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25-2000",
+      "repeat": 2,
+      "elapsedMs": 2455.3023749999993,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25-2000",
+      "repeat": 3,
+      "elapsedMs": 2451.5973749999976,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25-2000",
+      "repeat": 3,
+      "elapsedMs": 5308.294875000007,
+      "success": true
+    },
+    {
+      "engine": "before",
+      "mode": "bm25-2000",
+      "repeat": 4,
+      "elapsedMs": 5282.592042000004,
+      "success": true
+    },
+    {
+      "engine": "after",
+      "mode": "bm25-2000",
+      "repeat": 4,
+      "elapsedMs": 2443.7945829999953,
+      "success": true
+    }
+  ]
+}

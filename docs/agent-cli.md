@@ -2,17 +2,17 @@
 
 English · [简体中文](agent-cli.zh-CN.md)
 
-filens reads local documents and supplies text and evidence to a calling agent. Source builds now provide model-free `summarize` / `prune`: density/TF-IDF, optional lexical BM25 focus and cosine-diversity selection keep original excerpts within a character budget. See [pruning, provenance and examples](agent-cli-pruning.zh-CN.md) (Chinese). Paraphrasing, question answering and semantic reasoning remain with the caller. Chinese/English intents, optional commands and JSON requests share the same WASM core. Outputs include text, JSON, Markdown, HTML, YAML, XML, CSV and TSV, with optional source layouts.
+filens reads local documents and supplies text and evidence to a calling agent. Version 0.3.0 provides model-free `summarize` / `prune`: density/TF-IDF, optional lexical BM25 focus and cosine-diversity selection keep original excerpts within a character budget. See [pruning, provenance and examples](agent-cli-pruning.zh-CN.md) (Chinese). Paraphrasing, question answering and semantic reasoning remain with the caller. Chinese/English intents, optional commands and JSON requests use the same shared document core. Outputs include text, JSON, Markdown, HTML, YAML, XML, CSV and TSV, with optional source layouts.
 
-Source builds add [directory-wide lexical search](agent-cli-search.zh-CN.md) (Chinese): BM25, literal and filename modes, original evidence, and a content-verified extraction cache. macOS uses native FTS; Windows/Linux embed compiled private hdrw WASI. Embedding-based semantic retrieval remains unimplemented. See the [evaluation plan](agent-cli-search-evaluation.zh-CN.md), including controlled retrieval, raw-document and Agent comparisons.
+Version 0.3.0 provides [directory-wide lexical search](agent-cli-search.zh-CN.md) (Chinese): BM25, literal and filename modes, original evidence, and request-local memory with no persistent cache or source hashes. macOS uses native FTS; Windows/Linux embed compiled private hdrw WASI. Embedding-based semantic retrieval remains unimplemented. See the [evaluation plan](agent-cli-search-evaluation.zh-CN.md), including controlled retrieval, raw-document and Agent comparisons.
 
 See [68 observed examples and OCR quality results](agent-cli-examples.zh-CN.md) (Chinese), including unsupported phrases, fallback behavior and recognition errors.
 
 See [output formats, coordinates and the typing demo](agent-cli-formats-and-layout.zh-CN.md) (Chinese).
 
-See [Windows x64 test bundles and an agent handoff prompt](agent-cli-windows.zh-CN.md) (Chinese). The `0.3.0-rc.1` candidates include Windows; stable npm `0.2.0` does not. Windows native execution remains pending.
+See [Windows x64 test bundles and an agent handoff prompt](agent-cli-windows.zh-CN.md) (Chinese). Version 0.3.0 includes Windows x64 packages. Windows native execution remains pending.
 
-Source builds provide [Czkawka-style duplicate-file and similar-image scans](agent-cli-similarity.md): `filens duplicates ./files --json` and `filens similar-images ./photos --threshold 8 --json`. Hashing, image decoding and grouping run in the shared WASM core, without OCR or a model. Check `capacity.operations` for `similar`; published npm `0.2.0` lacks these commands.
+Version 0.3.0 provides [Czkawka-style duplicate-file and similar-image scans](agent-cli-similarity.md): `filens duplicates ./files --json` and `filens similar-images ./photos --threshold 8 --json`. Hashing, image decoding and grouping run in the shared WASM core, without OCR or a model. Check `capacity.operations` for `similar`.
 
 ## One-command installation
 
@@ -30,7 +30,7 @@ filens setup-ocr
 filens '读取 "scan.pdf"，以纯文本输出'
 ```
 
-Install one profile at a time: both expose `filens`. npm selects the current platform's binary packages. Supported targets: macOS 12+ arm64 and Linux glibc 2.17+ x64/arm64. The npm launcher requires Node.js 20.11+; installed native binaries can also run directly. No Python, ONNX Runtime, Homebrew, CMake or compiler is needed by installed packages. Reading runs offline after installation.
+Install one profile at a time: both expose `filens`. npm selects the current platform's binary packages. Supported targets: macOS 12+ arm64, Linux glibc 2.17+ x64/arm64 and Windows 10/11 x64. The npm launcher requires Node.js 20.11+; installed native binaries can also run directly. No Python, ONNX Runtime, Homebrew, CMake or compiler is needed by installed packages. Reading runs offline after installation.
 
 For a temporary invocation without a global installation:
 
@@ -40,15 +40,15 @@ npx --yes filens-cli 'what can you do as json'
 npx --yes filens-cli-lite '你能做什么？以 JSON 输出'
 ```
 
-On macOS arm64, the rebuilt Rust candidate is **7.25 MiB installed / 5.60 MiB compressed** for Lite and **30.45 MiB installed / 19.80 MiB compressed** for Full, including OCR models. The executable shrank from **11.05 MiB (Go) to 1.85 MiB (Rust), down 83.3%**. These are unpublished local candidates measured on 2026-10-29, excluding npm cache; the [machine-readable size report](agent-cli-rust-size.json) records bytes and build settings. Earlier Go candidates were about 16.7 / 39.8 MiB installed for Lite / Full; the retired Python/ONNX bundle was about 332 MiB.
+Version 0.3.0 on macOS arm64: **2.10 MiB** native executable; Lite **7.85 MiB installed / 6.02 MiB download**; Full **31.05 MiB installed / 20.22 MiB download**, including OCR models. Totals combine the launcher and selected platform packages, excluding Node.js, npm caches and filesystem overhead. See [all platform sizes and exact bytes](agent-cli-npm-release.json). FiLens code and npm package metadata use [MIT](../LICENSE); dependencies retain their own licenses.
 
 For offline distribution, locally generated tarballs can also be installed in one command, for example on macOS arm64:
 
 ```sh
-npm install -g ./dist/npm/filens-cli-0.2.0.tgz ./dist/npm/filens-cli-darwin-arm64-0.2.0.tgz ./dist/npm/filens-ocr-darwin-arm64-0.2.0.tgz
+npm install -g ./dist/npm/filens-cli-0.3.0.tgz ./dist/npm/filens-cli-darwin-arm64-0.3.0.tgz ./dist/npm/filens-ocr-darwin-arm64-0.3.0.tgz
 ```
 
-Those 2026-10-29 package totals predate similarity scanning. The 2026-10-30 macOS arm64 local comparison added about **278 KiB** for the native executable plus gzip WASM resources. See the [size record](agent-cli-similarity-size.json); this excludes OCR, license text and npm packaging, and is not a new Lite/Full package total or npm download delta.
+Historical [Rust migration measurements](agent-cli-rust-size.json) and [similarity feature costs](agent-cli-similarity-size.json) describe earlier local builds; use the 0.3.0 report above for current installation sizes.
 
 ## Source build and release packaging
 
@@ -78,7 +78,7 @@ npm run publish:agent:npm
 
 The Agent CLI release version is set in `packaging/agent-release.json`, independently of the private workspace version. Update it before preparing a new release; published versions are immutable. Tarballs, sizes and SHA-256 hashes are recorded in `dist/npm/release.json`. Packaging uses explicit file allowlists and includes NCNN/C++ runtime notices and build provenance; it excludes source-build caches and the retired Python environment. The publication script checks tarball hashes and npm authentication before making registry writes. Linux and Windows binaries are cross-built; the installation smoke test exercises the host platform. The CI workflow is configured to validate native installs on macOS arm64, Linux x64/arm64 and Windows x64, including Windows portable bundles; it has not been run in this local session.
 
-Reading and pruning accept one local file per request; `search` accepts one local directory. Quote paths in natural-language intents, especially paths with spaces. Relative paths resolve from the caller's working directory. Optional commands are `read`, `extract`, `understand`, `layout`, `summarize` / `prune`, `search`, and `capacity` / `capabilities`; optional flags include `--json`, `--format text|json|markdown|html|yaml|xml|csv|tsv`, `--layout`, `--input`, `--max-bytes`, `--timeout`, `--wasm` and `--no-ocr`. Search adds `--query`, `--search-mode bm25|exact|files`, `--max-results`, `--max-files`, `--max-depth`, `--include-hidden` and `--no-cache`; see the [search guide](agent-cli-search.zh-CN.md).
+Reading and pruning accept one local file or archive-member path per request; `search` accepts a local directory or supported archive. ZIP, TAR and GZIP containers expand recursively up to eight layers, retaining paths such as `outer.zip!/inner.tar.gz!/report.pdf` for subsequent reading, layout and summaries. See [nested archive usage and checks](agent-cli-search-archives.zh-CN.md). Quote paths in natural-language intents, especially paths with spaces. Relative paths resolve from the caller's working directory. Optional commands are `read`, `extract`, `understand`, `layout`, `summarize` / `prune`, `search`, and `capacity` / `capabilities`; optional flags include `--json`, `--format text|json|markdown|html|yaml|xml|csv|tsv`, `--layout`, `--input`, `--max-bytes`, `--timeout`, `--wasm` and `--no-ocr`. Search adds `--query`, `--search-mode bm25|exact|files`, `--max-results`, `--max-files`, `--max-depth`, `--include-hidden` and `--no-cache`; see the [search guide](agent-cli-search.zh-CN.md).
 
 ## Agent contract
 
@@ -202,4 +202,4 @@ Models use ModelScope, HF Mirror and Hugging Face; a fourth route uses the Model
 
 See the [model manifest](../converter/rapidocr/models.json) and [runtime provenance](../converter/rapidocr/runtime.json). Model measurements and selected sources are saved under `dist/models/rapidocr-ncnn/download-report.json` (Lite: `dist/agent-lite/models/rapidocr-ncnn/`). npm OCR setup/refresh uses `~/.cache/filens/<version>/<platform>/`; `FILENS_CACHE_DIR` selects another location. Refresh changes the model cache and leaves installed package files intact.
 
-Overrides: `FILENS_TEXT_WASM`, `FILENS_PDFIUM_WASM`, `FILENS_IMAGE_WASM`, `FILENS_OCR_LIBRARY`, `FILENS_OCR_MODEL_DIR`. Source builders may supply a portable macOS NCNN companion with `FILENS_NCNN_LIBRARY`. `--no-ocr` disables OCR. `npm run test:agent` covers real PNG/scan-PDF/embedded-DOCX OCR, transparency/EXIF/180-degree preprocessing, JSON/evidence, cancellation/restart, and downloader concurrency, corruption, fallback and caching. `npm run test:agent:npm` tests offline Full/Lite tarball installation and one-command OCR addition without Python. Add `-- --registry` to test public npm installation with a fresh cache, automatic platform selection and temporary invocation. The 0.2.0 public installation check passed on macOS arm64 on 2026-10-29; that historical 0.1.0 check matched the then-published tarballs. Current rebuilt candidates have different hashes; see the release privacy audit. Linux execution remains subject to the CI validation described above.
+Overrides: `FILENS_TEXT_WASM`, `FILENS_PDFIUM_WASM`, `FILENS_IMAGE_WASM`, `FILENS_OCR_LIBRARY`, `FILENS_OCR_MODEL_DIR`. Source builders may supply a portable macOS NCNN companion with `FILENS_NCNN_LIBRARY`. `--no-ocr` disables OCR. `npm run test:agent` covers real PNG/scan-PDF/embedded-DOCX OCR, transparency/EXIF/180-degree preprocessing, JSON/evidence, cancellation/restart, and downloader concurrency, corruption, fallback and caching. `npm run test:agent:npm` tests offline Full/Lite tarball installation and one-command OCR addition without Python. Add `-- --registry` to test public npm installation with a fresh cache, automatic platform selection and temporary invocation. Version 0.3.0 passed offline and fresh-cache public npm Full/Lite installation checks on macOS arm64, including real OCR, nested archive search/read, layouts and one-command OCR addition. All ten public packages have matching local tarball integrity, MIT metadata and latest=0.3.0; see the [publication and validation record](agent-cli-npm-publish.json). Windows tarballs passed forced installation and scoped dependency resolution on macOS; Windows/Linux native execution remains unverified.

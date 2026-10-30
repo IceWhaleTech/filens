@@ -2,7 +2,7 @@
 
 [English](agent-cli-similarity.md) · 简体中文
 
-源码版新增 Czkawka 风格的目录扫描：按组报告重复文件，以及缩放、转格式、重新压缩后的相似图片。使用 `capacity.operations` 检查当前安装是否提供 `similar`；旧版已发布包不包含这项功能。所有哈希、图片解码和分组都在共享前端 WASM 核心中，CLI 负责目录发现和调用，不需要 OCR 或模型。
+0.3.0 提供 Czkawka 风格的目录扫描：按组报告重复文件，以及缩放、转格式、重新压缩后的相似图片。使用 `capacity.operations` 检查当前安装是否提供 `similar`；npm 0.2.0 及更早版本不包含这项功能。所有哈希、图片解码和分组都在共享前端 WASM 核心中，CLI 负责目录发现和调用，不需要 OCR 或模型。
 
 ## 快速开始
 
@@ -14,7 +14,7 @@ npm run build:agent:lite
 ./dist/agent-lite/filens similar-images ./photos --threshold 8 --json
 ```
 
-以下示例使用 `filens`；源码构建可替换为 `./dist/agent-lite/filens`。安装版应先确认 `capacity.operations` 包含 `similar`，当前已发布的 npm `0.2.0` 不包含这项能力。
+以下示例使用 `filens`；源码构建可替换为 `./dist/agent-lite/filens`。安装版应先确认 `capacity.operations` 包含 `similar`，npm `0.2.0` 及更早版本不包含这项能力。
 
 ```sh
 filens duplicates ./files --json

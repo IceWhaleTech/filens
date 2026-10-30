@@ -14,6 +14,7 @@ import {
   createPreviewAcceptAttribute,
   inferExtensionFromName,
   listPreviewFormats,
+  previewPasswordErrorCode,
   type PreviewFamily,
   type PreviewFontResolver,
   type ConverterClient,
@@ -1192,6 +1193,16 @@ const staticSamples: DemoSource[] = [
     name: 'tone.wav',
     source: createToneWav(),
     contentType: 'audio/wav',
+    resourceResolver: ({ relation }) => {
+      if (relation === 'cover') return { source: `${import.meta.env.BASE_URL}samples/showcase/cosmic-cliffs-square.jpg` };
+      if (relation === 'lyrics') return { source: new Blob([
+        '[ti:声与光 · Sound & Light]\n[ar:探微 Filens]\n[al:播放器体验]\n' +
+        '[00:00.00]按下播放，让声音流动\n[00:02.00]歌词随音乐，逐句亮起\n' +
+        '[00:04.00]点击任意一句，回到那一刻\n[00:06.00]也可以导入自己的 LRC 歌词\n' +
+        '[00:08.00]封面、旋律、文字，在这里相遇\n[00:10.00]Sound & Light · 探微 Filens'
+      ], { type: 'text/plain;charset=utf-8' }) };
+      return undefined;
+    },
     mode: 'generated'
   },
   {
@@ -1341,7 +1352,7 @@ void fetch(`${import.meta.env.BASE_URL}build-info.json`, { cache: 'no-store' })
   .then((info) => { buildInfo.value = info; })
   .catch(() => undefined);
 const demoRoutes = shallowRef(DEFAULT_FORMAT_ROUTES);
-const uploadAccept = computed(() => createPreviewAcceptAttribute({ routes: demoRoutes.value }));
+const uploadAccept = computed(() => `${createPreviewAcceptAttribute({ routes: demoRoutes.value })},.lrc`);
 const supportedFormats = computed(() => listPreviewFormats({ routes: demoRoutes.value }));
 const formatSupportByExtension = computed(() => new Map(supportedFormats.value.map((format) => [format.extension, format])));
 // Format buttons use the last catalog entry by default.
@@ -1547,14 +1558,31 @@ const sourceMode = ref<SourceMode>('sample');
 const remoteUrl = ref(defaultRemoteUrl);
 const renderedState = ref<PreviewItemState | null>(null);
 const lastError = ref<string | null>(null);
-const showWorkbench = ref(new URLSearchParams(window.location.search).get('view') === 'preview');
+const workbenchSection = ref<'preview' | 'agent'>(new URLSearchParams(window.location.search).get('view') === 'agent' ? 'agent' : 'preview');
+const showWorkbench = ref(['preview', 'agent'].includes(new URLSearchParams(window.location.search).get('view') ?? ''));
 const showPreviewToolbar = ref(false);
+let appliedUrlFormat: string | null = null;
 
 function syncPageFromUrl(): void {
   const params = new URLSearchParams(window.location.search);
-  showWorkbench.value = params.get('view') === 'preview';
-  if (showWorkbench.value && params.has('format')) selectLandingSample(params.get('format')!);
-  if (showWorkbench.value) document.title = '探微 · 文件预览台';
+  showWorkbench.value = ['preview', 'agent'].includes(params.get('view') ?? '');
+  workbenchSection.value = params.get('view') === 'agent' ? 'agent' : 'preview';
+  const format = params.get('format');
+  if (!showWorkbench.value) appliedUrlFormat = null;
+  if (showWorkbench.value && workbenchSection.value === 'preview' && format && format !== appliedUrlFormat) {
+    appliedUrlFormat = format;
+    selectLandingSample(format);
+  }
+  if (showWorkbench.value) document.title = workbenchSection.value === 'agent' ? '探微 · Agent 控制台' : '探微 · 文件预览台';
+}
+
+function selectWorkbenchSection(section: 'preview' | 'agent'): void {
+  if (showWorkbench.value && workbenchSection.value === section) return;
+  const url = new URL(window.location.href);
+  url.searchParams.set('view', section);
+  url.hash = '';
+  window.history.pushState({}, '', url);
+  syncPageFromUrl();
 }
 
 function selectLandingSample(extension: string): void {
@@ -1640,7 +1668,7 @@ function demoKindForConversionTarget(targetFormat: string): DemoKind {
       return 'ppt';
   }
 }
-watch(showWorkbench, (enabled) => {
+watch(() => showWorkbench.value && workbenchSection.value === 'preview', (enabled) => {
   if (!enabled) return;
   void import('@filens/vue').then(({ createVueDefaultPreviewRoutes }) => {
     demoRoutes.value = createVueDefaultPreviewRoutes();
@@ -1857,7 +1885,7 @@ function onRendered(state: PreviewItemState): void {
 }
 
 function onError(error: Error): void {
-  lastError.value = error.message;
+  lastError.value = previewPasswordErrorCode(error) === 'password_cancelled' ? null : error.message;
 }
 
 function formatCompactNumber(value: number): string {
@@ -2203,6 +2231,7 @@ function bundlePrimaryScore(name: string): number {
   if (kind === 'model3d') return 70;
   if (kind === 'pptx' || kind === 'docx' || kind === 'xlsx' || kind === 'pdf' || kind === 'key' || kind === 'pages' || kind === 'numbers') return 85;
   if (kind === 'html') return 80;
+  if (kind === 'audio' || kind === 'video') return 60;
   if (kind === 'image') return 40;
   if (/\.(html?|xhtml)$/.test(normalized)) return 80;
   if (/\.(obj|stl|ply|vtk|vox|ldr|mpd|md2|lwo|bvh|pdb|nrrd|nhdr)$/.test(normalized)) return 70;
@@ -3214,7 +3243,7 @@ BT /F1 10 Tf 48 80 Td (Typography matrix  |  Page 4 of 4) Tj ET`
 
 function createToneWav(): Uint8Array {
   const sampleRate = 16000;
-  const samples = sampleRate;
+  const samples = sampleRate * 12;
   const dataSize = samples * 2;
   const buffer = new ArrayBuffer(44 + dataSize);
   const view = new DataView(buffer);
@@ -3232,9 +3261,13 @@ function createToneWav(): Uint8Array {
   writeAscii(view, 36, 'data');
   view.setUint32(40, dataSize, true);
   for (let index = 0; index < samples; index += 1) {
-    const edgeFade = Math.min(index / 400, (samples - index - 1) / 400, 1);
-    const value = Math.sin((index / sampleRate) * Math.PI * 2 * 440) * edgeFade;
-    view.setInt16(44 + index * 2, Math.round(value * 12000), true);
+    const time = index / sampleRate;
+    const noteTime = time % 0.5;
+    const frequency = [261.63, 329.63, 392, 523.25, 440, 392, 329.63, 293.66][Math.floor(time * 2) % 8];
+    const envelope = Math.min(noteTime / 0.02, 1) * Math.exp(-noteTime * 7)
+      * Math.min((samples - index - 1) / 800, 1);
+    const value = (Math.sin(time * Math.PI * 2 * frequency) + Math.sin(time * Math.PI * 4 * frequency) * 0.2) * envelope;
+    view.setInt16(44 + index * 2, Math.round(value * 8000), true);
   }
   return new Uint8Array(buffer);
 }
@@ -3585,11 +3618,12 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
 </script>
 
 <template>
-  <LandingPage v-if="!showWorkbench" :upload-accept="uploadAccept" @preview="openWorkbench" @upload="uploadFromLanding" />
+  <LandingPage v-if="!showWorkbench" :upload-accept="uploadAccept" @preview="openWorkbench" @upload="uploadFromLanding" @agent="selectWorkbenchSection('agent')" />
   <DocumentWorkbench
     v-else
     v-model:remote-url="remoteUrl"
     v-model:toolbar="showPreviewToolbar"
+    :section="workbenchSection"
     :brand-icon="brandIconUrl"
     :name="current.name"
     :label="current.label"
@@ -3607,7 +3641,8 @@ const compatibilitySnippet = `<PptxPreview :src="'/samples/sample-deck.pptx'" fi
     :warning-count="warningCount"
     :has-toolbar="!current.livePhoto"
     @home="returnHome"
-    @upload="previewFiles"
+    @section="selectWorkbenchSection"
+    @upload="files => { selectWorkbenchSection('preview'); void previewFiles(files); }"
     @remote="previewRemote"
     @family="selectFormatFamily"
     @sample="useFormatSample"

@@ -202,8 +202,11 @@
       },
       "cache": {
         "type": "boolean",
-        "default": true,
-        "description": "Reuse complete extracted text after verifying source and engine/OCR hashes; does not reuse deleted files."
+        "enum": [
+          false
+        ],
+        "default": false,
+        "description": "Search is request-local and never persists an index or extracted text. Omit this field or use false; true is unsupported."
       },
       "similarityMode": {
         "enum": [
@@ -304,13 +307,46 @@
       "chunks": 65536,
       "excerptsPerFile": 3
     },
-    "policy": "Index complete extracted text, not pruned summaries. Results include file hashes, extracted UTF-8 offsets and available source geometry. Directory errors, extraction errors and coverage limits remain visible. Zero lexical hits do not prove no relevant document exists.",
+    "policy": "Search complete extracted text within the request; do not persist an index or extracted text. Source integrity is assumed and sha256 is null. Results retain extracted UTF-8 offsets and available source geometry. Directory errors, extraction errors and coverage limits remain visible. Zero lexical hits do not prove no relevant document exists.",
     "excludedDirectories": [
       ".git",
       "node_modules",
       "target",
       "dist"
-    ]
+    ],
+    "storage": "request-local-memory",
+    "integrity": "assumed; no source, engine or OCR model hashing",
+    "startup": "Native compilation of shared frontend Rust retrieval and common plain-text decoding; no WASM load for these requests. Other formats and layout use the same WASM core lazily; batch workers share one loaded module. PDFium and OCR initialize only on actual callbacks.",
+    "execution": {
+      "ranking": "native-rust",
+      "plainText": "shared Rust decoder; zero loaded WASM modules unless layout is requested",
+      "otherFormats": "shared WASM parser, up to 256 files per invocation",
+      "workers": "Automatic: 1 for <=8 MiB source metadata or <32 files, up to 4 otherwise; FILENS_SEARCH_JOBS=1..8 overrides, with <32 files kept serial. OCR uses one lane; OpenMP=2.",
+      "override": "Explicit --wasm or FILENS_TEXT_WASM uses the selected WASM for extraction and ranking."
+    },
+    "archives": {
+      "formats": [
+        "zip",
+        "jar",
+        "war",
+        "ear",
+        "apk",
+        "tar",
+        "tgz",
+        "tar.gz",
+        "gz"
+      ],
+      "nested": true,
+      "maxDepth": 8,
+      "maxExpandedBytesPerBatch": 268435456,
+      "maxEntriesPerBatch": 100000,
+      "paths": "outer.zip!/inner.tar!/file.pdf; archive.path plus archive.members preserve the source chain",
+      "readMembers": true,
+      "filenameSearch": true,
+      "ocr": "Members use the same document/image OCR callbacks.",
+      "storage": "One generated flat temporary member at a time; cleaned after use. No persistent archive extraction.",
+      "limitations": "Encrypted members need a password and are reported as partial errors; password support is not yet exposed for archive reading. RAR and 7z are not supported. Hidden/excluded paths follow search scope. Limits/errors remain visible."
+    }
   },
   "similarity": {
     "version": "filens-similarity-v1",

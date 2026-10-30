@@ -13,11 +13,30 @@ const ordered = Object.keys(names);
 const nAnswer = r.manifest.queries.filter(q => q.relevant.length).length;
 const formatFiles = ids => ids.slice(0, 5).join(', ') || '空';
 const failures = [];
+const persistent = r.metadata.searchStorage !== 'request-local-memory';
+let optimization;
+try { optimization = JSON.parse(await readFile(path.join(root, 'docs/agent-cli-search-optimization.json'))); }
+catch (error) { if (error.code !== 'ENOENT') throw error; }
+const optimizationSection = optimization ? `## 本轮重复统计优化
+
+${r.metadata.textWasmSHA256 === optimization?.beforeWasmSHA256 ? '上面的完整基线对应优化前的 WASM。' : r.metadata.textWasmSHA256 === optimization?.afterWasmSHA256 ? '上面的完整基线已使用优化后的 WASM；下表保留独立的历史前后对照。' : '下表是另一组产物的历史前后对照，产物哈希单独记录。'}在共享 WASM 核心中缓存有界的查询词频/分块长度，减少重复分词；literal 路径跳过不使用的 BM25 统计。缓存超过 8 MiB 的估算预算后退回原有路径，文件内容校验与排名公式保持一致。没有增加常驻运行时或持久倒排索引。
+
+同一个 CLI、同一份语料、相互独立且已准备的正文缓存，轮换先后顺序：
+
+| 范围 | 优化前 p50 | 优化后 p50 | 中位耗时变化 | 成功样本数（前 / 后） |
+| --- | ---: | ---: | --- | ---: |
+${Object.entries(optimization.summary).map(([mode, s]) => `| ${mode} | ${ms(s.before.p50Ms)} ms | ${ms(s.after.p50Ms)} ms | ${s.medianReduction >= 0 ? '下降' : '上升'} ${Math.abs(s.medianReduction * 100).toFixed(1)}% | ${s.before.successful} / ${s.after.successful} |`).join('\n')}
+
+按九类查询各重复三次，2000 文件查询重复五次；共 ${optimization.equalSuccessfulPairs} 对成功请求逐字比较文件顺序、分数、证据和偏移，结果一致。记录 ${optimization.failures.length} 次失败；小样本不能保证稳定收益。完整采样和产物哈希见[优化观测](agent-cli-search-optimization.json)。这轮减少重复计算，尚未达到 rg 的原始文本扫描时延。后续按用户要求不持久落盘；最新启动优化、无哈希与无应用缓存的对照见[启动实测](agent-cli-search-startup.zh-CN.md)。更大的扫描收益应优先考虑请求内批处理或内存复用，并单独测量准备成本。
+
+` : '';
 for (const category of ['paraphrase', 'cross-language', 'absent-fact', 'number']) {
   const item = r.observations.find(o => o.tool === 'filens-bm25' && o.category === category && (o.metrics.hit5 === 0 || o.metrics.falsePositive));
   if (item) failures.push({ ...item, q: r.manifest.queries.find(q => q.id === item.queryId) });
 }
 const md = `# 文档搜索实测：FiLens、ripgrep 与 git grep
+
+${persistent ? '**历史版本记录：** 本报告观测的是此前启用正文缓存和来源哈希的版本。当前源码版改为请求内存、不持久落盘、不计算来源哈希；新进程与 rg 的启动对照见[启动实测](agent-cli-search-startup.zh-CN.md)。下面保留原始观测，不能当成当前默认策略的时延。' : '本报告观测的是请求内存版本：不持久保存正文或索引，不计算来源哈希。新进程与 rg 的启动对照另见[启动实测](agent-cli-search-startup.zh-CN.md)。'}
 
 这是 ${r.metadata.date.slice(0, 10)} 在 ${r.metadata.cpu} / ${r.metadata.platform} 上的**合成语料观测**。包含 ${r.metadata.corpusFiles} 个文件、${r.metadata.queries} 条预先固定的查询，其中 ${nAnswer} 条有答案、${r.metadata.queries - nAnswer} 条无答案；按 12 个主题家族组织。原文与相关文件标签由开发者按构造规则指定，没有外部人工评审、留出集或 Agent 最终任务成绩。
 
@@ -25,12 +44,12 @@ FiLens 目前提供词项检索。下面同时公开精确命中、改写/跨语
 
 ## 运行配置与公平性
 
-- FiLens：源码构建的 BM25 默认模式、literal 模式，返回最多 10 个文件，使用完整提取文本；每次校验源文件 SHA-256。正文缓存不是常驻倒排或向量索引。
+- FiLens：源码构建的 BM25 默认模式、literal 模式，返回最多 10 个文件，使用完整提取文本；${persistent ? '每次校验源文件 SHA-256。正文缓存不是常驻倒排或向量索引。' : '来源完整性默认信任，无内容哈希，无持久缓存/索引。'}
 - ripgrep：${r.metadata.ripgrep.split('\n')[0]}。literal 使用区分大小写的完整查询；词项 OR 使用忽略大小写的查询词，中文转相邻双字特征，英文去一小组停用词。词项规则固定在脚本中，没有按参考答案改写查询。
 - git grep：${r.metadata.git}，使用 \`--no-index\` 和同一组 OR 词项。
 - 所有工具读同一份 UTF-8 文本。文件名是中性编号，不泄露主题；问题、标签、报告均在被搜目录外。源码及原始文档流程另列，不能用 rg 直接搜索 Office 二进制来制造优势。
-- rg/git grep 没有相关性排序，候选按相对路径排序后取前 k 个，模拟有限上下文视图；它们的 MRR/nDCG 留空，完整候选的召回/精确率另报。路径顺序不等于语义排名。
-- 每个查询轮换五种配置的运行顺序，每次启动新进程。准确性语料先完成一次正文缓存准备：${ms(r.prep.elapsedMs)} ms，写入 ${r.prep.cacheWrites} 份正文。查询时延包含 CLI 启动、遍历、哈希/缓存验证、排序和序列化。
+- rg/git grep 没有相关性排序，候选按相对路径排序后取前 k 个，模拟有限上下文视图；FiLens literal 也以相同分数按路径排序，这三类配置的 MRR/nDCG 均留空。完整候选的召回/精确率另报。路径顺序不等于语义排名。
+- 每个查询轮换五种配置的运行顺序，每次启动新进程。准确性语料先完成一次${persistent ? '正文缓存准备' : '初次查询'}：${ms(r.prep.elapsedMs)} ms，写入 ${r.prep.cacheWrites} 份正文缓存。查询时延包含该版本实际执行的 CLI 启动、遍历、提取/缓存处理、排序和序列化。
 
 ## 文件命中与误报
 
@@ -58,9 +77,9 @@ ${['absent-identifier', 'absent-fact'].map(category => `| ${categories[category]
 
 ## 证据、数字与失败例
 
-FiLens 返回非空结果的请求中，原文片段按 UTF-8 偏移逐一对回生成原文，并校验来源 SHA-256：
+FiLens 返回非空结果的请求中，原文片段按 UTF-8 偏移逐一对回生成原文${persistent ? '，并校验来源 SHA-256' : '；本版本不提供来源哈希'}：
 
-| 配置 | 非空请求数 | 偏移/来源哈希全部正确的请求 | 指定业务句在前五结果的命中率 |
+| 配置 | 非空请求数 | ${persistent ? '偏移/来源哈希全部正确的请求' : '偏移全部正确的请求'} | 指定业务句在前五结果的命中率 |
 | --- | ---: | ---: | ---: |
 ${['filens-bm25', 'filens-exact'].map(tool => { const nonempty = r.observations.filter(o => o.tool === tool && o.files.length); return `| ${names[tool]} | ${nonempty.length} | ${nonempty.filter(o => o.metrics.offsetsValid).length} | ${pct(r.quality[tool].evidenceHit)} |`; }).join('\n')}
 
@@ -76,19 +95,19 @@ ${failures.map(o => `| ${cell(o.q.query)} | ${formatFiles(o.q.relevant)} | ${for
 
 ## 文件规模、首次使用和缓存
 
-另生成 100、500、2000 个约 0.4 KiB 的短文本，查找唯一的 \`SPEED2026\`。每个规模先运行一次空正文缓存查询，再对每种配置重复 15 次并轮换顺序。这里“首次”仅清空 FiLens 缓存，**没有清空操作系统页缓存**。p95 使用 nearest-rank，15 个样本的尾部分位数仍很有限。
+另生成 100、500、2000 个约 0.4 KiB 的短文本，查找唯一的 \`SPEED2026\`。每个规模先运行一次${persistent ? '空正文缓存' : '无应用缓存'}查询，再对每种配置重复 15 次并轮换顺序。这里“首次”**没有清空操作系统页缓存**。p95 使用 nearest-rank，15 个样本的尾部分位数仍很有限。
 
-| 文件数 / 文本量 | FiLens 首次提取+查询（n=1） | FiLens 缓存 p50 / p95 | rg literal p50 / p95 | git grep OR p50 / p95 | 正文缓存 | FiLens 最大进程 RSS（单次） |
+| 文件数 / 文本量 | FiLens 首次提取+查询（n=1） | FiLens ${persistent ? '缓存' : '重复新进程'} p50 / p95 | rg literal p50 / p95 | git grep OR p50 / p95 | 正文缓存 | FiLens 最大进程 RSS（单次） |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 ${r.scales.map(s => `| ${s.files} / ${kib(s.sourceBytes)} KiB | ${ms(s.firstExtractionMs)} ms | ${ms(s.cached['filens-bm25'].p50Ms)} / ${ms(s.cached['filens-bm25'].p95Ms)} ms | ${ms(s.cached['rg-phrase'].p50Ms)} / ${ms(s.cached['rg-phrase'].p95Ms)} ms | ${ms(s.cached['git-grep-terms'].p50Ms)} / ${ms(s.cached['git-grep-terms'].p95Ms)} ms | ${kib(s.cacheBytes)} KiB | ${s.maxProcessResidentBytes ? (s.maxProcessResidentBytes / 1048576).toFixed(1) + ' MiB' : '未测'} |`).join('\n')}
 
-macOS \`time -l\` 的最大进程 RSS 不是 supervisor 与 worker 并发内存之和。规模曲线主要反映短文本的遍历、文件哈希和缓存读写；大量 PDF、扫描件、慢盘和网络目录需要另测。FiLens 当前每次重新分块排名，尚未有常驻倒排索引，不能预期它具有 rg 的纯文本扫描速度。
+macOS \`time -l\` 的最大进程 RSS 不是 supervisor 与 worker 并发内存之和。规模曲线主要反映短文本的遍历、文件哈希和缓存读写；大量 PDF、扫描件、慢盘和网络目录需要另测。FiLens 当前每次重新分块排名，没有持久倒排索引，不能预期它具有 rg 的纯文本扫描速度。
 
 规模重复的失败数：${r.scales.map(s => `${s.files} 文件：${Object.entries(s.failedCachedQueries).map(([tool, n]) => `${names[tool]} ${n}/${s.attemptsPerTool}`).join('、')}`).join('；')}。上表缓存时延仅计算成功样本，实际 n 保留在 JSON 中。另有一次先导试跑在 2000 文件缓存查询时返回退出码 1，旧仪器没有保留错误响应，单独重放成功，原因尚未确认；该先导试跑没有并入完整重跑的分位数，也没有被当成成功。完整重跑保留操作错误，不自动重试。
 
 ## 修改与删除
 
-一次修改后立刻查询旧值和新值，再删除并立即查询。各次都使用原有正文缓存：
+一次修改后立刻查询旧值和新值，再删除并立即查询。${persistent ? '各次都使用原有正文缓存' : '各次都重新提取当前来源'}：
 
 | 操作 | 查询 | 命中文件数 | 耗时 |
 | --- | --- | ---: | ---: |
@@ -108,12 +127,15 @@ ${r.documents.extraction.map(e => `| ${e.file} | ${ms(e.elapsedMs)} ms | ${e.com
 | --- | --- | --- | --- | --- |
 ${r.documents.queries.map(q => `| ${q.query} | ${q.relevant.join(', ')} | ${q.filens.files.join(', ') || '空'} / ${ms(q.filens.elapsedMs)} ms | ${q.rgWithSharedExtraction.files.join(', ') || '空'} / ${ms(q.rgWithSharedExtraction.elapsedMs)} ms | ${q.filens.pageOrBounds ? '有' : '无'} |`).join('\n')}
 
-FiLens 第一条搜索从空正文缓存开始，后两条复用正文。OCR 最大边长 960、OpenMP=2。仅检查已知编号/金额、完整性及定位字段，未在此量化 OCR 通用准确率或矩形精度；已有[OCR 质量样例](agent-cli-examples.zh-CN.md)另报错误。
+FiLens ${persistent ? '第一条搜索从空正文缓存开始，后两条复用正文' : '每条搜索都重新提取当前原始文档，不复用正文'}。DOCX 的金额写成 \`12,345.67\`，这两种配置查询 \`12345.67\` 均未归一化千分位分隔符，因此漏掉 DOCX；扫描 PDF 和图片里的连续金额可命中。源码复核后修正了两项遗漏的扫描 PDF 相关标签，双方使用同一修正，原始查询、结果、时延不变；108 文件的固定检索标签没有修改。OCR 最大边长 960、OpenMP=2。仅检查已知编号/金额、完整性及定位字段，未在此量化 OCR 通用准确率或矩形精度；已有[OCR 质量样例](agent-cli-examples.zh-CN.md)另报错误。
+
+${optimizationSection}
 
 ## 如何复现与扩展
 
 \`\`\`sh
 npm run build:agent
+npm run demo:agent -- --poster-only --lang en
 node --test scripts/search-benchmark-metrics.test.mjs
 node scripts/benchmark-agent-search.mjs
 node scripts/write-search-benchmark-docs.mjs

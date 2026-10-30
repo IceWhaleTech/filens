@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue';
+import { computed, defineAsyncComponent, ref, useId, watch } from 'vue';
 import FileFormatIcon from './FileFormatIcon.vue';
 import FormatBrowser from './FormatBrowser.vue';
 import WorkbenchIcon from './WorkbenchIcon.vue';
 import type { WorkbenchFamilyId, WorkbenchFormatFamily } from './workbench';
 
 const props = defineProps<{
+  section: 'preview' | 'agent';
   brandIcon: string;
   name: string;
   label: string;
@@ -26,12 +27,16 @@ const props = defineProps<{
 const remoteUrl = defineModel<string>('remoteUrl', { required: true });
 const toolbar = defineModel<boolean>('toolbar', { required: true });
 const emit = defineEmits<{
+  section: [section: 'preview' | 'agent'];
   home: [];
   upload: [files: File[]];
   remote: [];
   family: [id: WorkbenchFamilyId];
   sample: [extension: string];
 }>();
+const AgentWorkbench = defineAsyncComponent(() => import('./AgentWorkbench.vue'));
+const previewOpened = ref(props.section === 'preview');
+const agentOpened = ref(props.section === 'agent');
 const libraryOpen = ref(!window.matchMedia('(max-width: 760px)').matches);
 const detailsOpen = ref(false);
 const linkDialog = ref<HTMLDialogElement>();
@@ -40,6 +45,11 @@ const linkInput = ref<HTMLInputElement>();
 const dragDepth = ref(0);
 const panelId = useId();
 const detailId = useId();
+watch(() => props.section, section => {
+  if (section === 'preview') previewOpened.value = true;
+  else agentOpened.value = true;
+  detailsOpen.value = false;
+});
 const sourceLabel = computed(() => ({ upload: '本地文件', url: '远程文件', generated: '生成示例', sample: '内置示例' })[props.source] ?? props.source);
 const extensionLabel = computed(() => props.extension.toUpperCase() || 'FILE');
 const fileColor = computed(() => {
@@ -75,7 +85,12 @@ function drop(event: DragEvent): void {
   if (files.length) emit('upload', files);
 }
 function selectSample(extension: string): void {
+  emit('section', 'preview');
   emit('sample', extension);
+  if (window.matchMedia('(max-width: 760px)').matches) libraryOpen.value = false;
+}
+function selectSection(section: 'preview' | 'agent'): void {
+  emit('section', section);
   if (window.matchMedia('(max-width: 760px)').matches) libraryOpen.value = false;
 }
 function openLink(): void {
@@ -97,28 +112,33 @@ function openRemote(): void {
 
 <template>
   <main class="workbench" :class="{ 'is-library-closed': !libraryOpen }" @dragenter="dragEnter" @dragover="dragOver" @dragleave="dragDepth = Math.max(0, dragDepth - 1)" @drop="drop" @keydown.esc="detailsOpen = false">
-    <aside v-show="libraryOpen" :id="panelId" class="wb-sidebar" aria-label="格式与预览信息">
+    <aside v-show="libraryOpen" :id="panelId" class="wb-sidebar" :aria-label="section === 'agent' ? 'Agent 工具与信息' : '格式与预览信息'">
       <button class="wb-brand wb-home-link" type="button" aria-label="← 探微首页" @click="emit('home')">
         <img :src="brandIcon" alt="" width="34" height="34" />
         <span>探微<span class="wb-brand-caption">文件里的世界</span></span>
         <WorkbenchIcon name="arrow" />
       </button>
-      <FormatBrowser :families="families" :selected-family="selectedFamily" :active-extension="extension" :sample-extensions="sampleExtensions" @family="emit('family', $event)" @sample="selectSample" />
-      <div class="wb-privacy"><WorkbenchIcon name="lock" /><div><strong>本地文件，无需上传</strong><p>在你的浏览器里，安心打开。</p></div></div>
+      <FormatBrowser v-show="section === 'preview'" :families="families" :selected-family="selectedFamily" :active-extension="extension" :sample-extensions="sampleExtensions" @family="emit('family', $event)" @sample="selectSample" />
+      <section v-if="section === 'agent'" class="wb-agent-sidebar" aria-label="Agent 工具箱">
+        <p class="wb-eyebrow">LOCAL FILE TOOLS</p><h2>Agent 工具箱</h2><p>给 Agent 一双看见文件的眼睛。</p>
+        <div><WorkbenchIcon name="file" /><span>文档读取与证据</span></div><div><WorkbenchIcon name="search" /><span>跨格式目录搜索</span></div><div><WorkbenchIcon name="scan" /><span>本地 OCR 与布局</span></div><div><WorkbenchIcon name="sliders" /><span>关键原文提取</span></div><div><WorkbenchIcon name="copy" /><span>重复文件与相似图片</span></div><div><WorkbenchIcon name="arrow" /><span>多格式文件转换</span></div>
+        <p class="wb-agent-sidebar-note">通过 CLI 在本机运行，使用 Skill 接入你的 Agent。</p>
+      </section>
+      <div class="wb-privacy"><WorkbenchIcon name="lock" /><div><strong>本地文件，无需上传</strong><p>{{ section === 'agent' ? '在你的设备上，安心处理。' : '在你的浏览器里，安心打开。' }}</p></div></div>
     </aside>
     <button v-if="libraryOpen" class="wb-sidebar-scrim" type="button" aria-label="关闭格式面板" @click="libraryOpen = false"></button>
 
     <div class="wb-main">
       <header class="wb-header">
         <button class="wb-icon-button wb-library-toggle" type="button" :aria-label="libraryOpen ? '收起格式面板' : '展开格式面板'" :aria-expanded="libraryOpen" :aria-controls="panelId" @click="libraryOpen = !libraryOpen"><WorkbenchIcon name="panel" /></button>
-        <div class="wb-heading"><p class="wb-eyebrow">WORKSPACE <span>/</span> PREVIEW</p><h1>文件预览台</h1></div>
-        <div class="wb-header-actions">
+        <div class="wb-heading"><p class="wb-eyebrow">WORKSPACE <span>/</span> {{ section.toUpperCase() }}</p><h1 class="visually-hidden">{{ section === 'agent' ? 'Agent 控制台' : '文件预览台' }}</h1><nav class="wb-workspace-nav" aria-label="控制台功能"><button type="button" :aria-pressed="section === 'preview'" @click="selectSection('preview')">文件预览</button><button type="button" :aria-pressed="section === 'agent'" @click="selectSection('agent')">Agent</button></nav></div>
+        <div v-show="section === 'preview'" class="wb-header-actions">
           <button ref="linkButton" class="wb-button wb-link-button" type="button" @click="openLink"><WorkbenchIcon name="link" /><span>通过链接打开</span></button>
-          <label class="wb-button wb-upload"><WorkbenchIcon name="upload" /><span>导入文件</span><input class="visually-hidden" type="file" aria-label="导入文件" :accept="uploadAccept" multiple @change="upload" /></label>
+          <label class="wb-button wb-upload" title="导入文件"><WorkbenchIcon name="upload" /><span>导入文件</span><input class="visually-hidden" type="file" aria-label="导入文件" :accept="uploadAccept" multiple @change="upload" /></label>
         </div>
       </header>
 
-      <div class="wb-body">
+      <div v-if="previewOpened" v-show="section === 'preview'" class="wb-body">
         <div class="wb-workspace-label"><span><i></i> {{ sourceLabel }}</span><span class="wb-workspace-hint">让内容，成为主角。</span></div>
         <section class="wb-preview" :aria-label="name + ' 预览'">
           <header class="wb-preview-head">
@@ -147,6 +167,7 @@ function openRemote(): void {
           <slot name="diagnostics" />
         </aside>
       </div>
+      <AgentWorkbench v-if="agentOpened" v-show="section === 'agent'" />
     </div>
 
     <dialog ref="linkDialog" class="wb-link-dialog" aria-labelledby="wb-link-heading" @click="event => { if (event.target === linkDialog) closeLink(); }" @cancel.prevent="closeLink">

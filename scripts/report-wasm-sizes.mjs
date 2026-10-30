@@ -7,6 +7,7 @@ const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const artifacts = [
   ['converter-core', 'wasm/converter-core/dist/converter-core.wasm'],
   ['converter-image', 'wasm/converter-image/dist/converter-image.wasm'],
+  ['filens-step (default Rust STEP)', 'packages/step/vendor/filens-step.wasm'],
   ['occt-import-js', 'packages/model3d/vendor/occt-import-js/occt-import-js.wasm'],
   ['occt-import-js upstream (reference)', 'node_modules/occt-import-js/dist/occt-import-js.wasm']
 ];

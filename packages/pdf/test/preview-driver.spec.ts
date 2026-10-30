@@ -32,6 +32,25 @@ afterAll(() => {
 });
 
 describe('PDF preview driver', () => {
+  it('passes document passwords to PDF.js without trimming them', async () => {
+    const session = createPdfPreviewDriver().createSession(document.createElement('div'));
+    try {
+      await session.load(new Uint8Array([37, 80]), { descriptor: { source: new Uint8Array(), password: ' 密码🔐 ' } });
+      expect(getDocument).toHaveBeenCalledWith({ data: new Uint8Array([37, 80]), password: ' 密码🔐 ' });
+      expect(session.getState()).not.toHaveProperty('password');
+    } finally { session.destroy(); }
+  });
+
+  it.each([[1, 'password_required'], [2, 'password_invalid']])('maps PDF.js password reason %s to %s', async (code, expected) => {
+    const task = { promise: Promise.reject(Object.assign(new Error('Password needed'), { name: 'PasswordException', code })), destroy };
+    // Observe the rejection before the asynchronous source read completes.
+    task.promise.catch(() => undefined);
+    vi.mocked(getDocument).mockReturnValueOnce(task as never);
+    const session = createPdfPreviewDriver().createSession(document.createElement('div'));
+    try {
+      await expect(session.load(new Uint8Array(), { descriptor: { source: new Uint8Array() } })).rejects.toMatchObject({ code: expected });
+    } finally { session.destroy(); }
+  });
   it('discovers renderer font identifiers after rendering without inventing original names or embedded provenance', async () => {
     const getTextContent = vi.fn(async () => ({ styles: { g_d0_f1: { fontFamily: 'serif', ascent: 0.8, descent: -0.2, vertical: false } } }));
     const page = { getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale, scale }), render, getTextContent };

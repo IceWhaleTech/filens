@@ -6,7 +6,7 @@ import demoMedia from '../home-media.json';
 import './landing.css';
 
 defineProps<{ uploadAccept: string }>();
-const emit = defineEmits<{ preview: [extension?: string]; upload: [event: Event] }>();
+const emit = defineEmits<{ preview: [extension?: string]; upload: [event: Event]; agent: [] }>();
 type Locale = 'zh' | 'en';
 const storedLocale = (() => {
   try {
@@ -141,6 +141,26 @@ const previews = [
     image: 'panorama.webp',
     sample: 'pano',
     file: 'milky-way-360.pano'
+  },
+  {
+    zh: '视频',
+    en: 'Video',
+    format: 'MP4',
+    icon: 'VID',
+    color: '#647fba',
+    image: 'video.webp',
+    sample: 'mp4',
+    file: 'sample-video.mp4'
+  },
+  {
+    zh: '音乐',
+    en: 'Music',
+    format: 'WAV',
+    icon: '♫',
+    color: '#a66f58',
+    image: 'music.webp',
+    sample: 'wav',
+    file: 'tone.wav'
   }
 ];
 const selectedPreview = computed(() => previews[activePreview.value]!);
@@ -225,8 +245,8 @@ const formatFamilies = [
   },
   {
     zh: '音频', en: 'Audio', icon: '♫', color: '#a66f58',
-    descriptionZh: '音乐与声音，打开就能听。',
-    descriptionEn: 'Music and sound, ready to listen.',
+    descriptionZh: '封面、音乐与同步歌词，一起播放。',
+    descriptionEn: 'Music with cover art and synchronized lyrics.',
     formats: 'MP3 · WAV · FLAC · OGG', sample: 'wav'
   },
   {
@@ -331,6 +351,7 @@ async function playDemo(): Promise<void> {
         <a href="#demo">{{ t('视频演示', 'Watch demo') }}</a>
       </nav>
       <div class="nav-actions">
+        <a class="landing-agent-link" :href="`${asset('')}?view=agent`" @click.prevent="emit('agent')">Agent</a>
         <button
           class="language-toggle"
           type="button"

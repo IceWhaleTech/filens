@@ -1,0 +1,231 @@
+{
+  "observedAt": "2026-10-29T18:20:29.665Z",
+  "platform": "darwin-arm64",
+  "cases": 13,
+  "formats": [
+    "txt",
+    "md",
+    "html",
+    "csv",
+    "json",
+    "docx",
+    "pptx",
+    "xlsx",
+    "odt",
+    "rtf",
+    "pdf",
+    "png"
+  ],
+  "requests": 15,
+  "rows": [
+    {
+      "file": "f00.txt",
+      "format": "txt",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "paragraph"
+      ],
+      "coordinateUnits": [],
+      "pages": [],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f01.md",
+      "format": "md",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "paragraph"
+      ],
+      "coordinateUnits": [],
+      "pages": [],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f02.html",
+      "format": "html",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "paragraph"
+      ],
+      "coordinateUnits": [],
+      "pages": [],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f03.csv",
+      "format": "csv",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "table",
+        "cell"
+      ],
+      "coordinateUnits": [],
+      "pages": [],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f04.json",
+      "format": "json",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "table",
+        "cell"
+      ],
+      "coordinateUnits": [],
+      "pages": [],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f05.docx",
+      "format": "docx",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "heading",
+        "paragraph"
+      ],
+      "coordinateUnits": [],
+      "pages": [],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f06.pptx",
+      "format": "pptx",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "paragraph"
+      ],
+      "coordinateUnits": [],
+      "pages": [
+        1
+      ],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f07.xlsx",
+      "format": "xlsx",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "table",
+        "cell"
+      ],
+      "coordinateUnits": [],
+      "pages": [],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f08.odt",
+      "format": "odt",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "heading",
+        "paragraph"
+      ],
+      "coordinateUnits": [],
+      "pages": [],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f09.rtf",
+      "format": "rtf",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "paragraph"
+      ],
+      "coordinateUnits": [],
+      "pages": [],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f10.pdf",
+      "format": "pdf",
+      "query": "BUDGET2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "text"
+      ],
+      "coordinateUnits": [
+        "pt"
+      ],
+      "pages": [
+        1
+      ],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f11.png",
+      "format": "png",
+      "query": "FILENS2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "text"
+      ],
+      "coordinateUnits": [
+        "px"
+      ],
+      "pages": [
+        1
+      ],
+      "rgAfterSameExtraction": true
+    },
+    {
+      "file": "f12.pdf",
+      "format": "pdf",
+      "query": "FILENS2026",
+      "read": true,
+      "search": true,
+      "utf8Evidence": true,
+      "blockKinds": [
+        "text"
+      ],
+      "coordinateUnits": [
+        "pt"
+      ],
+      "pages": [
+        1,
+        2
+      ],
+      "rgAfterSameExtraction": true
+    }
+  ],
+  "method": "Known synthetic identifier in 11 small documents plus optional public OCR fixtures. Read, mixed-root Chinese-intent search, UTF-8 evidence and layout checked. Offsets refer to the read operation's extracted text, not bytes in the original container. rg reads exactly the same extracted texts; no direct binary-search superiority claim.",
+  "limitations": [
+    "Functional format/identifier coverage, not general retrieval or OCR accuracy.",
+    "Minimal synthetic document containers; full OOXML schema conformance is not checked. Complex layouts, formulas, attachments, corrupt files and all subformats are not covered.",
+    "Coordinate fields checked, not spatial IoU or OCR CER.",
+    "Single macOS machine; not Windows/Linux native execution."
+  ]
+}

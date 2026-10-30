@@ -190,3 +190,28 @@ Current delivery: shared classification and fallback helpers distinguish serif/s
 - expand the delivered optional-pack/host-asset ranking and loading with glyph-specific subsets and additional font styles
 - retain conservative unknown results, visible replacement reasons, and source-font layout-drift warnings
 - remeasure and compare line wrapping and pagination when better candidates become available through F1/F2
+
+## Track F: Optional Embedding and Media ASR
+
+Status: planned extension points; embedding retrieval and video/audio automatic speech recognition (ASR) are not currently delivered.
+
+## AI0: Shared Optional Inference Contracts
+
+- reserve capability discovery and provider contracts for embedding and ASR, with explicit model availability, supported inputs, resource limits, cancellation, and unavailable-provider errors
+- keep file parsing, conversion, document chunking, media demuxing, and audio preprocessing in the shared front-end WASM/TS core; hosts only provide transport, temporary files, and optional model runtimes
+- load models and runtimes on demand, keep Lite model-free, and preserve local processing by default; remote providers require explicit host configuration
+
+## AI1: Embedding and Hybrid Retrieval
+
+- reserve document/query embedding inputs and vector outputs with model identity, version, dimensions, and normalization metadata so incompatible vectors cannot be mixed
+- add optional vector retrieval and BM25/vector ranking fusion over shared document chunks, preserving source paths, UTF-8 offsets, and available layout for citations
+- retain request-local storage by default and keep existing BM25, exact, and filename search usable without an embedding provider
+- evaluate synonym, paraphrase, and cross-language recall alongside model download size, first-use latency, memory, and query latency before advertising semantic-search support
+
+## AI2: Video, Audio, and Music ASR
+
+- reserve an optional transcription path for video soundtracks and audio/music files; report supported containers and codecs only after the shared media path can decode them
+- define transcript results with source paths, timestamped segments, language, and optional provider-supplied speaker/confidence metadata; preserve partial results, truncation, and inference errors
+- make timestamped transcripts reusable by preview subtitles, text extraction, search, and Agent evidence, with citations that map back to the original media timeline
+- bound media duration, segment size, memory, and inference time, and support cancellation and temporary-buffer cleanup for long recordings
+- report silence or music without recognizable speech explicitly; evaluate sung-vocal transcription separately before claiming lyrics support

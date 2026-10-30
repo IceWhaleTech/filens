@@ -76,6 +76,16 @@
 .wb-heading .wb-eyebrow { margin-bottom: 8px; color: #9ca0a7; font-size: 8px; letter-spacing: 1.4px; }
 .wb-heading .wb-eyebrow span { margin: 0 7px; color: #ccd0d4; }
 .wb-heading h1 { margin: 0; font-size: 18px; font-weight: 550; letter-spacing: .5px; white-space: nowrap; }
+.wb-workspace-nav { display: flex; align-items: center; gap: 16px; }
+.wb-workspace-nav button { padding: 0 0 5px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #9299a2; font-size: 15px; white-space: nowrap; }
+.wb-workspace-nav button[aria-pressed="true"] { border-bottom-color: #b78061; color: #343a43; font-weight: 550; }
+.wb-workspace-nav button:hover { color: #855d45; }
+.wb-agent-sidebar { flex: 1; min-height: 0; padding: 32px 23px; overflow-y: auto; }
+.wb-agent-sidebar h2 { margin: 12px 0; color: #f2f2f1; font-size: 19px; font-weight: 500; }
+.wb-agent-sidebar > p:not(.wb-eyebrow) { color: #858d99; font-size: 11px; line-height: 1.9; }
+.wb-agent-sidebar > div { display: flex; align-items: center; gap: 12px; margin-top: 25px; color: #b4bac3; font-size: 11px; }
+.wb-agent-sidebar > div .wb-icon { width: 15px; color: #ac896c; }
+.wb-agent-sidebar .wb-agent-sidebar-note { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ffffff12; }
 .wb-header-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .wb-button, .wb-icon-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; min-height: 36px; border: 1px solid #e3e5e8; border-radius: 6px; background: #fff; color: #626970; font-size: 11px !important; line-height: 1; transition: background .15s, color .15s, border-color .15s; }
 .wb-button { padding: 0 13px; white-space: nowrap; }
@@ -172,6 +182,8 @@
   .wb-header { height: 76px; gap: 13px; padding: 0 18px; }
   .wb-heading h1 { font-size: 16px; }
   .wb-heading .wb-eyebrow { font-size: 7px; letter-spacing: 1px; }
+  .wb-workspace-nav { gap: 11px; }
+  .wb-workspace-nav button { font-size: 12px; }
   .wb-header-actions { gap: 7px; }
   .wb-link-button { width: 34px; padding: 0; }
   .wb-link-button > span { display: none; }
@@ -198,6 +210,10 @@
   .wb-workspace-footer { min-height: 36px; font-size: 8px; }
   .wb-drop-key { display: none; }
   .wb-details { top: 105px; right: 12px; width: min(310px, calc(100% - 24px)); max-height: calc(100% - 140px); }
+}
+@media (max-width: 420px) {
+  .wb-upload { width: 34px; padding: 0; }
+  .wb-upload > span { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .wb-preview { animation: wb-appear .3s ease-out both; }

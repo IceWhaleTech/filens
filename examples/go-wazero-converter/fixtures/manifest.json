@@ -4,6 +4,24 @@
   },
   "jobs": [
     {
+      "inputPath": "./fixtures/doc/sample.docx",
+      "outputPath": "./tmp/sample.docx.docx",
+      "sourceFormat": "docx",
+      "targetFormat": "docx"
+    },
+    {
+      "inputPath": "./fixtures/xls/sample.xlsx",
+      "outputPath": "./tmp/sample.xlsx.xlsx",
+      "sourceFormat": "xlsx",
+      "targetFormat": "xlsx"
+    },
+    {
+      "inputPath": "./fixtures/ppt/sample.pptx",
+      "outputPath": "./tmp/sample.pptx.pptx",
+      "sourceFormat": "pptx",
+      "targetFormat": "pptx"
+    },
+    {
       "inputPath": "./fixtures/ppt/sample.ppt",
       "outputPath": "./tmp/sample.ppt.pptx",
       "sourceFormat": "ppt",

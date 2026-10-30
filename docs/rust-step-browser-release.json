@@ -1,0 +1,114 @@
+{
+  "date": "2026-10-29T18:38:10.080Z",
+  "name": "filens-step",
+  "version": "0.1.0-rc.1",
+  "distTag": "next",
+  "published": false,
+  "publication": "deferred at user request; waiting for other changes",
+  "file": "filens-step-0.1.0-rc.1.tgz",
+  "bytes": 363157,
+  "unpackedBytes": 1280967,
+  "sha256": "b6a480f043e0e6df399c01de72045d4743ac19c242693427aa5590098544b257",
+  "integrity": "sha512-TI/2SDuu8dHA61sU8wHq4AjYWjbV+FjcccoyL8iixs9s5+9rJ/37WK4pUXEYInUZdXWJCLibqVb/jD4mAnhwcg==",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 3209
+    },
+    {
+      "path": "dist/filens-step-manifest.json",
+      "bytes": 1541
+    },
+    {
+      "path": "dist/filens-step-THIRD-PARTY-NOTICES.txt",
+      "bytes": 309782
+    },
+    {
+      "path": "dist/filens-step.wasm",
+      "bytes": 947225
+    },
+    {
+      "path": "dist/index.d.ts",
+      "bytes": 1804
+    },
+    {
+      "path": "dist/index.js",
+      "bytes": 16579
+    },
+    {
+      "path": "package.json",
+      "bytes": 827
+    }
+  ],
+  "privacyChecked": true,
+  "wasm": {
+    "sha256": "d192785227f33bbb3ab135dabfe80ea936e5e2f18f42b9478271bc51d2ff5aa6",
+    "raw": 947225,
+    "gzip": 334093,
+    "brotli": 260639
+  },
+  "loader": {
+    "raw": 16579,
+    "gzip": 5119,
+    "brotli": 4590
+  },
+  "measurement": "WASM/loader raw and gzip9/Brotli11 bytes measured separately. npm tarball/unpacked totals include all shipped files and notices; exclude npm caches and filesystem allocation.",
+  "sourceInputs": {
+    "packages/step/package.json": "85202aae162b1b20ca4a628278dc22c05cc8de1b12f879ec76eb0f971f6eccef",
+    "packages/step/README.md": "d6848e2d633540778dc4ff066292ae8df9a188d05affb2bdd86a0702675c5ea8",
+    "packages/step/src/index.ts": "3a3832b1ef07684c973fa08cef9f0d6fd9e5d0567e60c9fd9fb250777aab8ec1",
+    "packages/step/src/assets.d.ts": "29f910dcc628d306e7930303808deb0962d520bdeec2fe9c78013f2ca62ee9a8",
+    "packages/step/vite.config.ts": "1eeba5c4c4cc67c886a43099ba62dfb3479f64b3c9bc47ddcfb0efbe8d646b48",
+    "packages/converter-client/src/wasi-runner.ts": "b62c50517106abf8bf5e3a4da2d445789036757043b13fd35e5761511b4540eb",
+    "packages/converter-client/src/source.ts": "f3b0ae6aebd2bc95d6c60c5f4278f1e2a96ac9642d1a21e8be80d10694cfdf21",
+    "scripts/step-wasm-plugin.ts": "2e679d280323f369a9ac96fb594a81d7a8b0bbde1bc214eb98eded31c16369c7",
+    "scripts/verify-step-wasm.mjs": "316d90b420722a560a6617940cb51728a04e11065b0a3cac68f319f77ac8d363",
+    "scripts/package-step-npm.mjs": "ac0dce3c1828b66062cc47018ecfcac7e68e3acab781154906b44682f23deacd",
+    "scripts/agent-rust-licenses.mjs": "0e6b247ce28a3bd99b806b2be853f4f52ff49149077a5febf46956ed7bd9e9f0",
+    "packages/step/vendor/THIRD-PARTY-NOTICES.txt": "ca64f362f49ec42443d1babcb6ce466594186f4d0a20d1fbc702e7d8ca897132",
+    "packages/step/vendor/manifest.json": "2ea679e08950030779c26bb0cde9f1afcf452422d63f53d10b541523d5d7a7dc"
+  },
+  "install": {
+    "name": "filens-step",
+    "version": "0.1.0-rc.1",
+    "tarballSha256": "b6a480f043e0e6df399c01de72045d4743ac19c242693427aa5590098544b257",
+    "wasmSha256": "d192785227f33bbb3ab135dabfe80ea936e5e2f18f42b9478271bc51d2ff5aa6",
+    "offlineInstall": true,
+    "zeroRuntimeDependencies": true,
+    "standaloneTypeScriptConsumer": true,
+    "realBrowserWasm": true,
+    "lazyWasmRequests": 1,
+    "invalidFileRecovery": true,
+    "results": [
+      {
+        "name": "cube.stp",
+        "triangles": 12,
+        "faces": 6,
+        "missingFaces": 0,
+        "finite": true
+      },
+      {
+        "name": "assembly.stp",
+        "triangles": 11840,
+        "faces": 160,
+        "missingFaces": 0,
+        "finite": true
+      }
+    ],
+    "recoveredTriangles": 12
+  },
+  "corpus": {
+    "file": "assets/rust-engines/browser-integration.json",
+    "fixtureCount": 55,
+    "displayable": 44,
+    "rejectedExternalOnly": 11
+  },
+  "normalRegression": "assets/rust-engines/browser-normal-regression.json",
+  "priorGeometryScreen": {
+    "passed": 43,
+    "total": 44,
+    "unresolved": "cax-if/s1-c5-214/HEAD_BACK.stp",
+    "report": "assets/rust-engines/results-step-refined.json"
+  },
+  "upstreamPullRequest": "https://github.com/ricosjp/truck/pull/141"
+}

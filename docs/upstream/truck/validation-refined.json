@@ -1,0 +1,93 @@
+{
+  "date": "2026-10-30",
+  "upstream": "https://github.com/ricosjp/truck",
+  "status": "published PR #141",
+  "base": "78d699b0792b39e27c2bf073b682986701644e91",
+  "patch": "0004-refine-trimmed-surfaces-and-poles.patch",
+  "patchSha256": "b4e554bfeeddcdd6b85c8313d19f628c857d860151893d499b87834cddd093ab",
+  "sourceDiffSha256": "ca117cf934cdc294cec5cbaa8fd9da0ebf4ee6152fec58ab4bce30d05794652a",
+  "lockSha256": "cf6e18c136f9571f1dbab4c6e08d41e5d76bb605fc4841224c12dc25219312ea",
+  "adapterSha256": {
+    "step.rs": "ee0c8f356314b5d95295feec096d3638faabce6f14131bc5df80d4ddd7b60499",
+    "step_prepare.rs": "20d78e5d926886b8ed3e0de434566db87973c5f7f26de7c7f27900c176b4c4cc",
+    "step_units.rs": "129077266d588f00346296c3d80b51a27ca82b8334bbf08c917fd717f1fadf3a"
+  },
+  "compiler": "rustc 1.93.0 (254b59607 2026-01-19)",
+  "dependencyOverlay": null,
+  "target": "wasm32-wasip1",
+  "upstreamApplyCheckBase": "1ca3214e537004d466addbd85d6375807147a426",
+  "independentApplyCheck": true,
+  "combinedApplyWithFirstThreePatchesCheck": true,
+  "changedSourceFilesIdenticalBetweenBases": [
+    "truck-geometry/src/decorators/processor.rs",
+    "truck-geometry/src/specifieds/sphere.rs",
+    "truck-meshalgo/src/tessellation/triangulation.rs",
+    "truck-stepio/src/in/step_geometry/sphere.rs"
+  ],
+  "fullHeadDependencyGraphTested": false,
+  "fullUpstreamSuiteTested": false,
+  "beforeEvidence": {
+    "file": "regressions-refined-before.txt",
+    "sha256": "cb1aa14b9b85bcb7cc647d9bd9b68dabc744f233bc7baebf559044053011b42e",
+    "note": "Archived original-code execution; summarize checks this evidence, without rerunning the original code."
+  },
+  "before": {
+    "passed": 1,
+    "failed": 7
+  },
+  "after": {
+    "passed": 8,
+    "failed": 0
+  },
+  "wasm": {
+    "name": "truck-refined",
+    "sha256": "a7855d58ed5beadcf5fcaefa17af302aee83fb7ebc2fda4c0fca5f1f8fddd3ed",
+    "raw": 946988,
+    "gzip": 333992,
+    "brotli": 260971
+  },
+  "geometry": {
+    "files": 55,
+    "referenceNonempty": 44,
+    "candidateNonempty": 44,
+    "geometryScreenBeforeRefinement": 40,
+    "geometryScreenPasses": 43,
+    "improved": [
+      "cax-if/s1-c5-214/TAIL_TURBINE.stp",
+      "cax-if/s1_pe_214/foot_front_prt.stp",
+      "cax-if/s1_pe_214/tail_turbine_prt.stp"
+    ],
+    "regressions": [],
+    "remaining": [
+      "cax-if/s1-c5-214/HEAD_BACK.stp"
+    ],
+    "targetedRegressionTests": 8
+  },
+  "performance": {
+    "method": "Three sequential rounds over the same 44 nonempty fixtures; engine order rotates per fixture and round; meshMs includes tessellation and mesh assembly, excludes parsing, WASM compilation/startup, and output serialization. No peak-memory measurement.",
+    "rounds": 3,
+    "medianTotalMeshMs": {
+      "truck-reviewed": 2514.0460870000006,
+      "truck-refined-preopt": 3309.7600410000014,
+      "truck-refined": 2923.6875840000002
+    },
+    "meshTimeRatio": 1.1629411247145525,
+    "optimizationTimeRatio": 0.8833533391492169,
+    "optimizedMeshesIdentical": true,
+    "geometryHashMethod": "SHA256 of sorted JSON triangle arrays, each preserving exact vertex positions, normals, vertex order and winding. No rounding; only triangle/instance emission order is ignored.",
+    "beforeTriangles": 298243,
+    "afterTriangles": 380328
+  },
+  "limitations": [
+    "Existing Filens preview adapters are still needed for the corpus result.",
+    "HEAD_BACK still fails; sphere-region and orientation disagreement is unresolved.",
+    "Refinement uses bounded centroid samples, not a certified maximum surface-error bound.",
+    "Timing covers Node WASI meshing and mesh assembly, not browser end-to-end time or peak memory."
+  ],
+  "pullRequest": {
+    "number": 141,
+    "url": "https://github.com/ricosjp/truck/pull/141",
+    "headCommit": "6f29b7c6895402c25fd12c9af7af3dd741c2481d",
+    "baseBranch": "master"
+  }
+}

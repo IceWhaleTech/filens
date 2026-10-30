@@ -8,6 +8,8 @@ filens — local document reading and conversion for agents
   filens summarize report.pdf --query 'budget risk' --summary-chars 1000 --json
   filens '在 "./documents" 中搜索 "预算 风险"，以 JSON 输出'
   filens search ./documents --query 'budget risk' --json
+  filens '在 "documents.zip" 中搜索 "预算"，以 JSON 输出' --layout
+  filens read 'documents.zip!/attachments.tar.gz!/report.pdf' --json
   filens duplicates ./files --json
   filens similar-images ./photos --threshold 8 --json
   echo '{"input":"report.pdf","operation":"understand"}' | filens
@@ -27,9 +29,13 @@ Summary flags: --query TEXT, --summary-chars N (default 2000, max 20000),
 Summaries select original excerpts using local density/TF-IDF/BM25/diversity scoring.
 They use no language model. JSON includes source offsets, omissions and clipping.
 Search flags: --query TEXT, --search-mode bm25|exact|files, --max-results N,
-              --max-files N, --max-depth N, --include-hidden, --no-cache.
+              --max-files N, --max-depth N, --include-hidden, --no-cache (search uses memory only; no hashing).
 Search ranks full extracted text; exact uses case-sensitive literal matching.
 It has no embedding model. Inspect search.complete and scan errors before citing.
+Search accepts directories or ZIP/JAR/WAR/EAR/APK, TAR, TGZ/TAR.GZ and GZ files.
+Nested archives expand through the shared core (up to 8 layers), including OCR.
+Results retain outer.zip!/inner.tar!/file paths; read/layout/summarize accept them.
+Archive expansion is request-local, bounded to 256 MiB per batch; failures are explicit.
 macOS uses native FTS; Windows/Linux embed private hdrw WASI. No raw disk access.
 Similarity: similar DIR --similarity-mode duplicates|images (default images).
             duplicates DIR and similar-images DIR are aliases.

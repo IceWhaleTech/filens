@@ -348,6 +348,12 @@ function inferContentType(name: string | undefined, fallbackFormat?: string): st
       return 'application/msword';
     case 'docm':
       return 'application/vnd.ms-word.document.macroenabled.12';
+    case 'docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    case 'xlsx':
+      return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    case 'pptx':
+      return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
     case 'dotm':
       return 'application/vnd.ms-word.template.macroenabled.12';
     case 'dotx':

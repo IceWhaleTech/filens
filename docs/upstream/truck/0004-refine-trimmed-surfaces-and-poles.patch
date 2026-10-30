@@ -1,0 +1,436 @@
+diff --git a/truck-geometry/src/decorators/processor.rs b/truck-geometry/src/decorators/processor.rs
+index 00474604..7d21b583 100644
+--- a/truck-geometry/src/decorators/processor.rs
++++ b/truck-geometry/src/decorators/processor.rs
+@@ -481,6 +481,11 @@ where
+         trials: usize,
+     ) -> Option<(f64, f64)> {
+         let inv = self.transform.inverse_transform().unwrap();
++        let hint = match (self.orientation, hint.into()) {
++            (false, SPHint2D::Parameter(u, v)) => SPHint2D::Parameter(v, u),
++            (false, SPHint2D::Range(u, v)) => SPHint2D::Range(v, u),
++            (_, hint) => hint,
++        };
+         let (u, v) = self
+             .entity
+             .search_parameter(inv.transform_point(point), hint, trials)?;
+@@ -529,6 +534,11 @@ where
+         trials: usize,
+     ) -> Option<(f64, f64)> {
+         let inv = self.transform.inverse_transform().unwrap();
++        let hint = match (self.orientation, hint.into()) {
++            (false, SPHint2D::Parameter(u, v)) => SPHint2D::Parameter(v, u),
++            (false, SPHint2D::Range(u, v)) => SPHint2D::Range(v, u),
++            (_, hint) => hint,
++        };
+         let hint =
+             self.entity
+                 .search_nearest_parameter(inv.transform_point(point), hint, trials)?;
+diff --git a/truck-geometry/src/specifieds/sphere.rs b/truck-geometry/src/specifieds/sphere.rs
+index 12a06050..e9252e6f 100644
+--- a/truck-geometry/src/specifieds/sphere.rs
++++ b/truck-geometry/src/specifieds/sphere.rs
+@@ -188,14 +188,19 @@ impl SearchNearestParameter<D2> for Sphere {
+     fn search_nearest_parameter<H: Into<SPHint2D>>(
+         &self,
+         point: Point3,
+-        _: H,
++        hint: H,
+         _: usize,
+     ) -> Option<(f64, f64)> {
+         let radius = (point - self.center).normalize();
+         let u = f64::acos(f64::clamp(radius[2], -1.0, 1.0));
+         let sinu = f64::sqrt(1.0 - radius[2] * radius[2]);
+         let cosv = f64::clamp(radius[0] / sinu, -1.0, 1.0);
+-        let v = if radius[1] > 0.0 {
++        let v = if sinu.so_small() {
++            match hint.into() {
++                SPHint2D::Parameter(_, v) => v,
++                _ => 0.0,
++            }
++        } else if radius[1] > 0.0 {
+             f64::acos(cosv)
+         } else {
+             2.0 * PI - f64::acos(cosv)
+diff --git a/truck-meshalgo/src/tessellation/triangulation.rs b/truck-meshalgo/src/tessellation/triangulation.rs
+index 20d008c0..cb1ca3db 100644
+--- a/truck-meshalgo/src/tessellation/triangulation.rs
++++ b/truck-meshalgo/src/tessellation/triangulation.rs
+@@ -256,6 +256,7 @@ impl PolyBoundaryPiece {
+             .collect();
+         bdry3d.push(bdry3d[0]);
+         let mut previous = None;
++        let mut previous_point = None;
+         let mut vec = bdry3d
+             .into_iter()
+             .flat_map(|pt| {
+@@ -273,12 +274,12 @@ impl PolyBoundaryPiece {
+                     if let Some((u0, v0)) = previous {
+                         if !u0.near(&u) && surface.uder(u0, v0).so_small() {
+                             return vec![
+-                                Some((Point2::new(u, v0), pt).into()),
++                                Some((Point2::new(u, v0), previous_point.unwrap()).into()),
+                                 Some((Point2::new(u, v), pt).into()),
+                             ];
+                         } else if !v0.near(&v) && surface.vder(u0, v0).so_small() {
+                             return vec![
+-                                Some((Point2::new(u0, v), pt).into()),
++                                Some((Point2::new(u0, v), previous_point.unwrap()).into()),
+                                 Some((Point2::new(u, v), pt).into()),
+                             ];
+                         }
+@@ -286,6 +287,7 @@ impl PolyBoundaryPiece {
+                     vec![Some((Point2::new(u, v), pt).into())]
+                 })();
+                 previous = Some((u, v));
++                previous_point = Some(pt);
+                 res
+             })
+             .collect::<Option<Vec<SurfacePoint>>>()?;
+@@ -555,6 +557,7 @@ where S: PreMeshableSurface {
+     let mut boundary_map = HashMap::<FixedVertexHandle, Point3>::default();
+     polyboundary.insert_to(&mut triangulation, &mut boundary_map);
+     insert_surface(&mut triangulation, surface, polyboundary, tol);
++    refine_triangulation(&mut triangulation, surface, polyboundary, tol);
+     let mut mesh = triangulation_into_polymesh(
+         triangulation.vertices(),
+         triangulation.inner_faces(),
+@@ -566,6 +569,75 @@ where S: PreMeshableSurface {
+     mesh
+ }
+ 
++fn refine_triangulation(
++    triangulation: &mut Cdt,
++    surface: &impl PreMeshableSurface,
++    boundary: &PolyBoundary,
++    tol: f64,
++) {
++    // Parameter divisions bound the error along isoparametric curves, but a
++    // trimmed domain can leave long diagonals between those curves. Refine in
++    // parameter space while retaining the boundary constraints. Bound this
++    // additional work, including for pathological or inconsistent boundaries.
++    let vertex_limit = triangulation.num_vertices().saturating_add(100_000);
++    // Insertion keeps vertex indices stable, but face slots can be reused.
++    // Validate a cached face by its vertices rather than its slot alone.
++    let mut checked = vec![None; triangulation.num_all_faces()];
++    let mut vertex_positions = vec![None; triangulation.num_vertices()];
++    for _ in 0..64 {
++        checked.resize(triangulation.num_all_faces(), None);
++        let points: Vec<_> = triangulation
++            .inner_faces()
++            .filter_map(|face| {
++                let vertices = face.vertices();
++                let mut key = vertices.map(|v| v.fix().index());
++                key.sort_unstable();
++                if checked[face.index()] == Some(key) {
++                    return None;
++                }
++                let uv = vertices.map(|v| Point2::new(v.position().x, v.position().y));
++                let center = uv[0] + ((uv[1] - uv[0]) + (uv[2] - uv[0])) / 3.0;
++                let positions = vertices.map(|v| {
++                    let p = v.position();
++                    *vertex_positions[v.index()]
++                        .get_or_insert_with(|| surface.subs(p.x, p.y))
++                });
++                let chord = Point3::from_vec(
++                    (positions[0].to_vec() + positions[1].to_vec() + positions[2].to_vec()) / 3.0,
++                );
++                let sample = surface.subs(center.x, center.y);
++                let error = chord.distance2(sample);
++                // Accepted triangles need no domain query: they insert no
++                // point, and final clipping already classifies the mesh.
++                if (error.is_finite() && error <= tol * tol) || !boundary.include(center) {
++                    checked[face.index()] = Some(key);
++                    return None;
++                }
++                assert!(
++                    error.is_finite(),
++                    "surface refinement encountered a nonfinite sample"
++                );
++                Some((SPoint2::new(center.x, center.y), sample))
++            })
++            .collect();
++        if points.is_empty() {
++            return;
++        }
++        if triangulation.num_vertices() + points.len() > vertex_limit {
++            return;
++        }
++        let count = triangulation.num_vertices();
++        for (point, sample) in points {
++            let index = triangulation.insert(point).unwrap().index();
++            vertex_positions.resize(triangulation.num_vertices(), None);
++            vertex_positions[index] = Some(sample);
++        }
++        if triangulation.num_vertices() == count {
++            return;
++        }
++    }
++}
++
+ /// Inserts parameter divisions into triangulation.
+ fn insert_surface(
+     triangulation: &mut Cdt,
+diff --git a/truck-meshalgo/tests/degenerate_boundary_points.rs b/truck-meshalgo/tests/degenerate_boundary_points.rs
+new file mode 100644
+index 00000000..4ea222d5
+--- /dev/null
++++ b/truck-meshalgo/tests/degenerate_boundary_points.rs
+@@ -0,0 +1,70 @@
++use std::f64::consts::FRAC_PI_2;
++use truck_geometry::prelude::*;
++use truck_meshalgo::prelude::*;
++use truck_topology::compress::*;
++
++fn assert_pole_boundary_matches_its_parameters(invert: bool) {
++    let mut surface = Processor::<_, Matrix4>::new(Sphere::new(Point3::origin(), 10.));
++    if invert {
++        surface.invert();
++    }
++    let uv = |u, v| {
++        if invert {
++            Point2::new(v, u)
++        } else {
++            Point2::new(u, v)
++        }
++    };
++    let a = uv(FRAC_PI_2, 0.);
++    let b = uv(0., 0.);
++    let b_other_meridian = uv(0., FRAC_PI_2);
++    let c = uv(FRAC_PI_2, FRAC_PI_2);
++    let vertices = [a, b, c].map(|p| surface.subs(p.x, p.y)).to_vec();
++    // The two parameter values at the north pole name the same 3D vertex.
++    let curves = [(a, b), (b_other_meridian, c), (c, a)];
++    let edges = curves
++        .into_iter()
++        .enumerate()
++        .map(|(i, (p, q))| CompressedEdge {
++            vertices: (i, (i + 1) % 3),
++            curve: PCurve::new(Line(p, q), surface),
++        })
++        .collect();
++    let shell = CompressedShell {
++        vertices,
++        edges,
++        faces: vec![CompressedFace {
++            surface,
++            orientation: true,
++            boundaries: vec![(0..3)
++                .map(|index| CompressedEdgeIndex {
++                    index,
++                    orientation: true,
++                })
++                .collect()],
++        }],
++    };
++    let polygon = shell.robust_triangulation(0.1).to_polygon();
++    assert!(polygon.faces().triangle_iter().next().is_some());
++    for triangle in polygon.faces().triangle_iter() {
++        for vertex in triangle {
++            let p = polygon.positions()[vertex.pos];
++            let uv = polygon.uv_coords()[vertex.uv.unwrap()];
++            assert!(
++                p.distance(surface.subs(uv.x, uv.y)) < 1e-6,
++                "pole UV and 3D vertex disagree: p={p:?} uv={uv:?}, error={}",
++                p.distance(surface.subs(uv.x, uv.y))
++            );
++        }
++    }
++}
++
++#[test]
++fn leaving_a_degenerate_v_boundary_preserves_the_previous_point() {
++    assert_pole_boundary_matches_its_parameters(false);
++}
++
++#[test]
++fn leaving_a_degenerate_u_boundary_preserves_the_previous_point() {
++    assert_pole_boundary_matches_its_parameters(true);
++}
+diff --git a/truck-meshalgo/tests/trimmed_surface_sampling.rs b/truck-meshalgo/tests/trimmed_surface_sampling.rs
+new file mode 100644
+index 00000000..01687fd4
+--- /dev/null
++++ b/truck-meshalgo/tests/trimmed_surface_sampling.rs
+@@ -0,0 +1,92 @@
++use std::f64::consts::PI;
++use truck_geometry::prelude::*;
++use truck_meshalgo::prelude::*;
++use truck_topology::compress::*;
++
++fn notched_cylinder(radius: f64, inverted: bool) -> PolygonMesh {
++    let surface = RevolutedCurve::by_revolution(
++        Line(Point3::new(radius, 0., 0.), Point3::new(radius, 0., 1.)),
++        Point3::origin(),
++        Vector3::unit_z(),
++    );
++    let length = 3.0 * radius;
++    let uv = [
++        Point2::new(0., 0.25),
++        Point2::new(length / 2., 0.25),
++        Point2::new(length / 2., 0.),
++        Point2::new(length, 0.),
++        Point2::new(length, PI),
++        Point2::new(0., PI),
++    ];
++    let vertices = uv.iter().map(|p| surface.subs(p.x, p.y)).collect();
++    let edges = (0..uv.len())
++        .map(|i| {
++            let j = (i + 1) % uv.len();
++            CompressedEdge {
++                vertices: (i, j),
++                curve: PCurve::new(Line(uv[i], uv[j]), surface.clone()),
++            }
++        })
++        .collect();
++    let boundaries = vec![(0..uv.len())
++        .map(|index| CompressedEdgeIndex {
++            index,
++            orientation: true,
++        })
++        .collect()];
++    let shell = CompressedShell {
++        vertices,
++        edges,
++        faces: vec![CompressedFace {
++            surface,
++            boundaries,
++            orientation: !inverted,
++        }],
++    };
++    shell.robust_triangulation(radius * 0.001).to_polygon()
++}
++
++fn assert_cylinder_fidelity(radius: f64, inverted: bool) {
++    let mesh = notched_cylinder(radius, inverted);
++    let mut area = 0.;
++    let mut triangles = 0;
++    for triangle in mesh.faces().triangle_iter() {
++        let [a, b, c] = triangle.map(|v| mesh.positions()[v.pos]);
++        let center = Point3::from_vec((a.to_vec() + b.to_vec() + c.to_vec()) / 3.);
++        let radial_error = (center.x.hypot(center.y) - radius).abs();
++        assert!(
++            radial_error <= radius * 0.002,
++            "triangle crosses the cylinder: {radial_error}; vertices={a:?}/{b:?}/{c:?}; uv={:?}",
++            triangle.map(|v| mesh.uv_coords()[v.uv.unwrap()])
++        );
++        // The notch is outside the face even after refinement.
++        assert!(center.z >= 1.5 * radius - 1e-8 || center.y.atan2(center.x) >= 0.25 - 1e-8);
++        let normal = (b - a).cross(c - a);
++        let radial_dot = normal.x * center.x + normal.y * center.y;
++        assert!(if inverted {
++            radial_dot >= 0.
++        } else {
++            radial_dot <= 0.
++        });
++        area += normal.magnitude() / 2.;
++        triangles += 1;
++    }
++    let expected_area = radius * radius * (3. * PI - 0.375);
++    assert!((area / expected_area - 1.).abs() < 0.005);
++    assert!(triangles > 0 && triangles < 100_000);
++}
++
++#[test]
++fn notched_cylinder_retains_surface_curvature() {
++    assert_cylinder_fidelity(10., false);
++}
++
++#[test]
++fn small_source_units_retain_surface_curvature() {
++    assert_cylinder_fidelity(0.1, false);
++}
++
++#[test]
++fn inverted_face_retains_curvature_and_orientation() {
++    assert_cylinder_fidelity(10., true);
++}
+diff --git a/truck-stepio/src/in/step_geometry/sphere.rs b/truck-stepio/src/in/step_geometry/sphere.rs
+index 4ccbbdd0..8fe5ca1d 100644
+--- a/truck-stepio/src/in/step_geometry/sphere.rs
++++ b/truck-stepio/src/in/step_geometry/sphere.rs
+@@ -1,6 +1,15 @@
+ use super::*;
+ use std::f64::consts::PI;
+ use std::ops::Bound;
++impl Sphere {
++    fn inner_hint(hint: impl Into<SPHint2D>) -> SPHint2D {
++        match hint.into() {
++            SPHint2D::Parameter(u, v) => SPHint2D::Parameter(PI / 2.0 - v, u),
++            SPHint2D::Range(u, (v0, v1)) => SPHint2D::Range((PI / 2.0 - v1, PI / 2.0 - v0), u),
++            SPHint2D::None => SPHint2D::None,
++        }
++    }
++}
+ impl ParametricSurface for Sphere {
+     type Point = Point3;
+     type Vector = Vector3;
+@@ -44,7 +53,7 @@ impl SearchNearestParameter<D2> for Sphere {
+         trials: usize,
+     ) -> Option<(f64, f64)> {
+         self.0
+-            .search_nearest_parameter(point, hint, trials)
++            .search_nearest_parameter(point, Self::inner_hint(hint), trials)
+             .map(|(u, v)| (v, PI / 2.0 - u))
+     }
+ }
+@@ -58,7 +67,7 @@ impl SearchParameter<D2> for Sphere {
+         trials: usize,
+     ) -> Option<(f64, f64)> {
+         self.0
+-            .search_parameter(point, hint, trials)
++            .search_parameter(point, Self::inner_hint(hint), trials)
+             .map(|(u, v)| (v, PI / 2.0 - u))
+     }
+ }
+diff --git a/truck-stepio/tests/import_sphere_hints.rs b/truck-stepio/tests/import_sphere_hints.rs
+new file mode 100644
+index 00000000..d9469a67
+--- /dev/null
++++ b/truck-stepio/tests/import_sphere_hints.rs
+@@ -0,0 +1,45 @@
++use std::f64::consts::FRAC_PI_2;
++use truck_geometry::prelude::*;
++use truck_stepio::r#in::step_geometry::Sphere as StepSphere;
++
++#[test]
++fn step_sphere_preserves_longitude_hint_at_both_poles() {
++    let sphere = StepSphere(Sphere::new(Point3::origin(), 10.));
++    for latitude in [-FRAC_PI_2, FRAC_PI_2] {
++        let expected = (1.2, latitude);
++        let point = sphere.subs(expected.0, expected.1);
++        let found = sphere.search_parameter(point, Some(expected), 100).unwrap();
++        assert!((found.0 - expected.0).abs() < 1e-12);
++        assert!((found.1 - expected.1).abs() < 1e-12);
++    }
++}
++
++#[test]
++fn inverted_step_sphere_preserves_longitude_hint() {
++    let sphere = StepSphere(Sphere::new(Point3::origin(), 10.));
++    let mut surface = Processor::<_, Matrix4>::new(sphere);
++    surface.invert();
++    for latitude in [-FRAC_PI_2, FRAC_PI_2] {
++        let expected = (latitude, 1.2);
++        let point = surface.subs(expected.0, expected.1);
++        let found = surface
++            .search_parameter(point, Some(expected), 100)
++            .unwrap();
++        assert!((found.0 - expected.0).abs() < 1e-12);
++        assert!((found.1 - expected.1).abs() < 1e-12);
++    }
++}
++
++#[test]
++fn nearest_sphere_parameter_is_finite_at_poles() {
++    let sphere = Sphere::new(Point3::origin(), 10.);
++    for point in [Point3::new(0., 0., 12.), Point3::new(0., 0., -12.)] {
++        let found = sphere
++            .search_nearest_parameter(point, Some((0., 1.2)), 100)
++            .unwrap();
++        assert!(found.0.is_finite());
++        assert!((found.1 - 1.2).abs() < 1e-12);
++        let nearest = sphere.subs(found.0, found.1);
++        assert!((nearest.distance(point) - 2.).abs() < 1e-12);
++    }
++}

@@ -1,9 +1,11 @@
 {
-  "scope": "Synthetic functional checks of actual CLI/WASM requests. Not a retrieval-quality benchmark or a tool comparison.",
+  "scope": "Synthetic functional checks of actual CLI/shared-core requests. Prioritize format extraction, evidence and layout. Not general retrieval/OCR accuracy or a semantic-product comparison.",
   "sourceState": "Local source builds; not a published npm release.",
   "reproduce": [
     "npm run test:agent:search",
-    "FILENS_AGENT_BINARY=dist/filens node scripts/test-agent-search.mjs --ocr"
+    "FILENS_AGENT_BINARY=\"$PWD/dist/filens\" node scripts/test-agent-search.mjs --ocr",
+    "FILENS_AGENT_BINARY=\"$PWD/dist/filens\" node scripts/test-agent-search-formats.mjs --ocr",
+    "npm run test:agent:archives"
   ],
   "coverage": [
     "Chinese and English intents",
@@ -13,9 +15,11 @@
     "Eight output formats",
     "Original UTF-8 offsets and logical layout",
     "Hidden names, excluded directories, depth, symlinks and limits",
-    "Content cache hits, edits and deletions",
+    "No persistent body cache or source hashes; edits and deletions reflected in the next request",
     "Malformed files, OCR unavailable and partial errors",
-    "Two-page scan PDF OCR and page coordinates (FTS run)"
+    "Two-page scan PDF OCR and page coordinates (FTS run)",
+    "Nested archive traversal and direct virtual-path reading/summary",
+    "Archive OCR, normalized/escaped provenance, partial failures and cleanup"
   ],
   "limitations": [
     "No embedding retrieval, synonym/cross-language quality claim or semantic no-answer detection.",
@@ -989,7 +993,7 @@
     }
   ],
   "otherVerification": {
-    "coreSearchUnitTests": 6,
+    "coreSearchUnitTests": 7,
     "cliUnitTests": 5,
     "pruningCliGroups": 18,
     "compactBundleAndProcessChecks": 19,
@@ -1015,14 +1019,111 @@
     ]
   },
   "finalRegression": {
-    "observedAt": "2026-10-29T16:03:53.708Z",
+    "observedAt": "2026-10-29T19:20:26.554Z",
+    "platform": "darwin-arm64",
+    "backend": "fts",
+    "requests": 46,
+    "result": "passed",
+    "binary": "dist/agent-search-archives/filens",
+    "sourceHashes": false,
+    "note": "Full non-archive search regression including OCR passed with the nested-archive implementation; no persistent cache/hashes."
+  },
+  "historyNote": "The runs and otherVerification entries retain earlier cache/hash-enabled observations and artifact identities. They do not describe the current policy. The finalRegression entry records the current local validation bundle.",
+  "currentPolicy": {
+    "priority": [
+      "format and extraction coverage",
+      "known-fact retrieval",
+      "original evidence and available layout",
+      "startup and resource cost"
+    ],
+    "persistentIndex": false,
+    "persistentBodyCache": false,
+    "sourceHashes": false,
+    "integrity": "assumed",
+    "compatibility": {
+      "sha256": null,
+      "cache": false
+    },
+    "temporaryFiles": "Request-local WASI protocol files are removed when the request ends.",
+    "execution": "Native compilation of shared Rust for common plain text and ranking; shared WASM for other documents and layout. macOS FTS; Windows/Linux hdrw WASI.",
+    "semanticRetrieval": false,
+    "archives": {
+      "enabled": true,
+      "maxDepth": 8,
+      "formats": [
+        "zip",
+        "jar",
+        "war",
+        "ear",
+        "apk",
+        "tar",
+        "tgz",
+        "tar.gz",
+        "gz"
+      ],
+      "persistence": false
+    }
+  },
+  "historicalFinalRegression": {
+    "observedAt": "2026-10-29T17:16:32.410Z",
     "platform": "darwin-arm64",
     "backend": "fts",
     "requests": 38,
     "result": "passed",
-    "note": "Refreshed shared WASM after the global literal-match chunk-limit fix.",
+    "note": "Refreshed shared WASM after bounded per-chunk query-feature reuse and skipping unused BM25 statistics in literal mode; all 38 CLI search checks passed.",
     "binary": "dist/agent-lite/filens",
     "binarySHA256": "d8c720dfe74f6c96cf869af408fcc78e3df25faccce4327b64f92cd89aa526b1",
-    "textWasmSHA256": "3ca2f7812ace28221cbc7799479890146137dda1c500e82b055306d75d7751b6"
+    "textWasmSHA256": "c22ac19080eb5cfe3f29ba93138d9eebc6e854920c2ba582bebee49ff165d03e"
+  },
+  "currentVerification": {
+    "observedAt": "2026-10-29T18:23:53.375Z",
+    "platform": "darwin-arm64",
+    "cliUnitTests": 13,
+    "sharedSearchUnitTests": 7,
+    "markdownUnicodeRegressionTests": 1,
+    "pruningCliGroups": 18,
+    "mixedFormats": {
+      "cases": 13,
+      "extensions": 12,
+      "requests": 15,
+      "result": "passed",
+      "report": "agent-cli-search-formats.json"
+    },
+    "nativeWasmParity": {
+      "comparisons": 192,
+      "report": "agent-cli-search-native.json",
+      "scope": "Prior native-stage corpus; not general retrieval quality."
+    },
+    "windowsLinuxNativeExecution": false,
+    "archiveCoreUnitTests": 2,
+    "archiveCliRequests": 53,
+    "archiveReport": "agent-cli-search-archives.json",
+    "archiveWindowsCrossCheck": {
+      "target": "x86_64-pc-windows-gnu",
+      "result": "passed",
+      "nativeExecution": false
+    }
+  },
+  "regressionHistory": [
+    {
+      "observedAt": "2026-10-29T18:23:53.375Z",
+      "platform": "darwin-arm64",
+      "backend": "fts",
+      "requests": 46,
+      "result": "passed",
+      "binary": "dist/agent-search-parallel/filens",
+      "sourceHashes": false,
+      "note": "Reran all search checks with scanned PDF OCR after the shared Markdown UTF-8 fix; includes native standalone text/name search, pooled WASM, deterministic workers, no persistent cache/hashes and partial errors."
+    }
+  ],
+  "archiveRegression": {
+    "observedAt": "2026-10-29T19:18:26.163Z",
+    "platform": "darwin-arm64",
+    "requests": 53,
+    "ocr": true,
+    "result": "passed",
+    "maxVerifiedLayers": 8,
+    "report": "agent-cli-search-archives.json",
+    "note": "Includes virtual read/summary, member UTF-8 evidence, physical OCR layout, name-only traversal, aliases and escaped paths, corruption/encryption flags, resource limits and temporary-file cleanup."
   }
 }

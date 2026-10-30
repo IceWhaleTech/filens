@@ -1,0 +1,21 @@
+{
+  "name": "filens-step",
+  "version": "0.1.0-rc.1",
+  "description": "Browser-local STEP tessellation with a compact Rust WebAssembly core.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "repository": { "type": "git", "url": "git+https://github.com/IceWhaleTech/filens.git", "directory": "packages/step" },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist", "README.md"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "node ../../scripts/verify-step-wasm.mjs && vite build",
+    "test": "vitest run",
+    "test:unit": "vitest run"
+  },
+  "publishConfig": { "access": "public", "tag": "next" },
+  "keywords": ["step", "stp", "cad", "wasm", "rust", "truck", "browser"]
+}

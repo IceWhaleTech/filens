@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 
 import {
+  PreviewPasswordError,
   createDefaultPreviewRoutes,
   classifyPreviewFont,
   type FormatDefinition,
@@ -135,7 +136,10 @@ export class PdfPreviewSession implements PreviewSession<PagedPreviewState> {
       if (signal?.aborted) throw abortError();
       if (generation !== this.loadGeneration) return;
       pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-      const task = pdfjs.getDocument(input);
+      const task = pdfjs.getDocument({
+        ...(typeof input === 'string' ? { url: input } : { data: input }),
+        password: context.descriptor.password
+      });
       this.loadingTask = task;
       const pdf = await task.promise;
       if (generation !== this.loadGeneration) return;
@@ -173,7 +177,9 @@ export class PdfPreviewSession implements PreviewSession<PagedPreviewState> {
         throw abortError();
       }
       if (generation !== this.loadGeneration) return;
-      const normalizedError = error instanceof Error ? error : new Error(String(error));
+      const normalizedError = (error as { name?: string })?.name === 'PasswordException'
+        ? new PreviewPasswordError((error as { code?: number }).code === 2 ? 'password_invalid' : 'password_required')
+        : error instanceof Error ? error : new Error(String(error));
       this.state.loading = false;
       this.state.error = normalizedError.message;
       this.emit('error', normalizedError);

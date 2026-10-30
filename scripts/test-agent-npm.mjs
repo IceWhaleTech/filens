@@ -6,11 +6,13 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { executableName, ocrLibraryName, npmInvocation } from './agent-platforms.mjs';
+import { executableName, ocrLibraryName, platformPackageName, npmInvocation } from './agent-platforms.mjs';
+import { zipSync } from 'fflate';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const output=path.join(root,'dist/npm');
 const release=JSON.parse(await readFile(path.join(output,'release.json'),'utf8'));
 const platform=`${process.platform}-${process.arch}`;
+const coreName=platformPackageName('cli',platform),ocrName=platformPackageName('ocr',platform);
 const fullName='filens-cli';
 const liteName='filens-cli-lite';
 const registry=process.argv.includes('--registry');
@@ -20,7 +22,7 @@ const work=await mkdtemp(path.join(os.tmpdir(),'filens-npm-install-'));
 const env={...process.env,FILENS_CACHE_DIR:path.join(work,'cache'),npm_config_offline:registry?'false':'true',npm_config_registry:'https://registry.npmjs.org/',...(registry?{npm_config_cache:path.join(work,'npm-cache')}: {})};
 try {
   const full=path.join(work,'full');
-  run('npm',['install',...installFlags,'--prefix',full,...(registry?[`${fullName}@${release.version}`]:[archive(fullName),archive(`filens-cli-${platform}`),archive(`filens-ocr-${platform}`)])]);
+  run('npm',['install',...installFlags,'--prefix',full,...(registry?[`${fullName}@${release.version}`]:[archive(fullName),archive(coreName),archive(ocrName)])]);
   let executable=path.join(full,'node_modules',fullName,'cli.mjs');
   const capacity=JSON.parse(run(executable,['capacity','--json']).stdout);
   const installedSkill=await readFile(path.join(full,'node_modules',fullName,'skills/filens/SKILL.md'),'utf8');
@@ -28,6 +30,12 @@ try {
   assert.equal(capacity.capacity.profile,'full');
   assert.equal(capacity.capacity.ocr.available,true);
   assert.equal(capacity.capacity.ocr.provider,'rapidocr-ncnn');
+  assert.equal(capacity.capacity.search.archives.maxDepth,8);
+  for(const name of [fullName,coreName,ocrName]) {
+    const base=path.join(full,'node_modules',name);
+    assert.equal(JSON.parse(await readFile(path.join(base,'package.json'))).license,'MIT');
+    assert.match(await readFile(path.join(base,'LICENSE'),'utf8'),/^MIT License/);
+  }
   const image=path.join(root,'converter/rapidocr/testdata/scan-transparent.png');
   assert.match(JSON.parse(run(executable,[`读取 "${image}"，以 JSON 输出`]).stdout).content.text,/FILENS2026/);
   const text=path.join(work,'test.txt');await writeFile(text,'文档证据 42\n');
@@ -35,6 +43,13 @@ try {
   const converted=path.join(work,'converted.docx');
   assert.equal(JSON.parse(run(executable,['convert',text,converted]).stdout).ok,true);
   assert.match(JSON.parse(run(executable,[converted,'--json']).stdout).content.text,/文档证据 42/);
+  const nested=path.join(work,'nested.zip');
+  await writeFile(nested,zipSync({'inner.zip':zipSync({'note.docx':await readFile(converted),'scan.png':await readFile(image)})}));
+  const found=JSON.parse(run(executable,['search',nested,'--query','文档证据','--layout','--json']).stdout);
+  assert.equal(found.search.matchedFiles,1);
+  assert.deepEqual(found.search.results[0].archive.members,['inner.zip','note.docx']);
+  assert.match(JSON.parse(run(executable,['read',found.search.results[0].path,'--json']).stdout).content.text,/文档证据 42/);
+  assert.match(JSON.parse(run(executable,['read',`${nested}!/inner.zip!/scan.png`,'--json']).stdout).content.text,/FILENS2026/);
   assert.equal(JSON.parse(run('npm',['exec','--offline','--prefix',full,'--','filens','convert',text,path.join(work,'npx-output.docx')]).stdout).ok,true);
   assert.match(JSON.parse(run(executable,[path.join(root,'apps/demo/public/samples/filens-cosmic-atlas.pdf'),'--json','--no-ocr']).stdout).content.text,/COSMIC CLIFFS/);
   assert.match(JSON.parse(run(executable,[path.join(root,'converter/rapidocr/testdata/scan.pdf'),'--json']).stdout).content.text,/BRIGHT2027/);
@@ -44,17 +59,17 @@ try {
   const imageLayout=JSON.parse(run(executable,['layout',image,'--json']).stdout).content.layout;
   assert.ok(imageLayout.blocks.some(block=>block.bounds?.unit==='px'));
   // The native package also runs directly with no Node/Python on PATH.
-  const core=path.join(full,`node_modules/filens-cli-${platform}`);
-  const ocr=path.join(full,`node_modules/filens-ocr-${platform}`);
+  const core=path.join(full,`node_modules/${coreName}`);
+  const ocr=path.join(full,`node_modules/${ocrName}`);
   const direct=spawnSync(path.join(core,executableName(platform)),[image,'--json'],{encoding:'utf8',env:{...env,PATH:process.platform==='win32'?path.join(process.env.SystemRoot??'C:\\Windows','System32'):'/usr/bin:/bin',FILENS_OCR_LIBRARY:path.join(ocr,'native',ocrLibraryName(platform)),FILENS_OCR_MODEL_DIR:path.join(ocr,'models/rapidocr-ncnn')},timeout:120000});
   assert.equal(direct.status,0,direct.stderr);
   assert.match(JSON.parse(direct.stdout).content.text,/FILENS2026/);
   const lite=path.join(work,'lite');
-  run('npm',['install',...installFlags,'--prefix',lite,...(registry?[`${liteName}@${release.version}`]:[archive(liteName),archive(`filens-cli-${platform}`)])]);
+  run('npm',['install',...installFlags,'--prefix',lite,...(registry?[`${liteName}@${release.version}`]:[archive(liteName),archive(coreName)])]);
   executable=path.join(lite,'node_modules',liteName,'cli.mjs');
   assert.equal(JSON.parse(run(executable,['capacity','--json']).stdout).capacity.ocr.enabled,false);
   assert.equal(run(executable,[text]).stdout.trim(),'文档证据 42');
-  if(!registry) env.FILENS_OCR_PACKAGE=archive(`filens-ocr-${platform}`);
+  if(!registry) env.FILENS_OCR_PACKAGE=archive(ocrName);
   run(executable,['setup-ocr','--sources','4']);
   const enabled=JSON.parse(run(executable,['capacity','--json']).stdout);
   assert.equal(enabled.capacity.profile,'lite');

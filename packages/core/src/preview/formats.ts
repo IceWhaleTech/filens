@@ -749,7 +749,9 @@ function createConversionRoutes(
   return manifest.flatMap((pair) => {
     const sourceFormat = normalizeExtension(pair.sourceFormat);
     const targetFormat = normalizeExtension(pair.targetFormat);
-    if (!sourceFormat || !targetFormat || routedSources.has(sourceFormat)) return [];
+    // Same-format operations are available for decryption; plain documents use
+    // the native reader and only encrypted envelopes invoke the converter.
+    if (!sourceFormat || !targetFormat || sourceFormat === targetFormat || routedSources.has(sourceFormat)) return [];
     routedSources.add(sourceFormat);
     if (targetFormat === 'jpg' || targetFormat === 'jpeg' || targetFormat === 'png') {
       return defineRoute([sourceFormat], 'image', 'image', {

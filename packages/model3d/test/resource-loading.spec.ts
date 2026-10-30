@@ -5,6 +5,7 @@ import { BufferGeometry, Group, Mesh, MeshStandardMaterial, Texture } from 'thre
 const mocks = vi.hoisted(() => ({ parse: vi.fn(), factory: vi.fn(), read: vi.fn() }));
 vi.mock('three/examples/jsm/loaders/GLTFLoader.js', () => ({ GLTFLoader: class { parseAsync = mocks.parse; } }));
 vi.mock('../vendor/occt-import-js/occt-import-js.js', () => ({ default: mocks.factory }));
+vi.mock('../src/rust-step-importer', () => ({ createRustStepImporter: mocks.factory }));
 vi.mock('../vendor/occt-import-js/occt-import-js.wasm?url', () => ({ default: '/occt.wasm' }));
 
 const deferred = <T>() => {

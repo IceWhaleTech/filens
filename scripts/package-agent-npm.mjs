@@ -10,7 +10,7 @@ import { requestedSourceCount } from './download-agent-models.mjs';
 import { assertReleaseArchive, assertReleaseDirectory } from './agent-release-privacy.mjs';
 import { buildAgentBinary, compressAgentWASM, preparePDFium } from './agent-rust-build.mjs';
 import { writeRustLicenses } from './agent-rust-licenses.mjs';
-import { executableName, releaseTargets, npmInvocation } from './agent-platforms.mjs';
+import { executableName, releaseTargets, platformPackageName, npmInvocation } from './agent-platforms.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -22,14 +22,14 @@ const packages = [];
 const binaryCompression = [];
 const rustLicenses = path.join(root,'dist/agent-rust-licenses');
 await writeRustLicenses(rustLicenses);
-const common = { version, license:'UNLICENSED', repository:{ type:'git', url:'git+https://github.com/IceWhaleTech/filens.git' }, homepage:'https://github.com/IceWhaleTech/filens#readme' };
+const common = { version, license:'MIT', repository:{ type:'git', url:'git+https://github.com/IceWhaleTech/filens.git' }, homepage:'https://github.com/IceWhaleTech/filens#readme' };
 const wasm = path.join(root, 'dist/converter-text.wasm');
 await readFile(wasm); // Build the WASM core first; never publish a placeholder.
 await preparePDFium(path.join(root,'dist'));
 await compressAgentWASM(path.join(root,'dist'));
 for (const platform of targets) {
   const [os, arch] = platform.split('-');
-  const coreName = `filens-cli-${platform}`;
+  const coreName = platformPackageName('cli', platform);
   const binary = executableName(platform);
   const core = await prepare(coreName, { os:[os], cpu:[arch], ...(os === 'linux' ? { libc:['glibc'] } : {}), description:'Rust filens document reading and conversion CLI with shared WASM engines', files:[binary,'converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz','README.md','licenses','THIRD-PARTY-NOTICES.md'] });
   for (const name of ['converter-text.wasm.gz','converter-image.wasm.gz','pdfium.wasm.gz']) await copyFile(path.join(root,'dist',name),path.join(core,name));
@@ -39,7 +39,7 @@ for (const platform of targets) {
   await cp(rustLicenses,path.join(core,'licenses'),{recursive:true});
   await copyFile(path.join(root,'packaging/agent-third-party.md'),path.join(core,'THIRD-PARTY-NOTICES.md'));
   await pack(core);
-  const ocrName = `filens-ocr-${platform}`;
+  const ocrName = platformPackageName('ocr', platform);
   const ocr = await prepare(ocrName, { os:[os], cpu:[arch], ...(os === 'linux' ? { libc:['glibc'] } : {}), description:'Portable native RapidOCR NCNN, with Chinese/English models; no Python', files:['native','models','README.md','THIRD-PARTY-NOTICES.md'] });
   // Models are platform independent. Reuse only the verified source-build cache.
   await cp(path.join(root,'dist/models/rapidocr-ncnn'), path.join(ocr,'models/rapidocr-ncnn'), { recursive:true });
@@ -65,8 +65,8 @@ for (const name of ['filens-cli','filens-cli-lite']) {
   const lite = name.endsWith('-lite');
   const optionalDependencies = {};
   for (const platform of targets) {
-    optionalDependencies[`filens-cli-${platform}`] = version;
-    if (!lite) optionalDependencies[`filens-ocr-${platform}`] = version;
+    optionalDependencies[platformPackageName('cli', platform)] = version;
+    if (!lite) optionalDependencies[platformPackageName('ocr', platform)] = version;
   }
   const directory = await prepare(name, { type:'module', engines:{node:'>=20.11'}, bin:{filens:'cli.mjs'}, description:`Local document reading for agents (${!lite ? 'native RapidOCR included' : 'lite; OCR optional'})`, optionalDependencies, files:['cli.mjs','scripts','converter','skills','README.md'] });
   await cp(path.join(root,'skills/filens'),path.join(directory,'skills/filens'),{recursive:true});
@@ -94,8 +94,9 @@ async function prepare(name, metadata) {
   const directory = path.join(output,name);
   await rm(directory,{recursive:true,force:true});
   await mkdir(directory,{recursive:true});
-  await writeFile(path.join(directory,'package.json'),JSON.stringify({name,...common,...metadata},null,2)+'\n');
+  await writeFile(path.join(directory,'package.json'),JSON.stringify({name,...common,...metadata,files:[...new Set([...metadata.files,'LICENSE'])]},null,2)+'\n');
   await copyFile(path.join(root,'packaging/npm/README.md'),path.join(directory,'README.md'));
+  await copyFile(path.join(root,'LICENSE'),path.join(directory,'LICENSE'));
   return directory;
 }
 async function pack(directory) {

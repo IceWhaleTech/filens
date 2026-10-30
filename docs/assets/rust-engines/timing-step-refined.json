@@ -1,0 +1,2953 @@
+{
+  "date": "2026-10-29T17:37:32.716Z",
+  "node": "v20.20.2",
+  "platform": "darwin-arm64",
+  "method": "Three sequential rounds over the same 44 nonempty fixtures; engine order rotates per fixture and round; meshMs includes tessellation and mesh assembly, excludes parsing, WASM compilation/startup, and output serialization. No peak-memory measurement.",
+  "artifactSha256": {
+    "truck-reviewed": "38f1f4d5de361109694b2fc38837f337f35b7405ad5d935f71e50029b9a34dbf",
+    "truck-refined-preopt": "262c3c429ee54b6bfafb11b5dc35486dce2bbd5c9224e55260860833c5a5f788",
+    "truck-refined": "a7855d58ed5beadcf5fcaefa17af302aee83fb7ebc2fda4c0fca5f1f8fddd3ed"
+  },
+  "medianTotalMeshMs": {
+    "truck-reviewed": 2514.0460870000006,
+    "truck-refined-preopt": 3309.7600410000014,
+    "truck-refined": 2923.6875840000002
+  },
+  "meshTimeRatio": 1.1629411247145525,
+  "optimizationTimeRatio": 0.8833533391492169,
+  "optimizedMeshesIdentical": true,
+  "geometryHashMethod": "SHA256 of sorted JSON triangle arrays, each preserving exact vertex positions, normals, vertex order and winding. No rounding; only triangle/instance emission order is ignored.",
+  "rounds": [
+    {
+      "totals": {
+        "truck-reviewed": 2514.0460870000006,
+        "truck-refined-preopt": 3314.8970839999997,
+        "truck-refined": 2942.1057069999997
+      },
+      "rows": [
+        {
+          "id": "cax-if/as1-oc-214.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 247.05025,
+              "parseMs": 119.70224999999999,
+              "triangles": 28716
+            },
+            "truck-refined-preopt": {
+              "meshMs": 271.09166600000003,
+              "parseMs": 121.401041,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            },
+            "truck-refined": {
+              "meshMs": 256.061958,
+              "parseMs": 120.347416,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            }
+          }
+        },
+        {
+          "id": "cax-if/as1-oc-214/as1-oc-214.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 272.249625,
+              "parseMs": 121.34316700000001,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            },
+            "truck-refined": {
+              "meshMs": 258.966042,
+              "parseMs": 121.63775,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            },
+            "truck-reviewed": {
+              "meshMs": 249.543292,
+              "parseMs": 121.10175,
+              "triangles": 28716
+            }
+          }
+        },
+        {
+          "id": "cax-if/as1-tu-203.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 109.718333,
+              "parseMs": 23.953292,
+              "triangles": 28668,
+              "geometrySha256": "7c66f6dc1ecce9523381d923613dedb3decf447d2156b5de5cde4003e9f5dbaa"
+            },
+            "truck-reviewed": {
+              "meshMs": 101.276708,
+              "parseMs": 23.083042000000003,
+              "triangles": 28668
+            },
+            "truck-refined-preopt": {
+              "meshMs": 123.742542,
+              "parseMs": 22.641084,
+              "triangles": 28668,
+              "geometrySha256": "7c66f6dc1ecce9523381d923613dedb3decf447d2156b5de5cde4003e9f5dbaa"
+            }
+          }
+        },
+        {
+          "id": "cax-if/as1_pe_203.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 47.346417,
+              "parseMs": 22.640334000000003,
+              "triangles": 11840
+            },
+            "truck-refined-preopt": {
+              "meshMs": 57.187917,
+              "parseMs": 22.378875,
+              "triangles": 11840,
+              "geometrySha256": "acd9066a3581e0908e13a057a6be4681c031cf41741d740889f8fdb426485928"
+            },
+            "truck-refined": {
+              "meshMs": 47.474416,
+              "parseMs": 22.363125,
+              "triangles": 11840,
+              "geometrySha256": "acd9066a3581e0908e13a057a6be4681c031cf41741d740889f8fdb426485928"
+            }
+          }
+        },
+        {
+          "id": "cax-if/dm1-id-214.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 65.841292,
+              "parseMs": 15.586667,
+              "triangles": 13842,
+              "geometrySha256": "daf5b396fe828713de62bd06fbd5dd0a62265b9ac0f71ee329511c7ec857d989"
+            },
+            "truck-refined": {
+              "meshMs": 59.799541999999995,
+              "parseMs": 15.892416999999998,
+              "triangles": 13842,
+              "geometrySha256": "daf5b396fe828713de62bd06fbd5dd0a62265b9ac0f71ee329511c7ec857d989"
+            },
+            "truck-reviewed": {
+              "meshMs": 57.089959,
+              "parseMs": 16.030875,
+              "triangles": 13842
+            }
+          }
+        },
+        {
+          "id": "cax-if/dm1-oc-214.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 119.076667,
+              "parseMs": 66.057958,
+              "triangles": 8988,
+              "geometrySha256": "0cd46a538e65dc53bd06679199a85ace253a5c1562f14e34057455bc5b1bd9d6"
+            },
+            "truck-reviewed": {
+              "meshMs": 116.571584,
+              "parseMs": 66.652292,
+              "triangles": 8988
+            },
+            "truck-refined-preopt": {
+              "meshMs": 123.617875,
+              "parseMs": 66.17516699999999,
+              "triangles": 8988,
+              "geometrySha256": "0cd46a538e65dc53bd06679199a85ace253a5c1562f14e34057455bc5b1bd9d6"
+            }
+          }
+        },
+        {
+          "id": "cax-if/dm1-pe-214.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 27.11375,
+              "parseMs": 15.79825,
+              "triangles": 4448
+            },
+            "truck-refined-preopt": {
+              "meshMs": 30.84375,
+              "parseMs": 15.853625,
+              "triangles": 4448,
+              "geometrySha256": "987698d8f278069a6abb5264ca4efe8b683044dfb4d8c8a9e5c249a40731ba55"
+            },
+            "truck-refined": {
+              "meshMs": 28.004791,
+              "parseMs": 15.579875,
+              "triangles": 4448,
+              "geometrySha256": "987698d8f278069a6abb5264ca4efe8b683044dfb4d8c8a9e5c249a40731ba55"
+            }
+          }
+        },
+        {
+          "id": "cax-if/io1-cm-214.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 19.312333000000002,
+              "parseMs": 12.326792,
+              "triangles": 1696,
+              "geometrySha256": "b6be822922e30b6e9d9528f41b4a798af228fb733e8da95478485726015a159f"
+            },
+            "truck-refined": {
+              "meshMs": 17.307083000000002,
+              "parseMs": 12.263792,
+              "triangles": 1696,
+              "geometrySha256": "b6be822922e30b6e9d9528f41b4a798af228fb733e8da95478485726015a159f"
+            },
+            "truck-reviewed": {
+              "meshMs": 15.890042,
+              "parseMs": 12.370959000000001,
+              "triangles": 1304
+            }
+          }
+        },
+        {
+          "id": "cax-if/io1-tu-203.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 53.766042,
+              "parseMs": 16.980166,
+              "triangles": 4912,
+              "geometrySha256": "207ac8dab9b493c9195560bb6b30b9804ac890305ba149cc3465306d5fca7dc6"
+            },
+            "truck-reviewed": {
+              "meshMs": 49.584125,
+              "parseMs": 16.628292,
+              "triangles": 4912
+            },
+            "truck-refined-preopt": {
+              "meshMs": 57.5935,
+              "parseMs": 16.125084,
+              "triangles": 4912,
+              "geometrySha256": "207ac8dab9b493c9195560bb6b30b9804ac890305ba149cc3465306d5fca7dc6"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/FOOT_BACK_000.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 6.919792,
+              "parseMs": 9.863999999999999,
+              "triangles": 704
+            },
+            "truck-refined-preopt": {
+              "meshMs": 13.305375,
+              "parseMs": 9.677708,
+              "triangles": 2010,
+              "geometrySha256": "d4cda7761bdb26d0b33e406703a6eed868f964d3fb46967004a541db677dbb23"
+            },
+            "truck-refined": {
+              "meshMs": 11.583042,
+              "parseMs": 9.642458,
+              "triangles": 2010,
+              "geometrySha256": "d4cda7761bdb26d0b33e406703a6eed868f964d3fb46967004a541db677dbb23"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/FOOT_FRONT_000.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 13.290415999999999,
+              "parseMs": 9.714125000000001,
+              "triangles": 2010,
+              "geometrySha256": "f4a03747136f6bf1fe3554d7d5de468c099085b4010e255562f2cff562dc9598"
+            },
+            "truck-refined": {
+              "meshMs": 11.394333,
+              "parseMs": 9.978291,
+              "triangles": 2010,
+              "geometrySha256": "f4a03747136f6bf1fe3554d7d5de468c099085b4010e255562f2cff562dc9598"
+            },
+            "truck-reviewed": {
+              "meshMs": 7.135292,
+              "parseMs": 9.822083000000001,
+              "triangles": 704
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/HEAD_BACK.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 38.866083,
+              "parseMs": 11.451583,
+              "triangles": 9768,
+              "geometrySha256": "129ca4739345375b99bc58760c5c40aa0fd91549d48d207b1e6e9003bf962e00"
+            },
+            "truck-reviewed": {
+              "meshMs": 22.026833,
+              "parseMs": 11.302167,
+              "triangles": 3436
+            },
+            "truck-refined-preopt": {
+              "meshMs": 44.625667,
+              "parseMs": 11.463790999999999,
+              "triangles": 9768,
+              "geometrySha256": "129ca4739345375b99bc58760c5c40aa0fd91549d48d207b1e6e9003bf962e00"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/HEAD_FRONT.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 18.387625,
+              "parseMs": 7.9563749999999995,
+              "triangles": 3123
+            },
+            "truck-refined-preopt": {
+              "meshMs": 42.619625,
+              "parseMs": 7.953834,
+              "triangles": 9542,
+              "geometrySha256": "3f3e1e2deaf4088fd49d90ce77103ae2cbd05e3d11277c176acb39dd2dfad3f4"
+            },
+            "truck-refined": {
+              "meshMs": 36.294708,
+              "parseMs": 8.107584,
+              "triangles": 9542,
+              "geometrySha256": "3f3e1e2deaf4088fd49d90ce77103ae2cbd05e3d11277c176acb39dd2dfad3f4"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/MAINBODY_BACK.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 392.3625,
+              "parseMs": 17.229417,
+              "triangles": 18452,
+              "geometrySha256": "cc354814d0363cdd1b869f3ac26240598dcc0bb12d779f4ff0df70b379001126"
+            },
+            "truck-refined": {
+              "meshMs": 342.612083,
+              "parseMs": 17.022875,
+              "triangles": 18452,
+              "geometrySha256": "cc354814d0363cdd1b869f3ac26240598dcc0bb12d779f4ff0df70b379001126"
+            },
+            "truck-reviewed": {
+              "meshMs": 325.545458,
+              "parseMs": 17.208542,
+              "triangles": 18420
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/MAINBODY_FRONT.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 343.077625,
+              "parseMs": 15.20675,
+              "triangles": 17650,
+              "geometrySha256": "85e9fac2ee86357bbff7ef2f73d27bc0704e19b5876c8c6d211ba19f2b75bb97"
+            },
+            "truck-reviewed": {
+              "meshMs": 314.67145800000003,
+              "parseMs": 14.925875,
+              "triangles": 17618
+            },
+            "truck-refined-preopt": {
+              "meshMs": 368.13924999999995,
+              "parseMs": 14.634959,
+              "triangles": 17650,
+              "geometrySha256": "85e9fac2ee86357bbff7ef2f73d27bc0704e19b5876c8c6d211ba19f2b75bb97"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/TAIL_MIDDLE_PART.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 3.7196249999999997,
+              "parseMs": 11.021374999999999,
+              "triangles": 188
+            },
+            "truck-refined-preopt": {
+              "meshMs": 4.041,
+              "parseMs": 11.424999999999999,
+              "triangles": 188,
+              "geometrySha256": "cff31f7b111edf86364e1db11dbf41850b5b75ada212541a54fa6fcbe112f510"
+            },
+            "truck-refined": {
+              "meshMs": 3.924709,
+              "parseMs": 11.563500000000001,
+              "triangles": 188,
+              "geometrySha256": "cff31f7b111edf86364e1db11dbf41850b5b75ada212541a54fa6fcbe112f510"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/TAIL_TURBINE.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 11.433957999999999,
+              "parseMs": 11.567208,
+              "triangles": 1476,
+              "geometrySha256": "2dd52c9be971d0cffee39548513211b319e58461ca39608a9f0263880b1e50c2"
+            },
+            "truck-refined": {
+              "meshMs": 9.646999999999998,
+              "parseMs": 11.723458,
+              "triangles": 1476,
+              "geometrySha256": "2dd52c9be971d0cffee39548513211b319e58461ca39608a9f0263880b1e50c2"
+            },
+            "truck-reviewed": {
+              "meshMs": 5.0646249999999995,
+              "parseMs": 11.314417,
+              "triangles": 222
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/footback.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 36.999583,
+              "parseMs": 10.690750000000001,
+              "triangles": 3832,
+              "geometrySha256": "e33658f748759e34f4f21e94ee2d16c59b117f63c3895e0aa2fed41bda65ffd8"
+            },
+            "truck-reviewed": {
+              "meshMs": 32.62675,
+              "parseMs": 10.236791,
+              "triangles": 3588
+            },
+            "truck-refined-preopt": {
+              "meshMs": 39.864416,
+              "parseMs": 10.2715,
+              "triangles": 3832,
+              "geometrySha256": "e33658f748759e34f4f21e94ee2d16c59b117f63c3895e0aa2fed41bda65ffd8"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/footfront.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 32.111917,
+              "parseMs": 11.246083,
+              "triangles": 3499
+            },
+            "truck-refined-preopt": {
+              "meshMs": 39.989083,
+              "parseMs": 11.280875,
+              "triangles": 3742,
+              "geometrySha256": "cb5615adb090d1864df461b0320c9cc6f64a03390d2905ee3455803c9bcf859e"
+            },
+            "truck-refined": {
+              "meshMs": 36.001208999999996,
+              "parseMs": 10.765917,
+              "triangles": 3742,
+              "geometrySha256": "cb5615adb090d1864df461b0320c9cc6f64a03390d2905ee3455803c9bcf859e"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/headback.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 157.49612499999998,
+              "parseMs": 11.700292,
+              "triangles": 14582,
+              "geometrySha256": "be74357cc994eb01f6b99580b64e9550e7c2dcbffb06092f636337c7fe1cd5cb"
+            },
+            "truck-refined": {
+              "meshMs": 127.44574999999999,
+              "parseMs": 12.680708000000001,
+              "triangles": 14582,
+              "geometrySha256": "be74357cc994eb01f6b99580b64e9550e7c2dcbffb06092f636337c7fe1cd5cb"
+            },
+            "truck-reviewed": {
+              "meshMs": 101.792042,
+              "parseMs": 11.876167,
+              "triangles": 13500
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/headfront.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 79.304334,
+              "parseMs": 8.668792,
+              "triangles": 10628,
+              "geometrySha256": "099487b03f00d8424ac41c2f309ead318a18fe34a5decdad6c8be7899c2eed4b"
+            },
+            "truck-reviewed": {
+              "meshMs": 63.64162499999999,
+              "parseMs": 8.606792,
+              "triangles": 9427
+            },
+            "truck-refined-preopt": {
+              "meshMs": 95.706958,
+              "parseMs": 8.528042,
+              "triangles": 10628,
+              "geometrySha256": "099487b03f00d8424ac41c2f309ead318a18fe34a5decdad6c8be7899c2eed4b"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/mainbodyback.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 138.509542,
+              "parseMs": 14.037833,
+              "triangles": 22680
+            },
+            "truck-refined-preopt": {
+              "meshMs": 180.678667,
+              "parseMs": 12.972790999999999,
+              "triangles": 22680,
+              "geometrySha256": "e47840370beff6b4c2e644ce81491c1dd46bc7f516e92d43543fc9f055d62551"
+            },
+            "truck-refined": {
+              "meshMs": 153.609375,
+              "parseMs": 12.8345,
+              "triangles": 22680,
+              "geometrySha256": "e47840370beff6b4c2e644ce81491c1dd46bc7f516e92d43543fc9f055d62551"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/mainbodyfront.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 188.915875,
+              "parseMs": 16.094082999999998,
+              "triangles": 22264,
+              "geometrySha256": "899c7533ca79d4f4a950895df251757d6fa59a705e10f04095a16fe82cd0391b"
+            },
+            "truck-refined": {
+              "meshMs": 161.716917,
+              "parseMs": 15.570542,
+              "triangles": 22264,
+              "geometrySha256": "899c7533ca79d4f4a950895df251757d6fa59a705e10f04095a16fe82cd0391b"
+            },
+            "truck-reviewed": {
+              "meshMs": 149.537833,
+              "parseMs": 16.109083,
+              "triangles": 22264
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/tailmiddlepart.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 11.499125000000001,
+              "parseMs": 11.327167000000001,
+              "triangles": 352,
+              "geometrySha256": "284036a01932bb9ed6d05a3d0dbc7a5214b5cf9dfb5f1b7c6841e0c2aa6e8a81"
+            },
+            "truck-reviewed": {
+              "meshMs": 9.03125,
+              "parseMs": 11.433375000000002,
+              "triangles": 352
+            },
+            "truck-refined-preopt": {
+              "meshMs": 10.128959,
+              "parseMs": 11.312458,
+              "triangles": 352,
+              "geometrySha256": "284036a01932bb9ed6d05a3d0dbc7a5214b5cf9dfb5f1b7c6841e0c2aa6e8a81"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/tailturbine.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 49.418542,
+              "parseMs": 13.919459,
+              "triangles": 3592
+            },
+            "truck-refined-preopt": {
+              "meshMs": 56.074625000000005,
+              "parseMs": 13.625583,
+              "triangles": 3592,
+              "geometrySha256": "544296c107121ce1045d79b8fad6418b6a9402566bc07b216de0c8fdb9f4c92e"
+            },
+            "truck-refined": {
+              "meshMs": 51.874375,
+              "parseMs": 14.080917,
+              "triangles": 3592,
+              "geometrySha256": "544296c107121ce1045d79b8fad6418b6a9402566bc07b216de0c8fdb9f4c92e"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/foot_back_prt.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 13.287833000000001,
+              "parseMs": 8.833374999999998,
+              "triangles": 1818,
+              "geometrySha256": "8701be138517fc13510d646ddb7abc67f7d7691e727f30ebfb5a929dcb3cd580"
+            },
+            "truck-refined": {
+              "meshMs": 11.527584000000001,
+              "parseMs": 8.4115,
+              "triangles": 1818,
+              "geometrySha256": "8701be138517fc13510d646ddb7abc67f7d7691e727f30ebfb5a929dcb3cd580"
+            },
+            "truck-reviewed": {
+              "meshMs": 6.864709,
+              "parseMs": 8.336792,
+              "triangles": 649
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/foot_front_prt.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 14.178167,
+              "parseMs": 9.912792,
+              "triangles": 2441,
+              "geometrySha256": "84e0b093dbd2bacaf11c64579ac27fc64644e79b64563994ff6ee63eab5708ca"
+            },
+            "truck-reviewed": {
+              "meshMs": 15.744000000000002,
+              "parseMs": 15.030167,
+              "triangles": 662
+            },
+            "truck-refined-preopt": {
+              "meshMs": 16.121125,
+              "parseMs": 9.574333000000001,
+              "triangles": 2441,
+              "geometrySha256": "84e0b093dbd2bacaf11c64579ac27fc64644e79b64563994ff6ee63eab5708ca"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/head_back_prt.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 20.069166,
+              "parseMs": 9.180166999999999,
+              "triangles": 3214
+            },
+            "truck-refined-preopt": {
+              "meshMs": 40.090792,
+              "parseMs": 9.275625,
+              "triangles": 9448,
+              "geometrySha256": "9f64f127f0593c1815cc548b68a3908fc07731cc9c2c49df606b47d90f7351ab"
+            },
+            "truck-refined": {
+              "meshMs": 35.532291,
+              "parseMs": 9.518875,
+              "triangles": 9448,
+              "geometrySha256": "9f64f127f0593c1815cc548b68a3908fc07731cc9c2c49df606b47d90f7351ab"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/head_front_prt.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 42.630874999999996,
+              "parseMs": 7.917958,
+              "triangles": 9729,
+              "geometrySha256": "1523f5d4e380ad14010eea5c214bd0c87cf75ed809c370df1d4431e800edae15"
+            },
+            "truck-refined": {
+              "meshMs": 35.112333,
+              "parseMs": 7.702291,
+              "triangles": 9729,
+              "geometrySha256": "1523f5d4e380ad14010eea5c214bd0c87cf75ed809c370df1d4431e800edae15"
+            },
+            "truck-reviewed": {
+              "meshMs": 19.669666999999997,
+              "parseMs": 7.507375000000001,
+              "triangles": 3091
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/main_body_back_prt.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 109.965458,
+              "parseMs": 13.101583,
+              "triangles": 16732,
+              "geometrySha256": "9b8635f33cd1ff3a64e8cfec53ca5b96795ea4f677dc3c5aafc003fd0983bda6"
+            },
+            "truck-reviewed": {
+              "meshMs": 99.389875,
+              "parseMs": 12.521417,
+              "triangles": 16732
+            },
+            "truck-refined-preopt": {
+              "meshMs": 132.276125,
+              "parseMs": 12.906832999999999,
+              "triangles": 16732,
+              "geometrySha256": "9b8635f33cd1ff3a64e8cfec53ca5b96795ea4f677dc3c5aafc003fd0983bda6"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/main_body_front_prt.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 110.516583,
+              "parseMs": 14.135042,
+              "triangles": 17540
+            },
+            "truck-refined-preopt": {
+              "meshMs": 140.71479200000002,
+              "parseMs": 13.644167000000001,
+              "triangles": 17540,
+              "geometrySha256": "689114ef58413e0abe8a9dadfedf110958a28171b3c350545798d4655abb6f5e"
+            },
+            "truck-refined": {
+              "meshMs": 117.2865,
+              "parseMs": 14.034333,
+              "triangles": 17540,
+              "geometrySha256": "689114ef58413e0abe8a9dadfedf110958a28171b3c350545798d4655abb6f5e"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/tail_middle_part_prt.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 6.4495000000000005,
+              "parseMs": 12.232,
+              "triangles": 292,
+              "geometrySha256": "538acaf045c33789e53dcb919a4df2ec6eb9ab397dcbb4f3abe7a6ed44c35ece"
+            },
+            "truck-refined": {
+              "meshMs": 6.352334,
+              "parseMs": 12.14325,
+              "triangles": 292,
+              "geometrySha256": "538acaf045c33789e53dcb919a4df2ec6eb9ab397dcbb4f3abe7a6ed44c35ece"
+            },
+            "truck-reviewed": {
+              "meshMs": 6.237708,
+              "parseMs": 12.112792,
+              "triangles": 292
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/tail_turbine_prt.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 28.624291,
+              "parseMs": 12.730208999999999,
+              "triangles": 6942,
+              "geometrySha256": "546091d4d0c87b8f6f23a6fa255851aa2a76cbaeb3cb8d4835c6d18b6dc52e56"
+            },
+            "truck-reviewed": {
+              "meshMs": 5.818084000000001,
+              "parseMs": 12.401417,
+              "triangles": 272
+            },
+            "truck-refined-preopt": {
+              "meshMs": 35.789542,
+              "parseMs": 13.106665999999999,
+              "triangles": 6942,
+              "geometrySha256": "546091d4d0c87b8f6f23a6fa255851aa2a76cbaeb3cb8d4835c6d18b6dc52e56"
+            }
+          }
+        },
+        {
+          "id": "cax-if/sg1-c5-214.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 10.189709,
+              "parseMs": 10.588792,
+              "triangles": 696
+            },
+            "truck-refined-preopt": {
+              "meshMs": 177.322709,
+              "parseMs": 9.366333,
+              "triangles": 40348,
+              "geometrySha256": "deaaff95150d45dfc6b7c9b371e97ac80ccbba746076f776fdf0bf4822930203"
+            },
+            "truck-refined": {
+              "meshMs": 147.742292,
+              "parseMs": 9.3145,
+              "triangles": 40348,
+              "geometrySha256": "deaaff95150d45dfc6b7c9b371e97ac80ccbba746076f776fdf0bf4822930203"
+            }
+          }
+        },
+        {
+          "id": "conical-surface/conical-surface.step",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 5.6628750000000005,
+              "parseMs": 7.479,
+              "triangles": 320,
+              "geometrySha256": "63e2dd68d23b09e840ec37f0cd1198cc77e6a2c041cffdaf69a4dde12c01d283"
+            },
+            "truck-refined": {
+              "meshMs": 5.5825,
+              "parseMs": 7.093084,
+              "triangles": 320,
+              "geometrySha256": "63e2dd68d23b09e840ec37f0cd1198cc77e6a2c041cffdaf69a4dde12c01d283"
+            },
+            "truck-reviewed": {
+              "meshMs": 5.2877920000000005,
+              "parseMs": 7.452291,
+              "triangles": 220
+            }
+          }
+        },
+        {
+          "id": "cube-10x10mm/Cube 10x10.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 2.731208,
+              "parseMs": 6.884875,
+              "triangles": 12,
+              "geometrySha256": "1faecc7bd0a526869a2dd028003fe78463db29da75227027266425afc441dca1"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.537083,
+              "parseMs": 6.976625,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.839083,
+              "parseMs": 6.857333000000001,
+              "triangles": 12,
+              "geometrySha256": "1faecc7bd0a526869a2dd028003fe78463db29da75227027266425afc441dca1"
+            }
+          }
+        },
+        {
+          "id": "cube-fcstd/cube.step",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 2.410625,
+              "parseMs": 9.04575,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.6536250000000003,
+              "parseMs": 9.166,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-refined": {
+              "meshMs": 2.553042,
+              "parseMs": 9.251459,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            }
+          }
+        },
+        {
+          "id": "cube-fcstd/cube2.step",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 2.630084,
+              "parseMs": 9.181166,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-refined": {
+              "meshMs": 2.481375,
+              "parseMs": 9.11875,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.506125,
+              "parseMs": 9.286834,
+              "triangles": 12
+            }
+          }
+        },
+        {
+          "id": "cube-fcstd/cube3.step",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 2.7308749999999997,
+              "parseMs": 9.161040999999999,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.363417,
+              "parseMs": 8.945208,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.549125,
+              "parseMs": 9.037208,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            }
+          }
+        },
+        {
+          "id": "cube-units/cube-in.step",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 2.534333,
+              "parseMs": 9.511333,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.655042,
+              "parseMs": 9.370292000000001,
+              "triangles": 12,
+              "geometrySha256": "6cb94c242f123e2d558cfd1b46104cc5e818a5cfc0b85e6c561445696f6d5c0b"
+            },
+            "truck-refined": {
+              "meshMs": 2.625041,
+              "parseMs": 9.498792,
+              "triangles": 12,
+              "geometrySha256": "6cb94c242f123e2d558cfd1b46104cc5e818a5cfc0b85e6c561445696f6d5c0b"
+            }
+          }
+        },
+        {
+          "id": "cube-units/cube-m.step",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 2.7385,
+              "parseMs": 9.763708,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            },
+            "truck-refined": {
+              "meshMs": 2.738708,
+              "parseMs": 9.628792,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.601,
+              "parseMs": 9.568625,
+              "triangles": 12
+            }
+          }
+        },
+        {
+          "id": "cube-units/cube-mm.step",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 3.002458,
+              "parseMs": 11.81925,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.614917,
+              "parseMs": 9.543417,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.89675,
+              "parseMs": 9.535625000000001,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            }
+          }
+        },
+        {
+          "id": "rounded-cube/rounded-cube.step",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 2.582708,
+              "parseMs": 10.357166,
+              "triangles": 28
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.757625,
+              "parseMs": 10.2335,
+              "triangles": 28,
+              "geometrySha256": "a02463577cf8c3bc4a78414f60fbf46db54a16ef1df0473156ee2e4c1dd2b535"
+            },
+            "truck-refined": {
+              "meshMs": 2.674375,
+              "parseMs": 10.622959,
+              "triangles": 28,
+              "geometrySha256": "a02463577cf8c3bc4a78414f60fbf46db54a16ef1df0473156ee2e4c1dd2b535"
+            }
+          }
+        },
+        {
+          "id": "simple-basic-cube/cube.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 2.678083,
+              "parseMs": 7.015666,
+              "triangles": 12,
+              "geometrySha256": "264fcb7ea4dc8698dd840f2e4ce31cbc79171c0196ee1aed78c42aba44c01a46"
+            },
+            "truck-refined": {
+              "meshMs": 2.6397500000000003,
+              "parseMs": 6.827708,
+              "triangles": 12,
+              "geometrySha256": "264fcb7ea4dc8698dd840f2e4ce31cbc79171c0196ee1aed78c42aba44c01a46"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.50225,
+              "parseMs": 6.717917,
+              "triangles": 12
+            }
+          }
+        }
+      ]
+    },
+    {
+      "totals": {
+        "truck-reviewed": 2525.458202,
+        "truck-refined-preopt": 3303.382998999999,
+        "truck-refined": 2923.6875840000002
+      },
+      "rows": [
+        {
+          "id": "cax-if/as1-oc-214.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 271.49675,
+              "parseMs": 120.781333,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            },
+            "truck-refined": {
+              "meshMs": 257.59725,
+              "parseMs": 120.80137500000001,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            },
+            "truck-reviewed": {
+              "meshMs": 250.67729100000003,
+              "parseMs": 121.079709,
+              "triangles": 28716
+            }
+          }
+        },
+        {
+          "id": "cax-if/as1-oc-214/as1-oc-214.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 255.731542,
+              "parseMs": 119.817458,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            },
+            "truck-reviewed": {
+              "meshMs": 250.28224999999998,
+              "parseMs": 120.691959,
+              "triangles": 28716
+            },
+            "truck-refined-preopt": {
+              "meshMs": 270.105125,
+              "parseMs": 120.089209,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            }
+          }
+        },
+        {
+          "id": "cax-if/as1-tu-203.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 101.13600000000001,
+              "parseMs": 22.522292,
+              "triangles": 28668
+            },
+            "truck-refined-preopt": {
+              "meshMs": 121.66637499999999,
+              "parseMs": 23.416834,
+              "triangles": 28668,
+              "geometrySha256": "7c66f6dc1ecce9523381d923613dedb3decf447d2156b5de5cde4003e9f5dbaa"
+            },
+            "truck-refined": {
+              "meshMs": 108.13725000000001,
+              "parseMs": 23.111832999999997,
+              "triangles": 28668,
+              "geometrySha256": "7c66f6dc1ecce9523381d923613dedb3decf447d2156b5de5cde4003e9f5dbaa"
+            }
+          }
+        },
+        {
+          "id": "cax-if/as1_pe_203.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 57.901917,
+              "parseMs": 22.511833,
+              "triangles": 11840,
+              "geometrySha256": "acd9066a3581e0908e13a057a6be4681c031cf41741d740889f8fdb426485928"
+            },
+            "truck-refined": {
+              "meshMs": 48.139792,
+              "parseMs": 22.7215,
+              "triangles": 11840,
+              "geometrySha256": "acd9066a3581e0908e13a057a6be4681c031cf41741d740889f8fdb426485928"
+            },
+            "truck-reviewed": {
+              "meshMs": 48.153124999999996,
+              "parseMs": 22.949,
+              "triangles": 11840
+            }
+          }
+        },
+        {
+          "id": "cax-if/dm1-id-214.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 58.438042,
+              "parseMs": 15.862708999999999,
+              "triangles": 13842,
+              "geometrySha256": "daf5b396fe828713de62bd06fbd5dd0a62265b9ac0f71ee329511c7ec857d989"
+            },
+            "truck-reviewed": {
+              "meshMs": 55.993958000000006,
+              "parseMs": 15.886458,
+              "triangles": 13842
+            },
+            "truck-refined-preopt": {
+              "meshMs": 65.648416,
+              "parseMs": 15.832041000000002,
+              "triangles": 13842,
+              "geometrySha256": "daf5b396fe828713de62bd06fbd5dd0a62265b9ac0f71ee329511c7ec857d989"
+            }
+          }
+        },
+        {
+          "id": "cax-if/dm1-oc-214.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 115.959083,
+              "parseMs": 66.334667,
+              "triangles": 8988
+            },
+            "truck-refined-preopt": {
+              "meshMs": 124.043292,
+              "parseMs": 66.522917,
+              "triangles": 8988,
+              "geometrySha256": "0cd46a538e65dc53bd06679199a85ace253a5c1562f14e34057455bc5b1bd9d6"
+            },
+            "truck-refined": {
+              "meshMs": 118.896959,
+              "parseMs": 67.085917,
+              "triangles": 8988,
+              "geometrySha256": "0cd46a538e65dc53bd06679199a85ace253a5c1562f14e34057455bc5b1bd9d6"
+            }
+          }
+        },
+        {
+          "id": "cax-if/dm1-pe-214.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 29.809708,
+              "parseMs": 15.938417,
+              "triangles": 4448,
+              "geometrySha256": "987698d8f278069a6abb5264ca4efe8b683044dfb4d8c8a9e5c249a40731ba55"
+            },
+            "truck-refined": {
+              "meshMs": 27.480959,
+              "parseMs": 15.987207999999999,
+              "triangles": 4448,
+              "geometrySha256": "987698d8f278069a6abb5264ca4efe8b683044dfb4d8c8a9e5c249a40731ba55"
+            },
+            "truck-reviewed": {
+              "meshMs": 26.213708,
+              "parseMs": 16.47475,
+              "triangles": 4448
+            }
+          }
+        },
+        {
+          "id": "cax-if/io1-cm-214.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 17.450041,
+              "parseMs": 12.263667,
+              "triangles": 1696,
+              "geometrySha256": "b6be822922e30b6e9d9528f41b4a798af228fb733e8da95478485726015a159f"
+            },
+            "truck-reviewed": {
+              "meshMs": 15.503833,
+              "parseMs": 11.998625,
+              "triangles": 1304
+            },
+            "truck-refined-preopt": {
+              "meshMs": 19.432792,
+              "parseMs": 11.955290999999999,
+              "triangles": 1696,
+              "geometrySha256": "b6be822922e30b6e9d9528f41b4a798af228fb733e8da95478485726015a159f"
+            }
+          }
+        },
+        {
+          "id": "cax-if/io1-tu-203.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 49.89875,
+              "parseMs": 16.397583,
+              "triangles": 4912
+            },
+            "truck-refined-preopt": {
+              "meshMs": 57.803666,
+              "parseMs": 16.45775,
+              "triangles": 4912,
+              "geometrySha256": "207ac8dab9b493c9195560bb6b30b9804ac890305ba149cc3465306d5fca7dc6"
+            },
+            "truck-refined": {
+              "meshMs": 53.003417,
+              "parseMs": 16.210709,
+              "triangles": 4912,
+              "geometrySha256": "207ac8dab9b493c9195560bb6b30b9804ac890305ba149cc3465306d5fca7dc6"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/FOOT_BACK_000.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 13.199916,
+              "parseMs": 9.755666,
+              "triangles": 2010,
+              "geometrySha256": "d4cda7761bdb26d0b33e406703a6eed868f964d3fb46967004a541db677dbb23"
+            },
+            "truck-refined": {
+              "meshMs": 11.3455,
+              "parseMs": 9.544333,
+              "triangles": 2010,
+              "geometrySha256": "d4cda7761bdb26d0b33e406703a6eed868f964d3fb46967004a541db677dbb23"
+            },
+            "truck-reviewed": {
+              "meshMs": 7.186666000000001,
+              "parseMs": 9.598875,
+              "triangles": 704
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/FOOT_FRONT_000.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 11.247958,
+              "parseMs": 9.999917,
+              "triangles": 2010,
+              "geometrySha256": "f4a03747136f6bf1fe3554d7d5de468c099085b4010e255562f2cff562dc9598"
+            },
+            "truck-reviewed": {
+              "meshMs": 6.964958,
+              "parseMs": 9.642959,
+              "triangles": 704
+            },
+            "truck-refined-preopt": {
+              "meshMs": 13.365583,
+              "parseMs": 9.658375,
+              "triangles": 2010,
+              "geometrySha256": "f4a03747136f6bf1fe3554d7d5de468c099085b4010e255562f2cff562dc9598"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/HEAD_BACK.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 21.93225,
+              "parseMs": 11.680167,
+              "triangles": 3436
+            },
+            "truck-refined-preopt": {
+              "meshMs": 45.098417000000005,
+              "parseMs": 11.38475,
+              "triangles": 9768,
+              "geometrySha256": "129ca4739345375b99bc58760c5c40aa0fd91549d48d207b1e6e9003bf962e00"
+            },
+            "truck-refined": {
+              "meshMs": 37.895709,
+              "parseMs": 11.877,
+              "triangles": 9768,
+              "geometrySha256": "129ca4739345375b99bc58760c5c40aa0fd91549d48d207b1e6e9003bf962e00"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/HEAD_FRONT.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 42.681958,
+              "parseMs": 8.059291,
+              "triangles": 9542,
+              "geometrySha256": "3f3e1e2deaf4088fd49d90ce77103ae2cbd05e3d11277c176acb39dd2dfad3f4"
+            },
+            "truck-refined": {
+              "meshMs": 36.428374999999996,
+              "parseMs": 8.231458,
+              "triangles": 9542,
+              "geometrySha256": "3f3e1e2deaf4088fd49d90ce77103ae2cbd05e3d11277c176acb39dd2dfad3f4"
+            },
+            "truck-reviewed": {
+              "meshMs": 19.162042,
+              "parseMs": 7.925291,
+              "triangles": 3123
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/MAINBODY_BACK.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 344.27725,
+              "parseMs": 17.604292,
+              "triangles": 18452,
+              "geometrySha256": "cc354814d0363cdd1b869f3ac26240598dcc0bb12d779f4ff0df70b379001126"
+            },
+            "truck-reviewed": {
+              "meshMs": 324.726041,
+              "parseMs": 17.846292,
+              "triangles": 18420
+            },
+            "truck-refined-preopt": {
+              "meshMs": 376.738667,
+              "parseMs": 17.349667,
+              "triangles": 18452,
+              "geometrySha256": "cc354814d0363cdd1b869f3ac26240598dcc0bb12d779f4ff0df70b379001126"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/MAINBODY_FRONT.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 313.08625,
+              "parseMs": 15.011125,
+              "triangles": 17618
+            },
+            "truck-refined-preopt": {
+              "meshMs": 366.27020799999997,
+              "parseMs": 14.909417,
+              "triangles": 17650,
+              "geometrySha256": "85e9fac2ee86357bbff7ef2f73d27bc0704e19b5876c8c6d211ba19f2b75bb97"
+            },
+            "truck-refined": {
+              "meshMs": 332.304,
+              "parseMs": 14.953332999999999,
+              "triangles": 17650,
+              "geometrySha256": "85e9fac2ee86357bbff7ef2f73d27bc0704e19b5876c8c6d211ba19f2b75bb97"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/TAIL_MIDDLE_PART.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 3.892084,
+              "parseMs": 10.944875,
+              "triangles": 188,
+              "geometrySha256": "cff31f7b111edf86364e1db11dbf41850b5b75ada212541a54fa6fcbe112f510"
+            },
+            "truck-refined": {
+              "meshMs": 3.9797499999999997,
+              "parseMs": 11.373375,
+              "triangles": 188,
+              "geometrySha256": "cff31f7b111edf86364e1db11dbf41850b5b75ada212541a54fa6fcbe112f510"
+            },
+            "truck-reviewed": {
+              "meshMs": 3.846375,
+              "parseMs": 11.263125,
+              "triangles": 188
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/TAIL_TURBINE.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 9.481042,
+              "parseMs": 11.269417,
+              "triangles": 1476,
+              "geometrySha256": "2dd52c9be971d0cffee39548513211b319e58461ca39608a9f0263880b1e50c2"
+            },
+            "truck-reviewed": {
+              "meshMs": 4.742583,
+              "parseMs": 11.498708,
+              "triangles": 222
+            },
+            "truck-refined-preopt": {
+              "meshMs": 11.252208,
+              "parseMs": 11.465916,
+              "triangles": 1476,
+              "geometrySha256": "2dd52c9be971d0cffee39548513211b319e58461ca39608a9f0263880b1e50c2"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/footback.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 32.801249999999996,
+              "parseMs": 10.594249999999999,
+              "triangles": 3588
+            },
+            "truck-refined-preopt": {
+              "meshMs": 39.681292,
+              "parseMs": 10.245624999999999,
+              "triangles": 3832,
+              "geometrySha256": "e33658f748759e34f4f21e94ee2d16c59b117f63c3895e0aa2fed41bda65ffd8"
+            },
+            "truck-refined": {
+              "meshMs": 35.9635,
+              "parseMs": 10.195291000000001,
+              "triangles": 3832,
+              "geometrySha256": "e33658f748759e34f4f21e94ee2d16c59b117f63c3895e0aa2fed41bda65ffd8"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/footfront.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 40.855959,
+              "parseMs": 10.878957999999999,
+              "triangles": 3742,
+              "geometrySha256": "cb5615adb090d1864df461b0320c9cc6f64a03390d2905ee3455803c9bcf859e"
+            },
+            "truck-refined": {
+              "meshMs": 36.228249999999996,
+              "parseMs": 10.72375,
+              "triangles": 3742,
+              "geometrySha256": "cb5615adb090d1864df461b0320c9cc6f64a03390d2905ee3455803c9bcf859e"
+            },
+            "truck-reviewed": {
+              "meshMs": 33.210625,
+              "parseMs": 10.707125,
+              "triangles": 3499
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/headback.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 125.513875,
+              "parseMs": 11.769333,
+              "triangles": 14582,
+              "geometrySha256": "be74357cc994eb01f6b99580b64e9550e7c2dcbffb06092f636337c7fe1cd5cb"
+            },
+            "truck-reviewed": {
+              "meshMs": 102.353708,
+              "parseMs": 12.2425,
+              "triangles": 13500
+            },
+            "truck-refined-preopt": {
+              "meshMs": 157.612459,
+              "parseMs": 11.821709,
+              "triangles": 14582,
+              "geometrySha256": "be74357cc994eb01f6b99580b64e9550e7c2dcbffb06092f636337c7fe1cd5cb"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/headfront.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 64.55266599999999,
+              "parseMs": 8.755333,
+              "triangles": 9427
+            },
+            "truck-refined-preopt": {
+              "meshMs": 95.93675,
+              "parseMs": 8.873666,
+              "triangles": 10628,
+              "geometrySha256": "099487b03f00d8424ac41c2f309ead318a18fe34a5decdad6c8be7899c2eed4b"
+            },
+            "truck-refined": {
+              "meshMs": 79.71091600000001,
+              "parseMs": 8.918792,
+              "triangles": 10628,
+              "geometrySha256": "099487b03f00d8424ac41c2f309ead318a18fe34a5decdad6c8be7899c2eed4b"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/mainbodyback.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 182.280708,
+              "parseMs": 12.881542,
+              "triangles": 22680,
+              "geometrySha256": "e47840370beff6b4c2e644ce81491c1dd46bc7f516e92d43543fc9f055d62551"
+            },
+            "truck-refined": {
+              "meshMs": 152.124208,
+              "parseMs": 12.750584,
+              "triangles": 22680,
+              "geometrySha256": "e47840370beff6b4c2e644ce81491c1dd46bc7f516e92d43543fc9f055d62551"
+            },
+            "truck-reviewed": {
+              "meshMs": 138.715541,
+              "parseMs": 12.786375000000001,
+              "triangles": 22680
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/mainbodyfront.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 162.379083,
+              "parseMs": 15.993958,
+              "triangles": 22264,
+              "geometrySha256": "899c7533ca79d4f4a950895df251757d6fa59a705e10f04095a16fe82cd0391b"
+            },
+            "truck-reviewed": {
+              "meshMs": 147.601917,
+              "parseMs": 15.967292,
+              "triangles": 22264
+            },
+            "truck-refined-preopt": {
+              "meshMs": 188.39225000000002,
+              "parseMs": 15.956125000000002,
+              "triangles": 22264,
+              "geometrySha256": "899c7533ca79d4f4a950895df251757d6fa59a705e10f04095a16fe82cd0391b"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/tailmiddlepart.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 9.474791999999999,
+              "parseMs": 10.908665999999998,
+              "triangles": 352
+            },
+            "truck-refined-preopt": {
+              "meshMs": 9.788083,
+              "parseMs": 11.309625,
+              "triangles": 352,
+              "geometrySha256": "284036a01932bb9ed6d05a3d0dbc7a5214b5cf9dfb5f1b7c6841e0c2aa6e8a81"
+            },
+            "truck-refined": {
+              "meshMs": 9.724667,
+              "parseMs": 11.198416,
+              "triangles": 352,
+              "geometrySha256": "284036a01932bb9ed6d05a3d0dbc7a5214b5cf9dfb5f1b7c6841e0c2aa6e8a81"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/tailturbine.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 55.737415999999996,
+              "parseMs": 13.830958,
+              "triangles": 3592,
+              "geometrySha256": "544296c107121ce1045d79b8fad6418b6a9402566bc07b216de0c8fdb9f4c92e"
+            },
+            "truck-refined": {
+              "meshMs": 51.589417,
+              "parseMs": 13.790208999999999,
+              "triangles": 3592,
+              "geometrySha256": "544296c107121ce1045d79b8fad6418b6a9402566bc07b216de0c8fdb9f4c92e"
+            },
+            "truck-reviewed": {
+              "meshMs": 49.678,
+              "parseMs": 13.678792,
+              "triangles": 3592
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/foot_back_prt.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 11.354750000000001,
+              "parseMs": 8.916959,
+              "triangles": 1818,
+              "geometrySha256": "8701be138517fc13510d646ddb7abc67f7d7691e727f30ebfb5a929dcb3cd580"
+            },
+            "truck-reviewed": {
+              "meshMs": 6.9388749999999995,
+              "parseMs": 8.600375,
+              "triangles": 649
+            },
+            "truck-refined-preopt": {
+              "meshMs": 13.498625,
+              "parseMs": 8.645084,
+              "triangles": 1818,
+              "geometrySha256": "8701be138517fc13510d646ddb7abc67f7d7691e727f30ebfb5a929dcb3cd580"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/foot_front_prt.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 7.500292000000001,
+              "parseMs": 9.520125,
+              "triangles": 662
+            },
+            "truck-refined-preopt": {
+              "meshMs": 16.631833,
+              "parseMs": 9.571791,
+              "triangles": 2441,
+              "geometrySha256": "84e0b093dbd2bacaf11c64579ac27fc64644e79b64563994ff6ee63eab5708ca"
+            },
+            "truck-refined": {
+              "meshMs": 13.962709,
+              "parseMs": 9.765625,
+              "triangles": 2441,
+              "geometrySha256": "84e0b093dbd2bacaf11c64579ac27fc64644e79b64563994ff6ee63eab5708ca"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/head_back_prt.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 39.355292,
+              "parseMs": 9.165,
+              "triangles": 9448,
+              "geometrySha256": "9f64f127f0593c1815cc548b68a3908fc07731cc9c2c49df606b47d90f7351ab"
+            },
+            "truck-refined": {
+              "meshMs": 35.180083,
+              "parseMs": 9.379999999999999,
+              "triangles": 9448,
+              "geometrySha256": "9f64f127f0593c1815cc548b68a3908fc07731cc9c2c49df606b47d90f7351ab"
+            },
+            "truck-reviewed": {
+              "meshMs": 19.691625000000002,
+              "parseMs": 9.242833000000001,
+              "triangles": 3214
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/head_front_prt.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 35.002708,
+              "parseMs": 7.727958,
+              "triangles": 9729,
+              "geometrySha256": "1523f5d4e380ad14010eea5c214bd0c87cf75ed809c370df1d4431e800edae15"
+            },
+            "truck-reviewed": {
+              "meshMs": 20.308916,
+              "parseMs": 7.475166,
+              "triangles": 3091
+            },
+            "truck-refined-preopt": {
+              "meshMs": 43.224666,
+              "parseMs": 8.129582999999998,
+              "triangles": 9729,
+              "geometrySha256": "1523f5d4e380ad14010eea5c214bd0c87cf75ed809c370df1d4431e800edae15"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/main_body_back_prt.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 99.17554100000001,
+              "parseMs": 12.863334,
+              "triangles": 16732
+            },
+            "truck-refined-preopt": {
+              "meshMs": 136.54475,
+              "parseMs": 12.961959,
+              "triangles": 16732,
+              "geometrySha256": "9b8635f33cd1ff3a64e8cfec53ca5b96795ea4f677dc3c5aafc003fd0983bda6"
+            },
+            "truck-refined": {
+              "meshMs": 110.051042,
+              "parseMs": 12.599334,
+              "triangles": 16732,
+              "geometrySha256": "9b8635f33cd1ff3a64e8cfec53ca5b96795ea4f677dc3c5aafc003fd0983bda6"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/main_body_front_prt.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 142.813166,
+              "parseMs": 14.096625,
+              "triangles": 17540,
+              "geometrySha256": "689114ef58413e0abe8a9dadfedf110958a28171b3c350545798d4655abb6f5e"
+            },
+            "truck-refined": {
+              "meshMs": 117.787083,
+              "parseMs": 14.024875,
+              "triangles": 17540,
+              "geometrySha256": "689114ef58413e0abe8a9dadfedf110958a28171b3c350545798d4655abb6f5e"
+            },
+            "truck-reviewed": {
+              "meshMs": 128.088125,
+              "parseMs": 13.860875,
+              "triangles": 17540
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/tail_middle_part_prt.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 6.270208,
+              "parseMs": 11.816417,
+              "triangles": 292,
+              "geometrySha256": "538acaf045c33789e53dcb919a4df2ec6eb9ab397dcbb4f3abe7a6ed44c35ece"
+            },
+            "truck-reviewed": {
+              "meshMs": 5.962000000000001,
+              "parseMs": 12.010708,
+              "triangles": 292
+            },
+            "truck-refined-preopt": {
+              "meshMs": 6.747708,
+              "parseMs": 12.063292,
+              "triangles": 292,
+              "geometrySha256": "538acaf045c33789e53dcb919a4df2ec6eb9ab397dcbb4f3abe7a6ed44c35ece"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/tail_turbine_prt.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 5.972416,
+              "parseMs": 12.393583,
+              "triangles": 272
+            },
+            "truck-refined-preopt": {
+              "meshMs": 35.182249999999996,
+              "parseMs": 12.850208,
+              "triangles": 6942,
+              "geometrySha256": "546091d4d0c87b8f6f23a6fa255851aa2a76cbaeb3cb8d4835c6d18b6dc52e56"
+            },
+            "truck-refined": {
+              "meshMs": 30.077083000000002,
+              "parseMs": 12.425084,
+              "triangles": 6942,
+              "geometrySha256": "546091d4d0c87b8f6f23a6fa255851aa2a76cbaeb3cb8d4835c6d18b6dc52e56"
+            }
+          }
+        },
+        {
+          "id": "cax-if/sg1-c5-214.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 178.644833,
+              "parseMs": 9.303666999999999,
+              "triangles": 40348,
+              "geometrySha256": "deaaff95150d45dfc6b7c9b371e97ac80ccbba746076f776fdf0bf4822930203"
+            },
+            "truck-refined": {
+              "meshMs": 148.916875,
+              "parseMs": 9.657625,
+              "triangles": 40348,
+              "geometrySha256": "deaaff95150d45dfc6b7c9b371e97ac80ccbba746076f776fdf0bf4822930203"
+            },
+            "truck-reviewed": {
+              "meshMs": 10.200000000000001,
+              "parseMs": 10.132291,
+              "triangles": 696
+            }
+          }
+        },
+        {
+          "id": "conical-surface/conical-surface.step",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 5.898750000000001,
+              "parseMs": 7.109709,
+              "triangles": 320,
+              "geometrySha256": "63e2dd68d23b09e840ec37f0cd1198cc77e6a2c041cffdaf69a4dde12c01d283"
+            },
+            "truck-reviewed": {
+              "meshMs": 4.945542,
+              "parseMs": 7.636042,
+              "triangles": 220
+            },
+            "truck-refined-preopt": {
+              "meshMs": 5.997667,
+              "parseMs": 7.462375000000001,
+              "triangles": 320,
+              "geometrySha256": "63e2dd68d23b09e840ec37f0cd1198cc77e6a2c041cffdaf69a4dde12c01d283"
+            }
+          }
+        },
+        {
+          "id": "cube-10x10mm/Cube 10x10.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 2.6197920000000003,
+              "parseMs": 6.879208,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.5946670000000003,
+              "parseMs": 7.172000000000001,
+              "triangles": 12,
+              "geometrySha256": "1faecc7bd0a526869a2dd028003fe78463db29da75227027266425afc441dca1"
+            },
+            "truck-refined": {
+              "meshMs": 2.6753329999999997,
+              "parseMs": 6.941417,
+              "triangles": 12,
+              "geometrySha256": "1faecc7bd0a526869a2dd028003fe78463db29da75227027266425afc441dca1"
+            }
+          }
+        },
+        {
+          "id": "cube-fcstd/cube.step",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 2.5140409999999997,
+              "parseMs": 9.067667,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-refined": {
+              "meshMs": 2.74425,
+              "parseMs": 9.315708,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.4832500000000004,
+              "parseMs": 8.897791,
+              "triangles": 12
+            }
+          }
+        },
+        {
+          "id": "cube-fcstd/cube2.step",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 2.618792,
+              "parseMs": 9.325417000000002,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.414958,
+              "parseMs": 9.244833,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.486667,
+              "parseMs": 9.100834,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            }
+          }
+        },
+        {
+          "id": "cube-fcstd/cube3.step",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 2.401833,
+              "parseMs": 8.945333999999999,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.7083749999999998,
+              "parseMs": 8.981334,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-refined": {
+              "meshMs": 2.773708,
+              "parseMs": 9.585709,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            }
+          }
+        },
+        {
+          "id": "cube-units/cube-in.step",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 2.6005,
+              "parseMs": 9.258625,
+              "triangles": 12,
+              "geometrySha256": "6cb94c242f123e2d558cfd1b46104cc5e818a5cfc0b85e6c561445696f6d5c0b"
+            },
+            "truck-refined": {
+              "meshMs": 2.7182500000000003,
+              "parseMs": 10.09375,
+              "triangles": 12,
+              "geometrySha256": "6cb94c242f123e2d558cfd1b46104cc5e818a5cfc0b85e6c561445696f6d5c0b"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.6004579999999997,
+              "parseMs": 9.709667,
+              "triangles": 12
+            }
+          }
+        },
+        {
+          "id": "cube-units/cube-m.step",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 2.690459,
+              "parseMs": 9.574833,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.700625,
+              "parseMs": 9.796249999999999,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.784209,
+              "parseMs": 9.559084,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            }
+          }
+        },
+        {
+          "id": "cube-units/cube-mm.step",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 2.654333,
+              "parseMs": 9.376875,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.820209,
+              "parseMs": 9.283332999999999,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            },
+            "truck-refined": {
+              "meshMs": 2.6765410000000003,
+              "parseMs": 9.586,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            }
+          }
+        },
+        {
+          "id": "rounded-cube/rounded-cube.step",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 2.7342500000000003,
+              "parseMs": 10.290166999999999,
+              "triangles": 28,
+              "geometrySha256": "a02463577cf8c3bc4a78414f60fbf46db54a16ef1df0473156ee2e4c1dd2b535"
+            },
+            "truck-refined": {
+              "meshMs": 2.654208,
+              "parseMs": 10.3165,
+              "triangles": 28,
+              "geometrySha256": "a02463577cf8c3bc4a78414f60fbf46db54a16ef1df0473156ee2e4c1dd2b535"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.517625,
+              "parseMs": 10.234416,
+              "triangles": 28
+            }
+          }
+        },
+        {
+          "id": "simple-basic-cube/cube.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 2.5660000000000003,
+              "parseMs": 6.865667,
+              "triangles": 12,
+              "geometrySha256": "264fcb7ea4dc8698dd840f2e4ce31cbc79171c0196ee1aed78c42aba44c01a46"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.428334,
+              "parseMs": 6.866291,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.807292,
+              "parseMs": 7.039791999999999,
+              "triangles": 12,
+              "geometrySha256": "264fcb7ea4dc8698dd840f2e4ce31cbc79171c0196ee1aed78c42aba44c01a46"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "totals": {
+        "truck-reviewed": 2496.1222090000006,
+        "truck-refined-preopt": 3309.7600410000014,
+        "truck-refined": 2922.744209000001
+      },
+      "rows": [
+        {
+          "id": "cax-if/as1-oc-214.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 255.94179099999997,
+              "parseMs": 120.122667,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            },
+            "truck-reviewed": {
+              "meshMs": 247.958959,
+              "parseMs": 120.799375,
+              "triangles": 28716
+            },
+            "truck-refined-preopt": {
+              "meshMs": 271.15366600000004,
+              "parseMs": 120.591417,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            }
+          }
+        },
+        {
+          "id": "cax-if/as1-oc-214/as1-oc-214.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 249.38537499999998,
+              "parseMs": 122.5555,
+              "triangles": 28716
+            },
+            "truck-refined-preopt": {
+              "meshMs": 270.525541,
+              "parseMs": 120.78224999999999,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            },
+            "truck-refined": {
+              "meshMs": 256.693708,
+              "parseMs": 121.491208,
+              "triangles": 28716,
+              "geometrySha256": "433cd4956d076a3b531d5317fec508e4e3c7cb8f401b19c707c6488e9853015f"
+            }
+          }
+        },
+        {
+          "id": "cax-if/as1-tu-203.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 122.402791,
+              "parseMs": 22.946042,
+              "triangles": 28668,
+              "geometrySha256": "7c66f6dc1ecce9523381d923613dedb3decf447d2156b5de5cde4003e9f5dbaa"
+            },
+            "truck-refined": {
+              "meshMs": 108.270667,
+              "parseMs": 23.397375,
+              "triangles": 28668,
+              "geometrySha256": "7c66f6dc1ecce9523381d923613dedb3decf447d2156b5de5cde4003e9f5dbaa"
+            },
+            "truck-reviewed": {
+              "meshMs": 100.738958,
+              "parseMs": 23.0365,
+              "triangles": 28668
+            }
+          }
+        },
+        {
+          "id": "cax-if/as1_pe_203.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 46.783625,
+              "parseMs": 22.629791,
+              "triangles": 11840,
+              "geometrySha256": "acd9066a3581e0908e13a057a6be4681c031cf41741d740889f8fdb426485928"
+            },
+            "truck-reviewed": {
+              "meshMs": 47.308292,
+              "parseMs": 22.566542,
+              "triangles": 11840
+            },
+            "truck-refined-preopt": {
+              "meshMs": 58.036249999999995,
+              "parseMs": 22.75125,
+              "triangles": 11840,
+              "geometrySha256": "acd9066a3581e0908e13a057a6be4681c031cf41741d740889f8fdb426485928"
+            }
+          }
+        },
+        {
+          "id": "cax-if/dm1-id-214.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 56.761708,
+              "parseMs": 15.904083,
+              "triangles": 13842
+            },
+            "truck-refined-preopt": {
+              "meshMs": 65.708333,
+              "parseMs": 15.974458,
+              "triangles": 13842,
+              "geometrySha256": "daf5b396fe828713de62bd06fbd5dd0a62265b9ac0f71ee329511c7ec857d989"
+            },
+            "truck-refined": {
+              "meshMs": 59.277375,
+              "parseMs": 15.936041000000001,
+              "triangles": 13842,
+              "geometrySha256": "daf5b396fe828713de62bd06fbd5dd0a62265b9ac0f71ee329511c7ec857d989"
+            }
+          }
+        },
+        {
+          "id": "cax-if/dm1-oc-214.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 123.390917,
+              "parseMs": 66.57625,
+              "triangles": 8988,
+              "geometrySha256": "0cd46a538e65dc53bd06679199a85ace253a5c1562f14e34057455bc5b1bd9d6"
+            },
+            "truck-refined": {
+              "meshMs": 120.03475,
+              "parseMs": 66.040291,
+              "triangles": 8988,
+              "geometrySha256": "0cd46a538e65dc53bd06679199a85ace253a5c1562f14e34057455bc5b1bd9d6"
+            },
+            "truck-reviewed": {
+              "meshMs": 116.724333,
+              "parseMs": 66.542167,
+              "triangles": 8988
+            }
+          }
+        },
+        {
+          "id": "cax-if/dm1-pe-214.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 27.401,
+              "parseMs": 15.851666,
+              "triangles": 4448,
+              "geometrySha256": "987698d8f278069a6abb5264ca4efe8b683044dfb4d8c8a9e5c249a40731ba55"
+            },
+            "truck-reviewed": {
+              "meshMs": 27.060917,
+              "parseMs": 16.019042000000002,
+              "triangles": 4448
+            },
+            "truck-refined-preopt": {
+              "meshMs": 30.506417000000003,
+              "parseMs": 16.112499999999997,
+              "triangles": 4448,
+              "geometrySha256": "987698d8f278069a6abb5264ca4efe8b683044dfb4d8c8a9e5c249a40731ba55"
+            }
+          }
+        },
+        {
+          "id": "cax-if/io1-cm-214.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 15.670582999999999,
+              "parseMs": 11.958208999999998,
+              "triangles": 1304
+            },
+            "truck-refined-preopt": {
+              "meshMs": 19.156166,
+              "parseMs": 12.5655,
+              "triangles": 1696,
+              "geometrySha256": "b6be822922e30b6e9d9528f41b4a798af228fb733e8da95478485726015a159f"
+            },
+            "truck-refined": {
+              "meshMs": 17.438375,
+              "parseMs": 12.050042000000001,
+              "triangles": 1696,
+              "geometrySha256": "b6be822922e30b6e9d9528f41b4a798af228fb733e8da95478485726015a159f"
+            }
+          }
+        },
+        {
+          "id": "cax-if/io1-tu-203.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 58.091666000000004,
+              "parseMs": 16.723292,
+              "triangles": 4912,
+              "geometrySha256": "207ac8dab9b493c9195560bb6b30b9804ac890305ba149cc3465306d5fca7dc6"
+            },
+            "truck-refined": {
+              "meshMs": 52.711084,
+              "parseMs": 16.227124999999997,
+              "triangles": 4912,
+              "geometrySha256": "207ac8dab9b493c9195560bb6b30b9804ac890305ba149cc3465306d5fca7dc6"
+            },
+            "truck-reviewed": {
+              "meshMs": 49.916458,
+              "parseMs": 16.33225,
+              "triangles": 4912
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/FOOT_BACK_000.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 11.828167,
+              "parseMs": 9.810084,
+              "triangles": 2010,
+              "geometrySha256": "d4cda7761bdb26d0b33e406703a6eed868f964d3fb46967004a541db677dbb23"
+            },
+            "truck-reviewed": {
+              "meshMs": 6.929042,
+              "parseMs": 9.5535,
+              "triangles": 704
+            },
+            "truck-refined-preopt": {
+              "meshMs": 13.341792,
+              "parseMs": 9.931625,
+              "triangles": 2010,
+              "geometrySha256": "d4cda7761bdb26d0b33e406703a6eed868f964d3fb46967004a541db677dbb23"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/FOOT_FRONT_000.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 6.786582999999999,
+              "parseMs": 9.629458,
+              "triangles": 704
+            },
+            "truck-refined-preopt": {
+              "meshMs": 13.320500000000001,
+              "parseMs": 9.540750000000001,
+              "triangles": 2010,
+              "geometrySha256": "f4a03747136f6bf1fe3554d7d5de468c099085b4010e255562f2cff562dc9598"
+            },
+            "truck-refined": {
+              "meshMs": 11.041959,
+              "parseMs": 9.912749999999999,
+              "triangles": 2010,
+              "geometrySha256": "f4a03747136f6bf1fe3554d7d5de468c099085b4010e255562f2cff562dc9598"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/HEAD_BACK.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 43.86375,
+              "parseMs": 11.352917,
+              "triangles": 9768,
+              "geometrySha256": "129ca4739345375b99bc58760c5c40aa0fd91549d48d207b1e6e9003bf962e00"
+            },
+            "truck-refined": {
+              "meshMs": 37.796417,
+              "parseMs": 11.362542,
+              "triangles": 9768,
+              "geometrySha256": "129ca4739345375b99bc58760c5c40aa0fd91549d48d207b1e6e9003bf962e00"
+            },
+            "truck-reviewed": {
+              "meshMs": 22.052334,
+              "parseMs": 11.413583,
+              "triangles": 3436
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/HEAD_FRONT.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 36.534834000000004,
+              "parseMs": 7.986583,
+              "triangles": 9542,
+              "geometrySha256": "3f3e1e2deaf4088fd49d90ce77103ae2cbd05e3d11277c176acb39dd2dfad3f4"
+            },
+            "truck-reviewed": {
+              "meshMs": 18.573708,
+              "parseMs": 7.981083999999999,
+              "triangles": 3123
+            },
+            "truck-refined-preopt": {
+              "meshMs": 43.166875,
+              "parseMs": 8.109083,
+              "triangles": 9542,
+              "geometrySha256": "3f3e1e2deaf4088fd49d90ce77103ae2cbd05e3d11277c176acb39dd2dfad3f4"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/MAINBODY_BACK.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 322.81995800000004,
+              "parseMs": 17.218833,
+              "triangles": 18420
+            },
+            "truck-refined-preopt": {
+              "meshMs": 378.256666,
+              "parseMs": 17.70575,
+              "triangles": 18452,
+              "geometrySha256": "cc354814d0363cdd1b869f3ac26240598dcc0bb12d779f4ff0df70b379001126"
+            },
+            "truck-refined": {
+              "meshMs": 339.883416,
+              "parseMs": 17.0185,
+              "triangles": 18452,
+              "geometrySha256": "cc354814d0363cdd1b869f3ac26240598dcc0bb12d779f4ff0df70b379001126"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/MAINBODY_FRONT.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 368.228458,
+              "parseMs": 14.993167,
+              "triangles": 17650,
+              "geometrySha256": "85e9fac2ee86357bbff7ef2f73d27bc0704e19b5876c8c6d211ba19f2b75bb97"
+            },
+            "truck-refined": {
+              "meshMs": 330.85162499999996,
+              "parseMs": 15.626666,
+              "triangles": 17650,
+              "geometrySha256": "85e9fac2ee86357bbff7ef2f73d27bc0704e19b5876c8c6d211ba19f2b75bb97"
+            },
+            "truck-reviewed": {
+              "meshMs": 312.67275,
+              "parseMs": 14.815834,
+              "triangles": 17618
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/TAIL_MIDDLE_PART.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 4.046250000000001,
+              "parseMs": 11.468542,
+              "triangles": 188,
+              "geometrySha256": "cff31f7b111edf86364e1db11dbf41850b5b75ada212541a54fa6fcbe112f510"
+            },
+            "truck-reviewed": {
+              "meshMs": 3.6395,
+              "parseMs": 11.410959,
+              "triangles": 188
+            },
+            "truck-refined-preopt": {
+              "meshMs": 3.954959,
+              "parseMs": 11.409417,
+              "triangles": 188,
+              "geometrySha256": "cff31f7b111edf86364e1db11dbf41850b5b75ada212541a54fa6fcbe112f510"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-c5-214/TAIL_TURBINE.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 4.806,
+              "parseMs": 11.712625000000001,
+              "triangles": 222
+            },
+            "truck-refined-preopt": {
+              "meshMs": 11.203042,
+              "parseMs": 11.658084,
+              "triangles": 1476,
+              "geometrySha256": "2dd52c9be971d0cffee39548513211b319e58461ca39608a9f0263880b1e50c2"
+            },
+            "truck-refined": {
+              "meshMs": 9.509083,
+              "parseMs": 11.582583,
+              "triangles": 1476,
+              "geometrySha256": "2dd52c9be971d0cffee39548513211b319e58461ca39608a9f0263880b1e50c2"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/footback.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 40.370875,
+              "parseMs": 10.356666,
+              "triangles": 3832,
+              "geometrySha256": "e33658f748759e34f4f21e94ee2d16c59b117f63c3895e0aa2fed41bda65ffd8"
+            },
+            "truck-refined": {
+              "meshMs": 36.134416,
+              "parseMs": 9.918833,
+              "triangles": 3832,
+              "geometrySha256": "e33658f748759e34f4f21e94ee2d16c59b117f63c3895e0aa2fed41bda65ffd8"
+            },
+            "truck-reviewed": {
+              "meshMs": 33.155875,
+              "parseMs": 10.228708,
+              "triangles": 3588
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/footfront.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 37.147917,
+              "parseMs": 11.059458,
+              "triangles": 3742,
+              "geometrySha256": "cb5615adb090d1864df461b0320c9cc6f64a03390d2905ee3455803c9bcf859e"
+            },
+            "truck-reviewed": {
+              "meshMs": 32.207667,
+              "parseMs": 11.317458,
+              "triangles": 3499
+            },
+            "truck-refined-preopt": {
+              "meshMs": 40.609,
+              "parseMs": 10.989834,
+              "triangles": 3742,
+              "geometrySha256": "cb5615adb090d1864df461b0320c9cc6f64a03390d2905ee3455803c9bcf859e"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/headback.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 101.8945,
+              "parseMs": 11.988875,
+              "triangles": 13500
+            },
+            "truck-refined-preopt": {
+              "meshMs": 157.444,
+              "parseMs": 11.745459,
+              "triangles": 14582,
+              "geometrySha256": "be74357cc994eb01f6b99580b64e9550e7c2dcbffb06092f636337c7fe1cd5cb"
+            },
+            "truck-refined": {
+              "meshMs": 127.16745800000001,
+              "parseMs": 11.524625,
+              "triangles": 14582,
+              "geometrySha256": "be74357cc994eb01f6b99580b64e9550e7c2dcbffb06092f636337c7fe1cd5cb"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/headfront.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 100.599833,
+              "parseMs": 8.617792000000001,
+              "triangles": 10628,
+              "geometrySha256": "099487b03f00d8424ac41c2f309ead318a18fe34a5decdad6c8be7899c2eed4b"
+            },
+            "truck-refined": {
+              "meshMs": 79.091791,
+              "parseMs": 8.502166,
+              "triangles": 10628,
+              "geometrySha256": "099487b03f00d8424ac41c2f309ead318a18fe34a5decdad6c8be7899c2eed4b"
+            },
+            "truck-reviewed": {
+              "meshMs": 64.84208299999999,
+              "parseMs": 8.935875,
+              "triangles": 9427
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/mainbodyback.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 154.99175000000002,
+              "parseMs": 12.792084000000001,
+              "triangles": 22680,
+              "geometrySha256": "e47840370beff6b4c2e644ce81491c1dd46bc7f516e92d43543fc9f055d62551"
+            },
+            "truck-reviewed": {
+              "meshMs": 138.212166,
+              "parseMs": 12.799292,
+              "triangles": 22680
+            },
+            "truck-refined-preopt": {
+              "meshMs": 181.38762499999999,
+              "parseMs": 12.786541,
+              "triangles": 22680,
+              "geometrySha256": "e47840370beff6b4c2e644ce81491c1dd46bc7f516e92d43543fc9f055d62551"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/mainbodyfront.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 148.700666,
+              "parseMs": 16.296791000000002,
+              "triangles": 22264
+            },
+            "truck-refined-preopt": {
+              "meshMs": 189.58075,
+              "parseMs": 15.953875,
+              "triangles": 22264,
+              "geometrySha256": "899c7533ca79d4f4a950895df251757d6fa59a705e10f04095a16fe82cd0391b"
+            },
+            "truck-refined": {
+              "meshMs": 161.194334,
+              "parseMs": 16.2805,
+              "triangles": 22264,
+              "geometrySha256": "899c7533ca79d4f4a950895df251757d6fa59a705e10f04095a16fe82cd0391b"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/tailmiddlepart.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 10.091249999999999,
+              "parseMs": 11.469541,
+              "triangles": 352,
+              "geometrySha256": "284036a01932bb9ed6d05a3d0dbc7a5214b5cf9dfb5f1b7c6841e0c2aa6e8a81"
+            },
+            "truck-refined": {
+              "meshMs": 9.469333,
+              "parseMs": 11.446833,
+              "triangles": 352,
+              "geometrySha256": "284036a01932bb9ed6d05a3d0dbc7a5214b5cf9dfb5f1b7c6841e0c2aa6e8a81"
+            },
+            "truck-reviewed": {
+              "meshMs": 9.146084,
+              "parseMs": 11.3455,
+              "triangles": 352
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1-tu-203/tailturbine.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 52.506499999999996,
+              "parseMs": 14.12025,
+              "triangles": 3592,
+              "geometrySha256": "544296c107121ce1045d79b8fad6418b6a9402566bc07b216de0c8fdb9f4c92e"
+            },
+            "truck-reviewed": {
+              "meshMs": 49.003708,
+              "parseMs": 14.078916,
+              "triangles": 3592
+            },
+            "truck-refined-preopt": {
+              "meshMs": 56.167584,
+              "parseMs": 14.005875,
+              "triangles": 3592,
+              "geometrySha256": "544296c107121ce1045d79b8fad6418b6a9402566bc07b216de0c8fdb9f4c92e"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/foot_back_prt.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 6.950457999999999,
+              "parseMs": 8.836666,
+              "triangles": 649
+            },
+            "truck-refined-preopt": {
+              "meshMs": 13.596375,
+              "parseMs": 8.758500000000002,
+              "triangles": 1818,
+              "geometrySha256": "8701be138517fc13510d646ddb7abc67f7d7691e727f30ebfb5a929dcb3cd580"
+            },
+            "truck-refined": {
+              "meshMs": 11.26825,
+              "parseMs": 8.853084,
+              "triangles": 1818,
+              "geometrySha256": "8701be138517fc13510d646ddb7abc67f7d7691e727f30ebfb5a929dcb3cd580"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/foot_front_prt.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 16.638792,
+              "parseMs": 10.137125000000001,
+              "triangles": 2441,
+              "geometrySha256": "84e0b093dbd2bacaf11c64579ac27fc64644e79b64563994ff6ee63eab5708ca"
+            },
+            "truck-refined": {
+              "meshMs": 14.0585,
+              "parseMs": 9.584083,
+              "triangles": 2441,
+              "geometrySha256": "84e0b093dbd2bacaf11c64579ac27fc64644e79b64563994ff6ee63eab5708ca"
+            },
+            "truck-reviewed": {
+              "meshMs": 7.572334,
+              "parseMs": 9.881124999999999,
+              "triangles": 662
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/head_back_prt.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 35.5825,
+              "parseMs": 9.601959,
+              "triangles": 9448,
+              "geometrySha256": "9f64f127f0593c1815cc548b68a3908fc07731cc9c2c49df606b47d90f7351ab"
+            },
+            "truck-reviewed": {
+              "meshMs": 19.951375,
+              "parseMs": 8.94425,
+              "triangles": 3214
+            },
+            "truck-refined-preopt": {
+              "meshMs": 39.62412500000001,
+              "parseMs": 9.421166999999999,
+              "triangles": 9448,
+              "geometrySha256": "9f64f127f0593c1815cc548b68a3908fc07731cc9c2c49df606b47d90f7351ab"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/head_front_prt.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 18.152042,
+              "parseMs": 7.615374999999999,
+              "triangles": 3091
+            },
+            "truck-refined-preopt": {
+              "meshMs": 42.204792,
+              "parseMs": 7.782542,
+              "triangles": 9729,
+              "geometrySha256": "1523f5d4e380ad14010eea5c214bd0c87cf75ed809c370df1d4431e800edae15"
+            },
+            "truck-refined": {
+              "meshMs": 34.858083,
+              "parseMs": 7.727666999999999,
+              "triangles": 9729,
+              "geometrySha256": "1523f5d4e380ad14010eea5c214bd0c87cf75ed809c370df1d4431e800edae15"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/main_body_back_prt.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 133.82541700000002,
+              "parseMs": 13.050208000000001,
+              "triangles": 16732,
+              "geometrySha256": "9b8635f33cd1ff3a64e8cfec53ca5b96795ea4f677dc3c5aafc003fd0983bda6"
+            },
+            "truck-refined": {
+              "meshMs": 111.708041,
+              "parseMs": 12.929291000000001,
+              "triangles": 16732,
+              "geometrySha256": "9b8635f33cd1ff3a64e8cfec53ca5b96795ea4f677dc3c5aafc003fd0983bda6"
+            },
+            "truck-reviewed": {
+              "meshMs": 98.90866700000001,
+              "parseMs": 12.874082999999999,
+              "triangles": 16732
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/main_body_front_prt.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 117.35929200000001,
+              "parseMs": 13.883917,
+              "triangles": 17540,
+              "geometrySha256": "689114ef58413e0abe8a9dadfedf110958a28171b3c350545798d4655abb6f5e"
+            },
+            "truck-reviewed": {
+              "meshMs": 107.494792,
+              "parseMs": 13.784667,
+              "triangles": 17540
+            },
+            "truck-refined-preopt": {
+              "meshMs": 141.5325,
+              "parseMs": 14.366916999999999,
+              "triangles": 17540,
+              "geometrySha256": "689114ef58413e0abe8a9dadfedf110958a28171b3c350545798d4655abb6f5e"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/tail_middle_part_prt.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 5.992209,
+              "parseMs": 12.645667,
+              "triangles": 292
+            },
+            "truck-refined-preopt": {
+              "meshMs": 6.6982919999999995,
+              "parseMs": 12.165709,
+              "triangles": 292,
+              "geometrySha256": "538acaf045c33789e53dcb919a4df2ec6eb9ab397dcbb4f3abe7a6ed44c35ece"
+            },
+            "truck-refined": {
+              "meshMs": 6.380541,
+              "parseMs": 12.344166999999999,
+              "triangles": 292,
+              "geometrySha256": "538acaf045c33789e53dcb919a4df2ec6eb9ab397dcbb4f3abe7a6ed44c35ece"
+            }
+          }
+        },
+        {
+          "id": "cax-if/s1_pe_214/tail_turbine_prt.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 35.799417,
+              "parseMs": 12.313457999999999,
+              "triangles": 6942,
+              "geometrySha256": "546091d4d0c87b8f6f23a6fa255851aa2a76cbaeb3cb8d4835c6d18b6dc52e56"
+            },
+            "truck-refined": {
+              "meshMs": 30.53425,
+              "parseMs": 12.531791,
+              "triangles": 6942,
+              "geometrySha256": "546091d4d0c87b8f6f23a6fa255851aa2a76cbaeb3cb8d4835c6d18b6dc52e56"
+            },
+            "truck-reviewed": {
+              "meshMs": 5.6826669999999995,
+              "parseMs": 12.402,
+              "triangles": 272
+            }
+          }
+        },
+        {
+          "id": "cax-if/sg1-c5-214.stp",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 147.618875,
+              "parseMs": 9.113208,
+              "triangles": 40348,
+              "geometrySha256": "deaaff95150d45dfc6b7c9b371e97ac80ccbba746076f776fdf0bf4822930203"
+            },
+            "truck-reviewed": {
+              "meshMs": 10.175125,
+              "parseMs": 9.346542,
+              "triangles": 696
+            },
+            "truck-refined-preopt": {
+              "meshMs": 176.8,
+              "parseMs": 9.557708,
+              "triangles": 40348,
+              "geometrySha256": "deaaff95150d45dfc6b7c9b371e97ac80ccbba746076f776fdf0bf4822930203"
+            }
+          }
+        },
+        {
+          "id": "conical-surface/conical-surface.step",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 5.157125000000001,
+              "parseMs": 7.047208,
+              "triangles": 220
+            },
+            "truck-refined-preopt": {
+              "meshMs": 8.680208,
+              "parseMs": 17.08575,
+              "triangles": 320,
+              "geometrySha256": "63e2dd68d23b09e840ec37f0cd1198cc77e6a2c041cffdaf69a4dde12c01d283"
+            },
+            "truck-refined": {
+              "meshMs": 5.590459,
+              "parseMs": 7.5910839999999995,
+              "triangles": 320,
+              "geometrySha256": "63e2dd68d23b09e840ec37f0cd1198cc77e6a2c041cffdaf69a4dde12c01d283"
+            }
+          }
+        },
+        {
+          "id": "cube-10x10mm/Cube 10x10.stp",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 2.681167,
+              "parseMs": 7.096958000000001,
+              "triangles": 12,
+              "geometrySha256": "1faecc7bd0a526869a2dd028003fe78463db29da75227027266425afc441dca1"
+            },
+            "truck-refined": {
+              "meshMs": 2.7182920000000004,
+              "parseMs": 7.261333,
+              "triangles": 12,
+              "geometrySha256": "1faecc7bd0a526869a2dd028003fe78463db29da75227027266425afc441dca1"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.4932090000000002,
+              "parseMs": 7.2333750000000006,
+              "triangles": 12
+            }
+          }
+        },
+        {
+          "id": "cube-fcstd/cube.step",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 2.610083,
+              "parseMs": 9.281791,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.475417,
+              "parseMs": 8.860584,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.5825,
+              "parseMs": 9.045875,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            }
+          }
+        },
+        {
+          "id": "cube-fcstd/cube2.step",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 2.5760829999999997,
+              "parseMs": 9.353708000000001,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.660417,
+              "parseMs": 9.203208,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-refined": {
+              "meshMs": 2.661667,
+              "parseMs": 9.1035,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            }
+          }
+        },
+        {
+          "id": "cube-fcstd/cube3.step",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 2.57025,
+              "parseMs": 9.789833,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-refined": {
+              "meshMs": 2.644708,
+              "parseMs": 9.347417,
+              "triangles": 12,
+              "geometrySha256": "83774c123ad0ba3ebac1c75f27b993bd32fde69660ad77c520364290dfa0c724"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.526959,
+              "parseMs": 9.027666,
+              "triangles": 12
+            }
+          }
+        },
+        {
+          "id": "cube-units/cube-in.step",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 2.680584,
+              "parseMs": 9.873584,
+              "triangles": 12,
+              "geometrySha256": "6cb94c242f123e2d558cfd1b46104cc5e818a5cfc0b85e6c561445696f6d5c0b"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.5383329999999997,
+              "parseMs": 9.648291,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.749834,
+              "parseMs": 9.71525,
+              "triangles": 12,
+              "geometrySha256": "6cb94c242f123e2d558cfd1b46104cc5e818a5cfc0b85e6c561445696f6d5c0b"
+            }
+          }
+        },
+        {
+          "id": "cube-units/cube-m.step",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 2.542583,
+              "parseMs": 9.341541,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.60325,
+              "parseMs": 9.296375000000001,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            },
+            "truck-refined": {
+              "meshMs": 2.735,
+              "parseMs": 9.25925,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            }
+          }
+        },
+        {
+          "id": "cube-units/cube-mm.step",
+          "engines": {
+            "truck-refined-preopt": {
+              "meshMs": 2.671208,
+              "parseMs": 9.679167000000001,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            },
+            "truck-refined": {
+              "meshMs": 2.709209,
+              "parseMs": 9.392334,
+              "triangles": 12,
+              "geometrySha256": "7be7b204c36fddc1a53a0efe39f178cbfbbb76e67beb3ba4570904c0af1bb8c6"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.7690420000000002,
+              "parseMs": 9.64325,
+              "triangles": 12
+            }
+          }
+        },
+        {
+          "id": "rounded-cube/rounded-cube.step",
+          "engines": {
+            "truck-refined": {
+              "meshMs": 2.699042,
+              "parseMs": 10.455792,
+              "triangles": 28,
+              "geometrySha256": "a02463577cf8c3bc4a78414f60fbf46db54a16ef1df0473156ee2e4c1dd2b535"
+            },
+            "truck-reviewed": {
+              "meshMs": 2.6354159999999998,
+              "parseMs": 10.536333,
+              "triangles": 28
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.808958,
+              "parseMs": 10.299249999999999,
+              "triangles": 28,
+              "geometrySha256": "a02463577cf8c3bc4a78414f60fbf46db54a16ef1df0473156ee2e4c1dd2b535"
+            }
+          }
+        },
+        {
+          "id": "simple-basic-cube/cube.stp",
+          "engines": {
+            "truck-reviewed": {
+              "meshMs": 2.560166,
+              "parseMs": 7.008875000000001,
+              "triangles": 12
+            },
+            "truck-refined-preopt": {
+              "meshMs": 2.473833,
+              "parseMs": 6.736333,
+              "triangles": 12,
+              "geometrySha256": "264fcb7ea4dc8698dd840f2e4ce31cbc79171c0196ee1aed78c42aba44c01a46"
+            },
+            "truck-refined": {
+              "meshMs": 2.579208,
+              "parseMs": 6.836167,
+              "triangles": 12,
+              "geometrySha256": "264fcb7ea4dc8698dd840f2e4ce31cbc79171c0196ee1aed78c42aba44c01a46"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

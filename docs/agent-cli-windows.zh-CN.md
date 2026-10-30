@@ -1,10 +1,24 @@
 # Windows x64 测试与构建
 
-Windows 10/11 x64 候选版统一使用 RapidOCR NCNN，无需 Python 环境；最大边长 960、补边 50、OpenMP 2 线程。CLI 是 Rust，文档解析、转换、布局归一化仍在共享 WASM 核心。Windows ARM64 暂不提供原生构建。
+Windows 10/11 x64 使用 RapidOCR NCNN，无需 Python 环境；最大边长 960、补边 50、OpenMP 2 线程。CLI 是 Rust，文档解析、转换、布局归一化仍在共享 WASM 核心。Windows ARM64 暂不提供原生构建。
 
-`0.3.0-rc.1` 是候选版本。当前 macOS 主机只能完成交叉编译、PE/DLL 检查和 UPX 校验；Windows 原生运行结果需要补充。已有 npm `0.2.0` 不含 Windows 包。
+0.3.0 提供 Windows npm 包。当前 macOS 主机只能完成交叉编译、PE/DLL 检查和 UPX 校验；Windows 原生运行结果需要补充。npm `0.2.0` 不含 Windows 包。
 
-## 直接测试 ZIP，无需编译
+## 安装当前版本
+
+```powershell
+npm install -g filens-cli@0.3.0
+filens capacity --json
+filens '读取 "report.pdf"，以 JSON 输出'
+
+# 或选择轻量版，需要时补装 OCR
+npm install -g filens-cli-lite@0.3.0
+filens setup-ocr
+```
+
+两种入口选择一种安装。Windows 内部组件使用 `@orca.zhang/filens-cli-win32-x64` 与 `@orca.zhang/filens-ocr-win32-x64`，由 npm 自动选择；用户入口仍为无 scope 的 `filens-cli` / `filens-cli-lite`。安装包包含当前搜索、嵌套压缩包及原文摘录功能；下文旧候选 ZIP 的测试结果不能代替 0.3.0 的实机验证。
+
+## 早期候选 ZIP 测试，无需编译
 
 解压 `filens-0.3.0-rc.1-win32-x64-full.zip`，在该目录打开 PowerShell：
 
@@ -72,11 +86,11 @@ node scripts/package-agent-windows.mjs
 
 NCNN 与 OCR wrapper 从固定哈希的源码构建。Windows 适配只处理 DLL 加载、UTF-16 模型文件路径和 SimpleOMP 的一次性初始化，不引入文档解析算法。资源使用 gzip；Windows 和 Linux 的 CLI 使用 UPX `--best --lzma` 并执行 `--test`，macOS arm64 因 UPX 不支持而跳过。需要比较未压缩构建时，为构建/打包脚本加 `--no-upx`。
 
-完整包离线安装示例（在 tarball 所在目录运行）：
+0.3.0 完整包离线安装示例（在 tarball 所在目录运行）：
 
 ```powershell
-npm install -g .\filens-cli-0.3.0-rc.1.tgz .\filens-cli-win32-x64-0.3.0-rc.1.tgz .\filens-ocr-win32-x64-0.3.0-rc.1.tgz
+npm install -g .\filens-cli-0.3.0.tgz .\orca.zhang-filens-cli-win32-x64-0.3.0.tgz .\orca.zhang-filens-ocr-win32-x64-0.3.0.tgz
 filens capacity --json
 ```
 
-候选包若发布到 npm，使用 `next` 标签，保留稳定版 `latest`。该文档本身不表示候选包已发布或 Windows 测试已通过。
+0.3.0 正式版使用 `latest` 标签；后续候选版本使用 `next`。该文档本身不表示 Windows 实机测试已通过，注册表发布记录与本机安装结果见 [npm 发布验证](agent-cli-npm-publish.json)。

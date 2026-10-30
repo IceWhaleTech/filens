@@ -2,6 +2,8 @@ import { DEFAULT_FORMAT_ROUTES, inferExtensionFromName, type FormatDefinition } 
 import { createDefaultNativePreviewDrivers } from './native-drivers';
 import { createPptxPreviewDriver } from './pptx-driver';
 import { createPreviewRegistry, type PreviewRegistry } from './registry';
+import { loadSourceBytes } from '../parser/load-source';
+import { PreviewPasswordError, previewPasswordErrorCode } from './password';
 import type {
   ConverterClient,
   FormatRoute,
@@ -55,6 +57,7 @@ export class Previewer implements PreviewerInstance {
       });
     this.converter = options.converter;
     this.previewOptions = {
+      requestPassword: options.requestPassword,
       fit: options.fit,
       initialScale: options.initialScale,
       minScale: options.minScale,
@@ -63,6 +66,7 @@ export class Previewer implements PreviewerInstance {
       fontResolver: options.fontResolver,
       fontLoading: options.fontLoading,
       resourceResolver: options.resourceResolver,
+      audio: options.audio,
       previewerFactory: options.previewerFactory
     };
   }
@@ -82,38 +86,59 @@ export class Previewer implements PreviewerInstance {
       }
       if (token !== this.requestToken) return;
 
-      const initialDescriptor = normalizeSourceDescriptor(source, descriptor);
+      let initialDescriptor = normalizeSourceDescriptor(source, descriptor);
       this.setState({ ...createIdleState(), loading: true });
       this.emit('loading', this.state);
       if (token !== this.requestToken) return;
 
-      const resolved = await waitForPreviewTask(
-        this.resolveLoadTarget(initialDescriptor, token, controller?.signal), controller?.signal
-      );
-      if (token !== this.requestToken || !resolved) {
-        return;
+      let attempt = 0;
+      for (;;) {
+        try {
+          const resolved = await waitForPreviewTask(
+            this.resolveLoadTarget(initialDescriptor, token, controller?.signal), controller?.signal
+          );
+          if (token !== this.requestToken || !resolved) {
+            return;
+          }
+
+          const session = resolved.driver.createSession(this.host, this.previewOptions);
+          if (token !== this.requestToken) {
+            session.destroy();
+            return;
+          }
+          this.activeSession = session;
+          this.bindSession(session, token);
+          if (token !== this.requestToken) return;
+
+          await waitForPreviewTask(session.load(resolved.descriptor.source, {
+            descriptor: resolved.descriptor,
+            route: resolved.route,
+            signal: controller?.signal
+          }), controller?.signal);
+
+          if (token !== this.requestToken) {
+            return;
+          }
+
+          this.setState(this.getState());
+          break;
+        } catch (error) {
+          const reason = previewPasswordErrorCode(error);
+          if (token !== this.requestToken || controller?.signal.aborted) return;
+          if (!reason || reason === 'password_cancelled' || !this.previewOptions.requestPassword) throw error;
+          this.clearSession();
+          if (token !== this.requestToken) return;
+          this.setState({ ...createIdleState(), loading: true });
+          this.emit('statechange', this.state);
+          if (token !== this.requestToken) return;
+          const password = await waitForPreviewTask(Promise.resolve(this.previewOptions.requestPassword({
+            name: initialDescriptor.name, reason, attempt: ++attempt, signal: controller?.signal
+          })), controller?.signal);
+          if (token !== this.requestToken) return;
+          if (password === null) throw new PreviewPasswordError('password_cancelled');
+          initialDescriptor = { ...initialDescriptor, password };
+        }
       }
-
-      const session = resolved.driver.createSession(this.host, this.previewOptions);
-      if (token !== this.requestToken) {
-        session.destroy();
-        return;
-      }
-      this.activeSession = session;
-      this.bindSession(session, token);
-      if (token !== this.requestToken) return;
-
-      await waitForPreviewTask(session.load(resolved.descriptor.source, {
-        descriptor: resolved.descriptor,
-        route: resolved.route,
-        signal: controller?.signal
-      }), controller?.signal);
-
-      if (token !== this.requestToken) {
-        return;
-      }
-
-      this.setState(this.getState());
     } catch (error) {
       if (token !== this.requestToken || controller?.signal.aborted) {
         return;
@@ -289,7 +314,16 @@ export class Previewer implements PreviewerInstance {
       throw new Error(`Unsupported preview format${formatDescriptorLabel(descriptor)}.`);
     }
 
-    if (!resolved.route.conversion?.required) {
+    let encryptedOffice = false;
+    if (!resolved.route.conversion?.required && ['docx', 'xlsx', 'pptx'].includes(resolved.route.sourceFormat)) {
+      // Native Office readers expect ZIP. Password-protected packages use a CFB envelope.
+      // Read once so remote documents are not fetched a second time for rendering.
+      const bytes = await loadSourceBytes(descriptor.source, { signal });
+      if (token !== this.requestToken) return null;
+      descriptor.source = bytes;
+      encryptedOffice = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1].every((byte, index) => bytes[index] === byte);
+    }
+    if (!resolved.route.conversion?.required && !encryptedOffice) {
       if (!resolved.driver) {
         throw new Error(`No preview driver registered for ${resolved.route.driverId} (${formatRouteLabel(resolved.route)}).`);
       }
@@ -316,7 +350,8 @@ export class Previewer implements PreviewerInstance {
         source: descriptor.source,
         sourceFormat: resolved.route.sourceFormat,
         targetFormat: resolved.route.targetFormat,
-        name: descriptor.name
+        name: descriptor.name,
+        password: descriptor.password
       },
       context
     );
@@ -362,6 +397,7 @@ export class Previewer implements PreviewerInstance {
     bind('statechange', (state) => this.setStateAndEmit('statechange', state));
     bind('warnings', (warnings) => this.emit('warnings', warnings));
     bind('error', (error) => {
+      if (previewPasswordErrorCode(error)) return;
       this.setState({
         ...this.getState(),
         loading: false,
