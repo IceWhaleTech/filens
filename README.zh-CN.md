@@ -6,6 +6,12 @@
   <p><a href="README.md">English</a> · 简体中文 · <a href="LICENSE">MIT</a></p>
 </div>
 
+![真实 CLI 演示：OCR 坐标、关键摘录、嵌套压缩包搜索与读取、重复文件、相似图片、CSV 转 XLSX、表格和 STEP 预览](docs/assets/agent-cli/terminal-demo.zh-CN.gif)
+
+[![八种真实预览：Office、PDF、iWork、CAD、3D 与全景](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
+
+[▶ 观看 30 秒演示](apps/demo/public/home/filens-demo.mp4) · [预览动图](docs/assets/readme/demo.gif) · [完整格式与限制](docs/support-matrix.zh-CN.md)
+
 | | Agent CLI | 纯前端预览 |
 | --- | --- | --- |
 | 用来做什么 | 向 Agent 提供文档原文、搜索结果、OCR 与可定位证据，也可打开浏览器预览。 | 在应用中预览 Office、iWork、PDF、CAD / 3D、RAW、全景、压缩包等大量复杂格式。 |
@@ -32,8 +38,6 @@ npx --yes filens-cli-lite capacity --json
 
 **用 CLI 打开预览：**`filens preview report.pdf` 打开共享前端预览器；首次运行自动安装独立的 `filens-preview` 包，也可先运行 `filens setup-preview`。`--no-open --json` 返回本地地址，服务保持运行直到退出。可选前端包同时包含两种构建，完整安装约 **26 MB**，与 CLI 体积分开计量。[预览配置与限制](packages/preview/README.md#cli-preview)。
 
-![真实 CLI 演示：OCR 坐标、关键摘录、嵌套压缩包搜索与读取、重复文件、相似图片、CSV 转 XLSX、表格和 STEP 预览](docs/assets/agent-cli/terminal-demo.zh-CN.gif)
-
 <details>
 <summary>CLI 精确体积、能力与更多示例</summary>
 
@@ -56,10 +60,6 @@ CLI 使用 Rust，转换复用前端核心。Full 内置 RapidOCR NCNN（最大�
 ## 纯前端预览
 
 **大量复杂格式，在浏览器本地解析和渲染，无需上传或转换服务器。** 直接浏览 Keynote 幻灯片、Pages 页面、Numbers 表格，读取 Office 与 PDF，检查 CAD / 3D 模型，查看 RAW 和 360° 照片、视频。
-
-[![八种真实预览：Office、PDF、iWork、CAD、3D 与全景](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
-
-[▶ 观看 30 秒演示](apps/demo/public/home/filens-demo.mp4) · [预览动图](docs/assets/readme/demo.gif) · [完整格式与限制](docs/support-matrix.zh-CN.md)
 
 ### 单文件与按需分包，两种选择
 

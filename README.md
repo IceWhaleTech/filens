@@ -6,6 +6,12 @@
   <p>English · <a href="README.zh-CN.md">简体中文</a> · <a href="LICENSE">MIT</a></p>
 </div>
 
+![Actual CLI results: OCR geometry, key excerpts, nested archive search and reading, duplicate files, similar images, CSV-to-XLSX conversion, workbook and STEP previews](docs/assets/agent-cli/terminal-demo.gif)
+
+[![Eight actual previews: Office, PDF, iWork, CAD, 3D and panoramas](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
+
+[▶ Watch the 30-second walkthrough](apps/demo/public/home/filens-demo.mp4) · [Animated preview](docs/assets/readme/demo.gif) · [Format coverage and limits](docs/support-matrix.md)
+
 | | Agent CLI | Pure frontend previews |
 | --- | --- | --- |
 | Use it for | Give Agents source text, search results, OCR and cited evidence; open a browser preview. | Preview Office, iWork, PDF, CAD / 3D, RAW, panoramas, archives and more in your app. |
@@ -32,8 +38,6 @@ npx --yes filens-cli-lite capacity --json
 
 **Browser preview from the CLI:** `filens preview report.pdf` opens the shared frontend viewer. The first use installs the separate `filens-preview` package; `filens setup-preview` prepares it in advance. `--no-open --json` prints a local URL and keeps the server running until stopped. The optional frontend package includes both builds (about **26 MB installed**), measured separately from CLI sizes. [Preview setup and limits](packages/preview/README.md#cli-preview).
 
-![Actual CLI results: OCR geometry, key excerpts, nested archive search and reading, duplicate files, similar images, CSV-to-XLSX conversion, workbook and STEP previews](docs/assets/agent-cli/terminal-demo.gif)
-
 <details>
 <summary>CLI sizes, capabilities and further examples</summary>
 
@@ -56,10 +60,6 @@ The CLI uses Rust and the same frontend conversion core. Full bundles RapidOCR N
 ## Pure frontend previews
 
 **Complex formats, processed in the browser with no upload or conversion server.** Browse Keynote slides, Pages pages and Numbers sheets; read Office and PDF documents; inspect CAD and 3D models; view RAW photos and 360° photos or video.
-
-[![Eight actual previews: Office, PDF, iWork, CAD, 3D and panoramas](docs/assets/readme/overview.webp)](apps/demo/public/home/filens-demo.mp4)
-
-[▶ Watch the 30-second walkthrough](apps/demo/public/home/filens-demo.mp4) · [Animated preview](docs/assets/readme/demo.gif) · [Format coverage and limits](docs/support-matrix.md)
 
 ### Single file or split modules
 
